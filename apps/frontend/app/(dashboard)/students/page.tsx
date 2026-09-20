@@ -440,7 +440,7 @@ export default function StudentsPage() {
         <div>
           <h1
             className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             Quản trị Hồ sơ Sinh viên
           </h1>

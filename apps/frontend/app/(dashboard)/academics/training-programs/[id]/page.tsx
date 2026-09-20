@@ -342,7 +342,7 @@ export default function TrainingProgramDetailPage({
           <div className="flex items-center gap-3">
             <h1
               className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
-              style={{ fontFamily: "Outfit, sans-serif" }}
+              style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
             >
               {program.programName}
             </h1>
@@ -413,7 +413,7 @@ export default function TrainingProgramDetailPage({
               ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary-light)]/40 rounded-t-xl"
               : "border-transparent text-slate-500 hover:text-slate-900"
           }`}
-          style={{ fontFamily: "Outfit, sans-serif" }}
+          style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
         >
           <span>Khung chương trình</span>
           <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 font-bold text-slate-600">
@@ -428,7 +428,7 @@ export default function TrainingProgramDetailPage({
               ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary-light)]/40 rounded-t-xl"
               : "border-transparent text-slate-500 hover:text-slate-900"
           }`}
-          style={{ fontFamily: "Outfit, sans-serif" }}
+          style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
         >
           <span>Kế hoạch đào tạo áp dụng</span>
           <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 font-bold text-slate-600">
@@ -510,7 +510,7 @@ export default function TrainingProgramDetailPage({
                   <div className="flex items-center justify-between pb-2 border-b border-slate-200/80">
                     <h2
                       className="text-base font-bold text-slate-900"
-                      style={{ fontFamily: "Outfit, sans-serif" }}
+                      style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
                     >
                       {group.year}
                     </h2>
@@ -636,7 +636,7 @@ export default function TrainingProgramDetailPage({
         <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Kế hoạch Đào tạo áp dụng cho {program.programName} ({plans.length})
               </h3>
               <p className="text-xs text-slate-500">Các đợt mở học phần theo từng khóa sinh viên</p>

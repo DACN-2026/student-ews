@@ -379,7 +379,7 @@ export default function RbacPage() {
           <div className="flex items-center gap-2.5 flex-wrap mb-1">
             <h1
               className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
-              style={{ fontFamily: "Outfit, sans-serif" }}
+              style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
             >
               Quản trị Phân quyền & Người dùng (RBAC)
             </h1>
@@ -437,7 +437,7 @@ export default function RbacPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
         <div className="p-3.5 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
           <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Tài khoản người dùng</div>
-          <div className="text-2xl font-bold text-slate-900 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
+          <div className="text-2xl font-bold text-slate-900 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
             {users.length}
           </div>
           <div className="text-[10px] text-emerald-600 mt-0.5 flex items-center gap-1">
@@ -447,7 +447,7 @@ export default function RbacPage() {
 
         <div className="p-3.5 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
           <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Vai trò hệ thống</div>
-          <div className="text-2xl font-bold text-slate-900 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
+          <div className="text-2xl font-bold text-slate-900 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
             {roles.length}
           </div>
           <div className="text-[10px] text-slate-500 mt-0.5">Faculty, Advisor, Admin...</div>
@@ -455,7 +455,7 @@ export default function RbacPage() {
 
         <div className="p-3.5 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
           <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Cố vấn học tập trực</div>
-          <div className="text-2xl font-bold text-slate-900 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
+          <div className="text-2xl font-bold text-slate-900 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
             {advisors.length}
           </div>
           <div className="text-[10px] text-blue-600 mt-0.5">Phân công theo Lớp & Học kỳ</div>
@@ -463,7 +463,7 @@ export default function RbacPage() {
 
         <div className="p-3.5 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
           <div className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Quyền hạn hạt nhân</div>
-          <div className="text-2xl font-bold text-slate-900 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
+          <div className="text-2xl font-bold text-slate-900 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
             {permissions.length}
           </div>
           <div className="text-[10px] text-purple-600 mt-0.5">Gom theo {Object.keys(groupedPermissions).length} nhóm tài nguyên</div>
@@ -624,7 +624,7 @@ export default function RbacPage() {
                       Data Scope Hierarchy
                     </span>
                   </div>
-                  <h3 className="text-sm font-semibold" style={{ fontFamily: "Outfit, sans-serif" }}>
+                  <h3 className="text-sm font-semibold" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                     Cơ chế kiểm soát phạm vi truy cập dữ liệu
                   </h3>
                   <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
@@ -650,7 +650,7 @@ export default function RbacPage() {
               <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                    <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                       Danh sách Vai trò Hệ thống ({roles.length})
                     </h3>
                     <p className="text-xs text-slate-500">Phạm vi dữ liệu và cấu hình quyền hạn hạt nhân cho từng vai trò</p>
@@ -722,7 +722,7 @@ export default function RbacPage() {
             <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                  <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                     Phân công Giảng viên Cố vấn học tập / Chủ nhiệm ({advisors.length})
                   </h3>
                   <p className="text-xs text-slate-500">Giảng viên chỉ có quyền truy cập hồ sơ và điểm số của lớp được phân công</p>

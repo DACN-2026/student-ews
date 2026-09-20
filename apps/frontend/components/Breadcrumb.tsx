@@ -54,7 +54,7 @@ export default function Breadcrumb() {
   if (segments.length === 0 || (segments.length === 1 && segments[0] === "dashboard")) {
     return (
       <nav aria-label="Breadcrumb" className="flex items-center text-xs text-[var(--color-text-secondary)]">
-        <span className="flex items-center gap-1.5 font-medium text-[var(--color-text)]" style={{ fontFamily: "Outfit, sans-serif" }}>
+        <span className="flex items-center gap-1.5 font-medium text-[var(--color-text)]" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-primary)]">
             <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
@@ -89,7 +89,7 @@ export default function Breadcrumb() {
           <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
           <polyline points="9 22 9 12 15 12 15 22"/>
         </svg>
-        <span className="font-medium hidden sm:inline" style={{ fontFamily: "Outfit, sans-serif" }}>Tổng quan</span>
+        <span className="font-medium hidden sm:inline" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>Tổng quan</span>
       </Link>
 
       {items.map((item) => (
@@ -101,7 +101,7 @@ export default function Breadcrumb() {
           {item.isLast ? (
             <span
               className="font-semibold text-[var(--color-text)] px-1.5 py-0.5 rounded bg-[var(--color-surface2)]"
-              style={{ fontFamily: "Outfit, sans-serif" }}
+              style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
             >
               {item.label}
             </span>
@@ -109,7 +109,7 @@ export default function Breadcrumb() {
             <Link
               href={item.href}
               className="hover:text-[var(--color-primary)] transition-colors font-medium"
-              style={{ fontFamily: "Outfit, sans-serif" }}
+              style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
             >
               {item.label}
             </Link>

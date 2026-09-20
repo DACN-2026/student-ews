@@ -67,7 +67,7 @@ export default function Modal({
           <div>
             <h3
               className="text-lg font-bold text-slate-900 tracking-tight"
-              style={{ fontFamily: "Outfit, sans-serif" }}
+              style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
             >
               {title}
             </h3>

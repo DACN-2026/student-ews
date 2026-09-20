@@ -55,13 +55,6 @@ const Icons = {
       <path d="M6 12v5c3 3 9 3 12 0v-5" />
     </svg>
   ),
-  warnings: (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  ),
   rbac: (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -86,13 +79,6 @@ const Icons = {
       <polyline points="14 2 14 8 20 8" />
       <line x1="16" y1="13" x2="8" y2="13" />
       <line x1="16" y1="17" x2="8" y2="17" />
-    </svg>
-  ),
-  upload: (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
     </svg>
   ),
   settings: (
@@ -140,30 +126,16 @@ const coreNavItems: NavItem[] = [
   {
     id: "graduation-forecast",
     href: "/graduation-forecast",
-    label: "Hoàn thành CTĐT",
+    label: "Dự kiến tốt nghiệp",
     icon: Icons.graduation,
     permission: "progress.read",
   },
   {
-    id: "academic-warnings",
-    href: "/academic-warnings",
-    label: "Cảnh báo học tập",
-    icon: Icons.warnings,
-    permission: "academic_warning.read",
-  },
-  {
     id: "reports",
     href: "/reports",
-    label: "Báo cáo",
+    label: "Cảnh báo học tập",
     icon: Icons.reports,
     permissions: ["progress.read", "academic_warning.read"],
-  },
-  {
-    id: "upload",
-    href: "/upload",
-    label: "Nhập dữ liệu",
-    icon: Icons.upload,
-    permissions: ["grade.import", "student.import", "decision.import"],
   },
   {
     id: "rbac",
@@ -245,7 +217,7 @@ export default function Sidebar({ collapsed, onToggle, onCloseMobile }: SidebarP
         <Link href="/dashboard" className="flex items-center gap-3 min-w-0">
           <div
             className="w-9 h-9 rounded-xl bg-[var(--color-primary)] flex items-center justify-center text-white font-black text-xs flex-shrink-0 shadow-sm tracking-wider"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             DLU
           </div>
@@ -253,7 +225,7 @@ export default function Sidebar({ collapsed, onToggle, onCloseMobile }: SidebarP
             <div className="min-w-0 flex-1">
               <div
                 className="font-bold text-sm leading-tight truncate text-[var(--color-text)] tracking-tight"
-                style={{ fontFamily: "Outfit, sans-serif" }}
+                style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
               >
                 PORTAL CNTT
               </div>
@@ -312,7 +284,7 @@ export default function Sidebar({ collapsed, onToggle, onCloseMobile }: SidebarP
                   ? "bg-[var(--color-primary-light)] text-[var(--color-primary)] font-semibold shadow-xs"
                   : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface2)] hover:text-[var(--color-text)]"
               }`}
-              style={{ fontFamily: "Outfit, sans-serif" }}
+              style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
             >
               <span
                 className={`flex-shrink-0 transition-colors ${

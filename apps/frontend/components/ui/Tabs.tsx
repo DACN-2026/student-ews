@@ -38,7 +38,7 @@ export default function Tabs({
                 ? "border-[var(--color-primary)] text-slate-900 bg-[var(--color-primary-light)]/60 rounded-t-xl"
                 : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
             }`}
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             {tab.icon && (
               <span className={isActive ? "text-[var(--color-primary)]" : "text-slate-400"}>

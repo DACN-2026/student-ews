@@ -484,7 +484,7 @@ export default function AcademicsPage() {
         <div>
           <h1
             className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             Quản trị Đào tạo & Khung Chương trình
           </h1>
@@ -586,7 +586,7 @@ export default function AcademicsPage() {
           {activeTab === "years" && (
             <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                   Danh sách Năm học ({years.length})
                 </h3>
               </div>
@@ -808,7 +808,7 @@ export default function AcademicsPage() {
           {activeTab === "programs" && (
             <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                   Chương trình Đào tạo Đại học ({programs.length})
                 </h3>
               </div>
@@ -857,7 +857,7 @@ export default function AcademicsPage() {
           {activeTab === "cohorts" && (
             <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                   Khóa Sinh viên ({cohorts.length})
                 </h3>
               </div>
@@ -891,7 +891,7 @@ export default function AcademicsPage() {
           {activeTab === "classes" && (
             <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
               <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                   Danh sách Lớp sinh viên ({classes.length})
                 </h3>
               </div>
@@ -942,7 +942,7 @@ export default function AcademicsPage() {
             <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
               <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                  <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                     Kế hoạch Đào tạo theo Học kỳ ({plans.length})
                   </h3>
                   <p className="text-xs text-slate-500">

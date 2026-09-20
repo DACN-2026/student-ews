@@ -48,13 +48,13 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <div
             className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[var(--color-primary)] to-lime-500 flex items-center justify-center text-white text-2xl font-black mx-auto mb-4 shadow-lg shadow-[var(--color-primary)]/20"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             DLU
           </div>
           <h1
             className="text-2xl sm:text-3xl font-bold text-[var(--color-text)] tracking-tight"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             HỆ THỐNG CẢNH BÁO
           </h1>
@@ -72,7 +72,7 @@ export default function LoginPage() {
         <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-7 shadow-xl shadow-slate-200/50">
           <h2
             className="text-[var(--color-text)] font-semibold text-lg mb-5"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             Đăng nhập tài khoản
           </h2>
@@ -137,7 +137,7 @@ export default function LoginPage() {
               type="submit"
               disabled={loading}
               className="w-full py-3 bg-[var(--color-primary)] hover:bg-[#81b234] text-white font-semibold rounded-xl text-sm transition-all shadow-md shadow-[var(--color-primary)]/20 cursor-pointer disabled:opacity-50 mt-1 flex items-center justify-center gap-2"
-              style={{ fontFamily: "Outfit, sans-serif" }}
+              style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
             >
               {loading ? (
                 <>

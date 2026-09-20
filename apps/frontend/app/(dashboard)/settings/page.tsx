@@ -94,7 +94,7 @@ export default function SettingsPage() {
             Quản trị & Thiết lập Tham số
           </span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
           Cấu hình Chính sách Cảnh báo Sớm
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -106,7 +106,7 @@ export default function SettingsPage() {
         {/* Left Column: GPA Threshold Settings */}
         <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-5">
           <div>
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider" style={{ fontFamily: "Outfit, sans-serif" }}>
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               Ngưỡng GPA Theo dõi Học vụ
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
@@ -203,7 +203,7 @@ export default function SettingsPage() {
           {/* Operational workflow status */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
             <div>
-              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Phạm vi Can thiệp Hiện tại
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">Các chức năng đang có trong phiên bản đồ án</p>
@@ -245,7 +245,7 @@ export default function SettingsPage() {
 
           {/* List of Registered Policies */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-3">
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider" style={{ fontFamily: "Outfit, sans-serif" }}>
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               Lịch sử Chính sách Ngưỡng ({policies.length})
             </h2>
 

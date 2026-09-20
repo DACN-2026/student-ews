@@ -143,7 +143,7 @@ export default function GraduationForecastPage() {
         <div>
           <h1
             className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             Đánh giá Hoàn thành Chương trình Đào tạo
           </h1>
@@ -174,7 +174,7 @@ export default function GraduationForecastPage() {
       {/* Runs Table */}
       <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+          <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
             Lịch sử Đánh giá Hoàn thành CTĐT ({runs.length})
           </h3>
         </div>

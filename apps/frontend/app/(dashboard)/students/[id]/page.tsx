@@ -342,13 +342,13 @@ export default function StudentDetailPage() {
         <div className="flex items-center gap-4">
           <div
             className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[var(--color-primary)] to-lime-500 flex items-center justify-center text-white text-2xl font-black shadow-md flex-shrink-0"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             {sName.split(" ").pop()?.charAt(0) || "S"}
           </div>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 {sName}
               </h1>
               <WarningBadge level={student?.warningLevel || dashboardData?.warningLevel || "green"} />
@@ -437,7 +437,7 @@ export default function StudentDetailPage() {
                 ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary-light)]/40 rounded-t-xl"
                 : "border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300"
             }`}
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             <span>{t.icon}</span>
             <span>{t.label}</span>
@@ -453,7 +453,7 @@ export default function StudentDetailPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* GPA Trend Chart (2 cols) */}
             <div className="lg:col-span-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs">
-              <h3 className="text-base font-bold text-slate-900 mb-1" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-base font-bold text-slate-900 mb-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Diễn biến Điểm trung bình (GPA) qua các Học kỳ
               </h3>
               <p className="text-xs text-slate-500 mb-4">Theo dõi GPA học kỳ và GPA tích lũy hệ 4</p>
@@ -488,7 +488,7 @@ export default function StudentDetailPage() {
 
             {/* Academic Info & Warning Status */}
             <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs space-y-4">
-              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Tình trạng Học vụ Hiện tại
               </h3>
 
@@ -535,7 +535,7 @@ export default function StudentDetailPage() {
             <section className="lg:col-span-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs">
               <div className="flex items-start justify-between gap-3 mb-5">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                  <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                     Thông tin cá nhân
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">Dữ liệu hồ sơ đang lưu trong hệ thống</p>
@@ -563,7 +563,7 @@ export default function StudentDetailPage() {
             <section className="lg:col-span-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-5">
                 <div>
-                  <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                  <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                     Chương trình và kết quả gần nhất
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">Thông tin đào tạo đối chiếu từ CTĐT và bảng điểm</p>
@@ -770,7 +770,7 @@ export default function StudentDetailPage() {
         <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Bảng điểm Chi tiết các Học phần
               </h3>
               <p className="text-xs text-slate-500">Tất cả các môn đã đăng ký, điểm thi hệ 10, hệ 4 và điểm chữ</p>
@@ -905,7 +905,7 @@ export default function StudentDetailPage() {
         <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Danh sách Quyết định Quản lý
               </h3>
               <p className="text-xs text-slate-500">Các quyết định học vụ, khen thưởng, kỷ luật, cảnh báo học tập</p>
@@ -980,7 +980,7 @@ export default function StudentDetailPage() {
         <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Chính sách Miễn giảm Học phí
               </h3>
               <p className="text-xs text-slate-500">Đối tượng chính sách, tỷ lệ miễn giảm và quyết định phê duyệt</p>
@@ -1044,7 +1044,7 @@ export default function StudentDetailPage() {
       {activeTab === "registrations" && (
         <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs space-y-4">
           <div>
-            <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+            <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               Đăng ký Học phần trong Học kỳ
             </h3>
             <p className="text-xs text-slate-500">Danh sách các lớp học phần sinh viên đã đăng ký tham gia</p>
@@ -1094,7 +1094,7 @@ export default function StudentDetailPage() {
           <section className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                   Khung chương trình đào tạo
                 </h3>
                 <p className="text-xs text-slate-500 mt-1">
@@ -1178,7 +1178,7 @@ export default function StudentDetailPage() {
                 <WarningBadge level={student?.warningLevel || "green"} />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                   {student?.warningLevel === "red"
                     ? "Sinh viên thuộc diện Nguy cơ cao (Cảnh báo Đỏ)"
                     : student?.warningLevel === "yellow"
@@ -1211,7 +1211,7 @@ export default function StudentDetailPage() {
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs" aria-labelledby="student-unified-timeline">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 id="student-unified-timeline" className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>Dòng thời gian hồ sơ hợp nhất</h3>
+                <h3 id="student-unified-timeline" className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>Dòng thời gian hồ sơ hợp nhất</h3>
                 <p className="mt-0.5 text-xs text-slate-500">Cảnh báo, quyết định học vụ và hành động hỗ trợ theo cùng một trục thời gian.</p>
               </div>
               <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{unifiedTimeline.length} sự kiện</span>
@@ -1278,7 +1278,7 @@ export default function StudentDetailPage() {
           {/* Detailed Reasons / Triggers */}
           <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Các nguyên nhân kích hoạt cảnh báo gần nhất
               </h3>
               <span className="text-xs text-slate-400">
@@ -1323,7 +1323,7 @@ export default function StudentDetailPage() {
           {/* Warning Run History Table */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
             <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Lịch sử các đợt quét cảnh báo của sinh viên
               </h3>
               <span className="text-xs text-slate-500 font-medium">
@@ -1399,7 +1399,7 @@ export default function StudentDetailPage() {
           <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
             <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                   Nhật ký Can thiệp & Hỗ trợ (Closed-loop Intervention Log)
                 </h3>
                 <p className="text-xs text-slate-500">Ghi nhận các buổi tư vấn, gặp gỡ sinh viên và phương án theo dõi</p>

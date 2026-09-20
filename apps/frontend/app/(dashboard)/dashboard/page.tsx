@@ -209,7 +209,7 @@ export default function DashboardPage() {
           </div>
           <h1
             className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             Dashboard Ban chủ nhiệm Khoa
           </h1>
@@ -369,7 +369,7 @@ export default function DashboardPage() {
       {/* 2. 7 KPI Metric Cards according to SWE */}
       <div>
         <div className="mb-3">
-          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider" style={{ fontFamily: "Outfit, sans-serif" }}>
+          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
             Tổng quan chỉ số chính
           </h2>
           <p className="text-xs text-slate-500">Các chỉ số đo lường học vụ và tiến độ đào tạo thời gian thực</p>
@@ -379,7 +379,7 @@ export default function DashboardPage() {
           {/* Card 1: Sinh viên */}
           <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs hover:border-[var(--color-primary)] transition-all">
             <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Sinh viên</span>
-            <div className="text-2xl font-bold text-slate-900 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
+            <div className="text-2xl font-bold text-slate-900 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               {totalStudents}
             </div>
             <p className="text-[10px] text-slate-400 mt-1">Đang theo học</p>
@@ -410,7 +410,7 @@ export default function DashboardPage() {
           {/* Card 4: Tiến độ CTĐT */}
           <div className="bg-white border border-emerald-200/80 rounded-2xl p-4 shadow-xs bg-emerald-50/20 hover:border-emerald-400 transition-all">
             <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider block">Tiến độ CTĐT</span>
-            <div className="text-2xl font-bold text-emerald-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
+            <div className="text-2xl font-bold text-emerald-600 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               {metricPercent(completionMetric)}
             </div>
             <p className="text-[10px] text-emerald-700/80 mt-1">{metricRatio(completionMetric, "Chưa có lần tính tiến độ")}</p>
@@ -419,7 +419,7 @@ export default function DashboardPage() {
           {/* Card 5: Đăng ký đúng tiến độ */}
           <div className="bg-white border border-emerald-200/80 rounded-2xl p-4 shadow-xs bg-emerald-50/20 hover:border-emerald-400 transition-all">
             <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider block">Đăng ký đúng tiến độ</span>
-            <div className="text-2xl font-bold text-emerald-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
+            <div className="text-2xl font-bold text-emerald-600 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               {metricPercent(registrationMetric)}
             </div>
             <p className="text-[10px] text-emerald-700/80 mt-1">{metricRatio(registrationMetric, "Chưa có dữ liệu đăng ký")}</p>
@@ -428,7 +428,7 @@ export default function DashboardPage() {
           {/* Card 6: Cảnh báo học tập */}
           <div className="bg-white border border-amber-200/80 rounded-2xl p-4 shadow-xs bg-amber-50/20 hover:border-amber-400 transition-all">
             <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider block">Cảnh báo học tập</span>
-            <div className="text-2xl font-bold text-amber-600 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
+            <div className="text-2xl font-bold text-amber-600 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               {warningTotal}
             </div>
             <p className="text-[10px] text-amber-700/80 mt-1">{redCount} Đỏ · {yellowCount} Vàng</p>
@@ -437,7 +437,7 @@ export default function DashboardPage() {
           {/* Card 7: Graduation forecast */}
           <div className="bg-white border border-cyan-200/80 rounded-2xl p-4 shadow-xs bg-cyan-50/20 hover:border-cyan-400 transition-all">
             <span className="text-[11px] font-semibold text-cyan-800 uppercase tracking-wider block">Dự kiến tốt nghiệp đúng hạn</span>
-            <div className="text-2xl font-bold text-cyan-700 mt-1" style={{ fontFamily: "Outfit, sans-serif" }}>
+            <div className="text-2xl font-bold text-cyan-700 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               {metricPercent(graduationForecastMetric)}
             </div>
             <p className="text-[10px] text-cyan-700/80 mt-1">
@@ -453,7 +453,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Phân bổ Học lực
               </h3>
               <p className="text-xs text-slate-500">Tỷ lệ xếp loại học lực toàn khoa</p>
@@ -512,7 +512,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Xu hướng GPA nhiều học kỳ
               </h3>
               <p className="text-xs text-slate-500">GPA học kỳ trung bình, tối đa 8 kỳ gần nhất theo phạm vi</p>
@@ -571,7 +571,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Tiến độ Hoàn thành CTĐT
               </h3>
               <p className="text-xs text-slate-500">Tỷ lệ đúng tiến độ / chậm tiến độ (%)</p>
@@ -635,7 +635,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Tiến độ Đăng ký Học phần
               </h3>
               <p className="text-xs text-slate-500">Tỷ lệ đáp ứng học phần cần đăng ký trong kế hoạch tại thời điểm tính (%)</p>
@@ -699,7 +699,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Phân bố Sinh viên Cảnh báo theo Lớp
               </h3>
               <p className="text-xs text-slate-500">Số lượng sinh viên diện Đỏ và Vàng cần theo dõi</p>
@@ -733,7 +733,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Phân bố điểm rèn luyện
               </h3>
               <p className="text-xs text-slate-500">Chỉ tính điểm lastScore đã được công nhận trong học kỳ</p>
@@ -768,7 +768,7 @@ export default function DashboardPage() {
       <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+            <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               Sinh viên Có Tín hiệu Cảnh báo Học tập
             </h3>
             <p className="text-xs text-slate-500">Danh sách các trường hợp nguy cơ cần ưu tiên đôn đốc hỗ trợ</p>

@@ -70,7 +70,7 @@ export default function SlideOverDrawer({
             <div>
               <h2
                 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight"
-                style={{ fontFamily: "Outfit, sans-serif" }}
+                style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
               >
                 {title}
               </h2>

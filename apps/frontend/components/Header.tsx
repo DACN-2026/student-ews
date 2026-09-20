@@ -43,7 +43,7 @@ export default function Header({ title = "Cổng quản trị CNTT", onMenuToggl
 
         <h1
           className="text-sm sm:text-base font-bold text-[var(--color-text)] truncate tracking-tight"
-          style={{ fontFamily: "Outfit, sans-serif" }}
+          style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
         >
           {title}
         </h1>
@@ -75,7 +75,7 @@ export default function Header({ title = "Cổng quản trị CNTT", onMenuToggl
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span className="font-bold text-slate-900" style={{ fontFamily: "Outfit, sans-serif" }}>
+                <span className="font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                   Thông báo Cảnh báo Sớm (SEWS)
                 </span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
@@ -131,7 +131,7 @@ export default function Header({ title = "Cổng quản trị CNTT", onMenuToggl
           <div className="text-right hidden sm:block">
             <div
               className="text-xs sm:text-sm font-semibold text-[var(--color-text)] leading-tight"
-              style={{ fontFamily: "Outfit, sans-serif" }}
+              style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
             >
               {userInfo.name}
             </div>
@@ -142,7 +142,7 @@ export default function Header({ title = "Cổng quản trị CNTT", onMenuToggl
 
           <div
             className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-[var(--color-primary)] to-lime-400 flex items-center justify-center text-white text-xs font-bold shadow-xs flex-shrink-0"
-            style={{ fontFamily: "Outfit, sans-serif" }}
+            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             {userInfo.name.split(" ").pop()?.charAt(0) || "U"}
           </div>

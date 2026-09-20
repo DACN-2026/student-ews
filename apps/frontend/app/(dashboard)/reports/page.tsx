@@ -283,7 +283,7 @@ export default function ReportsPage() {
             <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-primary)]" />
             <span className="text-xs font-semibold text-[var(--color-primary)] uppercase tracking-wider">Kỳ thống kê: {report.latestPeriod?.label || "chưa xác định"}</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight" style={{ fontFamily: "Outfit, sans-serif" }}>Báo cáo tổng hợp học vụ & cảnh báo sớm</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>Báo cáo học vụ & cảnh báo sớm</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">Bấm vào mức cảnh báo hoặc lớp để xem danh sách sinh viên tương ứng.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -356,7 +356,7 @@ export default function ReportsPage() {
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
           <div className="flex items-center justify-between mb-4">
-            <div><h2 className="font-bold text-slate-900 text-sm" style={{ fontFamily: "Outfit, sans-serif" }}>Phân bố mức cảnh báo</h2><p className="text-xs text-slate-400">Theo {report.latestPeriod?.label || "kỳ gần nhất đủ dữ liệu"} · {report.latestPeriod?.termGpaAvailable || 0}/{counts.students} SV có GPA học kỳ</p></div>
+            <div><h2 className="font-bold text-slate-900 text-sm" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>Phân bố mức cảnh báo</h2><p className="text-xs text-slate-400">Theo {report.latestPeriod?.label || "kỳ gần nhất đủ dữ liệu"} · {report.latestPeriod?.termGpaAvailable || 0}/{counts.students} SV có GPA học kỳ</p></div>
             <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">{counts.students} SV</span>
           </div>
           <div className="h-[230px] w-full">
@@ -379,7 +379,7 @@ export default function ReportsPage() {
           </div>
         </div>
         <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
-          <div className="flex items-center justify-between mb-4"><div><h2 className="font-bold text-slate-900 text-sm" style={{ fontFamily: "Outfit, sans-serif" }}>Xu hướng cảnh báo theo học kỳ</h2><p className="text-xs text-slate-400">Mỗi cột dùng dữ liệu của chính kỳ đó · kết thúc tại kỳ gần nhất đủ độ phủ</p></div><span className="text-xs font-semibold text-slate-500">Đơn vị: Sinh viên</span></div>
+          <div className="flex items-center justify-between mb-4"><div><h2 className="font-bold text-slate-900 text-sm" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>Xu hướng cảnh báo theo học kỳ</h2><p className="text-xs text-slate-400">Mỗi cột dùng dữ liệu của chính kỳ đó · kết thúc tại kỳ gần nhất đủ độ phủ</p></div><span className="text-xs font-semibold text-slate-500">Đơn vị: Sinh viên</span></div>
           <div className="h-[230px] w-full">
             {report.trend.length ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -401,7 +401,7 @@ export default function ReportsPage() {
       </section>
 
       <section className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between"><div><h2 className="font-bold text-slate-900 text-sm" style={{ fontFamily: "Outfit, sans-serif" }}>Cảnh báo theo lớp sinh viên</h2><p className="text-xs text-slate-400">Bấm vào bất kỳ vị trí nào trên dòng để xem sinh viên cảnh báo của lớp</p></div><span className="text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">{report.classBreakdown.length} lớp</span></div>
+        <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between"><div><h2 className="font-bold text-slate-900 text-sm" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>Cảnh báo theo lớp sinh viên</h2><p className="text-xs text-slate-400">Bấm vào bất kỳ vị trí nào trên dòng để xem sinh viên cảnh báo của lớp</p></div><span className="text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">{report.classBreakdown.length} lớp</span></div>
         <div className="overflow-x-auto"><table className="w-full text-left text-xs">
           <thead><tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-semibold uppercase text-[11px]"><th className="px-4 py-3.5">Lớp học</th><th className="px-4 py-3.5 text-center">Sĩ số</th><th className="px-4 py-3.5 text-center">Nguy cơ cao</th><th className="px-4 py-3.5 text-center">Cần lưu ý</th><th className="px-4 py-3.5 text-center">Tổng cảnh báo</th><th className="px-4 py-3.5 text-right">Tỷ lệ cảnh báo</th></tr></thead>
           <tbody className="divide-y divide-slate-100">{report.classBreakdown.map((row) => <tr
