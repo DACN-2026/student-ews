@@ -7,6 +7,7 @@ import {
   ResponsiveContainer, Line, PieChart, Pie, Cell, ComposedChart, Scatter,
 } from "recharts";
 import FilterBar from "@/components/ui/FilterBar";
+import { apiFetch } from "@/lib/api-client";
 
 interface FilterState {
   academicYear?: string;
@@ -75,6 +76,8 @@ export default function DashboardPage() {
   const [summaryData, setSummaryData] = useState<ApiData>(null);
   const [warningStudents, setWarningStudents] = useState<ApiData[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryReload, setSummaryReload] = useState(0);
 
   // Recharts needs to render after client hydration.
   useEffect(() => {
@@ -85,6 +88,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const controller = new AbortController();
     async function loadSummary() {
+      setSummaryError(null);
       try {
         const params = new URLSearchParams({
           gpaScope: filters.gpaScope,
@@ -94,8 +98,11 @@ export default function DashboardPage() {
         if (filters.termCode) params.set("termCode", filters.termCode);
         if (filters.programCode) params.set("programCode", filters.programCode);
         if (filters.classId) params.set("classId", filters.classId);
-        const response = await fetch(`/api/v1/dashboard/summary?${params.toString()}`, { signal: controller.signal });
-        if (!response.ok) throw new Error("Không thể tải dữ liệu tổng quan");
+        const response = await apiFetch(`/api/v1/dashboard/summary?${params.toString()}`, { signal: controller.signal });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.error?.message || `Không thể tải dữ liệu tổng quan (HTTP ${response.status})`);
+        }
         const data = await response.json();
         setSummaryData(data);
         setWarningStudents(data.academicWarnings?.items || []);
@@ -125,8 +132,8 @@ export default function DashboardPage() {
           className: item.label,
         })));
       } catch (err) {
-        if (!(err instanceof DOMException && err.name === "AbortError")) {
-          console.error("Dashboard summary load error:", err);
+        if (!(err instanceof Error && err.name === "AbortError")) {
+          setSummaryError(err instanceof Error ? err.message : "Không thể tải dữ liệu tổng quan");
         }
       } finally {
         // Loading placeholders are driven by the presence of summary data.
@@ -134,7 +141,7 @@ export default function DashboardPage() {
     }
     void loadSummary();
     return () => controller.abort();
-  }, [filters]);
+  }, [filters, summaryReload]);
 
   // Filtered terms based on selected year
   const termOptions = useMemo(() => {
@@ -327,6 +334,22 @@ export default function DashboardPage() {
           ))}
         </select>
       </FilterBar>
+
+      {summaryError && (
+        <section className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" role="alert">
+          <div>
+            <h2 className="text-sm font-bold text-red-900">Chưa thể tải dữ liệu tổng quan</h2>
+            <p className="mt-0.5 text-xs text-red-700">{summaryError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSummaryReload((value) => value + 1)}
+            className="w-fit rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
+          >
+            Thử lại
+          </button>
+        </section>
+      )}
 
       {summerContext?.isSummer && (
         <section className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3" role="status" aria-label="Ngữ cảnh dữ liệu học kỳ hè">

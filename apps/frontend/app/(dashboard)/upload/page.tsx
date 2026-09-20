@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
+import { apiFetch } from "@/lib/api-client";
 
 type UploadCategory = "grades" | "students" | "decisions";
 
@@ -173,7 +174,7 @@ export default function UploadPage() {
       setUploading(true);
       setImportResult(null);
 
-      const res = await fetch(currentCfg.endpoint, {
+      const res = await apiFetch(currentCfg.endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsedData),

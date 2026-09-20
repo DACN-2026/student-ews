@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { apiFetch } from "@/lib/api-client";
 import Tabs from "@/components/ui/Tabs";
 import FilterBar from "@/components/ui/FilterBar";
 import Modal from "@/components/ui/Modal";
@@ -63,12 +64,12 @@ export default function RbacPage() {
     try {
       setLoading(true);
       const [uRes, rRes, pRes, aRes, clRes, yRes] = await Promise.all([
-        fetch("/api/v1/rbac/users"),
-        fetch("/api/v1/rbac/roles"),
-        fetch("/api/v1/rbac/permissions"),
-        fetch("/api/v1/rbac/advisors"),
-        fetch("/api/v1/classes"),
-        fetch("/api/v1/academic-years"),
+        apiFetch("/api/v1/rbac/users"),
+        apiFetch("/api/v1/rbac/roles"),
+        apiFetch("/api/v1/rbac/permissions"),
+        apiFetch("/api/v1/rbac/advisors"),
+        apiFetch("/api/v1/classes"),
+        apiFetch("/api/v1/academic-years"),
       ]);
 
       if (uRes.ok) {
@@ -117,7 +118,7 @@ export default function RbacPage() {
 
     try {
       setActionLoading(true);
-      const res = await fetch("/api/v1/rbac/users", {
+      const res = await apiFetch("/api/v1/rbac/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userForm),
@@ -158,7 +159,7 @@ export default function RbacPage() {
         payload.password = editUserForm.password.trim();
       }
 
-      const res = await fetch(`/api/v1/rbac/users/${editingUser.id}`, {
+      const res = await apiFetch(`/api/v1/rbac/users/${editingUser.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -187,7 +188,7 @@ export default function RbacPage() {
     setPermissionSearch("");
     setPermissionFilterStatus("all");
     try {
-      const res = await fetch(`/api/v1/rbac/roles/${role.id}/permissions`);
+      const res = await apiFetch(`/api/v1/rbac/roles/${role.id}/permissions`);
       if (res.ok) {
         const json = await res.json();
         const codes = (json.items || []).map((p: ApiData) => p.code || p.sPermissionCode);
@@ -213,7 +214,7 @@ export default function RbacPage() {
     if (!editingRole) return;
     try {
       setActionLoading(true);
-      const res = await fetch(`/api/v1/rbac/roles/${editingRole.id}/permissions`, {
+      const res = await apiFetch(`/api/v1/rbac/roles/${editingRole.id}/permissions`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ permissionCodes: selectedPermissions }),
@@ -241,7 +242,7 @@ export default function RbacPage() {
 
     try {
       setActionLoading(true);
-      const res = await fetch("/api/v1/rbac/advisors", {
+      const res = await apiFetch("/api/v1/rbac/advisors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(assignForm),
@@ -265,7 +266,7 @@ export default function RbacPage() {
     if (!revokeTarget) return;
     try {
       setActionLoading(true);
-      const res = await fetch(`/api/v1/rbac/advisors/${revokeTarget.id}`, {
+      const res = await apiFetch(`/api/v1/rbac/advisors/${revokeTarget.id}`, {
         method: "DELETE",
       });
       if (res.ok) {

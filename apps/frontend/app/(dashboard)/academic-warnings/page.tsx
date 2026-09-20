@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-client";
 import Tabs from "@/components/ui/Tabs";
 import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
 import Modal from "@/components/ui/Modal";
@@ -51,11 +52,11 @@ export default function AcademicWarningsPage() {
       try {
         setLoading(true);
         const [pRes, rRes, cRes, prRes, yRes] = await Promise.all([
-          fetch("/api/v1/academic-warnings/policies"),
-          fetch("/api/v1/academic-warnings/runs"),
-          fetch("/api/v1/cohorts"),
-          fetch("/api/v1/training-programs"),
-          fetch("/api/v1/academic-years"),
+          apiFetch("/api/v1/academic-warnings/policies"),
+          apiFetch("/api/v1/academic-warnings/runs"),
+          apiFetch("/api/v1/cohorts"),
+          apiFetch("/api/v1/training-programs"),
+          apiFetch("/api/v1/academic-years"),
         ]);
 
         if (pRes.ok) {
@@ -90,7 +91,7 @@ export default function AcademicWarningsPage() {
   const handleOpenRunReport = async (run: ApiData) => {
     setSelectedRun(run);
     try {
-      const sRes = await fetch(`/api/v1/academic-warnings/runs/${run.id}/students`);
+      const sRes = await apiFetch(`/api/v1/academic-warnings/runs/${run.id}/students`);
       if (sRes.ok) {
         const sJson = await sRes.json();
         setStudents(sJson.items || sJson || []);
@@ -106,8 +107,8 @@ export default function AcademicWarningsPage() {
       setInterventionNote("");
       setExistingActions([]);
       const [res, actRes] = await Promise.all([
-        fetch(`/api/v1/academic-warnings/runs/${runId}/students/${studentId}`),
-        fetch(`/api/v1/academic-warnings/actions?studentId=${studentId}`),
+        apiFetch(`/api/v1/academic-warnings/runs/${runId}/students/${studentId}`),
+        apiFetch(`/api/v1/academic-warnings/actions?studentId=${studentId}`),
       ]);
       if (res.ok) {
         setSelectedStudentDetail(await res.json());
@@ -134,7 +135,7 @@ export default function AcademicWarningsPage() {
     }
     try {
       setActionSaving(true);
-      const res = await fetch("/api/v1/academic-warnings/actions", {
+      const res = await apiFetch("/api/v1/academic-warnings/actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -149,7 +150,7 @@ export default function AcademicWarningsPage() {
       if (res.ok) {
         setInterventionSaved(true);
         setInterventionNote("");
-        const actRes = await fetch(`/api/v1/academic-warnings/actions?studentId=${selectedStudentDetail.studentId}`);
+        const actRes = await apiFetch(`/api/v1/academic-warnings/actions?studentId=${selectedStudentDetail.studentId}`);
         if (actRes.ok) {
           const actJson = await actRes.json();
           setExistingActions(actJson.items || actJson || []);
@@ -169,7 +170,7 @@ export default function AcademicWarningsPage() {
     if (!selectedStudentDetail) return;
     try {
       setActionSaving(true);
-      const res = await fetch(`/api/v1/academic-warnings/actions/${actionId}`, {
+      const res = await apiFetch(`/api/v1/academic-warnings/actions/${actionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
@@ -179,7 +180,7 @@ export default function AcademicWarningsPage() {
         alert(payload?.error?.message || "Không thể cập nhật trạng thái hỗ trợ");
         return;
       }
-      const actRes = await fetch(`/api/v1/academic-warnings/actions?studentId=${selectedStudentDetail.studentId}`);
+      const actRes = await apiFetch(`/api/v1/academic-warnings/actions?studentId=${selectedStudentDetail.studentId}`);
       if (actRes.ok) {
         const actJson = await actRes.json();
         setExistingActions(actJson.items || actJson || []);
@@ -214,7 +215,7 @@ export default function AcademicWarningsPage() {
 
     try {
       setPolicyLoading(true);
-      const res = await fetch("/api/v1/academic-warnings/policies", {
+      const res = await apiFetch("/api/v1/academic-warnings/policies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -228,7 +229,7 @@ export default function AcademicWarningsPage() {
       if (res.ok) {
         alert("Đã thiết lập chính sách cảnh báo học vụ mới!");
         setShowPolicyModal(false);
-        const pRes = await fetch("/api/v1/academic-warnings/policies");
+        const pRes = await apiFetch("/api/v1/academic-warnings/policies");
         if (pRes.ok) {
           const payload = await pRes.json();
           setPolicies(Array.isArray(payload.items) ? payload.items : Array.isArray(payload) ? payload : []);
@@ -253,7 +254,7 @@ export default function AcademicWarningsPage() {
 
     try {
       setRunLoading(true);
-      const res = await fetch("/api/v1/academic-warnings/runs", {
+      const res = await apiFetch("/api/v1/academic-warnings/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

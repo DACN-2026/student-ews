@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-client";
 import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
 import Modal from "@/components/ui/Modal";
 import { useAuthStore } from "@/stores/authStore";
@@ -38,10 +39,10 @@ export default function GraduationForecastPage() {
       try {
         setLoading(true);
         const [rRes, cRes, pRes, yRes] = await Promise.all([
-          fetch("/api/v1/training-progress/completion/runs"),
-          fetch("/api/v1/cohorts"),
-          fetch("/api/v1/training-programs"),
-          fetch("/api/v1/academic-years"),
+          apiFetch("/api/v1/training-progress/completion/runs"),
+          apiFetch("/api/v1/cohorts"),
+          apiFetch("/api/v1/training-programs"),
+          apiFetch("/api/v1/academic-years"),
         ]);
 
         if (rRes.ok) {
@@ -72,7 +73,7 @@ export default function GraduationForecastPage() {
   const handleOpenRunReport = async (run: ApiData) => {
     setSelectedRun(run);
     try {
-      const res = await fetch(`/api/v1/training-progress/completion/runs/${run.id}/students`);
+      const res = await apiFetch(`/api/v1/training-progress/completion/runs/${run.id}/students`);
       if (res.ok) {
         const json = await res.json();
         setStudents(json.items || json || []);
@@ -84,7 +85,7 @@ export default function GraduationForecastPage() {
 
   const handleOpenStudentDetail = async (runId: string, studentId: string) => {
     try {
-      const res = await fetch(`/api/v1/training-progress/completion/runs/${runId}/students/${studentId}`);
+      const res = await apiFetch(`/api/v1/training-progress/completion/runs/${runId}/students/${studentId}`);
       if (res.ok) {
         setSelectedStudentDetail(await res.json());
       }
@@ -103,7 +104,7 @@ export default function GraduationForecastPage() {
 
     try {
       setTriggerLoading(true);
-      const res = await fetch("/api/v1/training-progress/completion/runs", {
+      const res = await apiFetch("/api/v1/training-progress/completion/runs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

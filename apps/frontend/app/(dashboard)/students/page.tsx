@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import FilterBar from "@/components/ui/FilterBar";
 import DataTable, { Column } from "@/components/ui/DataTable";
@@ -83,8 +84,8 @@ export default function StudentsPage() {
     async function loadOptions() {
       try {
         const [cRes, pRes] = await Promise.all([
-          fetch("/api/v1/classes"),
-          fetch("/api/v1/training-programs"),
+          apiFetch("/api/v1/classes"),
+          apiFetch("/api/v1/training-programs"),
         ]);
         if (cRes.ok) {
           const cJson = await cRes.json();
@@ -115,7 +116,7 @@ export default function StudentsPage() {
       if (filterInClass !== "all") params.set("isInClass", filterInClass === "true" ? "true" : "false");
       if (filterWarning !== "all") params.set("warningLevel", filterWarning);
 
-      const res = await fetch(`/api/v1/students?${params.toString()}`);
+      const res = await apiFetch(`/api/v1/students?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         const items = (json.items || []).map((s: ApiData) => ({
@@ -163,7 +164,7 @@ export default function StudentsPage() {
 
     try {
       setFormSubmitting(true);
-      const res = await fetch("/api/v1/students", {
+      const res = await apiFetch("/api/v1/students", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -223,7 +224,7 @@ export default function StudentsPage() {
 
     try {
       setFormSubmitting(true);
-      const res = await fetch(`/api/v1/students/${editingStudent.id}`, {
+      const res = await apiFetch(`/api/v1/students/${editingStudent.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -250,7 +251,7 @@ export default function StudentsPage() {
     if (!studentToDelete) return;
     try {
       setDeleteLoading(true);
-      const res = await fetch(`/api/v1/students/${studentToDelete.id}`, {
+      const res = await apiFetch(`/api/v1/students/${studentToDelete.id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -269,7 +270,7 @@ export default function StudentsPage() {
   // Handle Export
   const handleExport = async () => {
     try {
-      const res = await fetch("/api/v1/students/export");
+      const res = await apiFetch("/api/v1/students/export");
       if (res.ok) {
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
@@ -297,7 +298,7 @@ export default function StudentsPage() {
         return;
       }
 
-      const res = await fetch("/api/v1/students/import", {
+      const res = await apiFetch("/api/v1/students/import", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed),

@@ -103,7 +103,7 @@ export class DashboardService {
   ) {
     const page = filters.page && filters.page > 0 ? filters.page : 1;
     const pageSize = filters.pageSize && filters.pageSize > 0 ? Math.min(filters.pageSize, 100) : 10;
-    const gpaScope = filters.gpaScope === "term" && filters.academicYear && filters.termCode
+    let gpaScope = filters.gpaScope === "term" && filters.academicYear && filters.termCode
       ? "term"
       : "cumulative";
     const gpaAggregation = filters.gpaAggregation === "average" ? "average" : "median";
@@ -165,13 +165,33 @@ export class DashboardService {
     let selectedTerm = filters.academicTermId
       ? await prisma.academicTerm.findFirst({ where: { id: filters.academicTermId, deletedAt: null } })
       : null;
-    if (!selectedTerm && selectedYear && filters.termCode) {
-      selectedTerm = await prisma.academicTerm.findFirst({
-        where: { academicYearId: selectedYear.id, sTermCode: filters.termCode.toUpperCase(), deletedAt: null },
-      });
+    if (!selectedTerm && filters.termCode) {
+      if (selectedYear) {
+        selectedTerm = await prisma.academicTerm.findFirst({
+          where: { academicYearId: selectedYear.id, sTermCode: filters.termCode.toUpperCase(), deletedAt: null },
+        });
+      } else {
+        const currentOrLatestYear =
+          (await prisma.academicYear.findFirst({ where: { isCurrent: true, deletedAt: null } })) ||
+          (await prisma.academicYear.findFirst({ where: { deletedAt: null }, orderBy: { sYearCode: "desc" } }));
+        if (currentOrLatestYear) {
+          selectedTerm = await prisma.academicTerm.findFirst({
+            where: { academicYearId: currentOrLatestYear.id, sTermCode: filters.termCode.toUpperCase(), deletedAt: null },
+          });
+        }
+        if (!selectedTerm) {
+          selectedTerm = await prisma.academicTerm.findFirst({
+            where: { sTermCode: filters.termCode.toUpperCase(), deletedAt: null },
+            orderBy: [{ startDate: "desc" }, { createdAt: "desc" }],
+          });
+        }
+      }
     }
     if (selectedTerm && !selectedYear) {
       selectedYear = await prisma.academicYear.findFirst({ where: { id: selectedTerm.academicYearId, deletedAt: null } });
+    }
+    if (filters.gpaScope === "term" && (selectedTerm || filters.termCode)) {
+      gpaScope = "term";
     }
 
     const hasExplicitTermFilter = Boolean(filters.academicTermId || filters.termCode);

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { apiFetch } from "@/lib/api-client";
 
 // Stub for the warnings API call
 export function useWarnings() {
@@ -9,7 +10,7 @@ export function useWarnings() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/v1/academic-warnings');
+      const res = await apiFetch('/api/v1/academic-warnings');
       if (!res.ok) return [];
       const data = await res.json();
       return data;

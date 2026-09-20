@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import Tabs, { TabItem } from "@/components/ui/Tabs";
 import FilterBar from "@/components/ui/FilterBar";
@@ -76,12 +77,12 @@ export default function AcademicsPage() {
       try {
         setLoading(true);
         const [yRes, pRes, cRes, clRes, coRes, plRes] = await Promise.all([
-          fetch("/api/v1/academic-years"),
-          fetch("/api/v1/training-programs"),
-          fetch("/api/v1/courses"),
-          fetch("/api/v1/classes"),
-          fetch("/api/v1/cohorts"),
-          fetch("/api/v1/training-progress/plans"),
+          apiFetch("/api/v1/academic-years"),
+          apiFetch("/api/v1/training-programs"),
+          apiFetch("/api/v1/courses"),
+          apiFetch("/api/v1/classes"),
+          apiFetch("/api/v1/cohorts"),
+          apiFetch("/api/v1/training-progress/plans"),
         ]);
 
         if (yRes.ok) {
@@ -124,7 +125,7 @@ export default function AcademicsPage() {
     if (!selectedYearId) return;
     async function loadTerms() {
       try {
-        const res = await fetch(`/api/v1/academic-years/${selectedYearId}/terms`);
+        const res = await apiFetch(`/api/v1/academic-years/${selectedYearId}/terms`);
         if (res.ok) {
           const json = await res.json();
           setTerms(json.items || json || []);
@@ -152,7 +153,7 @@ export default function AcademicsPage() {
     e.preventDefault();
     if (!yearForm.yearCode) return;
     try {
-      const res = await fetch("/api/v1/academic-years", {
+      const res = await apiFetch("/api/v1/academic-years", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(yearForm),
@@ -161,7 +162,7 @@ export default function AcademicsPage() {
         setShowYearModal(false);
         setYearForm({ yearCode: "", startDate: "", endDate: "", status: "open", isCurrent: false });
         // Reload years
-        const yRes = await fetch("/api/v1/academic-years");
+        const yRes = await apiFetch("/api/v1/academic-years");
         if (yRes.ok) setYears(await yRes.json());
         alert("Đã thêm năm học thành công!");
       }
@@ -175,14 +176,14 @@ export default function AcademicsPage() {
     e.preventDefault();
     if (!selectedYearId) return;
     try {
-      const res = await fetch(`/api/v1/academic-years/${selectedYearId}/terms`, {
+      const res = await apiFetch(`/api/v1/academic-years/${selectedYearId}/terms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(termForm),
       });
       if (res.ok) {
         setShowTermModal(false);
-        const tRes = await fetch(`/api/v1/academic-years/${selectedYearId}/terms`);
+        const tRes = await apiFetch(`/api/v1/academic-years/${selectedYearId}/terms`);
         if (tRes.ok) {
           const json = await tRes.json();
           setTerms(json.items || json || []);
@@ -199,14 +200,14 @@ export default function AcademicsPage() {
     e.preventDefault();
     if (!courseForm.courseCode || !courseForm.courseName) return;
     try {
-      const res = await fetch("/api/v1/courses", {
+      const res = await apiFetch("/api/v1/courses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(courseForm),
       });
       if (res.ok) {
         setShowCourseModal(false);
-        const cRes = await fetch("/api/v1/courses");
+        const cRes = await apiFetch("/api/v1/courses");
         if (cRes.ok) setCourses(await cRes.json());
         alert("Đã thêm học phần thành công!");
       }
@@ -220,14 +221,14 @@ export default function AcademicsPage() {
     e.preventDefault();
     if (!cohortForm.cohortCode) return;
     try {
-      const res = await fetch("/api/v1/cohorts", {
+      const res = await apiFetch("/api/v1/cohorts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cohortForm),
       });
       if (res.ok) {
         setShowCohortModal(false);
-        const coRes = await fetch("/api/v1/cohorts");
+        const coRes = await apiFetch("/api/v1/cohorts");
         if (coRes.ok) setCohorts(await coRes.json());
         alert("Đã thêm khóa mới thành công!");
       }
@@ -241,14 +242,14 @@ export default function AcademicsPage() {
     e.preventDefault();
     if (!classForm.classId || !classForm.className) return;
     try {
-      const res = await fetch("/api/v1/classes", {
+      const res = await apiFetch("/api/v1/classes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(classForm),
       });
       if (res.ok) {
         setShowClassModal(false);
-        const clRes = await fetch("/api/v1/classes");
+        const clRes = await apiFetch("/api/v1/classes");
         if (clRes.ok) setClasses(await clRes.json());
         alert("Đã thêm lớp thành công!");
       }
@@ -262,7 +263,7 @@ export default function AcademicsPage() {
     if (!deleteTarget) return;
     try {
       setDeleteLoading(true);
-      const res = await fetch(`/api/v1/${deleteTarget.type}/${deleteTarget.id}`, {
+      const res = await apiFetch(`/api/v1/${deleteTarget.type}/${deleteTarget.id}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -281,7 +282,7 @@ export default function AcademicsPage() {
     try {
       setPlanCoursesLoading(true);
       setShowPlanCoursesModal(true);
-      const res = await fetch(`/api/v1/training-progress/plans/${planId}`);
+      const res = await apiFetch(`/api/v1/training-progress/plans/${planId}`);
       if (res.ok) {
         setSelectedPlanDetail(await res.json());
       } else {
@@ -313,7 +314,7 @@ export default function AcademicsPage() {
 
     if (defaultProgram) {
       try {
-        const res = await fetch(`/api/v1/training-programs/${defaultProgram}/courses`);
+        const res = await apiFetch(`/api/v1/training-programs/${defaultProgram}/courses`);
         if (res.ok) {
           const json = await res.json();
           const items = Array.isArray(json.items) ? json.items : Array.isArray(json) ? json : [];
@@ -339,7 +340,7 @@ export default function AcademicsPage() {
   const handlePlanProgramChange = async (progId: string) => {
     setPlanEditorForm((prev) => ({ ...prev, trainingProgramId: progId }));
     try {
-      const res = await fetch(`/api/v1/training-programs/${progId}/courses`);
+      const res = await apiFetch(`/api/v1/training-programs/${progId}/courses`);
       if (res.ok) {
         const json = await res.json();
         const items = Array.isArray(json.items) ? json.items : Array.isArray(json) ? json : [];
@@ -389,7 +390,7 @@ export default function AcademicsPage() {
 
     try {
       setPlanSubmitting(true);
-      const res = await fetch("/api/v1/training-progress/plans", {
+      const res = await apiFetch("/api/v1/training-progress/plans", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -406,7 +407,7 @@ export default function AcademicsPage() {
       if (res.ok) {
         setShowPlanEditorModal(false);
         alert("Đã tạo kế hoạch đào tạo thành công!");
-        const plRes = await fetch("/api/v1/training-progress/plans");
+        const plRes = await apiFetch("/api/v1/training-progress/plans");
         if (plRes.ok) {
           const plJson = await plRes.json();
           setPlans(Array.isArray(plJson.items) ? plJson.items : Array.isArray(plJson) ? plJson : []);
@@ -426,10 +427,10 @@ export default function AcademicsPage() {
   const handleLockPlan = async (planId: string) => {
     if (!confirm("Khóa kế hoạch đào tạo? Sau khi khóa, kế hoạch sẽ trở thành căn cứ tính toán tiến độ.")) return;
     try {
-      const res = await fetch(`/api/v1/training-progress/plans/${planId}/lock`, { method: "POST" });
+      const res = await apiFetch(`/api/v1/training-progress/plans/${planId}/lock`, { method: "POST" });
       if (res.ok) {
         alert("Đã khóa kế hoạch đào tạo thành công!");
-        const plRes = await fetch("/api/v1/training-progress/plans");
+        const plRes = await apiFetch("/api/v1/training-progress/plans");
         if (plRes.ok) {
           const plJson = await plRes.json();
           setPlans(Array.isArray(plJson.items) ? plJson.items : Array.isArray(plJson) ? plJson : []);
@@ -445,10 +446,10 @@ export default function AcademicsPage() {
 
   const handleActivatePlan = async (planId: string) => {
     try {
-      const res = await fetch(`/api/v1/training-progress/plans/${planId}/activate`, { method: "POST" });
+      const res = await apiFetch(`/api/v1/training-progress/plans/${planId}/activate`, { method: "POST" });
       if (res.ok) {
         alert("Đã kích hoạt kế hoạch hiện hành!");
-        const plRes = await fetch("/api/v1/training-progress/plans");
+        const plRes = await apiFetch("/api/v1/training-progress/plans");
         if (plRes.ok) {
           const plJson = await plRes.json();
           setPlans(Array.isArray(plJson.items) ? plJson.items : Array.isArray(plJson) ? plJson : []);
@@ -462,10 +463,10 @@ export default function AcademicsPage() {
   const handleArchivePlan = async (planId: string) => {
     if (!confirm("Lưu trữ kế hoạch này?")) return;
     try {
-      const res = await fetch(`/api/v1/training-progress/plans/${planId}/archive`, { method: "POST" });
+      const res = await apiFetch(`/api/v1/training-progress/plans/${planId}/archive`, { method: "POST" });
       if (res.ok) {
         alert("Đã chuyển kế hoạch vào lưu trữ!");
-        const plRes = await fetch("/api/v1/training-progress/plans");
+        const plRes = await apiFetch("/api/v1/training-progress/plans");
         if (plRes.ok) {
           const plJson = await plRes.json();
           setPlans(Array.isArray(plJson.items) ? plJson.items : Array.isArray(plJson) ? plJson : []);

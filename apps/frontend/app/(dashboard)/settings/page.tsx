@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 
 export default function SettingsPage() {
@@ -19,7 +20,7 @@ export default function SettingsPage() {
   useEffect(() => {
     async function loadPolicies() {
       try {
-        const res = await fetch("/api/v1/academic-warnings/policies");
+        const res = await apiFetch("/api/v1/academic-warnings/policies");
         if (res.ok) {
           const json = await res.json();
           const items = Array.isArray(json.items) ? json.items : Array.isArray(json) ? json : [];
@@ -49,7 +50,7 @@ export default function SettingsPage() {
       setSaving(true);
       setSaveSuccess(false);
 
-      const res = await fetch("/api/v1/academic-warnings/policies", {
+      const res = await apiFetch("/api/v1/academic-warnings/policies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -67,7 +68,7 @@ export default function SettingsPage() {
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 3000);
         // Reload policies
-        const pRes = await fetch("/api/v1/academic-warnings/policies");
+        const pRes = await apiFetch("/api/v1/academic-warnings/policies");
         if (pRes.ok) {
           const pJson = await pRes.json();
           setPolicies(Array.isArray(pJson.items) ? pJson.items : Array.isArray(pJson) ? pJson : []);

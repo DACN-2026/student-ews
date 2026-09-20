@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Tabs from "@/components/ui/Tabs";
 import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
 import { useAuthStore } from "@/stores/authStore";
+import { apiFetch } from "@/lib/api-client";
 
 export default function TrainingProgressPage() {
   const { can } = useAuthStore();
@@ -25,8 +26,8 @@ export default function TrainingProgressPage() {
       try {
         setLoading(true);
         const [pRes, rRes] = await Promise.all([
-          fetch("/api/v1/training-progress/plans"),
-          fetch("/api/v1/training-progress/completion/runs"),
+          apiFetch("/api/v1/training-progress/plans"),
+          apiFetch("/api/v1/training-progress/completion/runs"),
         ]);
         if (pRes.ok) {
           const pJson = await pRes.json();
@@ -49,7 +50,7 @@ export default function TrainingProgressPage() {
     if (!can("progress.plan.manage")) return;
     try {
       setActionLoading(true);
-      const res = await fetch(`/api/v1/training-progress/plans/${planId}/lock`, { method: "POST" });
+      const res = await apiFetch(`/api/v1/training-progress/plans/${planId}/lock`, { method: "POST" });
       if (res.ok) {
         alert("Đã khóa kế hoạch đào tạo thành công!");
         window.location.reload();
@@ -66,7 +67,7 @@ export default function TrainingProgressPage() {
     if (!can("progress.calculate")) return;
     try {
       setActionLoading(true);
-      const res = await fetch(`/api/v1/training-progress/plans/${planId}/calculate`, { method: "POST" });
+      const res = await apiFetch(`/api/v1/training-progress/plans/${planId}/calculate`, { method: "POST" });
       if (res.ok) {
         const json = await res.json();
         alert(`Tính toán thành công: ${json.passStudents || 0} Đạt / ${json.totalStudents || 0} Sinh viên!`);
@@ -85,8 +86,8 @@ export default function TrainingProgressPage() {
     setDrawerTab("students");
     try {
       const [sRes, cRes] = await Promise.all([
-        fetch(`/api/v1/training-progress/runs/${run.id}/students`),
-        fetch(`/api/v1/training-progress/runs/${run.id}/classes`),
+        apiFetch(`/api/v1/training-progress/runs/${run.id}/students`),
+        apiFetch(`/api/v1/training-progress/runs/${run.id}/classes`),
       ]);
       if (sRes.ok) {
         const sJson = await sRes.json();

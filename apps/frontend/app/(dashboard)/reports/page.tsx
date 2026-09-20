@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -174,7 +175,7 @@ export default function ReportsPage() {
         setLoadError("");
         const params = new URLSearchParams({ pageSize: "20" });
         if (selectedTermId) params.set("academicTermId", selectedTermId);
-        const response = await fetch(`/api/v1/reports/academic-warnings?${params.toString()}`);
+        const response = await apiFetch(`/api/v1/reports/academic-warnings?${params.toString()}`);
         if (!response.ok) throw new Error("Không thể tải dữ liệu cảnh báo học vụ");
         setReport(await response.json());
       } catch (error) {
@@ -195,7 +196,7 @@ export default function ReportsPage() {
       if (filter.classCode) params.set("classCode", filter.classCode);
       if (query.trim()) params.set("search", query.trim());
       if (selectedTermId) params.set("academicTermId", selectedTermId);
-      const response = await fetch(`/api/v1/reports/academic-warnings?${params.toString()}`);
+      const response = await apiFetch(`/api/v1/reports/academic-warnings?${params.toString()}`);
       if (!response.ok) throw new Error("Không thể tải danh sách sinh viên");
       setDrawerData(await response.json());
     } catch (error) {
@@ -227,7 +228,7 @@ export default function ReportsPage() {
       const type = format === "pdf" ? "warnings" : exportType;
       const params = new URLSearchParams({ format, type });
       if (selectedTermId) params.set("academicTermId", selectedTermId);
-      const response = await fetch(`/api/v1/reports/export?${params.toString()}`);
+      const response = await apiFetch(`/api/v1/reports/export?${params.toString()}`);
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
         throw new Error(payload?.error?.message || "Không thể tạo file báo cáo");

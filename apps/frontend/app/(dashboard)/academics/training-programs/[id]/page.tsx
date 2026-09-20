@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, use } from "react";
+import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import FilterBar from "@/components/ui/FilterBar";
 import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
@@ -89,10 +90,10 @@ export default function TrainingProgramDetailPage({
     try {
       setLoading(true);
       const [pRes, plRes, cRes, yRes] = await Promise.all([
-        fetch(`/api/v1/training-programs/${programId}`),
-        fetch(`/api/v1/training-progress/plans?trainingProgramId=${programId}`),
-        fetch(`/api/v1/courses?pageSize=200`),
-        fetch(`/api/v1/academic-years`),
+        apiFetch(`/api/v1/training-programs/${programId}`),
+        apiFetch(`/api/v1/training-progress/plans?trainingProgramId=${programId}`),
+        apiFetch(`/api/v1/courses?pageSize=200`),
+        apiFetch(`/api/v1/academic-years`),
       ]);
 
       if (pRes.ok) {
@@ -192,7 +193,7 @@ export default function TrainingProgramDetailPage({
       setSubmitting(true);
       if (editingCourse) {
         // Update
-        const res = await fetch(`/api/v1/training-programs/${programId}/courses/${editingCourse.id}`, {
+        const res = await apiFetch(`/api/v1/training-programs/${programId}/courses/${editingCourse.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
@@ -206,7 +207,7 @@ export default function TrainingProgramDetailPage({
         }
       } else {
         // Create
-        const res = await fetch(`/api/v1/training-programs/${programId}/courses`, {
+        const res = await apiFetch(`/api/v1/training-programs/${programId}/courses`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
@@ -232,7 +233,7 @@ export default function TrainingProgramDetailPage({
     if (!deleteTarget) return;
     try {
       setDeleteLoading(true);
-      const res = await fetch(`/api/v1/training-programs/${programId}/courses/${deleteTarget.id}`, {
+      const res = await apiFetch(`/api/v1/training-programs/${programId}/courses/${deleteTarget.id}`, {
         method: "DELETE",
       });
       if (res.ok) {

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { apiFetch } from "@/lib/api-client";
 
 export type Role =
   | "SYSTEM_ADMIN"
@@ -190,7 +191,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   async bootstrap() {
     try {
-      const res = await fetch("/api/v1/auth/me");
+      const res = await apiFetch("/api/v1/auth/me");
 
       if (res.ok) {
         applySession(await res.json(), set);

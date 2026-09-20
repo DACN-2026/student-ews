@@ -9,6 +9,7 @@ import WarningBadge from "@/components/WarningBadge";
 import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
 import Modal from "@/components/ui/Modal";
 import { useAuthStore } from "@/stores/authStore";
+import { apiFetch } from "@/lib/api-client";
 
 type ActiveTab = "overview" | "conduct" | "grades" | "decisions" | "fee_policies" | "registrations" | "training_plan" | "warnings";
 
@@ -124,7 +125,7 @@ export default function StudentDetailPage() {
   const [actionSubmitting, setActionSubmitting] = useState(false);
 
   const reloadStudent = async () => {
-    const sRes = await fetch(`/api/v1/students/${studentId}`);
+    const sRes = await apiFetch(`/api/v1/students/${studentId}`);
     if (sRes.ok) {
       setStudent(await sRes.json());
     }
@@ -134,7 +135,7 @@ export default function StudentDetailPage() {
     try {
       setProfileExporting(true);
       setProfileExportError("");
-      const response = await fetch(`/api/v1/reports/export?format=pdf&type=student-profile&studentId=${encodeURIComponent(studentId)}`);
+      const response = await apiFetch(`/api/v1/reports/export?format=pdf&type=student-profile&studentId=${encodeURIComponent(studentId)}`);
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
         throw new Error(payload?.error?.message || "Không thể tạo PDF hồ sơ");
@@ -163,14 +164,14 @@ export default function StudentDetailPage() {
         setLoading(true);
         setLoadIssues([]);
         const [sRes, dRes, gRes, sumRes, decRes, feeRes, regRes, conductRes] = await Promise.all([
-          fetch(`/api/v1/students/${studentId}`),
-          fetch(`/api/v1/students/${studentId}/dashboard`),
-          fetch(`/api/v1/students/${studentId}/grades`),
-          fetch(`/api/v1/students/${studentId}/grades/summary`),
-          fetch(`/api/v1/students/${studentId}/decisions`),
-          fetch(`/api/v1/students/${studentId}/fee-policies`),
-          fetch(`/api/v1/students/${studentId}/registrations?pageSize=100`),
-          fetch(`/api/v1/students/${studentId}/conduct`),
+          apiFetch(`/api/v1/students/${studentId}`),
+          apiFetch(`/api/v1/students/${studentId}/dashboard`),
+          apiFetch(`/api/v1/students/${studentId}/grades`),
+          apiFetch(`/api/v1/students/${studentId}/grades/summary`),
+          apiFetch(`/api/v1/students/${studentId}/decisions`),
+          apiFetch(`/api/v1/students/${studentId}/fee-policies`),
+          apiFetch(`/api/v1/students/${studentId}/registrations?pageSize=100`),
+          apiFetch(`/api/v1/students/${studentId}/conduct`),
         ]);
 
         if (!sRes.ok) throw new Error("Không thể tải hồ sơ sinh viên");
@@ -179,7 +180,7 @@ export default function StudentDetailPage() {
 
         const issues: string[] = [];
         if (sJson.program?.id) {
-          const planRes = await fetch(`/api/v1/training-programs/${sJson.program.id}/courses`);
+          const planRes = await apiFetch(`/api/v1/training-programs/${sJson.program.id}/courses`);
           if (planRes.ok) {
             const planJson = await planRes.json();
             setTrainingPlanData(planJson.items || []);
@@ -1532,7 +1533,7 @@ export default function StudentDetailPage() {
             e.preventDefault();
             try {
               setFeeSubmitting(true);
-              const res = await fetch(`/api/v1/students/${studentId}/fee-policies`, {
+              const res = await apiFetch(`/api/v1/students/${studentId}/fee-policies`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(feeForm),
@@ -1541,7 +1542,7 @@ export default function StudentDetailPage() {
                 setShowAddFeeModal(false);
                 alert("Đã gán chính sách thành công!");
                 // Reload fee policies
-                const fRes = await fetch(`/api/v1/students/${studentId}/fee-policies`);
+                const fRes = await apiFetch(`/api/v1/students/${studentId}/fee-policies`);
                 if (fRes.ok) {
                   const json = await fRes.json();
                   setFeePoliciesData(json.items || json || []);
@@ -1641,7 +1642,7 @@ export default function StudentDetailPage() {
             }
             try {
               setActionSubmitting(true);
-              const res = await fetch("/api/v1/academic-warnings/actions", {
+              const res = await apiFetch("/api/v1/academic-warnings/actions", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
