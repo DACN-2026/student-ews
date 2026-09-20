@@ -1,7 +1,7 @@
 # Kiến trúc hệ thống theo dõi và cảnh báo sớm sinh viên
 
 **Dự án:** SEWS — Student Early Warning System, Khoa Công nghệ Thông tin, Trường Đại học Đà Lạt.  
-**Phiên bản:** 4.2 — 16/09/2026.
+**Phiên bản:** 4.4 - 20/09/2026.
 
 SEWS tập trung dữ liệu sinh viên để hỗ trợ cán bộ quản lý và cố vấn học tập phát hiện trường hợp cần theo dõi, tìm hiểu nguyên nhân và ghi nhận hỗ trợ. Kiến trúc gồm nền tảng học vụ, phần rèn luyện và hướng nghiên cứu dự báo nguy cơ học vụ bằng học máy. Chức năng tham gia hoạt động không nằm trong phạm vi sản phẩm vì chưa có nguồn dữ liệu chính thức.
 
@@ -20,6 +20,8 @@ Tài liệu phân biệt **hiện trạng mã nguồn**, **yêu cầu từ tài 
 | S3 | [Quy chế đào tạo theo hệ thống tín chỉ](1.QuyCheDaoTaoTheoHeThongTinChi.docx) | Bản kèm QĐ 43/2007/QĐ-BGDĐT; Điều 10–12 về đăng ký/học lại, Điều 14–16 về học lực và thôi học, Điều 22–23 về điểm, Điều 27 về tốt nghiệp. |
 | S4 | [Chương trình đào tạo CNTT năm 2020 K44](2020_CTDT_K44.pdf) | Mục 3–4, 6–8, 11: điều kiện đào tạo, khung tín chỉ, học phần, kế hoạch giảng dạy và hướng dẫn thực hiện. |
 | S5 | [Quy định đánh giá kết quả rèn luyện](99-QD-DHDL_240216-Qui-dinh-danh-gia-ket-qua-ren-luyen.pdf) | QĐ 99/QĐ-ĐHĐL năm 2016; Điều 3–11 về tiêu chí, thang điểm, phân loại và quy trình; Điều 13–19 về sử dụng kết quả, khiếu nại và trách nhiệm đơn vị. |
+| S6 | [Thiết kế chức năng Tiến độ đào tạo](thiet_ke_chuc_nang_tien_do_dao_tao.md) | Đặc tả giao diện hai tab, snapshot/run, quy tắc đăng ký và hoàn thành, truy vết, acceptance criteria và lộ trình triển khai. |
+| S7 | [Thiết kế chức năng Dự kiến sinh viên tốt nghiệp](thiet-ke-chuc-nang-du-kien-sinh-vien-tot-nghiep.md) | Đặc tả hai tầng đánh giá, năm trạng thái loại trừ nhau, rule version, snapshot, checklist điều kiện, giải thích và xuất báo cáo. |
 
 S3 là văn bản năm 2007 được cung cấp trong repository; S4 là CTĐT năm 2020. Quy tắc phải gắn với phiên bản và khóa áp dụng, không mặc định là quy định hiện hành cho mọi khóa. Không suy ra nội dung Thông tư 08/2021 chỉ từ danh mục tham khảo của S1. Trước khi vận hành tiêu chí chính thức, cần xác nhận văn bản áp dụng tại trường.
 
@@ -41,6 +43,7 @@ Quyết định cảnh báo cũ có thể là dấu hiệu cần theo dõi, như
 | --- | --- | --- |
 | Hồ sơ, lớp, khóa, CTĐT, điểm, đăng ký | Có schema, API, giao diện | Chuẩn hóa và truy xuất nguồn |
 | Đăng ký, tiến độ, hoàn thành CTĐT | Có kế hoạch phiên bản và đợt tính | Làm rõ thời điểm, ngoại lệ, điều kiện tốt nghiệp |
+| Dự kiến tốt nghiệp | Có phiên đánh giá riêng, rule version, snapshot, checklist và năm trạng thái; dữ liệu ngoài học tập còn thiếu từ nguồn | Bổ sung nguồn chính thức cho chứng chỉ, ngoại ngữ, kỷ luật, pháp lý và rèn luyện toàn khóa |
 | Cảnh báo học vụ | Có bộ máy theo run với chính sách GPA và 5 mã nguyên nhân; báo cáo live hiện phân loại theo GPA/quyết định | Nhất quán phạm vi, phiên bản, ngưỡng và giải thích giữa hai chế độ |
 | Rèn luyện | Có `StudentConductRecord`, điểm trong `StudentTermSummary`, API đọc tổng hợp | Xác định điểm công nhận và tiêu chí theo dõi |
 | Hoạt động | Không có nguồn dữ liệu chính thức; không triển khai giao diện/API | Ngoài phạm vi phiên bản hiện tại |
@@ -177,6 +180,8 @@ Phân biệt ID nội bộ và mã nguồn: `Student.id` khác MSSV `sStudentId`
 
 Nguồn học vụ gồm hồ sơ, lớp/khóa, CTĐT, đăng ký, điểm, tổng hợp theo kỳ, quyết định. Nguồn rèn luyện/hoạt động cần hợp đồng dữ liệu với đơn vị phụ trách theo S1/S5.
 
+Dữ liệu học vụ vận hành được lấy từ API công bố trong Apidog bằng [import-apidog-data.cjs](../apps/backend/scripts/import-apidog-data.cjs). `npm run db:check-apidog` chỉ đọc và kiểm tra nguồn; `npm run db:import-apidog` thay dữ liệu nghiệp vụ sau khi đã xác nhận đích database. [sync-apidog-training-progress.ts](../apps/backend/scripts/sync-apidog-training-progress.ts) là bước không truncate: kiểm tra ngưỡng dữ liệu nguồn, chọn kỳ chính mới nhất có đăng ký làm kỳ hiện tại, dựng snapshot kế hoạch đã khóa từ CTĐT đã nhập và tạo run đăng ký/hoàn thành còn thiếu. `db:seed` chỉ tạo tài khoản và RBAC, không tạo sinh viên, CTĐT, điểm hay kết quả tiến độ mẫu.
+
 Nhiều model có `sourcePayload`, `sourceMd5`, `gradeImportBatchId`; đợt tiến độ/hoàn thành có snapshot và hash. Đây là nền truy vết, chưa chứng minh đã lưu mọi lần sửa ở hệ thống nguồn.
 
 - Phân biệt `null`, chờ điểm, không tính điểm, thiếu kỳ và điểm 0. Không thay dữ liệu thiếu bằng “đạt”.
@@ -210,6 +215,8 @@ Không cộng toàn bộ danh sách tự chọn thành yêu cầu hoàn thành; 
 
 Kế hoạch có phiên bản, clone, activate, lock, archive. Đợt tính lưu phiên bản kế hoạch, snapshot, hash và kết quả; thay đổi kế hoạch phải giữ ý nghĩa kết quả cũ.
 
+Khi bootstrap từ Apidog, `MaCTDT`, `HocKy`, `YearStudy`, `TermID`, `BatBuoc`, mã học phần và tín chỉ được ánh xạ trực tiếp sang plan/course. Nguồn hiện chỉ phân loại bắt buộc/tự chọn nhưng không cung cấp ngưỡng tín chỉ hoặc nhóm chọn N trong M, vì vậy importer không tự suy diễn: `requiredElectiveCredits` giữ `0` cho đến khi có cấu hình được phê duyệt.
+
 **Đủ đăng ký không đồng nghĩa đúng hạn.** Chưa có bộ dữ liệu chuẩn hóa gồm thời điểm từng lần đăng ký, hạn, rút/hủy hợp lệ và ngoại lệ. Chỉ số “đúng hạn” cần các dữ liệu này; đối chiếu hiện tại chỉ phản ánh đáp ứng kế hoạch tại lần chụp dữ liệu.
 
 ### 6.4 Tiến độ và hoàn thành
@@ -224,6 +231,35 @@ Kế hoạch có phiên bản, clone, activate, lock, archive. Đợt tính lưu
 Chế độ `forecast` có thể giả định học phần đang đăng ký, đủ điều kiện chờ kết quả, sẽ đạt. Hiển thị rõ giả định và tách khỏi `standard`. Đây là kịch bản hoàn thành học phần, chưa phải học máy hay dự đoán ngày tốt nghiệp.
 
 `completed` không đồng nghĩa được công nhận tốt nghiệp. S3 Điều 27 còn yêu cầu GPA tích lũy từ 2,00, chứng chỉ, nhóm học phần, tình trạng kỷ luật/pháp lý; S4 dẫn chiếu quy định trường. Cần thêm điều kiện tốt nghiệp, chứng chỉ, miễn trừ và xác nhận có thẩm quyền trước khi kết luận đủ điều kiện xét tốt nghiệp.
+
+### 6.5 Ánh xạ đặc tả Tiến độ đào tạo (S6)
+
+S6 phù hợp với kiến trúc hiện tại về mục tiêu và nguyên tắc: kế hoạch có phiên bản, cấu hình đã khóa là bất biến, mỗi lần tính tạo run mới, kết quả cũ không bị ghi đè, dữ liệu thiếu phải được hiển thị riêng và kết luận hệ thống không thay thế quyết định tốt nghiệp.
+
+Không tạo thêm bộ bảng `training_plan_snapshots`, `progress_runs` và `progress_run_students` song song với schema hiện tại. Trong triển khai hiện tại, ánh xạ như sau:
+
+| Khái niệm S6 | Thành phần hiện tại | Quyết định tích hợp |
+| --- | --- | --- |
+| Snapshot kế hoạch | `TrainingProgressPlan`, `TrainingProgressPlanCourse` | Dùng lại; `locked` là snapshot bất biến, `version` phân biệt phiên bản |
+| Run kiểm tra đăng ký | `TrainingProgressCalculationRun` và các bảng result | Dùng lại; bổ sung API danh sách run và giao diện lịch sử |
+| Run hoàn thành | `TrainingProgressCompletionRun` và các bảng result | Dùng lại; giao diện đặt trong tab `Hoàn thành CTĐT` |
+| Requirement tree | `TrainingProgressCompletionPlanResult` và `training_progress_completion_course_results` | Dùng lại để giải thích theo học kỳ lộ trình và học phần |
+| Scope khóa/CTĐT/kỳ | ID trên plan/run cùng data-scope hiện có | Giữ kiểm tra quyền ở backend |
+| Snapshot nguồn và checksum run | `sourceSnapshot`, `sourceSnapshotHash`, `sourceCapturedAt` | Giữ để truy vết dữ liệu tại thời điểm chạy |
+
+S6 mô tả đích nghiệp vụ rộng hơn phần đã có. Các nội dung sau chưa được tuyên bố đã triển khai: trạng thái `READY/INVALID` và validate riêng trước khi khóa; bộ rule có nguồn/phiên bản; tiên quyết; giới hạn tín chỉ theo học lực; quyết định miễn, chuyển và tương đương; phân bổ tự chọn tổng quát không double count; tổng 150/104/46 theo phiên bản CTĐT; chứng chỉ GDTC, GDQP, ngoại ngữ; điều kiện kỷ luật, tài chính và rèn luyện. Các nội dung này chỉ được bổ sung khi có mô hình dữ liệu, nguồn chính thức, migration, API và test tương ứng. Giao diện hiện tại vì vậy dùng nhãn “đáp ứng kế hoạch” thay cho “hợp lệ theo quy chế”, và “đủ yêu cầu học phần” thay cho “đủ điều kiện tốt nghiệp”.
+
+Trang `/training-progress` là bề mặt vận hành chính cho S6. Tab đăng ký hiển thị kế hoạch, kỳ vận hành, học kỳ lộ trình, version, trạng thái, số run, phiên bản hiện hành và chi tiết run. Tab hoàn thành cho phép preview phạm vi trước khi chạy, xem các đợt đánh giá, lọc kết quả sinh viên và mở cây yêu cầu. Màn hình quản trị học vụ vẫn chịu trách nhiệm tạo/chỉnh nội dung kế hoạch để không nhân đôi luồng cấu hình.
+
+### 6.6 Dự kiến sinh viên tốt nghiệp (S7)
+
+Trang `/graduation-forecast` không còn đọc trực tiếp lịch sử `TrainingProgressCompletionRun`. Mỗi lần vận hành tạo `GraduationEvaluation` riêng và liên kết một completion run ở chế độ `graduation_forecast` để sử dụng tầng hoàn thành CTĐT. `GraduationEvaluationStudent` lưu kết luận đã chụp; `GraduationEvaluationDetail` lưu kết quả từng điều kiện; `GraduationRule` giữ mã, toán tử, giá trị, phiên bản và văn bản nguồn. `StudentGraduationRequirement` là điểm tích hợp nguồn xác minh GDTC, GDQP, ngoại ngữ, kỷ luật, pháp lý và rèn luyện toàn khóa.
+
+Kết luận dùng năm trạng thái loại trừ nhau: `EXPECTED_ELIGIBLE`, `PENDING_GRADE`, `PENDING_REQUIREMENT`, `NOT_ELIGIBLE`, `MANUAL_REVIEW`. Thứ tự ưu tiên bảo thủ là thiếu dữ liệu quan trọng, điều kiện xác định không đạt, chờ điểm, chờ điều kiện, rồi mới đủ dự kiến. Vì Apidog hiện chưa cung cấp đầy đủ các nguồn xác minh ngoài học tập, hệ thống ghi `NOT_AVAILABLE` và đưa sinh viên vào `MANUAL_REVIEW`; không seed, không mặc định đạt và không suy diễn từ việc không có quyết định.
+
+API chính gồm `POST /graduation-evaluations/preview`, `POST /graduation-evaluations`, danh sách/chi tiết phiên, danh sách/chi tiết sinh viên và xuất XLSX/PDF. Quyền tách thành `graduation.read`, `graduation.evaluate`, `graduation.export`; phạm vi dữ liệu dùng cùng cơ chế khóa, chương trình, kỳ và lớp được phân công. Mọi lần tạo và xuất đều ghi audit log.
+
+Các trị số 150/104/46, nhóm A6/A7/B2/B3 và mã 20CT4201/20CT4202 chỉ được áp dụng khi rule được cấu hình đúng CTĐT CNTT K44 theo S4. Với CTĐT khác, tầng học phần dựa trên kế hoạch đã khóa và không lấy thông số K44 làm mặc định.
 
 ## 7. Bộ máy cảnh báo hiện tại
 

@@ -341,6 +341,25 @@ function buildAcademicKeys(source) {
   return [...keys].sort();
 }
 
+function latestSourceMainTermKey(source) {
+  const keys = [...new Set(source.gradeRows
+    .map((row) => `${row.yearCode}|${row.termCode}`)
+    .filter((key) => !key.endsWith("|HK03")))];
+  keys.sort((left, right) => {
+    const [leftYear, leftTerm] = left.split("|");
+    const [rightYear, rightTerm] = right.split("|");
+    return leftYear.localeCompare(rightYear) || termMeta(leftTerm).order - termMeta(rightTerm).order;
+  });
+  const current = keys.at(-1);
+  if (!current) throw new Error("No main academic term with source registrations was found");
+  return current;
+}
+
+function planRequirementType(value) {
+  const normalized = clean(value).toLocaleLowerCase("vi");
+  return normalized.includes("bắt") || normalized === "mandatory" ? "mandatory" : "elective";
+}
+
 function scoreParts(value, max) {
   const text = clean(value).toUpperCase();
   if (!text) return { value: null, special: null };
@@ -375,14 +394,14 @@ async function replaceBusinessData(prisma, source) {
         sCohortName: item.name,
       })),
     });
-    await tx.class.createMany({
-      data: CLASS_CODES.map((classCode) => ({
+    const classRows = CLASS_CODES.map((classCode) => ({
         id: crypto.randomUUID(),
         classId: classCode,
         className: classCode,
         cohortId: cohortMap.get(cohortForClass(classCode).code).id,
-      })),
-    });
+    }));
+    await tx.class.createMany({ data: classRows });
+    const classByCode = new Map(classRows.map((row) => [row.classId, row]));
 
     const studentRows = source.students.map((item) => {
       const birthDate = parseDate(item.BirthDay);
@@ -452,8 +471,15 @@ async function replaceBusinessData(prisma, source) {
     const courseIdMap = new Map(courseRows.map((row) => [row.sCourseCode, row.id]));
 
     const academicKeys = buildAcademicKeys(source);
+    const currentAcademicKey = latestSourceMainTermKey(source);
+    const [currentYearCode] = currentAcademicKey.split("|");
     const yearCodes = [...new Set(academicKeys.map((key) => key.split("|")[0]))];
-    const yearRows = yearCodes.map((code) => ({ id: crypto.randomUUID(), sYearCode: code }));
+    const yearRows = yearCodes.map((code) => ({
+      id: crypto.randomUUID(),
+      sYearCode: code,
+      status: code === currentYearCode ? "open" : "draft",
+      isCurrent: code === currentYearCode,
+    }));
     await tx.academicYear.createMany({ data: yearRows });
     const yearIdMap = new Map(yearRows.map((row) => [row.sYearCode, row.id]));
     const termRows = academicKeys.map((key) => {
@@ -466,6 +492,8 @@ async function replaceBusinessData(prisma, source) {
         sTermName: meta.name,
         sTermOrder: meta.order,
         sIsSummer: meta.isSummer,
+        status: key === currentAcademicKey ? "open" : "draft",
+        isCurrent: key === currentAcademicKey,
       };
     });
     await tx.academicTerm.createMany({ data: termRows });
@@ -498,7 +526,86 @@ async function replaceBusinessData(prisma, source) {
         academicTermId: validYear(yearCode) && termCode ? termIdMap.get(`${yearCode}|${termCode}`) || null : null,
       });
     }
-    await createManyInChunks(tx.trainingProgramCourse, [...curriculumMap.values()]);
+    const programCourseRows = [...curriculumMap.values()];
+    await createManyInChunks(tx.trainingProgramCourse, programCourseRows);
+
+    const scopeMap = new Map();
+    for (const student of studentRows) {
+      const studentClass = classByCode.get(student.sClassStudentId);
+      const trainingProgramId = programIdMap.get(student.sStudyProgramId);
+      if (!studentClass || !trainingProgramId) continue;
+      const key = `${studentClass.cohortId}|${trainingProgramId}`;
+      if (!scopeMap.has(key)) {
+        scopeMap.set(key, { cohortId: studentClass.cohortId, trainingProgramId });
+      }
+    }
+
+    const coursesByProgramAndTerm = new Map();
+    for (const course of programCourseRows) {
+      if (!course.academicTermId) continue;
+      const key = `${course.trainingProgramId}|${course.academicTermId}`;
+      const rows = coursesByProgramAndTerm.get(key) || [];
+      rows.push(course);
+      coursesByProgramAndTerm.set(key, rows);
+    }
+
+    const planRows = [];
+    const coursesForPlanKey = new Map();
+    for (const scope of scopeMap.values()) {
+      const groups = [...coursesByProgramAndTerm.entries()]
+        .filter(([key]) => key.startsWith(`${scope.trainingProgramId}|`))
+        .map(([key, courses]) => ({ academicTermId: key.split("|")[1], courses }));
+      if (!groups.length) {
+        throw new Error(`No curriculum rows with an academic term for program ${scope.trainingProgramId}`);
+      }
+      const maxSemester = Math.max(...groups.flatMap((group) => group.courses.map((course) => course.sSemesterNo)));
+      for (const group of groups) {
+        const semesters = [...new Set(group.courses.map((course) => course.sSemesterNo))];
+        if (semesters.length !== 1) {
+          throw new Error(`Source curriculum maps multiple semesters to term ${group.academicTermId}`);
+        }
+        const term = termRows.find((item) => item.id === group.academicTermId);
+        if (!term) throw new Error(`Cannot resolve curriculum term ${group.academicTermId}`);
+        const id = crypto.randomUUID();
+        const planKey = `${scope.cohortId}|${scope.trainingProgramId}|${group.academicTermId}`;
+        planRows.push({
+          id,
+          cohortId: scope.cohortId,
+          trainingProgramId: scope.trainingProgramId,
+          academicYearId: term.academicYearId,
+          academicTermId: group.academicTermId,
+          curriculumSemesterNo: semesters[0],
+          version: 1,
+          status: "locked",
+          isCurrent: true,
+          requiredElectiveCredits: 0,
+          is_program_final: semesters[0] === maxSemester,
+        });
+        coursesForPlanKey.set(planKey, { planId: id, courses: group.courses });
+      }
+    }
+    await createManyInChunks(tx.trainingProgressPlan, planRows, 200);
+
+    const catalogById = new Map(courseRows.map((course) => [course.id, course]));
+    const planCourseRows = [];
+    for (const { planId, courses } of coursesForPlanKey.values()) {
+      for (const course of courses) {
+        const catalog = catalogById.get(course.courseId);
+        if (!catalog) throw new Error(`Cannot resolve course ${course.courseId} for progress plan`);
+        const requirementType = planRequirementType(course.sRequirementType);
+        planCourseRows.push({
+          id: crypto.randomUUID(),
+          planId,
+          courseId: course.courseId,
+          sCourseCode: catalog.sCourseCode,
+          sCourseName: catalog.sCourseName,
+          sCredits: course.sCredits,
+          requirementType,
+          isRegistrationRequired: requirementType === "mandatory",
+        });
+      }
+    }
+    await createManyInChunks(tx.trainingProgressPlanCourse, planCourseRows, 400);
 
     const batchId = crypto.randomUUID();
     await tx.gradeImportBatch.create({
@@ -907,6 +1014,8 @@ async function verify(prisma) {
     "trainingProgram",
     "course",
     "trainingProgramCourse",
+    "trainingProgressPlan",
+    "trainingProgressPlanCourse",
     "academicYear",
     "academicTerm",
     "studentCourseOffering",

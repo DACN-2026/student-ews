@@ -29,6 +29,7 @@ import {
   safeExportStem,
   workbookBuffer,
 } from "../lib/services/export";
+import { resolveGraduationStatus } from "../lib/services/graduation-evaluations";
 
 const IDS = {
   student: "11111111-1111-4111-8111-111111111111",
@@ -43,12 +44,64 @@ test("API permission policy follows the Phase 2 contract", () => {
   assert.equal(requiredPermission("/api/v1/students/import", "POST"), "student.import");
   assert.equal(requiredPermission("/api/v1/students/x/decisions/y", "DELETE"), "decision.delete");
   assert.equal(requiredPermission("/api/v1/training-progress/plans/x/calculate", "POST"), "progress.calculate");
+  assert.equal(requiredPermission("/api/v1/training-progress/runs", "GET"), "progress.read");
   assert.equal(requiredPermission("/api/v1/rbac/roles/x/permissions", "PUT"), "role.manage");
   assert.equal(requiredPermission("/api/v1/rbac/advisor-assignments", "POST"), "advisor_assignment.manage");
   assert.equal(requiredPermission("/api/v1/training-progress/completion-runs/preview", "POST"), "progress.calculate");
   assert.equal(requiredPermission("/api/v1/academic-warnings/actions", "POST"), "academic_warning.action.create");
   assert.equal(requiredPermission(`/api/v1/academic-warnings/actions/${IDS.plan}`, "PATCH"), "academic_warning.action.update");
   assert.equal(requiredPermission("/api/v1/reports/export", "GET"), "report.export");
+  assert.equal(requiredPermission("/api/v1/graduation-evaluations", "GET"), "graduation.read");
+  assert.equal(requiredPermission("/api/v1/graduation-evaluations", "POST"), "graduation.evaluate");
+  assert.equal(requiredPermission(`/api/v1/graduation-evaluations/${IDS.plan}/export`, "GET"), "graduation.export");
+});
+
+test("graduation status uses the documented conservative priority", () => {
+  assert.equal(resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
+    { ruleCode: "LEGAL", result: "NOT_AVAILABLE" },
+    { ruleCode: "CUMULATIVE_GPA", result: "FAIL" },
+  ]), "MANUAL_REVIEW");
+  assert.equal(resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
+    { ruleCode: "CUMULATIVE_GPA", result: "FAIL" },
+  ]), "NOT_ELIGIBLE");
+  assert.equal(resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PENDING" },
+    { ruleCode: "CUMULATIVE_GPA", result: "PASS" },
+  ]), "PENDING_GRADE");
+  assert.equal(resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
+    { ruleCode: "TOTAL_CREDITS", result: "PENDING" },
+    { ruleCode: "CUMULATIVE_GPA", result: "PASS" },
+  ]), "PENDING_GRADE");
+  assert.equal(resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
+    { ruleCode: "20CT4202", result: "PENDING" },
+    { ruleCode: "CUMULATIVE_GPA", result: "PASS" },
+  ]), "PENDING_GRADE");
+  assert.equal(resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
+    { ruleCode: "FOREIGN_LANGUAGE", result: "PENDING" },
+  ]), "PENDING_REQUIREMENT");
+  assert.equal(resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
+    { ruleCode: "PHYSICAL_EDUCATION", result: "PENDING" },
+  ]), "PENDING_REQUIREMENT");
+  assert.equal(resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
+    { ruleCode: "DISCIPLINE", result: "FAIL" },
+  ]), "NOT_ELIGIBLE");
+  assert.equal(resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
+    { ruleCode: "CUMULATIVE_GPA", result: "PASS" },
+    { ruleCode: "TOTAL_CREDITS", result: "PASS" },
+    { ruleCode: "PHYSICAL_EDUCATION", result: "PASS" },
+    { ruleCode: "NATIONAL_DEFENSE", result: "PASS" },
+    { ruleCode: "FOREIGN_LANGUAGE", result: "PASS" },
+    { ruleCode: "DISCIPLINE", result: "PASS" },
+    { ruleCode: "LEGAL", result: "PASS" },
+  ]), "EXPECTED_ELIGIBLE");
 });
 
 test("Phase 3 export helpers produce real XLSX/PDF files and safe names", async () => {

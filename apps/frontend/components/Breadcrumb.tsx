@@ -14,7 +14,7 @@ const breadcrumbLabels: Record<string, string> = {
   "training-programs": "Chương trình đào tạo",
   courses: "Học phần",
   "training-progress": "Tiến độ đào tạo",
-  "graduation-forecast": "Hoàn thành CTĐT",
+  "graduation-forecast": "Dự kiến tốt nghiệp",
   "academic-warnings": "Cảnh báo học tập",
   plans: "Kế hoạch đào tạo",
   runs: "Đợt tính toán",

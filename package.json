@@ -28,6 +28,11 @@
     "db:deploy": "npm run db:deploy --workspace=@sms/backend",
     "db:push": "npm run db:push --workspace=@sms/backend",
     "db:seed": "npm run db:seed --workspace=@sms/backend",
+    "db:import-apidog": "npm run db:import-apidog --workspace=@sms/backend",
+    "db:check-apidog": "npm run db:check-apidog --workspace=@sms/backend",
+    "db:sync-apidog-progress": "npm run db:sync-apidog-progress --workspace=@sms/backend",
+    "db:sync-apidog-graduation": "npm run db:sync-apidog-graduation --workspace=@sms/backend",
+    "db:remove-seed-demo": "npm run db:remove-seed-demo --workspace=@sms/backend",
     "db:studio": "npm run db:studio --workspace=@sms/backend"
   }
 }

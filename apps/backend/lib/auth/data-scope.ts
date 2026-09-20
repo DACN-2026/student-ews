@@ -140,6 +140,18 @@ export async function warningRunScopeWhere(actor: Actor): Promise<Prisma.Academi
   return alternatives.length ? { OR: alternatives } : { id: { in: [] } };
 }
 
+export async function graduationEvaluationScopeWhere(actor: Actor): Promise<Prisma.GraduationEvaluationWhereInput> {
+  if (hasGlobalDataScope(actor)) return {};
+  const [programIds, pairs] = await Promise.all([facultyProgramIds(actor), assignedCohortTerms(actor)]);
+  const alternatives: Prisma.GraduationEvaluationWhereInput[] = [];
+  if (programIds.length) alternatives.push({ trainingProgramId: { in: programIds } });
+  alternatives.push(...pairs.map((pair) => ({
+    cohortId: pair.cohortId,
+    assessmentAcademicTermId: pair.academicTermId,
+  })));
+  return alternatives.length ? { OR: alternatives } : { id: { in: [] } };
+}
+
 export async function scopedClassIds(
   actor: Actor,
   academicTermId: string,
@@ -277,6 +289,20 @@ export async function requireWarningRunPermission(request: Request, runId: strin
   return run ? auth : scopedNotFound("Warning run not found or outside data scope");
 }
 
+export async function requireGraduationEvaluationPermission(
+  request: Request,
+  evaluationId: string,
+  permission: string,
+): Promise<AuthResult> {
+  const auth = await requirePermission(permission, request);
+  if (!auth.authorized) return auth;
+  const evaluation = await prisma.graduationEvaluation.findFirst({
+    where: { AND: [{ id: evaluationId }, await graduationEvaluationScopeWhere(auth.actor)] },
+    select: { id: true },
+  });
+  return evaluation ? auth : scopedNotFound("Graduation evaluation not found or outside data scope");
+}
+
 export async function progressRunClassScope(actor: Actor, runId: string) {
   const run = await prisma.trainingProgressCalculationRun.findUnique({
     where: { id: runId },
@@ -319,6 +345,16 @@ export async function warningRunClassScope(actor: Actor, runId: string) {
   });
   return run
     ? scopedClassIds(actor, run.assessmentAcademicTermId, run.cohortId, run.trainingProgramId)
+    : [];
+}
+
+export async function graduationEvaluationClassScope(actor: Actor, evaluationId: string) {
+  const evaluation = await prisma.graduationEvaluation.findUnique({
+    where: { id: evaluationId },
+    select: { assessmentAcademicTermId: true, cohortId: true, trainingProgramId: true },
+  });
+  return evaluation
+    ? scopedClassIds(actor, evaluation.assessmentAcademicTermId, evaluation.cohortId, evaluation.trainingProgramId)
     : [];
 }
 

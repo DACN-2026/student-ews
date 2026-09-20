@@ -763,9 +763,13 @@ export class TrainingProgressService {
       prisma.trainingProgram.findMany({ where: { id: { in: programIds } } }),
     ]);
 
+    const yearIds = [...new Set(terms.map((term) => term.academicYearId))];
+    const years = await prisma.academicYear.findMany({ where: { id: { in: yearIds } } });
+
     const cohortMap = Object.fromEntries(cohorts.map((c) => [c.id, c]));
     const termMap = Object.fromEntries(terms.map((t) => [t.id, t]));
     const programMap = Object.fromEntries(programs.map((p) => [p.id, p]));
+    const yearMap = Object.fromEntries(years.map((year) => [year.id, year]));
 
     // Count runs per plan
     const planIds = plans.map((p) => p.id);
@@ -782,10 +786,16 @@ export class TrainingProgressService {
         id: p.id,
         cohortId: p.cohortId,
         cohortCode: cohortMap[p.cohortId]?.sCohortCode,
+        cohortName: cohortMap[p.cohortId]?.sCohortName,
         trainingProgramId: p.trainingProgramId,
         programCode: programMap[p.trainingProgramId]?.sProgramCode,
+        programName: programMap[p.trainingProgramId]?.sProgramName,
+        academicYearId: p.academicYearId,
+        academicYearCode: yearMap[p.academicYearId]?.sYearCode,
         academicTermId: p.academicTermId,
         termCode: termMap[p.academicTermId]?.sTermCode,
+        termName: termMap[p.academicTermId]?.sTermName,
+        isSummer: Boolean(termMap[p.academicTermId]?.sIsSummer),
         curriculumSemesterNo: p.curriculumSemesterNo,
         version: p.version,
         status: p.status,
@@ -1439,6 +1449,124 @@ export class TrainingProgressService {
     return this.getRunDetail(run.id, allowedClassIds);
   }
 
+  static async listRegistrationRuns(
+    cohortId?: string,
+    trainingProgramId?: string,
+    termId?: string,
+    planId?: string,
+    page = 1,
+    pageSize = 20,
+    planScope: Prisma.TrainingProgressPlanWhereInput = {},
+  ) {
+    const planWhere: Prisma.TrainingProgressPlanWhereInput = { AND: [planScope] };
+    if (cohortId) planWhere.cohortId = cohortId;
+    if (trainingProgramId) planWhere.trainingProgramId = trainingProgramId;
+    if (termId) planWhere.academicTermId = termId;
+    if (planId) planWhere.id = planId;
+
+    const accessiblePlans = await prisma.trainingProgressPlan.findMany({
+      where: planWhere,
+      select: { id: true },
+    });
+    const planIds = accessiblePlans.map((plan) => plan.id);
+    const runWhere: Prisma.TrainingProgressCalculationRunWhereInput = {
+      planId: { in: planIds },
+    };
+    const [total, runs] = await Promise.all([
+      prisma.trainingProgressCalculationRun.count({ where: runWhere }),
+      prisma.trainingProgressCalculationRun.findMany({
+        where: runWhere,
+        orderBy: { startedAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    const runPlans = await prisma.trainingProgressPlan.findMany({
+      where: { id: { in: [...new Set(runs.map((run) => run.planId))] } },
+    });
+    const cohortIds = [...new Set(runPlans.map((plan) => plan.cohortId))];
+    const programIds = [...new Set(runPlans.map((plan) => plan.trainingProgramId))];
+    const termIds = [...new Set(runPlans.map((plan) => plan.academicTermId))];
+    const yearIds = [...new Set(runPlans.map((plan) => plan.academicYearId))];
+    const [cohorts, programs, terms, years] = await Promise.all([
+      prisma.cohort.findMany({ where: { id: { in: cohortIds } } }),
+      prisma.trainingProgram.findMany({ where: { id: { in: programIds } } }),
+      prisma.academicTerm.findMany({ where: { id: { in: termIds } } }),
+      prisma.academicYear.findMany({ where: { id: { in: yearIds } } }),
+    ]);
+    const planMap = new Map(runPlans.map((plan) => [plan.id, plan]));
+    const cohortMap = new Map(cohorts.map((cohort) => [cohort.id, cohort]));
+    const programMap = new Map(programs.map((program) => [program.id, program]));
+    const termMap = new Map(terms.map((term) => [term.id, term]));
+    const yearMap = new Map(years.map((year) => [year.id, year]));
+
+    return {
+      items: runs.flatMap((run) => {
+        const plan = planMap.get(run.planId);
+        if (!plan) return [];
+        return [{
+          id: run.id,
+          planId: run.planId,
+          planVersion: run.planVersion,
+          status: run.status,
+          totalStudents: run.totalStudents,
+          passStudents: run.passStudents,
+          failStudents: run.failStudents,
+          dataErrorStudents: run.dataErrorStudents,
+          offeringCount: run.offeringCount,
+          sourceSnapshotHash: run.sourceSnapshotHash,
+          sourceCapturedAt: run.sourceCapturedAt,
+          startedAt: run.startedAt,
+          completedAt: run.completedAt,
+          cohortId: plan.cohortId,
+          cohortCode: cohortMap.get(plan.cohortId)?.sCohortCode,
+          cohortName: cohortMap.get(plan.cohortId)?.sCohortName,
+          trainingProgramId: plan.trainingProgramId,
+          programCode: programMap.get(plan.trainingProgramId)?.sProgramCode,
+          programName: programMap.get(plan.trainingProgramId)?.sProgramName,
+          academicYearId: plan.academicYearId,
+          academicYearCode: yearMap.get(plan.academicYearId)?.sYearCode,
+          academicTermId: plan.academicTermId,
+          termCode: termMap.get(plan.academicTermId)?.sTermCode,
+          termName: termMap.get(plan.academicTermId)?.sTermName,
+          curriculumSemesterNo: plan.curriculumSemesterNo,
+        }];
+      }),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
+  static async scopeRegistrationRunItems<TRun extends {
+    id: string;
+    totalStudents: number;
+    passStudents: number;
+    failStudents: number;
+    dataErrorStudents: number;
+  }>(items: TRun[], classScopes: Map<string, string[] | null>) {
+    const restricted = items.filter((item) => classScopes.get(item.id) !== null);
+    if (!restricted.length) return items;
+    const results = await prisma.trainingProgressStudentResult.findMany({
+      where: { runId: { in: restricted.map((item) => item.id) } },
+      select: { runId: true, classId: true, status: true },
+    });
+    return items.map((item) => {
+      const scope = classScopes.get(item.id);
+      if (scope === null) return item;
+      const allowed = new Set(scope || []);
+      const scoped = results.filter((result) => result.runId === item.id && result.classId && allowed.has(result.classId));
+      return {
+        ...item,
+        totalStudents: scoped.length,
+        passStudents: scoped.filter((result) => result.status === "pass").length,
+        failStudents: scoped.filter((result) => result.status === "fail").length,
+        dataErrorStudents: scoped.filter((result) => result.status === "data_error").length,
+      };
+    });
+  }
+
   static async listStudentResults(
     runId: string,
     status?: string,
@@ -1649,12 +1777,34 @@ export class TrainingProgressService {
       }),
     ]);
 
+    const cohortIds = [...new Set(runs.map((run) => run.cohortId))];
+    const programIds = [...new Set(runs.map((run) => run.trainingProgramId))];
+    const termIds = [...new Set(runs.map((run) => run.assessmentAcademicTermId))];
+    const [cohorts, programs, terms] = await Promise.all([
+      prisma.cohort.findMany({ where: { id: { in: cohortIds } } }),
+      prisma.trainingProgram.findMany({ where: { id: { in: programIds } } }),
+      prisma.academicTerm.findMany({ where: { id: { in: termIds } } }),
+    ]);
+    const yearIds = [...new Set(terms.map((term) => term.academicYearId))];
+    const years = await prisma.academicYear.findMany({ where: { id: { in: yearIds } } });
+    const cohortMap = new Map(cohorts.map((cohort) => [cohort.id, cohort]));
+    const programMap = new Map(programs.map((program) => [program.id, program]));
+    const termMap = new Map(terms.map((term) => [term.id, term]));
+    const yearMap = new Map(years.map((year) => [year.id, year]));
+
     return {
       items: runs.map((r) => ({
         id: r.id,
         cohortId: r.cohortId,
+        cohortCode: cohortMap.get(r.cohortId)?.sCohortCode,
+        cohortName: cohortMap.get(r.cohortId)?.sCohortName,
         trainingProgramId: r.trainingProgramId,
+        programCode: programMap.get(r.trainingProgramId)?.sProgramCode,
+        programName: programMap.get(r.trainingProgramId)?.sProgramName,
         assessmentAcademicTermId: r.assessmentAcademicTermId,
+        assessmentAcademicYear: yearMap.get(termMap.get(r.assessmentAcademicTermId)?.academicYearId || "")?.sYearCode,
+        assessmentTermCode: termMap.get(r.assessmentAcademicTermId)?.sTermCode,
+        assessmentTermName: termMap.get(r.assessmentAcademicTermId)?.sTermName,
         status: r.status,
         evaluationMode: r.evaluationMode,
         evaluationScope: r.evaluation_scope,

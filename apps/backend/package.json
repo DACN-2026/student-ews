@@ -14,6 +14,11 @@
     "db:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
+    "db:import-apidog": "node scripts/import-apidog-data.cjs --apply",
+    "db:check-apidog": "node scripts/import-apidog-data.cjs",
+    "db:sync-apidog-progress": "tsx scripts/sync-apidog-training-progress.ts",
+    "db:sync-apidog-graduation": "node -r ./scripts/node-platform-shim.cjs --import tsx scripts/sync-apidog-graduation-evaluations.ts",
+    "db:remove-seed-demo": "tsx scripts/sync-apidog-training-progress.ts --remove-legacy-demo",
     "db:studio": "prisma studio"
   },
   "dependencies": {
