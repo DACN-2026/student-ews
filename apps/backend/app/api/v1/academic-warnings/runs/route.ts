@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
       trainingProgramId: body.trainingProgramId,
       assessmentAcademicTermId: body.assessmentAcademicTermId,
       createdBy: auth.actor.userId,
+      runMode: body.runMode,
     });
     return jsonResponse(run, 201);
   } catch (err) {

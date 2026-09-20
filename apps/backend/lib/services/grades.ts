@@ -3,6 +3,7 @@ import { studentIdWhere } from "@/lib/utils/is-uuid";
 import crypto from "crypto";
 import { Prisma } from "@prisma/client";
 import { ApiError } from "@/lib/utils/api-error";
+import { buildAcademicTermLinks, isConfiguredSummerTermCode } from "@/lib/academic-terms";
 
 // ============================================================================
 // Types — matches SWE model.go SourceYear/SourceTerm/SourceGrade
@@ -165,24 +166,33 @@ export class GradesService {
     if (offerings.length === 0) return [];
 
     const offeringIds = offerings.map((o) => o.id);
-    const termIds = [...new Set(offerings.map((o) => o.academicTermId))];
-    const yearIds = [...new Set(offerings.map((o) => o.academicYearId))];
-
     const [grades, terms, years] = await Promise.all([
       prisma.studentCourseGrade.findMany({ where: { offeringId: { in: offeringIds } } }),
-      prisma.academicTerm.findMany({ where: { id: { in: termIds } } }),
-      prisma.academicYear.findMany({ where: { id: { in: yearIds } } }),
+      prisma.academicTerm.findMany({ where: { deletedAt: null } }),
+      prisma.academicYear.findMany({ where: { deletedAt: null } }),
     ]);
 
     const gradeMap = Object.fromEntries(grades.map((g) => [g.offeringId, g]));
     const termMap = Object.fromEntries(terms.map((t) => [t.id, t]));
     const yearMap = Object.fromEntries(years.map((y) => [y.id, y]));
+    const termLinks = buildAcademicTermLinks(terms.map((term) => ({
+      id: term.id,
+      academicYearId: term.academicYearId,
+      academicYearCode: yearMap[term.academicYearId]?.sYearCode || "",
+      termOrder: term.sTermOrder,
+      isSummer: term.sIsSummer,
+      startDate: term.startDate,
+      endDate: term.endDate,
+    })));
 
     return offerings
       .map((o) => {
         const grade = gradeMap[o.id];
         const term = termMap[o.academicTermId];
         const year = yearMap[o.academicYearId];
+        const previousMainTerm = term
+          ? termMap[termLinks.get(term.id)?.previousMainTermId || ""]
+          : null;
         return {
           id: o.id,
           studentId: o.sStudentId,
@@ -191,6 +201,15 @@ export class GradesService {
           credits: o.sCredits,
           academicYear: year?.sYearCode,
           termCode: term?.sTermCode,
+          isSummer: Boolean(term?.sIsSummer),
+          previousMainTermId: term ? termLinks.get(term.id)?.previousMainTermId || null : null,
+          nextMainTermId: term ? termLinks.get(term.id)?.nextMainTermId || null : null,
+          rankingMainTerm: previousMainTerm ? {
+            id: previousMainTerm.id,
+            termCode: previousMainTerm.sTermCode,
+            termName: previousMainTerm.sTermName,
+            academicYear: yearMap[previousMainTerm.academicYearId]?.sYearCode || null,
+          } : null,
           programCode: o.sProgramCode,
           courseGroup: o.sCourseGroup,
           score10: grade?.score10 != null ? Number(grade.score10) : null,
@@ -238,21 +257,29 @@ export class GradesService {
       }),
     ]);
 
-    const termIds = [...new Set([
-      ...termSummaries.map((summary) => summary.academicTermId),
-      ...conductRecords.map((record) => record.academicTermId),
-    ])];
-    const terms = await prisma.academicTerm.findMany({ where: { id: { in: termIds } } });
+    const terms = await prisma.academicTerm.findMany({ where: { deletedAt: null } });
     const termMap = Object.fromEntries(terms.map((t) => [t.id, t]));
     const yearIds = [...new Set(terms.map((term) => term.academicYearId))];
     const years = await prisma.academicYear.findMany({ where: { id: { in: yearIds } } });
     const yearMap = Object.fromEntries(years.map((year) => [year.id, year]));
+    const termLinks = buildAcademicTermLinks(terms.map((term) => ({
+      id: term.id,
+      academicYearId: term.academicYearId,
+      academicYearCode: yearMap[term.academicYearId]?.sYearCode || "",
+      termOrder: term.sTermOrder,
+      isSummer: term.sIsSummer,
+      startDate: term.startDate,
+      endDate: term.endDate,
+    })));
 
     const mappedTerms = termSummaries.map((t) => ({
       id: t.id,
       termCode: termMap[t.academicTermId]?.sTermCode,
       termName: termMap[t.academicTermId]?.sTermName,
       academicYear: yearMap[termMap[t.academicTermId]?.academicYearId]?.sYearCode,
+      isSummer: Boolean(termMap[t.academicTermId]?.sIsSummer),
+      previousMainTermId: termLinks.get(t.academicTermId)?.previousMainTermId || null,
+      nextMainTermId: termLinks.get(t.academicTermId)?.nextMainTermId || null,
       programCode: t.sProgramCode,
       registeredCredits: Number(t.registeredCredits),
       creditsEarned: t.creditsEarned != null ? Number(t.creditsEarned) : null,
@@ -285,6 +312,8 @@ export class GradesService {
         id: record.id,
         academicYear: yearMap[term?.academicYearId]?.sYearCode,
         termCode: term?.sTermCode,
+        isSummer: Boolean(term?.sIsSummer),
+        evaluationTermId: term?.sIsSummer ? termLinks.get(term.id)?.nextMainTermId || null : term?.id || null,
         classStudentId: record.sClassStudentId,
         studentScore: record.studentScore != null ? Number(record.studentScore) : null,
         classScore: record.classScore != null ? Number(record.classScore) : null,
@@ -412,11 +441,13 @@ export class GradesService {
         for (const key of [...new Set(rows.map((row) => `${row.year}|${row.term}`))]) {
           const [yearCode, termCode] = key.split("|");
           const yearId = yearIds.get(yearCode)!;
-          const termOrder = termCode === "HK02" ? 2 : termCode === "HK03" ? 3 : 1;
-          const termName = termCode === "HK02" ? "Học kỳ 2" : termCode === "HK03" ? "Học kỳ hè" : "Học kỳ 1";
+          const parsedOrder = Number(termCode.match(/(\d+)$/)?.[1]);
+          const termOrder = Number.isInteger(parsedOrder) && parsedOrder > 0 ? parsedOrder : 1;
+          const isSummer = isConfiguredSummerTermCode(termCode);
+          const termName = isSummer ? "Học kỳ hè" : `Học kỳ ${termOrder}`;
           const result: Array<{ id: string }> = await tx.$queryRaw`
           INSERT INTO academic_terms (academic_year_id, s_term_code, s_term_name, s_term_order, s_is_summer)
-          VALUES (${yearId}::uuid, ${termCode}, ${termName}, ${termOrder}::smallint, ${termCode === "HK03"})
+          VALUES (${yearId}::uuid, ${termCode}, ${termName}, ${termOrder}::smallint, ${isSummer})
           ON CONFLICT (academic_year_id, s_term_code) DO UPDATE SET deleted_at = NULL, updated_at = now()
           RETURNING id::text
         `;

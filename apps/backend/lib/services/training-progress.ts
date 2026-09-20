@@ -875,6 +875,13 @@ export class TrainingProgressService {
     const plan = await prisma.$transaction(async (tx) => {
       const term = await tx.academicTerm.findUnique({ where: { id: data.academicTermId } });
       if (!term) throw new ApiError("Academic term not found", "NOT_FOUND", 404);
+      if (term.sIsSummer) {
+        throw new ApiError(
+          "Không tạo kế hoạch đào tạo riêng cho học kỳ hè. Hãy giữ học phần ở milestone gốc và dùng đợt đối chiếu sau hè.",
+          "SUMMER_PLAN_NOT_ALLOWED",
+          422,
+        );
+      }
       const program = data.trainingProgramId
         ? await tx.trainingProgram.findUnique({ where: { id: data.trainingProgramId } })
         : await tx.trainingProgram.findFirst({ where: { deletedAt: null, isActive: true }, orderBy: { sProgramCode: "asc" } });
@@ -1604,6 +1611,7 @@ export class TrainingProgressService {
         academicYear: yearMap[r.academicYearId]?.sYearCode,
         termCode: termMap[r.academicTermId]?.sTermCode,
         termName: termMap[r.academicTermId]?.sTermName,
+        isSummer: Boolean(termMap[r.academicTermId]?.sIsSummer),
         createdAt: r.createdAt,
       })),
       total,

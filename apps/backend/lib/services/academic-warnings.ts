@@ -32,6 +32,12 @@ interface SummarySource {
 }
 interface DecisionSource { id: string; number: string; name: string; fullText: string; signDate: Date | null }
 interface ConductSource { id: string; score: number; statusId: string }
+interface SummerMonitoringSource {
+  offeringCount: number;
+  registeredCredits: number;
+  pendingResults: number;
+  failedCourses: number;
+}
 
 interface ReasonData {
   reasonCode: string;
@@ -170,6 +176,46 @@ export function evaluate(
     result.dataError = "missing student term summary";
   }
 
+  return result;
+}
+
+export function evaluateSummerMonitoring(
+  student: StudentSource,
+  summaries: Map<string, SummarySource>,
+  monitoring: Map<string, SummerMonitoringSource>,
+): EvalResult {
+  const summary = summaries.get(student.id);
+  const source = monitoring.get(student.id);
+  const result: EvalResult = {
+    termRegisteredCredits: source?.registeredCredits ?? summary?.registered ?? null,
+    termGPA4: summary?.termGPA4 ?? null,
+    termGPA10: summary?.termGPA10 ?? null,
+    cumulativeGPA4: summary?.cumulativeGPA4 ?? null,
+    cumulativeGPA10: summary?.cumulativeGPA10 ?? null,
+    registrationStatus: source ? "participating" : "not_participating",
+    scheduleStatus: "not_assessed",
+    academicWarningDecisions: 0,
+    maxSeverity: "none",
+    reasonCount: 0,
+    dataError: null,
+    reasons: [],
+  };
+
+  const addReason = (code: string, title: string, count: number) => {
+    result.reasons.push({
+      reasonCode: code,
+      severity: "medium",
+      title,
+      details: { count, monitoringOnly: true },
+      sourceType: "summer_monitoring",
+      sourceId: null,
+    });
+    result.reasonCount += 1;
+    result.maxSeverity = "medium";
+  };
+
+  if (source?.pendingResults) addReason("SUMMER_RESULT_PENDING", "Kết quả học phần hè đang chờ", source.pendingResults);
+  if (source?.failedCourses) addReason("SUMMER_COURSE_NOT_PASSED", "Học phần hè chưa đạt", source.failedCourses);
   return result;
 }
 
@@ -359,6 +405,113 @@ async function loadWarningContext(
     summaries,
     decisions,
     conduct,
+    summerMonitoring: new Map<string, SummerMonitoringSource>(),
+  };
+}
+
+async function loadSummerMonitoringContext(
+  cohortId: string,
+  trainingProgramId: string,
+  assessmentTermId: string,
+) {
+  const [policy, program] = await Promise.all([
+    prisma.academicWarningPolicy.findFirst({ where: { status: "active" }, orderBy: { version: "desc" } }),
+    prisma.trainingProgram.findUnique({ where: { id: trainingProgramId } }),
+  ]);
+  if (!policy) throw new ApiError("No active academic warning policy found", "WARNING_POLICY_REQUIRED", 422);
+  if (!program) throw new ApiError("Training program not found", "NOT_FOUND", 404);
+
+  const studentRows: Array<{
+    id: string; class_uuid: string; cohort_uuid: string; s_student_id: string; s_full_name: string;
+    class_code: string; class_name: string; program_code: string;
+  }> = await prisma.$queryRaw`
+    SELECT s.id::text, COALESCE(c.id::text,'') as class_uuid, COALESCE(c.cohort_id::text,'') as cohort_uuid,
+           s.s_student_id, s.s_full_name, COALESCE(c.class_id,'') as class_code, COALESCE(c.class_name,'') as class_name,
+           COALESCE(s.s_study_program_id,'') as program_code
+    FROM students s
+    LEFT JOIN classes c ON c.class_id = s.s_class_student_id AND c.deleted_at IS NULL
+    WHERE s.s_study_program_id = ${program.sProgramCode} AND s.deleted_at IS NULL
+      AND c.cohort_id = ${cohortId}::uuid
+    ORDER BY s.s_student_id
+  `;
+  const students: StudentSource[] = studentRows.map((row) => ({
+    id: row.id,
+    classId: row.class_uuid || null,
+    cohortId: row.cohort_uuid || null,
+    code: row.s_student_id,
+    name: row.s_full_name,
+    classCode: row.class_code,
+    className: row.class_name,
+    programCode: row.program_code,
+  }));
+  const studentIds = students.map((student) => student.id);
+  const summaries = new Map<string, SummarySource>();
+  const summerMonitoring = new Map<string, SummerMonitoringSource>();
+
+  if (studentIds.length) {
+    const [summaryRows, monitoringRows] = await Promise.all([
+      prisma.$queryRaw<Array<{
+        id: string; student_id: string; registered_credits: unknown; gpa_4: unknown; gpa_10: unknown;
+        cumulative_gpa_4: unknown; cumulative_gpa_10: unknown;
+      }>>`
+        SELECT id::text, student_id::text, registered_credits, gpa_4, gpa_10,
+               cumulative_gpa_4, cumulative_gpa_10
+        FROM student_term_summaries
+        WHERE academic_term_id = ${assessmentTermId}::uuid
+          AND s_program_code = ${program.sProgramCode}
+          AND student_id = ANY(${studentIds}::uuid[])
+      `,
+      prisma.$queryRaw<Array<{
+        student_id: string; offering_count: bigint; registered_credits: bigint;
+        pending_results: bigint; failed_courses: bigint;
+      }>>`
+        SELECT o.student_id::text,
+               COUNT(*) AS offering_count,
+               COALESCE(SUM(o.s_credits), 0) AS registered_credits,
+               COUNT(*) FILTER (WHERE g.offering_id IS NULL OR g.score_status = 'pending') AS pending_results,
+               COUNT(*) FILTER (WHERE g.offering_id IS NOT NULL AND g.score_status <> 'pending' AND NOT g.is_pass) AS failed_courses
+        FROM student_course_offerings o
+        LEFT JOIN student_course_grades g ON g.offering_id = o.id
+        WHERE o.academic_term_id = ${assessmentTermId}::uuid
+          AND o.student_id = ANY(${studentIds}::uuid[])
+        GROUP BY o.student_id
+      `,
+    ]);
+    for (const row of summaryRows) {
+      summaries.set(row.student_id, {
+        termSummaryId: row.id,
+        cumulativeSummaryId: null,
+        registered: row.registered_credits == null ? null : Number(row.registered_credits),
+        termGPA4: row.gpa_4 == null ? null : Number(row.gpa_4),
+        termGPA10: row.gpa_10 == null ? null : Number(row.gpa_10),
+        cumulativeGPA4: row.cumulative_gpa_4 == null ? null : Number(row.cumulative_gpa_4),
+        cumulativeGPA10: row.cumulative_gpa_10 == null ? null : Number(row.cumulative_gpa_10),
+      });
+    }
+    for (const row of monitoringRows) {
+      summerMonitoring.set(row.student_id, {
+        offeringCount: Number(row.offering_count),
+        registeredCredits: Number(row.registered_credits),
+        pendingResults: Number(row.pending_results),
+        failedCourses: Number(row.failed_courses),
+      });
+    }
+  }
+
+  return {
+    policy,
+    program,
+    completionRunId: null,
+    progressRunId: null,
+    progressRunSource: null,
+    completionRunSource: null,
+    students,
+    progress: new Map<string, ProgressSource>(),
+    completion: new Map<string, CompletionSource>(),
+    summaries,
+    decisions: new Map<string, DecisionSource[]>(),
+    conduct: new Map<string, ConductSource>(),
+    summerMonitoring,
   };
 }
 
@@ -521,15 +674,17 @@ export class AcademicWarningsService {
     const programIds = [...new Set(runs.map((r) => r.trainingProgramId))];
     const termIds = [...new Set(runs.map((r) => r.assessmentAcademicTermId))];
 
-    const [cohorts, programs, terms] = await Promise.all([
+    const [cohorts, programs, terms, years] = await Promise.all([
       prisma.cohort.findMany({ where: { id: { in: cohortIds } } }),
       prisma.trainingProgram.findMany({ where: { id: { in: programIds } } }),
       prisma.academicTerm.findMany({ where: { id: { in: termIds } } }),
+      prisma.academicYear.findMany({ where: { deletedAt: null } }),
     ]);
 
     const cohortMap = Object.fromEntries(cohorts.map((c) => [c.id, c]));
     const programMap = Object.fromEntries(programs.map((p) => [p.id, p]));
     const termMap = Object.fromEntries(terms.map((t) => [t.id, t]));
+    const yearMap = Object.fromEntries(years.map((year) => [year.id, year]));
 
     return {
       items: runs.map((r) => ({
@@ -540,6 +695,11 @@ export class AcademicWarningsService {
         programCode: programMap[r.trainingProgramId]?.sProgramCode,
         assessmentAcademicTermId: r.assessmentAcademicTermId,
         termCode: termMap[r.assessmentAcademicTermId]?.sTermCode,
+        assessmentTermCode: termMap[r.assessmentAcademicTermId]?.sTermCode,
+        assessmentAcademicYear: yearMap[termMap[r.assessmentAcademicTermId]?.academicYearId]?.sYearCode || null,
+        isSummer: Boolean(termMap[r.assessmentAcademicTermId]?.sIsSummer),
+        runMode: r.runMode,
+        isOfficial: r.runMode === "OFFICIAL" && !termMap[r.assessmentAcademicTermId]?.sIsSummer,
         policyId: r.policyId,
         policyVersion: r.policyVersion,
         completionRunId: r.completionRunId,
@@ -566,17 +726,39 @@ export class AcademicWarningsService {
     trainingProgramId: string;
     assessmentAcademicTermId: string;
     createdBy?: string | null;
+    runMode?: "OFFICIAL" | "SUMMER_MONITORING";
   }) {
     if (!data.cohortId || !data.trainingProgramId || !data.assessmentAcademicTermId) {
       throw new Error("cohortId, trainingProgramId, and assessmentAcademicTermId are required");
     }
 
-    // Load all context data
-    const ctx = await loadWarningContext(data.cohortId, data.trainingProgramId, data.assessmentAcademicTermId);
+    const assessmentTerm = await prisma.academicTerm.findFirst({
+      where: { id: data.assessmentAcademicTermId, deletedAt: null },
+    });
+    if (!assessmentTerm) throw new ApiError("Academic term not found", "NOT_FOUND", 404);
+    const runMode = data.runMode === "SUMMER_MONITORING" ? "SUMMER_MONITORING" : "OFFICIAL";
+    if (assessmentTerm.sIsSummer && runMode !== "SUMMER_MONITORING") {
+      throw new ApiError(
+        "Không thể ban hành cảnh báo chính thức từ kỳ hè. Hãy chọn kỳ chính ngay trước hoặc dùng chế độ giám sát hè.",
+        "SUMMER_OFFICIAL_WARNING_NOT_ALLOWED",
+        422,
+      );
+    }
+    if (!assessmentTerm.sIsSummer && runMode === "SUMMER_MONITORING") {
+      throw new ApiError("Chế độ giám sát hè chỉ áp dụng cho kỳ được cấu hình là kỳ hè.", "INVALID_WARNING_RUN_MODE", 422);
+    }
+
+    // Official runs require locked progress snapshots. Summer monitoring reads
+    // registrations and grade outcomes directly because summer has no plan or
+    // minimum-credit requirement of its own.
+    const ctx = runMode === "SUMMER_MONITORING"
+      ? await loadSummerMonitoringContext(data.cohortId, data.trainingProgramId, data.assessmentAcademicTermId)
+      : await loadWarningContext(data.cohortId, data.trainingProgramId, data.assessmentAcademicTermId);
 
     const sourceCapturedAt = new Date();
     const sourceSnapshot = {
-      schemaVersion: 1,
+      schemaVersion: 2,
+      runMode,
       scope: {
         cohortId: data.cohortId,
         trainingProgramId: data.trainingProgramId,
@@ -620,6 +802,7 @@ export class AcademicWarningsService {
           signDate: decision.signDate?.toISOString() || null,
         })),
         conduct: ctx.conduct.get(student.id) || null,
+        summerMonitoring: ctx.summerMonitoring.get(student.id) || null,
       })),
     };
     const sourceSnapshotHash = sha256Hex(JSON.stringify(sourceSnapshot));
@@ -634,6 +817,7 @@ export class AcademicWarningsService {
         policyVersion: ctx.policy.version,
         completionRunId: ctx.completionRunId,
         progressRunId: ctx.progressRunId,
+        runMode,
         sourceSnapshot: sourceSnapshot as Prisma.InputJsonValue,
         sourceSnapshotHash,
         sourceCapturedAt,
@@ -649,15 +833,17 @@ export class AcademicWarningsService {
     const reasonRows: Prisma.AcademicWarningReasonCreateManyInput[] = [];
 
     for (const student of ctx.students) {
-      const evalResult = evaluate(
-        student, ctx.progress, ctx.completion, ctx.summaries, ctx.decisions,
-        {
-          termGpaThreshold: Number(ctx.policy.termGpaThreshold),
-          cumulativeGpaThreshold: Number(ctx.policy.cumulativeGpaThreshold),
-          conductScoreThreshold: Number(ctx.policy.conductScoreThreshold),
-        },
-        ctx.conduct,
-      );
+      const evalResult = runMode === "SUMMER_MONITORING"
+        ? evaluateSummerMonitoring(student, ctx.summaries, ctx.summerMonitoring)
+        : evaluate(
+            student, ctx.progress, ctx.completion, ctx.summaries, ctx.decisions,
+            {
+              termGpaThreshold: Number(ctx.policy.termGpaThreshold),
+              cumulativeGpaThreshold: Number(ctx.policy.cumulativeGpaThreshold),
+              conductScoreThreshold: Number(ctx.policy.conductScoreThreshold),
+            },
+            ctx.conduct,
+          );
 
       const studentResultId = crypto.randomUUID();
       studentRows.push({
@@ -792,6 +978,9 @@ export class AcademicWarningsService {
       programCode: program?.sProgramCode,
       assessmentAcademicTermId: run.assessmentAcademicTermId,
       termCode: term?.sTermCode,
+      isSummer: Boolean(term?.sIsSummer),
+      runMode: run.runMode,
+      isOfficial: run.runMode === "OFFICIAL" && !term?.sIsSummer,
       policy: policy ? {
         id: policy.id,
         name: policy.name,

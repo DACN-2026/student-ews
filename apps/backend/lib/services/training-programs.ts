@@ -7,6 +7,7 @@ import {
   type Course,
   type TrainingProgram,
 } from "@prisma/client";
+import { buildAcademicTermLinks, isConfiguredSummerTermCode } from "@/lib/academic-terms";
 
 const dateOnly = (value: Date | null) => value ? value.toISOString().slice(0, 10) : null;
 
@@ -39,7 +40,13 @@ function mapAcademicYear(year: AcademicYear) {
   };
 }
 
-function mapAcademicTerm(term: AcademicTerm) {
+function mapAcademicTerm(
+  term: AcademicTerm,
+  links: { previousMainTermId: string | null; nextMainTermId: string | null } = {
+    previousMainTermId: null,
+    nextMainTermId: null,
+  },
+) {
   return {
     id: term.id,
     academicYearId: term.academicYearId,
@@ -51,7 +58,25 @@ function mapAcademicTerm(term: AcademicTerm) {
     endDate: dateOnly(term.endDate),
     status: term.status,
     isCurrent: term.isCurrent,
+    ...links,
   };
+}
+
+async function loadAcademicTermLinks() {
+  const [terms, years] = await Promise.all([
+    prisma.academicTerm.findMany({ where: { deletedAt: null } }),
+    prisma.academicYear.findMany({ where: { deletedAt: null }, select: { id: true, sYearCode: true } }),
+  ]);
+  const yearCodes = new Map(years.map((year) => [year.id, year.sYearCode]));
+  return buildAcademicTermLinks(terms.map((term) => ({
+    id: term.id,
+    academicYearId: term.academicYearId,
+    academicYearCode: yearCodes.get(term.academicYearId) || "",
+    termOrder: term.sTermOrder,
+    isSummer: term.sIsSummer,
+    startDate: term.startDate,
+    endDate: term.endDate,
+  })));
 }
 
 type ProgramImportItem = {
@@ -122,6 +147,24 @@ export class TrainingProgramsService {
       const year = await prisma.academicYear.findUnique({
         where: { id: activeTerm.academicYearId },
       });
+      const [links, allTerms, allYears] = await Promise.all([
+        loadAcademicTermLinks(),
+        prisma.academicTerm.findMany({ where: { deletedAt: null } }),
+        prisma.academicYear.findMany({ where: { deletedAt: null }, select: { id: true, sYearCode: true } }),
+      ]);
+      const yearCodes = new Map(allYears.map((item) => [item.id, item.sYearCode]));
+      const enrichedTerms = allTerms.map((term) => ({
+        ...term,
+        academicYearCode: yearCodes.get(term.academicYearId) || "",
+        termOrder: term.sTermOrder,
+        isSummer: term.sIsSummer,
+      }));
+      const preferredReportingTermId = activeTerm.sIsSummer
+        ? links.get(activeTerm.id)?.previousMainTermId
+        : activeTerm.id;
+      const reportingTerm = preferredReportingTermId
+        ? enrichedTerms.find((term) => term.id === preferredReportingTermId) || null
+        : null;
       return {
         academicYearId: activeTerm.academicYearId,
         academicYearCode: year?.sYearCode,
@@ -132,6 +175,15 @@ export class TrainingProgramsService {
         startDate: activeTerm.startDate,
         endDate: activeTerm.endDate,
         isActive: activeTerm.isCurrent,
+        isSummer: activeTerm.sIsSummer,
+        ...links.get(activeTerm.id),
+        defaultReportingTerm: reportingTerm ? {
+          id: reportingTerm.id,
+          academicYearId: reportingTerm.academicYearId,
+          academicYearCode: reportingTerm.academicYearCode,
+          termCode: reportingTerm.sTermCode,
+          termName: reportingTerm.sTermName,
+        } : null,
       };
     }
 
@@ -141,15 +193,16 @@ export class TrainingProgramsService {
     });
     const latestTerm = latestYear
       ? await prisma.academicTerm.findFirst({
-          where: { academicYearId: latestYear.id, deletedAt: null },
+          where: { academicYearId: latestYear.id, deletedAt: null, sIsSummer: false },
           orderBy: [{ sTermOrder: "desc" }, { updatedAt: "desc" }],
         })
       : null;
 
     if (latestTerm) {
-      const year = await prisma.academicYear.findUnique({
-        where: { id: latestTerm.academicYearId },
-      });
+      const [year, links] = await Promise.all([
+        prisma.academicYear.findUnique({ where: { id: latestTerm.academicYearId } }),
+        loadAcademicTermLinks(),
+      ]);
       return {
         academicYearId: latestTerm.academicYearId,
         academicYearCode: year?.sYearCode,
@@ -160,6 +213,15 @@ export class TrainingProgramsService {
         startDate: latestTerm.startDate,
         endDate: latestTerm.endDate,
         isActive: latestTerm.isCurrent,
+        isSummer: latestTerm.sIsSummer,
+        ...links.get(latestTerm.id),
+        defaultReportingTerm: {
+          id: latestTerm.id,
+          academicYearId: latestTerm.academicYearId,
+          academicYearCode: year?.sYearCode,
+          termCode: latestTerm.sTermCode,
+          termName: latestTerm.sTermName,
+        },
       };
     }
 
@@ -415,7 +477,12 @@ export class TrainingProgramsService {
         for (const term of [
           { code: "HK01", name: "Học kỳ 1", order: 1, summer: false },
           { code: "HK02", name: "Học kỳ 2", order: 2, summer: false },
-          { code: "HK03", name: "Học kỳ hè", order: 3, summer: true },
+          {
+            code: "HK03",
+            name: isConfiguredSummerTermCode("HK03") ? "Học kỳ hè" : "Học kỳ 3",
+            order: 3,
+            summer: isConfiguredSummerTermCode("HK03"),
+          },
         ]) {
           await tx.academicTerm.upsert({
             where: { academicYearId_sTermCode: { academicYearId: year.id, sTermCode: term.code } },
@@ -669,15 +736,18 @@ export class TrainingProgramsService {
         orderBy: { sYearCode: "desc" },
       }),
     ]);
-    const terms = await prisma.academicTerm.findMany({
-      where: { academicYearId: { in: years.map((year) => year.id) }, deletedAt: null },
-      orderBy: { sTermOrder: "asc" },
-    });
+    const [terms, links] = await Promise.all([
+      prisma.academicTerm.findMany({
+        where: { academicYearId: { in: years.map((year) => year.id) }, deletedAt: null },
+        orderBy: { sTermOrder: "asc" },
+      }),
+      loadAcademicTermLinks(),
+    ]);
 
     const termsByYear: Record<string, any[]> = {};
     for (const t of terms) {
       if (!termsByYear[t.academicYearId]) termsByYear[t.academicYearId] = [];
-      termsByYear[t.academicYearId].push(mapAcademicTerm(t));
+      termsByYear[t.academicYearId].push(mapAcademicTerm(t, links.get(t.id)));
     }
 
     const items = years.map((y) => ({
@@ -690,13 +760,16 @@ export class TrainingProgramsService {
   static async getAcademicYearById(id: string) {
     const year = await prisma.academicYear.findFirst({ where: { id, deletedAt: null } });
     if (!year) return null;
-    const terms = await prisma.academicTerm.findMany({
-      where: { academicYearId: year.id, deletedAt: null },
-      orderBy: { sTermOrder: "asc" },
-    });
+    const [terms, links] = await Promise.all([
+      prisma.academicTerm.findMany({
+        where: { academicYearId: year.id, deletedAt: null },
+        orderBy: { sTermOrder: "asc" },
+      }),
+      loadAcademicTermLinks(),
+    ]);
     return {
       ...mapAcademicYear(year),
-      terms: terms.map(mapAcademicTerm),
+      terms: terms.map((term) => mapAcademicTerm(term, links.get(term.id))),
       createdAt: year.createdAt,
       updatedAt: year.updatedAt,
     };
@@ -754,18 +827,23 @@ export class TrainingProgramsService {
   }
 
   static async listTerms(yearId: string) {
-    const terms = await prisma.academicTerm.findMany({
-      where: { academicYearId: yearId, deletedAt: null },
-      orderBy: { sTermOrder: "asc" },
-    });
-    return terms.map(mapAcademicTerm);
+    const [terms, links] = await Promise.all([
+      prisma.academicTerm.findMany({
+        where: { academicYearId: yearId, deletedAt: null },
+        orderBy: { sTermOrder: "asc" },
+      }),
+      loadAcademicTermLinks(),
+    ]);
+    return terms.map((term) => mapAcademicTerm(term, links.get(term.id)));
   }
 
   static async getTermById(yearId: string, termId: string) {
     const term = await prisma.academicTerm.findFirst({
       where: { id: termId, academicYearId: yearId, deletedAt: null },
     });
-    return term ? mapAcademicTerm(term) : null;
+    if (!term) return null;
+    const links = await loadAcademicTermLinks();
+    return mapAcademicTerm(term, links.get(term.id));
   }
 
   static async createTerm(yearId: string, data: {

@@ -30,6 +30,7 @@ type WarningTrendTerm = {
   termCode: string;
   termOrder: number;
   label: string;
+  isSummer?: boolean;
 };
 
 type WarningTrendSummary = {
@@ -96,19 +97,20 @@ export function summarizeWarningTrend(
   return { high, medium, evaluated, available, termGpaAvailable, cumulativeGpaAvailable };
 }
 
-export function selectLatestReportingPeriod<TrendPoint extends { termGpaAvailable: number }>(
+export function selectLatestReportingPeriod<TrendPoint extends { termGpaAvailable: number; isSummer?: boolean }>(
   trend: TrendPoint[],
   studentCount: number,
   minimumCoverage = MIN_REPORTING_TERM_GPA_COVERAGE,
 ) {
   if (!trend.length || studentCount <= 0) return null;
-  const sufficientlyCovered = trend.filter(
+  const mainTerms = trend.filter((point) => !point.isSummer);
+  const sufficientlyCovered = mainTerms.filter(
     (point) => point.termGpaAvailable / studentCount >= minimumCoverage,
   );
-  // Prefer a statistically representative term. Small summer terms and a
-  // current term without posted GPA are not suitable as faculty-wide reports.
+  // Automated reporting always excludes configured summer terms. Coverage is
+  // still used to avoid selecting an incomplete current main term.
   return sufficientlyCovered.at(-1)
-    || trend.filter((point) => point.termGpaAvailable > 0).at(-1)
+    || mainTerms.filter((point) => point.termGpaAvailable > 0).at(-1)
     || null;
 }
 
@@ -151,6 +153,7 @@ export function buildWarningTrend(
       termCode: term.termCode,
       termOrder: term.termOrder,
       label: term.label,
+      isSummer: Boolean(term.isSummer),
       ...summarizeWarningTrend(
         periodSummaries,
         termGpaThreshold,
@@ -270,6 +273,7 @@ export class ReportsService {
           termCode: term.sTermCode,
           termOrder: term.sTermOrder,
           label: `${term.sTermCode} (${academicYear})`,
+          isSummer: term.sIsSummer,
         };
       }),
       scopedTermSummaries,
@@ -284,6 +288,13 @@ export class ReportsService {
     if (requestedTerm && filters.academicYearId && requestedTerm.academicYearId !== filters.academicYearId) {
       throw new ApiError("Academic term does not belong to the selected academic year", "INVALID_ACADEMIC_TERM", 400);
     }
+    const summerParticipants = requestedTerm?.sIsSummer && studentIds.length
+      ? await prisma.studentCourseOffering.findMany({
+          where: { academicTermId: requestedTerm.id, studentId: { in: studentIds } },
+          distinct: ["studentId"],
+          select: { studentId: true },
+        })
+      : [];
     const latestPeriod = requestedTerm
       ? completeTrend.find((point) => point.academicTermId === requestedTerm.id) || {
           academicTermId: requestedTerm.id,
@@ -291,6 +302,7 @@ export class ReportsService {
           termCode: requestedTerm.sTermCode,
           termOrder: requestedTerm.sTermOrder,
           label: `${requestedTerm.sTermCode} (${yearMap.get(requestedTerm.academicYearId)?.sYearCode || ""})`,
+          isSummer: requestedTerm.sIsSummer,
           high: 0,
           medium: 0,
           evaluated: 0,
@@ -304,6 +316,7 @@ export class ReportsService {
       : -1;
     const trend = (reportingPeriodIndex >= 0 ? completeTrend.slice(0, reportingPeriodIndex + 1) : [])
       .filter((point) => point.termGpaAvailable > 0)
+      .filter((point) => requestedTerm?.sIsSummer ? true : !point.isSummer)
       .slice(-5);
     const latestTerm = latestPeriod ? termMap.get(latestPeriod.academicTermId) : null;
     const latestYear = latestTerm ? yearMap.get(latestTerm.academicYearId) : null;
@@ -426,16 +439,46 @@ export class ReportsService {
         configured: true,
       },
       mode: {
-        code: "live_gpa_decision",
-        label: "Cảnh báo live theo GPA và quyết định",
+        code: requestedTerm?.sIsSummer ? "summer_descriptive_monitoring" : "live_gpa_decision",
+        label: requestedTerm?.sIsSummer
+          ? "Số liệu mô tả kỳ phụ, không phải kết luận cảnh báo chính thức"
+          : "Cảnh báo live theo GPA và quyết định",
         reasonCodes: ["LOW_TERM_GPA", "LOW_CUMULATIVE_GPA", "ACADEMIC_WARNING_DECISION"],
         excludes: ["REGISTRATION_BEHIND", "PROGRAM_PROGRESS_BEHIND"],
-        periodSelection: requestedTerm ? "explicit_filter" : "latest_term_with_80_percent_term_gpa_coverage",
+        periodSelection: requestedTerm ? "explicit_filter" : "latest_non_summer_term_with_80_percent_term_gpa_coverage",
         generatedAt: new Date().toISOString(),
       },
       latestPeriod,
       trend,
       classBreakdown,
+      reportContext: {
+        isSummer: Boolean(requestedTerm?.sIsSummer),
+        classification: requestedTerm?.sIsSummer ? "descriptive" : "official_main_term",
+        participantStudents: requestedTerm?.sIsSummer ? summerParticipants.length : latestPeriod?.available || 0,
+        scopedStudents: students.length,
+        coverage: students.length
+          ? (requestedTerm?.sIsSummer ? summerParticipants.length : latestPeriod?.available || 0) / students.length
+          : 0,
+        note: requestedTerm?.sIsSummer
+          ? "Số liệu mô tả, không phải kết quả xếp hạng học lực độc lập."
+          : null,
+      },
+      filterOptions: {
+        terms: reportTerms
+          .slice()
+          .sort((left, right) => {
+            const leftYear = yearMap.get(left.academicYearId)?.sYearCode || "";
+            const rightYear = yearMap.get(right.academicYearId)?.sYearCode || "";
+            return `${rightYear}|${String(right.sTermOrder).padStart(2, "0")}`.localeCompare(
+              `${leftYear}|${String(left.sTermOrder).padStart(2, "0")}`,
+            );
+          })
+          .map((term) => ({
+            value: term.id,
+            label: `${term.sTermCode} (${yearMap.get(term.academicYearId)?.sYearCode || ""})`,
+            isSummer: term.sIsSummer,
+          })),
+      },
     };
   }
 }

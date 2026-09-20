@@ -807,9 +807,11 @@ model AcademicWarningRun {
   sourceSnapshot           Json      @default("{}") @map("source_snapshot")
   sourceSnapshotHash       String?   @map("source_snapshot_hash") @db.VarChar(64)
   sourceCapturedAt         DateTime? @map("source_captured_at") @db.Timestamptz(6)
+  runMode                  String    @default("OFFICIAL") @map("run_mode") @db.VarChar(32)
 
   @@index([cohortId, trainingProgramId, assessmentAcademicTermId, startedAt(sort: Desc)], map: "academic_warning_runs_scope_idx")
   @@index([sourceCapturedAt(sort: Desc)], map: "academic_warning_runs_source_captured_idx")
+  @@index([runMode, assessmentAcademicTermId, startedAt(sort: Desc)], map: "academic_warning_runs_mode_term_idx")
   @@map("academic_warning_runs")
 }
 

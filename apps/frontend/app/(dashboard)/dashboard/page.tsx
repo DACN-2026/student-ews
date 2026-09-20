@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell,
+  ResponsiveContainer, Line, PieChart, Pie, Cell, ComposedChart, Scatter,
 } from "recharts";
 import FilterBar from "@/components/ui/FilterBar";
 
@@ -15,8 +15,6 @@ interface FilterState {
   classId?: string;
   gpaScope: "cumulative" | "term";
   gpaAggregation: "average" | "median";
-  warningLevel?: string;
-  supportStatus?: string;
 }
 interface DashboardMetric {
   value: number | null;
@@ -28,6 +26,7 @@ interface DashboardMetric {
 interface FilterOption {
   value: string;
   label: string;
+  isSummer?: boolean;
 }
 
 interface ProgressPoint {
@@ -64,8 +63,6 @@ export default function DashboardPage() {
     classId: "",
     gpaScope: "cumulative",
     gpaAggregation: "average",
-    warningLevel: "",
-    supportStatus: "",
   });
 
   const [completionBreakdown, setCompletionBreakdown] = useState<"program" | "cohort">("program");
@@ -97,8 +94,6 @@ export default function DashboardPage() {
         if (filters.termCode) params.set("termCode", filters.termCode);
         if (filters.programCode) params.set("programCode", filters.programCode);
         if (filters.classId) params.set("classId", filters.classId);
-        if (filters.warningLevel) params.set("warningLevel", filters.warningLevel);
-        if (filters.supportStatus) params.set("supportStatus", filters.supportStatus);
         const response = await fetch(`/api/v1/dashboard/summary?${params.toString()}`, { signal: controller.signal });
         if (!response.ok) throw new Error("Không thể tải dữ liệu tổng quan");
         const data = await response.json();
@@ -111,7 +106,12 @@ export default function DashboardPage() {
           id: item.value,
           sYearCode: item.value,
           terms: item.value === optionYear
-            ? optionTerms.map((term: FilterOption) => ({ id: term.value, sTermCode: term.value, sTermName: term.label }))
+            ? optionTerms.map((term: FilterOption) => ({
+                id: term.value,
+                sTermCode: term.value,
+                sTermName: term.label,
+                isSummer: Boolean(term.isSummer),
+              }))
             : [],
         })));
         setPrograms((options.programs || []).map((item: FilterOption) => ({
@@ -183,6 +183,9 @@ export default function DashboardPage() {
   const programRegistrationData = toPercentages(summaryData?.programRegistrationProgress || []);
   const cohortRegistrationData = toPercentages(summaryData?.registrationProgress || []);
   const warningByClassData = Array.isArray(summaryData?.warningByClass) ? summaryData.warningByClass.slice(0, 7) : [];
+  const mainTermOptions = termOptions.filter((term: ApiData) => !term.isSummer);
+  const summerTermOptions = termOptions.filter((term: ApiData) => term.isSummer);
+  const summerContext = summaryData?.summerContext;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -244,16 +247,15 @@ export default function DashboardPage() {
             classId: "",
             gpaScope: "cumulative",
             gpaAggregation: "average",
-            warningLevel: "",
-            supportStatus: "",
           })
         }
         actions={
           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200/80">
-            <span>Phạm vi:</span>
+            <span>Dữ liệu:</span>
             <span className="font-semibold text-slate-800">
-              {filters.academicYear || "Tất cả năm"}
-              {filters.termCode ? ` · ${filters.termCode}` : ""}
+              {summaryData?.currentTerm
+                ? `${summaryData.currentTerm.academicYear} · ${summaryData.currentTerm.termName}`
+                : filters.academicYear || "Tất cả dữ liệu hiện có"}
               {filters.programCode ? ` · ${filters.programCode}` : ""}
               {filters.classId ? ` · ${selectedClass?.classId || selectedClass?.className || filters.classId}` : ""}
             </span>
@@ -279,11 +281,24 @@ export default function DashboardPage() {
           className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         >
           <option value="">Tất cả học kỳ</option>
-          {termOptions.map((t: ApiData) => (
-            <option key={t.id} value={t.sTermCode || t.termCode}>
-              {t.sTermCode || t.termCode} - {t.sTermName || t.termName}
-            </option>
-          ))}
+          {mainTermOptions.length > 0 && (
+            <optgroup label="Học kỳ chính">
+              {mainTermOptions.map((t: ApiData) => (
+                <option key={t.id} value={t.sTermCode || t.termCode}>
+                  {t.sTermCode || t.termCode} - {t.sTermName || t.termName}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {summerTermOptions.length > 0 && (
+            <optgroup label="Kỳ phụ">
+              {summerTermOptions.map((t: ApiData) => (
+                <option key={t.id} value={t.sTermCode || t.termCode}>
+                  {t.sTermCode || t.termCode} - {t.sTermName || t.termName} (Kỳ phụ)
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
 
         <select
@@ -311,127 +326,24 @@ export default function DashboardPage() {
             </option>
           ))}
         </select>
-
-        <select
-          value={filters.warningLevel}
-          onChange={(e) => setFilters({ ...filters, warningLevel: e.target.value })}
-          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-        >
-          <option value="">Tất cả mức cảnh báo</option>
-          <option value="high">Đỏ · Nguy cơ cao</option>
-          <option value="medium">Vàng · Cần lưu ý</option>
-        </select>
-
-        <select
-          value={filters.supportStatus}
-          onChange={(e) => setFilters({ ...filters, supportStatus: e.target.value })}
-          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-        >
-          <option value="">Tất cả trạng thái hỗ trợ</option>
-          <option value="NONE">Chưa hỗ trợ</option>
-          <option value="OPEN">Mở</option>
-          <option value="IN_PROGRESS">Đang xử lý</option>
-          <option value="ESCALATED">Đã chuyển cấp</option>
-          <option value="REOPENED">Mở lại</option>
-          <option value="RESOLVED">Đã giải quyết</option>
-        </select>
       </FilterBar>
 
-      {summaryData?.dataContext && (
-        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5" aria-label="Nguồn và thời điểm dữ liệu dashboard">
-          <div className="rounded-2xl border border-blue-200/80 bg-blue-50/50 px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-700">GPA</p>
-            <p className="mt-1 text-xs font-semibold text-slate-800">
-              {summaryData.dataContext.gpa.periodLabel}
-            </p>
-            <p className="mt-1 text-[11px] leading-4 text-slate-500">
-              {summaryData.dataContext.gpa.availableStudents}/{totalStudents} SV có dữ liệu · {summaryData.dataContext.gpa.aggregation === "median" ? "Trung vị" : "Trung bình"}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-amber-200/80 bg-amber-50/60 px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">Cảnh báo live</p>
-            <p className="mt-1 text-xs font-semibold text-slate-800">
-              {summaryData.dataContext.warnings.periodLabel || "Chưa có kỳ đủ dữ liệu"}
-            </p>
-            <p className="mt-1 text-[11px] leading-4 text-slate-500">
-              GPA + quyết định · Policy v{summaryData.dataContext.warnings.policy?.version ?? "—"} · {summaryData.dataContext.warnings.unassessedStudents} SV thiếu dữ liệu
-            </p>
-          </div>
-          <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">Tiến độ theo run</p>
-            <p className="mt-1 text-xs font-semibold text-slate-800">
-              {summaryData.dataContext.progress.runIds?.length
-                ? `${summaryData.dataContext.progress.runIds.length} snapshot theo phạm vi`
-                : "Chưa có snapshot phù hợp"}
-            </p>
-            <p className="mt-1 text-[11px] leading-4 text-slate-500">
-              Đăng ký + hoàn thành CTĐT
-              {summaryData.dataContext.progress.cutoff
-                ? ` · cutoff ${new Date(summaryData.dataContext.progress.cutoff).toLocaleString("vi-VN")}`
-                : ""}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-violet-200/80 bg-violet-50/50 px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-violet-700">Rèn luyện</p>
-            <p className="mt-1 text-xs font-semibold text-slate-800">{summaryData.dataContext.conduct.periodLabel || "Chưa chọn kỳ"}</p>
-            <p className="mt-1 text-[11px] leading-4 text-slate-500">{summaryData.dataContext.conduct.approvedStudents} đã công nhận · {summaryData.dataContext.conduct.missingStudents} thiếu dữ liệu</p>
-          </div>
-          <div className="rounded-2xl border border-cyan-200/80 bg-cyan-50/50 px-4 py-3">
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-700">Dự báo tốt nghiệp</p>
-            <p className="mt-1 text-xs font-semibold text-slate-800">
-              {summaryData.dataContext.graduationForecast.assessedStudents} sinh viên đã có kết quả
-            </p>
-            <p className="mt-1 text-[11px] leading-4 text-slate-500">
-              {summaryData.dataContext.graduationForecast.onTime} đúng hạn · {summaryData.dataContext.graduationForecast.pending} chờ kết quả
-            </p>
+      {summerContext?.isSummer && (
+        <section className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3" role="status" aria-label="Ngữ cảnh dữ liệu học kỳ hè">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg bg-amber-100 text-sm font-bold text-amber-800" aria-hidden="true">i</span>
+            <div>
+              <h2 className="text-sm font-bold text-amber-950">Bạn đang xem dữ liệu học kỳ hè (kỳ phụ)</h2>
+              <p className="mt-0.5 text-xs leading-5 text-amber-800">
+                Có <strong>{summerContext.participantStudents}/{summerContext.scopedStudents} sinh viên</strong> trong phạm vi tham gia ({(Number(summerContext.coverage || 0) * 100).toFixed(1)}%).
+                Các chỉ số là số liệu mô tả và có thể không đại diện cho toàn khoa.
+              </p>
+            </div>
           </div>
         </section>
       )}
 
-      {/* 2. Attention Banner ("Cần chú ý") */}
-      <section className="bg-amber-50/80 border border-amber-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-        <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-amber-900" style={{ fontFamily: "Outfit, sans-serif" }}>
-              Tín hiệu Cần chú ý Học vụ
-            </h3>
-            <p className="text-xs text-amber-700 mt-0.5">
-              Hiện có <strong className="font-semibold text-amber-900">{warningTotal} sinh viên</strong> có tín hiệu cảnh báo trong phạm vi dữ liệu hiện có.
-              {redCount > 0 && ` Trong đó ${redCount} sinh viên ở mức nguy cơ cao (Đỏ).`}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-            {warningTotal} cần theo dõi
-          </span>
-          {redCount > 0 && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200 animate-pulse">
-              {redCount} nguy cơ cao
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => router.push("/reports")}
-            className="inline-flex items-center gap-1 text-xs font-bold text-amber-900 hover:text-amber-950 underline underline-offset-2 ml-1 cursor-pointer"
-          >
-            <span>Mở danh sách cảnh báo</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      </section>
-
-      {/* 3. 7 KPI Metric Cards according to SWE */}
+      {/* 2. 7 KPI Metric Cards according to SWE */}
       <div>
         <div className="mb-3">
           <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider" style={{ fontFamily: "Outfit, sans-serif" }}>
@@ -594,25 +506,39 @@ export default function DashboardPage() {
               <div className="h-full flex items-center justify-center text-xs text-slate-400">Chọn một học kỳ có dữ liệu để xem GPA</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={gpaTrendData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                <ComposedChart data={gpaTrendData} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                   <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#64748B" }} />
                   <YAxis domain={[0, 4]} tick={{ fontSize: 11, fill: "#64748B" }} />
                   <Tooltip
-                    formatter={(val: ApiData) => [Number(val).toFixed(2), "GPA học kỳ TB"]}
+                    formatter={(val: ApiData, name: ApiData, item: ApiData) => {
+                      const point = item?.payload;
+                      const suffix = point?.isSummer
+                        ? `Số liệu mô tả, ${point.studentCount} SV (${(Number(point.coverage || 0) * 100).toFixed(1)}%)`
+                        : `${point?.studentCount || 0} SV`;
+                      return [`${Number(val).toFixed(2)} · ${suffix}`, String(name)];
+                    }}
                     contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0", fontSize: 12 }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
                   <Line
                     type="monotone"
-                    dataKey="average"
-                    name="GPA học kỳ TB"
+                    dataKey="officialAverage"
+                    name="Kết quả kỳ chính"
                     stroke={THEME_COLORS.primary}
                     strokeWidth={3}
+                    connectNulls
                     dot={{ r: 4, fill: THEME_COLORS.primary }}
                     activeDot={{ r: 6 }}
                   />
-                </LineChart>
+                  <Scatter
+                    dataKey="descriptiveSummerAverage"
+                    name="GPA hè mô tả"
+                    fill="#F59E0B"
+                    line={false}
+                    shape="diamond"
+                  />
+                </ComposedChart>
               </ResponsiveContainer>
             )}
           </div>

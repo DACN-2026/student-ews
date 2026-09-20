@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { NextRequest } from "next/server";
-import { evaluate } from "../lib/services/academic-warnings";
+import { evaluate, evaluateSummerMonitoring } from "../lib/services/academic-warnings";
 import {
   applyElectiveThreshold,
   evaluateCompletionPlan,
@@ -21,6 +21,7 @@ import { signAccessToken } from "../lib/auth/jwt";
 import { assertWarningActionTransition, parseWarningActionStatus } from "../lib/services/warning-actions";
 import { ApiError } from "../lib/utils/api-error";
 import { classifyConductScore, conductApproval, isSummerConductTerm } from "../lib/services/conduct";
+import { buildAcademicTermLinks, isConfiguredSummerTermCode, latestMainTerm } from "../lib/academic-terms";
 import {
   buildExportFileName,
   parseExportParameter,
@@ -432,9 +433,15 @@ test("conduct scores use S5 classification boundaries and explicit approval mapp
   assert.equal(classifyConductScore(34), "Kém");
   assert.equal(conductApproval("1", 49).code, "approved");
   assert.equal(conductApproval("0", null).code, "pending");
-  assert.equal(isSummerConductTerm("HK03"), true);
+  assert.equal(isSummerConductTerm("HK03"), false);
   assert.equal(isSummerConductTerm("HK02", true), true);
   assert.equal(isSummerConductTerm("HK02"), false);
+});
+
+test("summer identity comes from an explicit flag or configured import convention, not HK03 itself", () => {
+  assert.equal(isConfiguredSummerTermCode("HK03", ""), false);
+  assert.equal(isConfiguredSummerTermCode("PHU", "HK03, PHU"), true);
+  assert.equal(isConfiguredSummerTermCode("HK03", "HK03, PHU"), true);
 });
 
 test("warning evaluation adds LOW_CONDUCT_SCORE only for approved recognized scores", () => {
@@ -490,12 +497,47 @@ test("warning trend separates conclusively evaluated and partially available dat
 
 test("reporting period selects the latest term with representative GPA coverage", () => {
   const selected = selectLatestReportingPeriod([
-    { label: "HK02", termGpaAvailable: 577 },
-    { label: "HK03", termGpaAvailable: 88 },
+    { label: "HK02", termGpaAvailable: 577, isSummer: false },
+    { label: "HK03", termGpaAvailable: 620, isSummer: true },
     { label: "HK01 current", termGpaAvailable: 0 },
   ], 625);
 
   assert.equal(selected?.label, "HK02");
+});
+
+test("academic term links use configured chronology instead of term codes", () => {
+  const terms = [
+    { id: "main-a", academicYearId: "y1", academicYearCode: "2025-2026", termOrder: 1, isSummer: false, startDate: "2025-09-01" },
+    { id: "main-b", academicYearId: "y1", academicYearCode: "2025-2026", termOrder: 2, isSummer: false, startDate: "2026-01-15" },
+    { id: "summer-custom", academicYearId: "y1", academicYearCode: "2025-2026", termOrder: 9, isSummer: true, startDate: "2026-06-01" },
+    { id: "main-c", academicYearId: "y2", academicYearCode: "2026-2027", termOrder: 1, isSummer: false, startDate: "2026-09-01" },
+  ];
+  const links = buildAcademicTermLinks(terms);
+  assert.deepEqual(links.get("summer-custom"), { previousMainTermId: "main-b", nextMainTermId: "main-c" });
+  assert.equal(latestMainTerm(terms)?.id, "main-c");
+});
+
+test("summer monitoring never applies minimum-credit or GPA warning rules", () => {
+  const student = {
+    id: IDS.student, classId: null, cohortId: null, code: "SV001", name: "Sinh viên",
+    classCode: "", className: "", programCode: "CNTT",
+  };
+  const result = evaluateSummerMonitoring(
+    student,
+    new Map([[IDS.student, {
+      termSummaryId: IDS.term,
+      cumulativeSummaryId: null,
+      registered: 2,
+      termGPA4: 0.5,
+      termGPA10: 1,
+      cumulativeGPA4: 1.5,
+      cumulativeGPA10: 4,
+    }]]),
+    new Map([[IDS.student, { offeringCount: 1, registeredCredits: 2, pendingResults: 0, failedCourses: 1 }]]),
+  );
+  assert.equal(result.registrationStatus, "participating");
+  assert.deepEqual(result.reasons.map((reason) => reason.reasonCode), ["SUMMER_COURSE_NOT_PASSED"]);
+  assert.equal(result.maxSeverity, "medium");
 });
 
 test("warning trend uses only data from each exact term and omits empty future terms", () => {

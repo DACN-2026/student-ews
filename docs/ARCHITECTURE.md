@@ -251,7 +251,7 @@ Thiếu tổng hợp kỳ được ghi vào `dataError`; GPA `null` không kích
 
 Trang báo cáo hiện không đọc `AcademicWarningStudentResult` để dựng toàn bộ thống kê. [reports.ts](../apps/backend/lib/services/reports.ts) tính trực tiếp từ `StudentTermSummary` và quyết định cảnh báo của đúng kỳ báo cáo. Báo cáo live hiện có ba nguyên nhân: `LOW_TERM_GPA`, `LOW_CUMULATIVE_GPA` và `ACADEMIC_WARNING_DECISION`; chưa bao gồm hai nguyên nhân tiến độ của bộ máy theo run.
 
-Kỳ báo cáo được chọn bằng độ phủ GPA học kỳ. Hệ thống ưu tiên kỳ gần nhất có GPA học kỳ của ít nhất 80% sinh viên trong phạm vi (`MIN_REPORTING_TERM_GPA_COVERAGE = 0.8`). Nếu chưa kỳ nào đạt 80%, hệ thống dùng kỳ gần nhất có ít nhất một bản ghi GPA học kỳ; kỳ hoàn toàn chưa có GPA không được chọn. Vì vậy tại thời điểm 10/09/2026, giao diện dùng HK2 năm học 2025–2026 khi đây là kỳ gần nhất đủ độ phủ; HK1 năm học 2026–2027 đang giữa kỳ và còn thiếu dữ liệu không được dùng làm kỳ thống kê. Biểu đồ xu hướng cũng kết thúc ở kỳ báo cáo đã chọn, không đưa kỳ mới thiếu dữ liệu vào sau nó.
+Kỳ báo cáo tự động trước hết loại mọi kỳ có `sIsSummer = true`, sau đó chọn theo độ phủ GPA học kỳ. Hệ thống ưu tiên kỳ chính gần nhất có GPA học kỳ của ít nhất 80% sinh viên trong phạm vi (`MIN_REPORTING_TERM_GPA_COVERAGE = 0.8`). Nếu chưa kỳ chính nào đạt 80%, hệ thống dùng kỳ chính gần nhất có ít nhất một bản ghi GPA học kỳ; kỳ hoàn toàn chưa có GPA không được chọn. Người dùng vẫn có thể chọn kỳ hè thủ công, nhưng response và giao diện bắt buộc gắn nhãn số liệu mô tả, tỷ lệ tham gia và cảnh báo rằng đây không phải kết quả xếp hạng độc lập.
 
 Báo cáo bắt buộc dùng `AcademicWarningPolicy` active có phiên bản. Không còn ngưỡng dự phòng viết trong mã; nếu chưa có policy, API trả lỗi cấu hình `WARNING_POLICY_REQUIRED`. Seed tạo policy demo phiên bản 1 cùng người kích hoạt và audit. Nếu một sinh viên thỏa nhiều điều kiện, Đỏ ưu tiên hơn Vàng.
 
@@ -280,6 +280,25 @@ S5 dùng thang 100 với năm mặt: học tập 20; nội quy 25; hoạt độn
 Không có nguồn dữ liệu hoạt động đủ tin cậy để xác định sinh viên có tham gia hay không. Vì vậy hệ thống không hiển thị tỷ lệ tham gia, không cung cấp API nhập thủ công và không dùng dữ liệu này trong cảnh báo. Các bảng `Activity` và `ActivityParticipation` đã từng được tạo được giữ lại để bảo toàn lịch sử, nhưng không còn được giao diện hoặc dịch vụ nghiệp vụ sử dụng.
 
 Không tự cộng trọng số hoạt động vào điểm rèn luyện vì có nguy cơ tính trùng thông tin đã nằm trong kết quả rèn luyện chính thức.
+
+### 8.1 Quy tắc học kỳ hè
+
+Kỳ hè là kỳ phụ có dữ liệu vận hành riêng. Hệ thống xác định bản chất kỳ bằng `AcademicTerm.sIsSummer`, không suy luận từ mã `HK03`. Quan hệ kỳ chính trước và sau được suy ra từ ngày bắt đầu đã cấu hình, với năm học và `sTermOrder` làm thứ tự dự phòng. API kỳ trả `previousMainTermId` và `nextMainTermId` để các màn hình không hard-code HK1 hoặc HK2.
+
+| Mã | Quy tắc triển khai |
+| --- | --- |
+| R1 | Dữ liệu kỳ hè lưu riêng và giữ `sIsSummer = true`; không trộn hoặc xóa bản ghi nguồn. |
+| R2 | Kết quả học tập hè thuộc kỳ chính ngay trước khi xếp hạng. Hệ thống chỉ hiển thị quan hệ và trạng thái nguồn; chưa tự cộng GPA khi chưa xác nhận Portal đã gộp hay chưa. |
+| R3 | Nội dung rèn luyện hè hướng tới kỳ chính tiếp theo. Điểm nguồn hè không được phân loại thành kết quả chính thức riêng. |
+| R4 | Run `OFFICIAL` từ kỳ hè bị từ chối. `SUMMER_MONITORING` chỉ tạo tín hiệu hỗ trợ từ kết quả chờ hoặc học phần chưa đạt. |
+| R5 | Không tạo `TrainingProgressPlan` cho kỳ hè. Completion reconciliation có thể chạy tại cutoff hè và dùng học phần đạt trong hè làm bằng chứng cho milestone gốc. |
+| R6 | Chọn kỳ báo cáo tự động luôn loại kỳ hè trước khi xét độ phủ. |
+| R7 | Bộ lọc cho phép chọn kỳ hè thủ công nhưng phải hiển thị nhãn kỳ phụ, số người tham gia và độ phủ. |
+| R8 | GPA hè thô là điểm mô tả tách biệt; đường xu hướng chính chỉ nối các kỳ chính. |
+| R9 | Kỳ hè có thể là `isCurrent` cho vận hành, nhưng `getCurrentAcademicContext()` trả thêm `defaultReportingTerm` là kỳ chính. |
+| R10 | Liên kết kỳ dựa trên ID và thời gian cấu hình, không dựa riêng vào mã kỳ. |
+
+`SUMMER_MONITORING` không áp dụng tiêu chí thiếu tín chỉ đăng ký tối thiểu, GPA hè độc lập, quyết định cảnh báo cũ hoặc phân loại rèn luyện. Migration `20260920090000_summer_term_semantics` thêm `AcademicWarningRun.runMode` và đánh dấu run lịch sử trên kỳ hè là `LEGACY_SUMMER` để giao diện hiển thị là tham khảo.
 
 ## 9. Kiến trúc học máy đề xuất — hoãn sau báo cáo đồ án
 

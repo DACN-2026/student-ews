@@ -260,6 +260,7 @@ export default function AcademicWarningsPage() {
           cohortId: selCohort,
           trainingProgramId: selProgram,
           assessmentAcademicTermId: selTerm,
+          runMode: selectedAssessmentTerm?.isSummer ? "SUMMER_MONITORING" : "OFFICIAL",
         }),
       });
 
@@ -279,6 +280,9 @@ export default function AcademicWarningsPage() {
   };
 
   const termsForSelectedYear = years.find((y) => y.id === selYear)?.terms || [];
+  const selectedAssessmentTerm = termsForSelectedYear.find((term: ApiData) => term.id === selTerm);
+  const mainAssessmentTerms = termsForSelectedYear.filter((term: ApiData) => !term.isSummer);
+  const summerAssessmentTerms = termsForSelectedYear.filter((term: ApiData) => term.isSummer);
 
   const filteredStudents = students.filter((st) => {
     if (severityFilter === "all") return true;
@@ -378,7 +382,14 @@ export default function AcademicWarningsPage() {
                             {r.startedAt ? new Date(r.startedAt).toLocaleString("vi-VN") : "—"}
                           </td>
                           <td className="py-3.5 px-4 font-bold text-slate-900">
-                            {r.assessmentTermCode || "—"} ({r.assessmentAcademicYear || "Chưa xác định"})
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span>{r.assessmentTermCode || r.termCode || "—"} ({r.assessmentAcademicYear || "Chưa xác định"})</span>
+                              {(r.runMode === "SUMMER_MONITORING" || r.isSummer) && (
+                                <span className="rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                                  {r.runMode === "SUMMER_MONITORING" ? "Giám sát hè" : "Kỳ phụ, tham khảo"}
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3.5 px-4 text-slate-600">
                             {r.cohortCode || "—"} • {r.programCode || "—"}
@@ -470,12 +481,17 @@ export default function AcademicWarningsPage() {
       <SlideOverDrawer
         isOpen={Boolean(selectedRun)}
         onClose={() => setSelectedRun(null)}
-        title="Báo cáo Chi tiết Sinh viên Cần Cảnh báo Học vụ"
+        title={selectedRun?.runMode === "SUMMER_MONITORING" ? "Báo cáo Giám sát Học kỳ hè" : "Báo cáo Chi tiết Sinh viên Cần Cảnh báo Học vụ"}
         subtitle={`Học kỳ: ${selectedRun?.assessmentTermCode || "—"} • ${selectedRun?.assessmentAcademicYear || "Chưa xác định"}`}
         width="4xl"
       >
         {selectedRun && (
           <div className="space-y-6">
+            {(selectedRun.runMode === "SUMMER_MONITORING" || selectedRun.isSummer) && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+                Đây là đánh giá kỳ phụ để tham khảo và hỗ trợ sinh viên. Kết quả không phải kết luận cảnh báo học lực chính thức.
+              </div>
+            )}
             {/* Summary Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
@@ -941,14 +957,29 @@ export default function AcademicWarningsPage() {
                 className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
               >
                 <option value="">Chọn học kỳ</option>
-                {termsForSelectedYear.map((t: ApiData) => (
-                  <option key={t.id} value={t.id}>
-                    {t.sTermCode || t.termCode}
-                  </option>
-                ))}
+                {mainAssessmentTerms.length > 0 && (
+                  <optgroup label="Học kỳ chính">
+                    {mainAssessmentTerms.map((t: ApiData) => (
+                      <option key={t.id} value={t.id}>{t.sTermCode || t.termCode}</option>
+                    ))}
+                  </optgroup>
+                )}
+                {summerAssessmentTerms.length > 0 && (
+                  <optgroup label="Kỳ phụ">
+                    {summerAssessmentTerms.map((t: ApiData) => (
+                      <option key={t.id} value={t.id}>{t.sTermCode || t.termCode} (Giám sát hè)</option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
           </div>
+
+          {selectedAssessmentTerm?.isSummer && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+              Kỳ hè chỉ chạy chế độ giám sát: theo dõi đăng ký, kết quả chờ và học phần chưa đạt. Hệ thống không áp dụng yêu cầu tín chỉ tối thiểu và không ban hành kết luận cảnh báo chính thức.
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
             <button

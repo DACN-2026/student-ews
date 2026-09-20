@@ -48,6 +48,8 @@ type WarningReport = {
   latestPeriod: { label: string; academicYear: string; termCode: string; termGpaAvailable: number } | null;
   trend: Array<{ label: string; high: number; medium: number; evaluated: number; available: number; termGpaAvailable: number }>;
   classBreakdown: ClassWarningBreakdown[];
+  reportContext?: { isSummer: boolean; classification: string; participantStudents: number; scopedStudents: number; coverage: number; note: string | null };
+  filterOptions?: { terms: Array<{ value: string; label: string; isSummer: boolean }> };
 };
 
 type DrawerFilter = { label: string; severity?: Severity; classCode?: string };
@@ -163,13 +165,16 @@ export default function ReportsPage() {
   const [drawerError, setDrawerError] = useState("");
   const [drawerPage, setDrawerPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [selectedTermId, setSelectedTermId] = useState("");
 
   useEffect(() => {
     async function loadReport() {
       try {
         setLoading(true);
         setLoadError("");
-        const response = await fetch("/api/v1/reports/academic-warnings?pageSize=20");
+        const params = new URLSearchParams({ pageSize: "20" });
+        if (selectedTermId) params.set("academicTermId", selectedTermId);
+        const response = await fetch(`/api/v1/reports/academic-warnings?${params.toString()}`);
         if (!response.ok) throw new Error("Không thể tải dữ liệu cảnh báo học vụ");
         setReport(await response.json());
       } catch (error) {
@@ -179,7 +184,7 @@ export default function ReportsPage() {
       }
     }
     void loadReport();
-  }, []);
+  }, [selectedTermId]);
 
   const loadDrawer = useCallback(async (filter: DrawerFilter, page: number, query: string) => {
     try {
@@ -189,6 +194,7 @@ export default function ReportsPage() {
       if (filter.severity) params.set("severity", filter.severity);
       if (filter.classCode) params.set("classCode", filter.classCode);
       if (query.trim()) params.set("search", query.trim());
+      if (selectedTermId) params.set("academicTermId", selectedTermId);
       const response = await fetch(`/api/v1/reports/academic-warnings?${params.toString()}`);
       if (!response.ok) throw new Error("Không thể tải danh sách sinh viên");
       setDrawerData(await response.json());
@@ -198,7 +204,7 @@ export default function ReportsPage() {
     } finally {
       setDrawerLoading(false);
     }
-  }, []);
+  }, [selectedTermId]);
 
   useEffect(() => {
     if (!drawerFilter) return;
@@ -219,7 +225,9 @@ export default function ReportsPage() {
       setExporting(format);
       setExportError("");
       const type = format === "pdf" ? "warnings" : exportType;
-      const response = await fetch(`/api/v1/reports/export?format=${format}&type=${type}`);
+      const params = new URLSearchParams({ format, type });
+      if (selectedTermId) params.set("academicTermId", selectedTermId);
+      const response = await fetch(`/api/v1/reports/export?${params.toString()}`);
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
         throw new Error(payload?.error?.message || "Không thể tạo file báo cáo");
@@ -278,6 +286,25 @@ export default function ReportsPage() {
           <p className="text-xs sm:text-sm text-slate-500 mt-1">Bấm vào mức cảnh báo hoặc lớp để xem danh sách sinh viên tương ứng.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <label className="sr-only" htmlFor="report-term">Kỳ thống kê</label>
+          <select
+            id="report-term"
+            value={selectedTermId}
+            onChange={(event) => setSelectedTermId(event.target.value)}
+            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+          >
+            <option value="">Tự động: kỳ chính gần nhất</option>
+            {(report.filterOptions?.terms || []).filter((term) => !term.isSummer).map((term) => (
+              <option key={term.value} value={term.value}>{term.label}</option>
+            ))}
+            {(report.filterOptions?.terms || []).some((term) => term.isSummer) && (
+              <optgroup label="Kỳ phụ, số liệu mô tả">
+                {(report.filterOptions?.terms || []).filter((term) => term.isSummer).map((term) => (
+                  <option key={term.value} value={term.value}>{term.label}</option>
+                ))}
+              </optgroup>
+            )}
+          </select>
           <label className="sr-only" htmlFor="report-export-type">Loại dữ liệu xuất</label>
           <select id="report-export-type" value={exportType} onChange={(event) => setExportType(event.target.value as ExportType)} disabled={Boolean(exporting)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]">
             <option value="warnings">Danh sách cảnh báo</option>
@@ -291,6 +318,11 @@ export default function ReportsPage() {
       </header>
 
       {exportError && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800">{exportError}</div>}
+      {report.reportContext?.isSummer && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+          <strong>Kỳ thống kê: Học kỳ hè (kỳ phụ).</strong> {report.reportContext.note} Có {report.reportContext.participantStudents}/{report.reportContext.scopedStudents} sinh viên có dữ liệu ({(report.reportContext.coverage * 100).toFixed(1)}%).
+        </div>
+      )}
       {!report.policy.configured && (
         <div className="rounded-xl border border-blue-200 bg-blue-50/70 px-4 py-3 text-xs text-blue-900">
           Chưa có chính sách cảnh báo được kích hoạt. Báo cáo đang dùng ngưỡng mặc định: GPA học kỳ dưới {report.policy.termGpaThreshold.toFixed(1)} là Cần lưu ý; GPA tích lũy dưới {report.policy.cumulativeGpaThreshold.toFixed(1)} là Nguy cơ cao.

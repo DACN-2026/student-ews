@@ -215,9 +215,14 @@ async function warningTable(filters: ReportExportFilters, studentScope: Prisma.S
     LOW_CUMULATIVE_GPA: "GPA tích lũy dưới ngưỡng",
     ACADEMIC_WARNING_DECISION: "Có quyết định cảnh báo",
   }[code] || code);
+  const isSummer = report.reportContext.isSummer;
   return {
-    title: "BÁO CÁO DANH SÁCH SINH VIÊN CẢNH BÁO",
-    subtitle: `${report.latestPeriod?.label || "Chưa xác định kỳ"} · Chính sách: ${report.policy.name} v${report.policy.version}`,
+    title: isSummer
+      ? "THEO DÕI MÔ TẢ KỲ PHỤ (KHÔNG CHÍNH THỨC)"
+      : "BÁO CÁO DANH SÁCH SINH VIÊN CẢNH BÁO",
+    subtitle: isSummer
+      ? `${report.latestPeriod?.label || "Chưa xác định kỳ"} · ${report.reportContext.note} · ${report.reportContext.participantStudents}/${report.reportContext.scopedStudents} sinh viên có dữ liệu`
+      : `${report.latestPeriod?.label || "Chưa xác định kỳ"} · Chính sách: ${report.policy.name} v${report.policy.version}`,
     sheetName: "Cảnh báo",
     columns: [
       { header: "MSSV", key: "studentCode", width: 16 },

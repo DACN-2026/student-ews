@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Scatter,
 } from "recharts";
 import WarningBadge from "@/components/WarningBadge";
 import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
@@ -25,12 +25,15 @@ type ConductRecord = {
     class: number | null;
     department: number | null;
     recognized: number | null;
+    sourceTemporary?: number | null;
   };
   approval: {
-    code: "approved" | "pending" | "unknown";
+    code: "approved" | "pending" | "unknown" | "pending_evaluation";
     label: string;
   };
   classification: ConductClassification | null;
+  evaluationTerm?: { id: string; yearCode: string; termCode: string; termName: string } | null;
+  note?: string | null;
   sourceUpdatedAt: string | null;
   sourceUpdatedBy: string | null;
 };
@@ -75,7 +78,7 @@ const conductClassificationStyle = (classification?: ConductClassification | nul
 
 const conductApprovalStyle = (code: ConductRecord["approval"]["code"]) => {
   if (code === "approved") return "bg-emerald-100 text-emerald-700";
-  if (code === "pending") return "bg-amber-100 text-amber-800";
+  if (code === "pending" || code === "pending_evaluation") return "bg-amber-100 text-amber-800";
   return "bg-slate-100 text-slate-600";
 };
 
@@ -274,8 +277,10 @@ export default function StudentDetailPage() {
     .filter((t: ApiData) => t.gpa4 != null || t.cumulativeGpa4 != null)
     .map((t: ApiData) => ({
       semester: t.academicYear ? `${t.termCode} ${t.academicYear}` : t.termCode || "HK",
-      gpa4: t.gpa4,
-      cumGpa4: t.cumulativeGpa4,
+      isSummer: Boolean(t.isSummer),
+      gpa4: t.isSummer ? null : t.gpa4,
+      summerGpa4: t.isSummer ? t.gpa4 : null,
+      cumGpa4: t.isSummer ? null : t.cumulativeGpa4,
     }));
 
   const unifiedTimeline = [
@@ -459,7 +464,7 @@ export default function StudentDetailPage() {
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={gpaTrend} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
+                    <ComposedChart data={gpaTrend} margin={{ top: 10, right: 20, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                       <XAxis dataKey="semester" tick={{ fontSize: 11, fill: "#64748B" }} tickLine={false} />
                       <YAxis domain={[0, 4]} tick={{ fontSize: 11, fill: "#64748B" }} tickLine={false} axisLine={false} />
@@ -471,9 +476,10 @@ export default function StudentDetailPage() {
                           fontSize: "12px",
                         }}
                       />
-                      <Line type="monotone" dataKey="gpa4" name="GPA Học kỳ" stroke="#90C63B" strokeWidth={2.5} dot={{ r: 4 }} />
-                      <Line type="monotone" dataKey="cumGpa4" name="GPA Tích lũy" stroke="#2563EB" strokeWidth={2.5} dot={{ r: 4 }} />
-                    </LineChart>
+                      <Line type="monotone" dataKey="gpa4" name="GPA kỳ chính" stroke="#90C63B" strokeWidth={2.5} dot={{ r: 4 }} connectNulls />
+                      <Line type="monotone" dataKey="cumGpa4" name="GPA tích lũy kỳ chính" stroke="#2563EB" strokeWidth={2.5} dot={{ r: 4 }} connectNulls />
+                      <Scatter dataKey="summerGpa4" name="GPA hè mô tả" fill="#F59E0B" shape="diamond" />
+                    </ComposedChart>
                   </ResponsiveContainer>
                 )}
               </div>
@@ -715,11 +721,21 @@ export default function StudentDetailPage() {
                 <tbody className="divide-y divide-slate-100">
                   {conductItems.map((record) => (
                     <tr key={record.id} className="hover:bg-slate-50/70">
-                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-800">{conductPeriodLabel(record)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-800">
+                        <div className="flex items-center gap-2">
+                          <span>{conductPeriodLabel(record)}</span>
+                          {record.isSummer && <span className="rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">Hè</span>}
+                        </div>
+                        {record.isSummer && (
+                          <p className="mt-1 max-w-sm whitespace-normal text-[10px] font-normal leading-4 text-amber-700">
+                            {record.note}{record.evaluationTerm ? ` Đánh giá trong ${record.evaluationTerm.termCode} ${record.evaluationTerm.yearCode}.` : " Chưa xác định kỳ đánh giá tiếp theo."}
+                          </p>
+                        )}
+                      </td>
                       <td className="px-4 py-3 font-mono">{record.scores.self ?? "—"}</td>
                       <td className="px-4 py-3 font-mono">{record.scores.class ?? "—"}</td>
                       <td className="px-4 py-3 font-mono">{record.scores.department ?? "—"}</td>
-                      <td className="px-4 py-3 font-mono font-bold text-slate-900">{record.scores.recognized ?? "—"}</td>
+                      <td className="px-4 py-3 font-mono font-bold text-slate-900">{record.isSummer ? record.scores.sourceTemporary ?? "—" : record.scores.recognized ?? "—"}</td>
                       <td className="px-4 py-3">
                         {record.classification ? (
                           <span className={`whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-bold ${conductClassificationStyle(record.classification)}`}>
@@ -851,7 +867,19 @@ export default function StudentDetailPage() {
                       <td className="py-3 px-3 font-mono font-bold text-slate-800">{g.courseCode}</td>
                       <td className="py-3 px-3 font-medium text-slate-900">{g.courseName}</td>
                       <td className="py-3 px-3 font-mono">{g.credits}</td>
-                      <td className="py-3 px-3 text-slate-500">{g.termCode} ({g.academicYear})</td>
+                      <td className="py-3 px-3 text-slate-500">
+                        <span>{g.termCode} ({g.academicYear})</span>
+                        {g.isSummer && (
+                          <span
+                            className="ml-2 inline-flex rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
+                            title={g.rankingMainTerm
+                              ? `Kết quả dùng khi xếp hạng cùng ${g.rankingMainTerm.termCode} ${g.rankingMainTerm.academicYear}`
+                              : "Kỳ phụ; chưa xác định kỳ chính ngay trước"}
+                          >
+                            Hè
+                          </span>
+                        )}
+                      </td>
                       <td className="py-3 px-3 font-mono font-semibold">{g.score10 ?? "—"}</td>
                       <td className="py-3 px-3 font-mono font-semibold">{g.score4 ?? "—"}</td>
                       <td className="py-3 px-3 font-mono font-bold">{g.letterGrade || "—"}</td>
@@ -1047,6 +1075,7 @@ export default function StudentDetailPage() {
                       <td className="py-3 px-3 font-mono">{r.credits} TC</td>
                       <td className="py-3 px-3 text-slate-500">
                         {r.termCode && r.academicYear ? `${r.termCode} • ${r.academicYear}` : "—"}
+                        {r.isSummer && <span className="ml-2 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">Kỳ phụ</span>}
                       </td>
                       <td className="py-3 px-3 text-slate-400">{r.createdAt ? new Date(r.createdAt).toLocaleDateString("vi-VN") : "—"}</td>
                     </tr>
@@ -1325,6 +1354,9 @@ export default function StudentDetailPage() {
                       <tr key={w.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3 px-4 font-mono text-slate-600">
                           {w.createdAt ? new Date(w.createdAt).toLocaleString("vi-VN") : "—"}
+                          <span className={`mt-1 block font-sans text-[10px] font-semibold ${w.isSummer ? "text-amber-700" : "text-slate-400"}`}>
+                            {w.evaluationLabel || "Kết quả kỳ chính thức"}
+                          </span>
                         </td>
                         <td className="py-3 px-4">
                           <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
@@ -1334,7 +1366,9 @@ export default function StudentDetailPage() {
                               ? "bg-amber-100 text-amber-800 border border-amber-200"
                               : "bg-emerald-100 text-emerald-800 border border-emerald-200"
                           }`}>
-                            {w.maxSeverity === "high" ? "Nguy cơ cao (Đỏ)" : w.maxSeverity === "medium" ? "Cần lưu ý (Vàng)" : "Bình thường"}
+                            {w.runMode === "SUMMER_MONITORING"
+                              ? (w.maxSeverity === "medium" ? "Tín hiệu cần hỗ trợ" : "Không có tín hiệu")
+                              : w.maxSeverity === "high" ? "Nguy cơ cao (Đỏ)" : w.maxSeverity === "medium" ? "Cần lưu ý (Vàng)" : "Bình thường"}
                           </span>
                         </td>
                         <td className="py-3 px-4 font-mono font-bold text-red-600">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Tabs, { TabItem } from "@/components/ui/Tabs";
 import FilterBar from "@/components/ui/FilterBar";
@@ -10,6 +10,8 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 type AcademicsTab = "years" | "terms" | "courses" | "programs" | "cohorts" | "classes" | "plans";
 
 export default function AcademicsPage() {
+  const configuredSummerTermCode = process.env.NEXT_PUBLIC_SUMMER_TERM_CODE?.trim() || "";
+  const configuredSummerTermOrder = Number(process.env.NEXT_PUBLIC_SUMMER_TERM_ORDER || "");
   const [activeTab, setActiveTab] = useState<AcademicsTab>("years");
   const [loading, setLoading] = useState(true);
 
@@ -295,7 +297,7 @@ export default function AcademicsPage() {
     const defaultCohort = cohorts[0]?.id || "";
     const defaultProgram = programs[0]?.id || "";
     const defaultYear = years[0]?.id || "";
-    const defaultTerm = years[0]?.terms?.[0]?.id || "";
+    const defaultTerm = years[0]?.terms?.find((term: ApiData) => !term.isSummer)?.id || "";
 
     setPlanEditorForm({
       cohortId: defaultCohort,
@@ -689,8 +691,16 @@ export default function AcademicsPage() {
                           </td>
                         </tr>
                       ) : (
-                        terms.map((t) => (
-                          <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
+                        terms.map((t, index) => (
+                          <Fragment key={t.id}>
+                          {(index === 0 || Boolean(terms[index - 1]?.isSummer) !== Boolean(t.isSummer)) && (
+                            <tr className={t.isSummer ? "bg-amber-50/70" : "bg-slate-50/70"}>
+                              <td colSpan={6} className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider ${t.isSummer ? "text-amber-800" : "text-slate-500"}`}>
+                                {t.isSummer ? "Kỳ phụ" : "Học kỳ chính"}
+                              </td>
+                            </tr>
+                          )}
+                          <tr className="hover:bg-slate-50/70 transition-colors">
                             <td className="py-3.5 px-4 font-bold font-mono text-slate-900">{t.sTermCode || t.termCode}</td>
                             <td className="py-3.5 px-4 font-semibold text-slate-800">{t.sTermName || t.termName}</td>
                             <td className="py-3.5 px-4 text-slate-600">{t.sTermOrder || t.termOrder}</td>
@@ -718,6 +728,7 @@ export default function AcademicsPage() {
                               </span>
                             </td>
                           </tr>
+                          </Fragment>
                         ))
                       )}
                     </tbody>
@@ -1137,15 +1148,18 @@ export default function AcademicsPage() {
         <form onSubmit={handleCreateTerm} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Mã học kỳ</label>
-            <select
+            <input
+              list="academic-term-code-suggestions"
               value={termForm.termCode}
               onChange={(e) => setTermForm({ ...termForm, termCode: e.target.value })}
               className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 font-mono"
-            >
-              <option value="HK01">HK01</option>
-              <option value="HK02">HK02</option>
-              <option value="HK03">HK03 (Hè)</option>
-            </select>
+            />
+            <datalist id="academic-term-code-suggestions">
+              <option value="HK01" />
+              <option value="HK02" />
+              {configuredSummerTermCode && <option value={configuredSummerTermCode} />}
+            </datalist>
+            <p className="mt-1 text-[10px] text-slate-500">Mã kỳ không quyết định kỳ hè; dùng cờ Kỳ hè bên dưới.</p>
           </div>
 
           <div>
@@ -1165,7 +1179,6 @@ export default function AcademicsPage() {
               <input
                 type="number"
                 min={1}
-                max={3}
                 value={termForm.termOrder}
                 onChange={(e) => setTermForm({ ...termForm, termOrder: Number(e.target.value) })}
                 className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
@@ -1176,13 +1189,37 @@ export default function AcademicsPage() {
                 type="checkbox"
                 id="isSummerCheck"
                 checked={termForm.isSummer}
-                onChange={(e) => setTermForm({ ...termForm, isSummer: e.target.checked })}
+                onChange={(e) => {
+                  const isSummer = e.target.checked;
+                  setTermForm({
+                    ...termForm,
+                    isSummer,
+                    ...(isSummer && configuredSummerTermCode ? { termCode: configuredSummerTermCode } : {}),
+                    ...(isSummer && Number.isInteger(configuredSummerTermOrder) && configuredSummerTermOrder > 0
+                      ? { termOrder: configuredSummerTermOrder }
+                      : {}),
+                  });
+                }}
                 className="rounded border-slate-300 text-[var(--color-primary)]"
               />
               <label htmlFor="isSummerCheck" className="text-xs font-medium text-slate-700 cursor-pointer">
                 Học kỳ hè
               </label>
             </div>
+          </div>
+
+          <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+            <input
+              type="checkbox"
+              id="termCurrentCheck"
+              checked={termForm.isCurrent}
+              onChange={(e) => setTermForm({ ...termForm, isCurrent: e.target.checked })}
+              className="mt-0.5 rounded border-slate-300 text-[var(--color-primary)]"
+            />
+            <label htmlFor="termCurrentCheck" className="text-xs font-medium text-slate-700 cursor-pointer">
+              Đặt làm kỳ vận hành hiện tại
+              <span className="mt-0.5 block text-[10px] font-normal text-slate-500">Kỳ hè có thể là kỳ hiện tại nhưng không tự trở thành kỳ báo cáo hoặc xếp hạng mặc định.</span>
+            </label>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
@@ -1570,12 +1607,13 @@ export default function AcademicsPage() {
                 onChange={(e) => setPlanEditorForm({ ...planEditorForm, academicTermId: e.target.value })}
                 className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
               >
-                {terms.map((t) => (
+                {terms.filter((t) => !t.isSummer).map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.termCode} - {t.termName}
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-[10px] text-slate-500">Kỳ hè không có milestone hoặc kế hoạch đào tạo riêng.</p>
             </div>
 
             <div>

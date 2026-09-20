@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { ReportsService } from "@/lib/services/reports";
+import { buildAcademicTermLinks } from "@/lib/academic-terms";
 
 interface DashboardFilters {
   academicYear?: string;
@@ -246,7 +247,7 @@ export class DashboardService {
       count: conductValues.filter((score) => score >= group.min && score < group.max).length,
     }));
 
-    const gpaHistoryRows: Array<{
+    const [gpaHistoryRows, chronologyTerms, chronologyYears] = await Promise.all([scopedStudentIds.length ? prisma.$queryRaw<Array<{
       student_id: string;
       academic_term_id: string;
       s_program_code: string;
@@ -254,16 +255,38 @@ export class DashboardService {
       s_year_code: string;
       s_term_code: string;
       s_term_order: number;
-    }> = scopedStudentIds.length ? await prisma.$queryRaw`
+      s_is_summer: boolean;
+    }>>`
       SELECT s.student_id::text, s.academic_term_id::text, s.s_program_code, s.gpa_4,
-             y.s_year_code, t.s_term_code, t.s_term_order
+             y.s_year_code, t.s_term_code, t.s_term_order, t.s_is_summer
       FROM student_term_summaries s
       JOIN academic_terms t ON t.id = s.academic_term_id
       JOIN academic_years y ON y.id = t.academic_year_id
       WHERE s.student_id = ANY(${scopedStudentIds}::uuid[]) AND s.gpa_4 IS NOT NULL
       ORDER BY y.s_year_code, t.s_term_order
-    ` : [];
-    const trendGroups = new Map<string, { label: string; academicYear: string; termCode: string; order: string; values: number[] }>();
+    ` : Promise.resolve([]),
+    prisma.academicTerm.findMany({ where: { deletedAt: null } }),
+    prisma.academicYear.findMany({ where: { deletedAt: null }, select: { id: true, sYearCode: true } }),
+    ]);
+    const chronologyYearCodes = new Map(chronologyYears.map((year) => [year.id, year.sYearCode]));
+    const termLinks = buildAcademicTermLinks(chronologyTerms.map((term) => ({
+      id: term.id,
+      academicYearId: term.academicYearId,
+      academicYearCode: chronologyYearCodes.get(term.academicYearId) || "",
+      termOrder: term.sTermOrder,
+      isSummer: term.sIsSummer,
+      startDate: term.startDate,
+      endDate: term.endDate,
+    })));
+    const chronologyTermMap = new Map(chronologyTerms.map((term) => [term.id, term]));
+    const trendGroups = new Map<string, {
+      label: string;
+      academicYear: string;
+      termCode: string;
+      order: string;
+      isSummer: boolean;
+      values: number[];
+    }>();
     for (const row of gpaHistoryRows) {
       const student = scopedStudentMap.get(row.student_id);
       if (student?.sStudyProgramId && row.s_program_code !== student.sStudyProgramId) continue;
@@ -273,6 +296,7 @@ export class DashboardService {
         academicYear: row.s_year_code,
         termCode: row.s_term_code,
         order: `${row.s_year_code}|${String(row.s_term_order).padStart(2, "0")}`,
+        isSummer: row.s_is_summer,
         values: [],
       };
       group.values.push(Number(row.gpa_4));
@@ -285,13 +309,32 @@ export class DashboardService {
       .filter((group) => !selectedOrder || group.order <= selectedOrder)
       .sort((left, right) => left.order.localeCompare(right.order))
       .slice(-8)
-      .map((group) => ({
-        label: group.label,
-        academicYear: group.academicYear,
-        termCode: group.termCode,
-        average: group.values.reduce((sum, value) => sum + value, 0) / group.values.length,
-        count: group.values.length,
-      }));
+      .map((group) => {
+        const average = group.values.reduce((sum, value) => sum + value, 0) / group.values.length;
+        const termId = [...trendGroups].find(([, candidate]) => candidate === group)?.[0] || null;
+        const links = termId ? termLinks.get(termId) : null;
+        const relatedMain = links?.previousMainTermId ? chronologyTermMap.get(links.previousMainTermId) : null;
+        return {
+          academicTermId: termId,
+          label: group.label,
+          academicYear: group.academicYear,
+          termCode: group.termCode,
+          isSummer: group.isSummer,
+          average,
+          officialAverage: group.isSummer ? null : average,
+          descriptiveSummerAverage: group.isSummer ? average : null,
+          studentCount: group.values.length,
+          count: group.values.length,
+          coverage: scopedStudents.length ? group.values.length / scopedStudents.length : 0,
+          calculationMode: group.isSummer ? "raw_summer_descriptive" : "source_term_summary",
+          mergedIntoMainTerm: relatedMain ? {
+            academicTermId: relatedMain.id,
+            termCode: relatedMain.sTermCode,
+            academicYear: chronologyYearCodes.get(relatedMain.academicYearId) || null,
+            status: "source_merge_unverified",
+          } : null,
+        };
+      });
 
     const warningFilter: Prisma.AcademicWarningRunWhereInput = {
       status: "completed",
@@ -422,6 +465,14 @@ export class DashboardService {
       : [];
     const activeClassCodes = new Set(allVisibleClasses.map((item) => item.classId));
     const studentsWithoutClass = scopedStudents.filter((student) => !student.sClassStudentId || !activeClassCodes.has(student.sClassStudentId)).length;
+    const selectedTermParticipants = selectedTerm && scopedStudentIds.length
+      ? await prisma.studentCourseOffering.findMany({
+          where: { academicTermId: selectedTerm.id, studentId: { in: scopedStudentIds } },
+          distinct: ["studentId"],
+          select: { studentId: true },
+        })
+      : [];
+    const selectedTermLinks = selectedTerm ? termLinks.get(selectedTerm.id) : null;
 
     const sweResponse = {
       studentCount: scopedStudents.length,
@@ -521,6 +572,11 @@ export class DashboardService {
           pendingStudents: conductRows.filter((row) => row.statusId === "0").length,
           missingStudents: Math.max(0, scopedStudents.length - conductRows.length),
           recognizedField: "lastScore",
+          isSummer: Boolean(selectedTerm?.sIsSummer),
+          evaluationTermId: selectedTerm?.sIsSummer ? selectedTermLinks?.nextMainTermId || null : selectedTerm?.id || null,
+          note: selectedTerm?.sIsSummer
+            ? "Nội dung phát sinh trong kỳ hè được dùng khi đánh giá kỳ chính tiếp theo."
+            : null,
         },
         graduationForecast: {
           academicTermId: selectedTerm?.id || null,
@@ -533,7 +589,13 @@ export class DashboardService {
       },
       filterOptions: {
         academicYears: years.map((year) => ({ value: year.sYearCode, label: year.sYearCode })),
-        terms: terms.map((term) => ({ value: term.sTermCode, label: term.sTermName })),
+        terms: terms.map((term) => ({
+          value: term.sTermCode,
+          label: term.sTermName,
+          isSummer: term.sIsSummer,
+          previousMainTermId: termLinks.get(term.id)?.previousMainTermId || null,
+          nextMainTermId: termLinks.get(term.id)?.nextMainTermId || null,
+        })),
         programs: programs
           .filter((program) => programCodes.has(program.sProgramCode))
           .map((program) => ({ value: program.sProgramCode, label: program.sProgramName })),
@@ -559,8 +621,25 @@ export class DashboardService {
       totalClasses: classes.length,
       totalPrograms: new Set(scopedStudents.map((student) => student.sStudyProgramId).filter(Boolean)).size,
       currentTerm: selectedTerm
-        ? { termCode: selectedTerm.sTermCode, termName: selectedTerm.sTermName, academicYear: currentYear?.sYearCode || null }
+        ? {
+            id: selectedTerm.id,
+            termCode: selectedTerm.sTermCode,
+            termName: selectedTerm.sTermName,
+            academicYear: currentYear?.sYearCode || null,
+            isSummer: selectedTerm.sIsSummer,
+            previousMainTermId: selectedTermLinks?.previousMainTermId || null,
+            nextMainTermId: selectedTermLinks?.nextMainTermId || null,
+          }
         : null,
+      summerContext: selectedTerm?.sIsSummer ? {
+        isSummer: true,
+        participantStudents: selectedTermParticipants.length,
+        scopedStudents: scopedStudents.length,
+        coverage: scopedStudents.length ? selectedTermParticipants.length / scopedStudents.length : 0,
+        previousMainTermId: selectedTermLinks?.previousMainTermId || null,
+        nextMainTermId: selectedTermLinks?.nextMainTermId || null,
+        classification: "descriptive",
+      } : null,
       counts: {
         red,
         yellow,

@@ -191,9 +191,24 @@ export class StudentsService {
         })
       : null;
 
+    const warningRunIds = [...new Set(warningResults.map((result) => result.runId))];
+    const warningRuns = warningRunIds.length
+      ? await prisma.academicWarningRun.findMany({ where: { id: { in: warningRunIds } } })
+      : [];
+    const warningRunMap = new Map(warningRuns.map((run) => [run.id, run]));
+    const warningTermIds = [...new Set(warningRuns.map((run) => run.assessmentAcademicTermId))];
+    const warningTerms = warningTermIds.length
+      ? await prisma.academicTerm.findMany({ where: { id: { in: warningTermIds } } })
+      : [];
+    const warningTermMap = new Map(warningTerms.map((term) => [term.id, term]));
+
     // Load reasons for the latest warning result
     let reasons: any[] = [];
-    const latestWarning = warningResults[0] || null;
+    const latestWarning = warningResults.find((result) => {
+      const run = warningRunMap.get(result.runId);
+      const term = run ? warningTermMap.get(run.assessmentAcademicTermId) : null;
+      return run?.runMode === "OFFICIAL" && !term?.sIsSummer;
+    }) || null;
     if (latestWarning) {
       reasons = await prisma.academicWarningReason.findMany({
         where: { studentResultId: latestWarning.id },
@@ -227,6 +242,15 @@ export class StudentsService {
         academicWarningDecisions: w.academicWarningDecisions,
         reasonCount: w.reasonCount,
         createdAt: w.createdAt,
+        runMode: warningRunMap.get(w.runId)?.runMode || "OFFICIAL",
+        isSummer: Boolean(warningTermMap.get(warningRunMap.get(w.runId)?.assessmentAcademicTermId || "")?.sIsSummer),
+        evaluationLabel: (() => {
+          const run = warningRunMap.get(w.runId);
+          const term = run ? warningTermMap.get(run.assessmentAcademicTermId) : null;
+          if (run?.runMode === "SUMMER_MONITORING") return "Giám sát kỳ hè, tham khảo";
+          if (term?.sIsSummer) return "Đánh giá kỳ phụ, tham khảo";
+          return "Kết quả kỳ chính thức";
+        })(),
       })),
       warningReasons: reasons,
       warningActions: warningActions,
