@@ -9,8 +9,16 @@ import RegistrationProgressTab from "@/components/training-progress/Registration
 type ActiveTab = "registration" | "completion";
 
 const tabs = [
-  { id: "registration", label: "Kiểm tra đăng ký", icon: <ClipboardCheck aria-hidden="true" size={16} /> },
-  { id: "completion", label: "Hoàn thành CTĐT", icon: <GraduationCap aria-hidden="true" size={16} /> },
+  {
+    id: "registration",
+    label: "Kiểm tra đăng ký môn học theo kỳ",
+    icon: <ClipboardCheck aria-hidden="true" size={16} />,
+  },
+  {
+    id: "completion",
+    label: "Tiến độ tích lũy toàn khóa",
+    icon: <GraduationCap aria-hidden="true" size={16} />,
+  },
 ];
 
 export default function TrainingProgressPage() {
@@ -18,21 +26,35 @@ export default function TrainingProgressPage() {
 
   return (
     <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
-          Tiến độ đào tạo
-        </h1>
-        <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-600">
-          Đối chiếu đăng ký theo kỳ và đánh giá mức độ hoàn thành học phần bằng kế hoạch đã khóa, có lịch sử kết quả để truy vết.
-        </p>
-      </header>
+      {/* Clean page header without heavy boxing */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center rounded-md bg-lime-100 px-2 py-0.5 text-xs font-bold text-lime-800">
+              Phân hệ Học vụ & Đào tạo
+            </span>
+            <span className="text-xs text-slate-400">•</span>
+            <span className="text-xs text-slate-500">Đại học Đà Lạt</span>
+          </div>
+          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            Theo dõi Tiến độ Đào tạo
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Rà soát học phần sinh viên đăng ký theo từng học kỳ và đánh giá điều kiện tích lũy toàn khóa.
+          </p>
+        </div>
+      </div>
 
-      <Tabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onChange={(tabId) => setActiveTab(tabId as ActiveTab)}
-      />
+      {/* Clean Tab Bar */}
+      <div className="border-b border-slate-200">
+        <Tabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={(tabId) => setActiveTab(tabId as ActiveTab)}
+        />
+      </div>
 
+      {/* Active Tab View */}
       {activeTab === "registration" ? <RegistrationProgressTab /> : <CompletionProgressTab />}
     </main>
   );

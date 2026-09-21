@@ -3,7 +3,149 @@ import { GraduationEvaluationsService } from "../lib/services/graduation-evaluat
 
 const prisma = new PrismaClient();
 
+const DEFAULT_GRADUATION_RULES = [
+  {
+    ruleCode: "PROGRAM_COMPLETION",
+    ruleName: "Hoàn thành cấu trúc chương trình đào tạo",
+    ruleType: "CURRICULUM",
+    operator: "=",
+    requiredValue: "PASSED",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Quy chế đào tạo, Chương IV, Điều 27",
+    status: "active",
+  },
+  {
+    ruleCode: "CUMULATIVE_GPA",
+    ruleName: "Điểm trung bình tích lũy hệ 4",
+    ruleType: "GPA",
+    operator: ">=",
+    requiredValue: "2.00",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Quy chế đào tạo, Chương IV, Điều 27",
+    status: "active",
+  },
+  {
+    ruleCode: "DISCIPLINE",
+    ruleName: "Không trong thời gian đình chỉ học tập",
+    ruleType: "STATUS",
+    operator: "=",
+    requiredValue: "CLEAR",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Quy chế đào tạo, Chương IV, Điều 27",
+    status: "active",
+  },
+  {
+    ruleCode: "LEGAL",
+    ruleName: "Không bị truy cứu trách nhiệm hình sự",
+    ruleType: "STATUS",
+    operator: "=",
+    requiredValue: "CLEAR",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Quy chế đào tạo, Chương IV, Điều 27",
+    status: "active",
+  },
+  {
+    ruleCode: "WHOLE_COURSE_TRAINING",
+    ruleName: "Có kết quả rèn luyện toàn khóa",
+    ruleType: "DATA",
+    operator: "EXISTS",
+    requiredValue: "AVAILABLE",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Quy định đánh giá kết quả rèn luyện sinh viên Trường Đại học Đà Lạt",
+    status: "active",
+  },
+  {
+    ruleCode: "TOTAL_CREDITS",
+    ruleName: "Tổng tín chỉ tích lũy",
+    ruleType: "CREDIT",
+    operator: ">=",
+    requiredValue: "150",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Khung chương trình đào tạo đại học",
+    status: "active",
+  },
+  {
+    ruleCode: "COMPULSORY_CREDITS",
+    ruleName: "Tín chỉ bắt buộc",
+    ruleType: "CREDIT",
+    operator: ">=",
+    requiredValue: "104",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Khung chương trình đào tạo đại học",
+    status: "active",
+  },
+  {
+    ruleCode: "ELECTIVE_CREDITS",
+    ruleName: "Tín chỉ tự chọn",
+    ruleType: "CREDIT",
+    operator: ">=",
+    requiredValue: "46",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Khung chương trình đào tạo đại học",
+    status: "active",
+  },
+  {
+    ruleCode: "PHYSICAL_EDUCATION",
+    ruleName: "Chứng chỉ Giáo dục thể chất",
+    ruleType: "CERTIFICATE",
+    operator: "=",
+    requiredValue: "PASSED",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Quy định chuẩn đầu ra Giáo dục thể chất",
+    status: "active",
+  },
+  {
+    ruleCode: "NATIONAL_DEFENSE",
+    ruleName: "Chứng chỉ Giáo dục quốc phòng và an ninh",
+    ruleType: "CERTIFICATE",
+    operator: "=",
+    requiredValue: "PASSED",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Quy định chuẩn đầu ra Giáo dục quốc phòng - an ninh",
+    status: "active",
+  },
+  {
+    ruleCode: "FOREIGN_LANGUAGE",
+    ruleName: "Chuẩn đầu ra ngoại ngữ",
+    ruleType: "OUTCOME",
+    operator: "=",
+    requiredValue: "PASSED",
+    version: "REGULATION-BASE-v1",
+    sourceDocument: "Quy định chuẩn đầu ra ngoại ngữ bậc đại học",
+    status: "active",
+  },
+];
+
+async function ensureDefaultGraduationRules() {
+  for (const rule of DEFAULT_GRADUATION_RULES) {
+    const existing = await prisma.graduationRule.findFirst({
+      where: {
+        trainingProgramId: null,
+        cohortId: null,
+        ruleCode: rule.ruleCode,
+      },
+    });
+    if (!existing) {
+      await prisma.graduationRule.create({
+        data: {
+          trainingProgramId: null,
+          cohortId: null,
+          ruleCode: rule.ruleCode,
+          ruleName: rule.ruleName,
+          ruleType: rule.ruleType,
+          operator: rule.operator,
+          requiredValue: rule.requiredValue,
+          version: rule.version,
+          sourceDocument: rule.sourceDocument,
+          status: rule.status,
+        },
+      });
+    }
+  }
+}
+
 async function main() {
+  await ensureDefaultGraduationRules();
   const force = process.argv.includes("--force");
   const completionRuns = await prisma.trainingProgressCompletionRun.findMany({
     where: {
@@ -29,12 +171,38 @@ async function main() {
         assessmentAcademicTermId: run.assessmentAcademicTermId,
         status: "completed",
       },
-      select: { evaluationCode: true },
+      select: { id: true, evaluationCode: true },
     });
     if (existing && !force) {
       skipped++;
       console.log(`Skip ${existing.evaluationCode}: evaluation already exists for this scope.`);
       continue;
+    }
+
+    const staleEvals = await prisma.graduationEvaluation.findMany({
+      where: {
+        cohortId: run.cohortId,
+        trainingProgramId: run.trainingProgramId,
+        assessmentAcademicTermId: run.assessmentAcademicTermId,
+      },
+      select: { id: true },
+    });
+    for (const stale of staleEvals) {
+      const studentIds = (
+        await prisma.graduationEvaluationStudent.findMany({
+          where: { evaluationId: stale.id },
+          select: { id: true },
+        })
+      ).map((s) => s.id);
+      if (studentIds.length) {
+        await prisma.graduationEvaluationDetail.deleteMany({
+          where: { evaluationStudentId: { in: studentIds } },
+        });
+        await prisma.graduationEvaluationStudent.deleteMany({
+          where: { evaluationId: stale.id },
+        });
+      }
+      await prisma.graduationEvaluation.delete({ where: { id: stale.id } });
     }
     const evaluation = await GraduationEvaluationsService.createEvaluation({
       cohortId: run.cohortId,

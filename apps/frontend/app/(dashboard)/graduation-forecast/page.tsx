@@ -19,8 +19,6 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
-  Sparkles,
-  Users,
   X,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
@@ -71,17 +69,6 @@ const STATUS_META: Record<string, { label: string; short: string; tone: string; 
   },
 };
 
-const REQUIREMENT_LABELS: Record<string, string> = {
-  PASSED: "Đạt",
-  CLEAR: "Đã xác minh",
-  AVAILABLE: "Có dữ liệu",
-  NOT_PASSED: "Chưa đạt",
-  SUSPENDED: "Đang đình chỉ",
-  UNDER_CRIMINAL_PROCEEDING: "Đang bị truy cứu",
-  PENDING: "Chờ xác nhận",
-  NOT_AVAILABLE: "Chưa có dữ liệu",
-};
-
 function statusMeta(status: string) {
   return STATUS_META[status] || STATUS_META.MANUAL_REVIEW;
 }
@@ -92,7 +79,19 @@ function formatNumber(value: unknown, digits = 0) {
   return Number.isFinite(parsed) ? parsed.toLocaleString("vi-VN", { maximumFractionDigits: digits, minimumFractionDigits: digits }) : "—";
 }
 
-function getStudentReasonSummary(student: ApiData): { text: string; tone: string; isOk: boolean } {
+function configuredThreshold(sourceSnapshot: ApiData, ruleCode: string, fallback: number) {
+  const rules = Array.isArray(sourceSnapshot?.rules) ? sourceSnapshot.rules : [];
+  const value = Number(rules.find((rule: ApiData) => rule.code === ruleCode)?.requiredValue);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function detailThreshold(details: ApiData[], ruleCode: string, fallback: number) {
+  const raw = details.find((detail: ApiData) => detail.ruleCode === ruleCode)?.requiredValue;
+  const value = Number(String(raw ?? "").replace(/[^0-9.]/g, ""));
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function getStudentReasonSummary(student: ApiData, gpaThreshold: number): { text: string; tone: string; isOk: boolean } {
   if (student.finalStatus === "EXPECTED_ELIGIBLE") {
     return { text: "Đủ toàn bộ điều kiện tốt nghiệp", tone: "text-emerald-700 font-medium", isOk: true };
   }
@@ -111,8 +110,8 @@ function getStudentReasonSummary(student: ApiData): { text: string; tone: string
   if (student.curriculumStatus === "NOT_PASSED") {
     return { text: "Nợ môn bắt buộc hoặc thiếu tín chỉ CTĐT", tone: "text-rose-700 font-medium", isOk: false };
   }
-  if (student.cumulativeGpa4 != null && Number(student.cumulativeGpa4) < 2.0) {
-    return { text: `Điểm GPA (${Number(student.cumulativeGpa4).toFixed(2)}) chưa đạt ngưỡng 2.00`, tone: "text-rose-700 font-medium", isOk: false };
+  if (student.cumulativeGpa4 != null && Number(student.cumulativeGpa4) < gpaThreshold) {
+    return { text: `Điểm GPA (${Number(student.cumulativeGpa4).toFixed(2)}) chưa đạt ngưỡng ${gpaThreshold.toFixed(2)}`, tone: "text-rose-700 font-medium", isOk: false };
   }
   if (student.foreignLanguageStatus === "NOT_PASSED") {
     return { text: "Chưa hoàn thành chuẩn Ngoại ngữ", tone: "text-rose-700 font-medium", isOk: false };
@@ -144,7 +143,7 @@ export default function GraduationForecastPage() {
   const [selectedRun, setSelectedRun] = useState<ApiData | null>(null);
 
   // Student list in selected batch
-  const [students, setStudents] = useState<ApiData[]>([]);
+  const [allStudents, setAllStudents] = useState<ApiData[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [keyword, setKeyword] = useState("");
@@ -174,12 +173,10 @@ export default function GraduationForecastPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
 
-  const loadRunStudents = useCallback(async (run: ApiData, status = statusFilter, search = keyword) => {
+  const loadRunStudents = useCallback(async (run: ApiData) => {
     setStudentsLoading(true);
     try {
       const params = new URLSearchParams({ pageSize: "100" });
-      if (status !== "all") params.set("status", status);
-      if (search.trim()) params.set("keyword", search.trim());
       const response = await apiFetch(`/api/v1/graduation-evaluations/${run.id}/students?${params}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error?.message || "Không thể tải danh sách sinh viên.");
@@ -194,20 +191,20 @@ export default function GraduationForecastPage() {
         if (nextItems.length === 0) break;
         items.push(...nextItems);
       }
-      setStudents(items);
+      setAllStudents(items);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Không thể tải danh sách sinh viên.");
     } finally {
       setStudentsLoading(false);
     }
-  }, [keyword, statusFilter]);
+  }, []);
 
   const loadInitial = useCallback(async () => {
     setLoading(true);
     setLoadError("");
     try {
       const [runResponse, cohortResponse, programResponse, yearResponse] = await Promise.all([
-        apiFetch("/api/v1/graduation-evaluations?pageSize=100"),
+        apiFetch("/api/v1/graduation-evaluations?pageSize=100&status=completed"),
         apiFetch("/api/v1/cohorts?pageSize=100"),
         apiFetch("/api/v1/training-programs?pageSize=100"),
         apiFetch("/api/v1/academic-years?pageSize=100"),
@@ -229,7 +226,7 @@ export default function GraduationForecastPage() {
       if (fetchedRuns.length > 0) {
         setSelectedRun((prev: ApiData | null) => {
           const current = prev ? fetchedRuns.find((r) => r.id === prev.id) || fetchedRuns[0] : fetchedRuns[0];
-          void loadRunStudents(current, "all", "");
+          void loadRunStudents(current);
           return current;
         });
       }
@@ -249,7 +246,7 @@ export default function GraduationForecastPage() {
     setSelectedRun(run);
     setStatusFilter("all");
     setKeyword("");
-    await loadRunStudents(run, "all", "");
+    await loadRunStudents(run);
   };
 
   const openStudent = async (student: ApiData, defaultTab: "summary" | "transcript" = "summary") => {
@@ -290,6 +287,7 @@ export default function GraduationForecastPage() {
 
   const runPreview = async () => {
     if (!selectedCohort || !selectedProgram || !selectedTerm) return;
+    setPreview(null);
     setPreviewLoading(true);
     try {
       const response = await apiFetch("/api/v1/graduation-evaluations/preview", {
@@ -318,6 +316,10 @@ export default function GraduationForecastPage() {
     if (!preview) {
       await runPreview();
       toast.info("Đã kiểm tra dữ liệu. Hãy xem kết quả dự kiến trước khi bấm xác nhận chạy.");
+      return;
+    }
+    if (!preview.canRun) {
+      toast.error("Dữ liệu hoặc bộ quy tắc chưa đủ để chạy đánh giá.");
       return;
     }
     setRunLoading(true);
@@ -358,8 +360,111 @@ export default function GraduationForecastPage() {
     return Array.from(set);
   }, [runs]);
 
+  const statusCounts = useMemo(() => {
+    const counts = {
+      all: selectedRun ? Number(selectedRun.totalStudents || 0) : allStudents.length,
+      EXPECTED_ELIGIBLE: selectedRun ? Number(selectedRun.expectedEligibleStudents || 0) : 0,
+      NOT_ELIGIBLE: selectedRun ? Number(selectedRun.notEligibleStudents || 0) : 0,
+      PENDING_GRADE: selectedRun ? Number(selectedRun.pendingGradeStudents || 0) : 0,
+      PENDING_REQUIREMENT: selectedRun ? Number(selectedRun.pendingRequirementStudents || 0) : 0,
+      MANUAL_REVIEW: selectedRun ? Number(selectedRun.manualReviewStudents || 0) : 0,
+    };
+    if (allStudents.length > 0) {
+      counts.all = allStudents.length;
+      counts.EXPECTED_ELIGIBLE = allStudents.filter((s) => s.finalStatus === "EXPECTED_ELIGIBLE").length;
+      counts.NOT_ELIGIBLE = allStudents.filter((s) => s.finalStatus === "NOT_ELIGIBLE").length;
+      counts.PENDING_GRADE = allStudents.filter((s) => s.finalStatus === "PENDING_GRADE").length;
+      counts.PENDING_REQUIREMENT = allStudents.filter((s) => s.finalStatus === "PENDING_REQUIREMENT").length;
+      counts.MANUAL_REVIEW = allStudents.filter((s) => s.finalStatus === "MANUAL_REVIEW").length;
+    }
+    return counts;
+  }, [selectedRun, allStudents]);
+
+  const statusTabs = useMemo(() => [
+    {
+      key: "all",
+      label: "Tất cả",
+      count: statusCounts.all,
+      icon: null,
+      activeCls: "bg-slate-900 border-slate-900 text-white shadow-xs",
+      inactiveCls: "bg-slate-100/80 border-slate-200/90 text-slate-700 hover:bg-slate-200/80 hover:text-slate-900 hover:border-slate-300",
+      badgeActiveCls: "bg-white/20 text-white",
+      badgeInactiveCls: "bg-slate-200/80 text-slate-700",
+    },
+    {
+      key: "EXPECTED_ELIGIBLE",
+      label: "Đủ điều kiện",
+      count: statusCounts.EXPECTED_ELIGIBLE,
+      icon: Check,
+      activeCls: "bg-emerald-600 border-emerald-600 text-white shadow-xs",
+      inactiveCls: "bg-emerald-50/60 border-emerald-200 text-emerald-800 hover:bg-emerald-100/80 hover:border-emerald-300",
+      badgeActiveCls: "bg-white/20 text-white",
+      badgeInactiveCls: "bg-emerald-100 text-emerald-800",
+    },
+    {
+      key: "NOT_ELIGIBLE",
+      label: "Chưa đủ điều kiện",
+      count: statusCounts.NOT_ELIGIBLE,
+      icon: X,
+      activeCls: "bg-rose-600 border-rose-600 text-white shadow-xs",
+      inactiveCls: "bg-rose-50/60 border-rose-200 text-rose-800 hover:bg-rose-100/80 hover:border-rose-300",
+      badgeActiveCls: "bg-white/20 text-white",
+      badgeInactiveCls: "bg-rose-100 text-rose-800",
+    },
+    ...(statusCounts.PENDING_GRADE > 0 ? [{
+      key: "PENDING_GRADE",
+      label: "Chờ điểm",
+      count: statusCounts.PENDING_GRADE,
+      icon: CircleHelp,
+      activeCls: "bg-amber-600 border-amber-600 text-white shadow-xs",
+      inactiveCls: "bg-amber-50/60 border-amber-200 text-amber-800 hover:bg-amber-100/80 hover:border-amber-300",
+      badgeActiveCls: "bg-white/20 text-white",
+      badgeInactiveCls: "bg-amber-100 text-amber-800",
+    }] : []),
+    ...(statusCounts.PENDING_REQUIREMENT > 0 ? [{
+      key: "PENDING_REQUIREMENT",
+      label: "Chờ điều kiện",
+      count: statusCounts.PENDING_REQUIREMENT,
+      icon: CircleHelp,
+      activeCls: "bg-sky-600 border-sky-600 text-white shadow-xs",
+      inactiveCls: "bg-sky-50/60 border-sky-200 text-sky-800 hover:bg-sky-100/80 hover:border-sky-300",
+      badgeActiveCls: "bg-white/20 text-white",
+      badgeInactiveCls: "bg-sky-100 text-sky-800",
+    }] : []),
+    ...(statusCounts.MANUAL_REVIEW > 0 ? [{
+      key: "MANUAL_REVIEW",
+      label: "Đối soát",
+      count: statusCounts.MANUAL_REVIEW,
+      icon: ShieldAlert,
+      activeCls: "bg-slate-700 border-slate-700 text-white shadow-xs",
+      inactiveCls: "bg-slate-100 border-slate-300 text-slate-800 hover:bg-slate-200/80 hover:border-slate-400",
+      badgeActiveCls: "bg-white/20 text-white",
+      badgeInactiveCls: "bg-slate-200 text-slate-800",
+    }] : []),
+  ], [statusCounts]);
+
+  const filteredStudents = useMemo(() => {
+    let list = allStudents;
+    if (statusFilter !== "all") {
+      list = list.filter((s) => s.finalStatus === statusFilter);
+    }
+    const q = keyword.trim().toLowerCase();
+    if (q) {
+      list = list.filter((s) => {
+        const name = String(s.sStudentName || "").toLowerCase();
+        const id = String(s.sStudentId || "").toLowerCase();
+        const cls = String(s.sClassName || "").toLowerCase();
+        return name.includes(q) || id.includes(q) || cls.includes(q);
+      });
+    }
+    return list;
+  }, [allStudents, statusFilter, keyword]);
+
+  const selectedTotalCreditsThreshold = configuredThreshold(selectedRun?.sourceSnapshot, "TOTAL_CREDITS", 150);
+  const selectedGpaThreshold = configuredThreshold(selectedRun?.sourceSnapshot, "CUMULATIVE_GPA", 2);
+
   return (
-    <main className="mx-auto max-w-[1550px] space-y-6 p-4 sm:p-6 text-slate-800">
+    <div className="p-6 space-y-6 max-w-7xl mx-auto text-slate-800">
       {/* 1. Trang tiêu đề & Nút thao tác chính */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
         <div>
@@ -404,9 +509,6 @@ export default function GraduationForecastPage() {
           <div>
             <h2 id="batch-selector-heading" className="text-base font-bold text-slate-900 flex items-center gap-2">
               <span>1. Chọn đợt xét tốt nghiệp</span>
-              <span className="text-xs font-normal text-slate-500">
-                (Bấm vào một đợt bên dưới để xem danh sách sinh viên)
-              </span>
             </h2>
           </div>
 
@@ -417,9 +519,8 @@ export default function GraduationForecastPage() {
                 <button
                   type="button"
                   onClick={() => setCohortFilter("all")}
-                  className={`rounded-md px-2.5 py-1 font-semibold transition cursor-pointer ${
-                    cohortFilter === "all" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
-                  }`}
+                  className={`rounded-md px-2.5 py-1 font-semibold transition cursor-pointer ${cohortFilter === "all" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                    }`}
                 >
                   Tất cả ({runs.length})
                 </button>
@@ -428,9 +529,8 @@ export default function GraduationForecastPage() {
                     key={code}
                     type="button"
                     onClick={() => setCohortFilter(code)}
-                    className={`rounded-md px-2.5 py-1 font-semibold transition cursor-pointer ${
-                      cohortFilter === code ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
-                    }`}
+                    className={`rounded-md px-2.5 py-1 font-semibold transition cursor-pointer ${cohortFilter === code ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
+                      }`}
                   >
                     Khóa {code}
                   </button>
@@ -461,7 +561,7 @@ export default function GraduationForecastPage() {
           <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 p-8 text-center">
             <FileCheck2 size={36} className="mx-auto text-slate-400 mb-2" />
             <p className="font-bold text-slate-800">Chưa có đợt xét tốt nghiệp nào</p>
-            <p className="text-xs text-slate-500 mt-1">Bấm nút "Chạy đánh giá đợt mới" ở trên để tạo dữ liệu xét tốt nghiệp.</p>
+            <p className="text-xs text-slate-500 mt-1">Bấm nút &quot;Chạy đánh giá đợt mới&quot; ở trên để tạo dữ liệu xét tốt nghiệp.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -469,18 +569,19 @@ export default function GraduationForecastPage() {
               const isSelected = selectedRun?.id === run.id;
               const eligibleCount = Number(run.expectedEligibleStudents || 0);
               const pendingGradeCount = Number(run.pendingGradeStudents || 0);
+              const pendingRequirementCount = Number(run.pendingRequirementStudents || 0);
               const notEligibleCount = Number(run.notEligibleStudents || 0);
+              const manualReviewCount = Number(run.manualReviewStudents || 0);
               const total = Number(run.totalStudents || 0);
 
               return (
                 <div
                   key={run.id}
                   onClick={() => void selectRun(run)}
-                  className={`group relative rounded-2xl border p-4.5 text-left transition-all cursor-pointer ${
-                    isSelected
-                      ? "border-lime-500 bg-lime-50/30 shadow-md ring-2 ring-lime-500/20"
-                      : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
-                  }`}
+                  className={`group relative rounded-2xl border p-4.5 text-left transition-all cursor-pointer ${isSelected
+                    ? "border-lime-500 bg-lime-50/30 shadow-md ring-2 ring-lime-500/20"
+                    : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs"
+                    }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -510,7 +611,7 @@ export default function GraduationForecastPage() {
                   </div>
 
                   {/* Thống kê trực quan của đợt */}
-                  <div className="mt-3.5 pt-3 border-t border-slate-100 grid grid-cols-4 gap-1 text-center">
+                  <div className="mt-3.5 pt-3 border-t border-slate-100 grid grid-cols-3 gap-1 text-center sm:grid-cols-6">
                     <div className="rounded-lg bg-slate-50 py-1.5 px-1">
                       <p className="text-[10px] text-slate-400 font-medium">Tổng số</p>
                       <p className="font-mono text-sm font-bold text-slate-800">{total}</p>
@@ -526,6 +627,14 @@ export default function GraduationForecastPage() {
                     <div className="rounded-lg bg-amber-50 py-1.5 px-1">
                       <p className="text-[10px] text-amber-600 font-medium">Chờ điểm</p>
                       <p className="font-mono text-sm font-bold text-amber-700">{pendingGradeCount}</p>
+                    </div>
+                    <div className="rounded-lg bg-sky-50 py-1.5 px-1">
+                      <p className="text-[10px] text-sky-600 font-medium">Chờ ĐK</p>
+                      <p className="font-mono text-sm font-bold text-sky-700">{pendingRequirementCount}</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-100 py-1.5 px-1">
+                      <p className="text-[10px] text-slate-500 font-medium">Đối soát</p>
+                      <p className="font-mono text-sm font-bold text-slate-700">{manualReviewCount}</p>
                     </div>
                   </div>
                 </div>
@@ -581,120 +690,54 @@ export default function GraduationForecastPage() {
 
           {/* Bộ lọc nhanh theo trạng thái & Ô tìm kiếm */}
           <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between bg-white">
-            {/* Filter Tabs to, rõ chữ */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter("all");
-                  void loadRunStudents(selectedRun, "all", keyword);
-                }}
-                className={`rounded-xl px-3 py-2 text-xs font-bold transition cursor-pointer ${
-                  statusFilter === "all"
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
-              >
-                Tất cả ({selectedRun.totalStudents})
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter("EXPECTED_ELIGIBLE");
-                  void loadRunStudents(selectedRun, "EXPECTED_ELIGIBLE", keyword);
-                }}
-                className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition cursor-pointer ${
-                  statusFilter === "EXPECTED_ELIGIBLE"
-                    ? "bg-emerald-600 text-white shadow-xs"
-                    : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                }`}
-              >
-                <Check size={13} strokeWidth={2.5} />
-                Đủ điều kiện ({selectedRun.expectedEligibleStudents || 0})
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter("NOT_ELIGIBLE");
-                  void loadRunStudents(selectedRun, "NOT_ELIGIBLE", keyword);
-                }}
-                className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition cursor-pointer ${
-                  statusFilter === "NOT_ELIGIBLE"
-                    ? "bg-rose-600 text-white shadow-xs"
-                    : "bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100"
-                }`}
-              >
-                <X size={13} strokeWidth={2.5} />
-                Chưa đủ điều kiện ({selectedRun.notEligibleStudents || 0})
-              </button>
-
-              {Number(selectedRun.pendingGradeStudents || 0) > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter("PENDING_GRADE");
-                    void loadRunStudents(selectedRun, "PENDING_GRADE", keyword);
-                  }}
-                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition cursor-pointer ${
-                    statusFilter === "PENDING_GRADE"
-                      ? "bg-amber-600 text-white shadow-xs"
-                      : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"
-                  }`}
-                >
-                  <CircleHelp size={13} />
-                  Chờ điểm ({selectedRun.pendingGradeStudents})
-                </button>
-              )}
-
-              {Number(selectedRun.manualReviewStudents || 0) > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter("MANUAL_REVIEW");
-                    void loadRunStudents(selectedRun, "MANUAL_REVIEW", keyword);
-                  }}
-                  className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition cursor-pointer ${
-                    statusFilter === "MANUAL_REVIEW"
-                      ? "bg-slate-600 text-white shadow-xs"
-                      : "bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200"
-                  }`}
-                >
-                  <ShieldAlert size={13} />
-                  Đối soát ({selectedRun.manualReviewStudents})
-                </button>
-              )}
+            {/* Filter Tabs mượt mà, cố định kích thước, không giật giật layout */}
+            <div className="flex flex-wrap items-center gap-2">
+              {statusTabs.map((tab) => {
+                const isActive = statusFilter === tab.key;
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setStatusFilter(tab.key)}
+                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all duration-200 ease-out cursor-pointer select-none active:scale-[0.97] ${
+                      isActive ? tab.activeCls : tab.inactiveCls
+                    }`}
+                  >
+                    {Icon && <Icon size={13} strokeWidth={2.5} className="shrink-0" />}
+                    <span>{tab.label}</span>
+                    <span
+                      className={`ml-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-bold transition-colors duration-200 ${
+                        isActive ? tab.badgeActiveCls : tab.badgeInactiveCls
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Search Box to, rõ */}
-            <form
-              className="relative w-full sm:w-80"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void loadRunStudents(selectedRun, statusFilter, keyword);
-              }}
-            >
+            {/* Search Box tìm kiếm tức thì */}
+            <div className="relative w-full sm:w-80">
               <Search size={15} className="pointer-events-none absolute left-3.5 top-3 text-slate-400" />
               <input
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
-                placeholder="Tìm họ tên hoặc MSSV..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-3 text-xs outline-none transition focus:border-lime-500 focus:bg-white focus:ring-2 focus:ring-lime-100"
+                placeholder="Tìm họ tên, MSSV hoặc lớp..."
+                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-8 text-xs outline-none transition focus:border-lime-500 focus:bg-white focus:ring-2 focus:ring-lime-100"
               />
               {keyword && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setKeyword("");
-                    void loadRunStudents(selectedRun, statusFilter, "");
-                  }}
+                  onClick={() => setKeyword("")}
                   className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  title="Xóa tìm kiếm"
                 >
                   <X size={14} />
                 </button>
               )}
-            </form>
+            </div>
           </div>
 
           {/* Bảng sinh viên dễ đọc, có cột tóm tắt nguyên nhân ngay tại chỗ */}
@@ -711,7 +754,7 @@ export default function GraduationForecastPage() {
                   <th className="px-4 py-3.5 text-right">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 transition-opacity duration-200">
                 {studentsLoading ? (
                   <tr>
                     <td colSpan={7} className="py-16 text-center text-slate-500">
@@ -719,17 +762,29 @@ export default function GraduationForecastPage() {
                       Đang tải danh sách sinh viên...
                     </td>
                   </tr>
-                ) : students.length === 0 ? (
+                ) : filteredStudents.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-16 text-center text-slate-500">
                       <p className="font-semibold text-slate-700">Không có sinh viên nào phù hợp với bộ lọc</p>
                       <p className="text-xs text-slate-400 mt-1">Hãy thử xóa từ khóa tìm kiếm hoặc chọn bộ lọc trạng thái khác.</p>
+                      {(statusFilter !== "all" || keyword) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStatusFilter("all");
+                            setKeyword("");
+                          }}
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer transition shadow-2xs"
+                        >
+                          Xóa bộ lọc (Xem tất cả {statusCounts.all} sinh viên)
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ) : (
-                  students.map((student) => {
+                  filteredStudents.map((student) => {
                     const meta = statusMeta(student.finalStatus);
-                    const reason = getStudentReasonSummary(student);
+                    const reason = getStudentReasonSummary(student, selectedGpaThreshold);
                     const credits = Number(student.totalCredits || 0);
                     const gpa = student.cumulativeGpa4 != null ? Number(student.cumulativeGpa4) : null;
 
@@ -757,16 +812,15 @@ export default function GraduationForecastPage() {
                           <span className="font-mono text-sm font-bold text-slate-800">
                             {formatNumber(credits)}
                           </span>
-                          <span className="text-slate-400 text-xs"> / 150</span>
+                          <span className="text-slate-400 text-xs"> / {formatNumber(selectedTotalCreditsThreshold)}</span>
                         </td>
 
                         {/* GPA */}
                         <td className="px-3 py-3.5 text-center">
                           {gpa != null ? (
                             <span
-                              className={`font-mono text-sm font-bold ${
-                                gpa < 2.0 ? "text-rose-600" : gpa >= 3.2 ? "text-emerald-700" : "text-slate-800"
-                              }`}
+                              className={`font-mono text-sm font-bold ${gpa < selectedGpaThreshold ? "text-rose-600" : gpa >= 3.2 ? "text-emerald-700" : "text-slate-800"
+                                }`}
                             >
                               {gpa.toFixed(2)}
                             </span>
@@ -783,6 +837,13 @@ export default function GraduationForecastPage() {
                             <meta.icon size={12} strokeWidth={2.5} />
                             {meta.short}
                           </span>
+                          {student.needsManualReview && student.finalStatus !== "MANUAL_REVIEW" && (
+                            <div className="mt-1">
+                              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                <ShieldAlert size={10} /> Có mục cần đối soát
+                              </span>
+                            </div>
+                          )}
                         </td>
 
                         {/* Nguyên nhân tóm tắt */}
@@ -844,19 +905,23 @@ export default function GraduationForecastPage() {
           const {
             student,
             evaluation,
-            missingCourses = [],
             pendingCourses = [],
             missingMandatoryCourses = [],
             mandatoryAnalysis,
             electiveAnalysis,
             electiveGroups = [],
             grades = [],
+            requirements = [],
+            gradeDataSource,
           } = selectedStudent;
           const finalStatus = student?.finalStatus || evaluation?.finalStatus || "MANUAL_REVIEW";
           const meta = statusMeta(finalStatus);
           const isEligible = finalStatus === "EXPECTED_ELIGIBLE";
-          const isPending = finalStatus === "PENDING_GRADE";
+          const isPending = finalStatus === "PENDING_GRADE" || finalStatus === "PENDING_REQUIREMENT";
           const isNotEligible = finalStatus === "NOT_ELIGIBLE";
+          const totalCreditsThreshold = detailThreshold(requirements, "TOTAL_CREDITS", selectedTotalCreditsThreshold);
+          const gpaThreshold = detailThreshold(requirements, "CUMULATIVE_GPA", selectedGpaThreshold);
+          const compulsoryCreditsThreshold = detailThreshold(requirements, "COMPULSORY_CREDITS", Number(mandatoryAnalysis?.requiredCredits ?? 104));
 
           // Mandatory courses breakdown:
           const failedMandatoryCourses: ApiData[] =
@@ -872,7 +937,7 @@ export default function GraduationForecastPage() {
 
           // Elective courses breakdown:
           const studentElecCredits = Number(electiveAnalysis?.accumulatedCredits ?? student?.electiveCredits ?? 0);
-          const requiredElecCredits = Number(electiveAnalysis?.requiredCredits ?? 46);
+          const requiredElecCredits = detailThreshold(requirements, "ELECTIVE_CREDITS", Number(electiveAnalysis?.requiredCredits ?? 46));
           const isElectiveSatisfied = electiveAnalysis
             ? Boolean(electiveAnalysis.isSatisfied)
             : studentElecCredits >= requiredElecCredits;
@@ -919,24 +984,22 @@ export default function GraduationForecastPage() {
             <div className="space-y-5 text-slate-800">
               {/* KHUNG THÔNG BÁO KẾT LUẬN TO, RÕ DÀNG */}
               <div
-                className={`rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${
-                  isEligible
-                    ? "border-emerald-300 bg-emerald-50/60 text-emerald-950"
-                    : isPending
+                className={`rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${isEligible
+                  ? "border-emerald-300 bg-emerald-50/60 text-emerald-950"
+                  : isPending
                     ? "border-amber-300 bg-amber-50/60 text-amber-950"
                     : "border-rose-300 bg-rose-50/60 text-rose-950"
-                }`}
+                  }`}
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold ${
-                        isEligible
-                          ? "bg-emerald-600 text-white"
-                          : isPending
+                      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-extrabold ${isEligible
+                        ? "bg-emerald-600 text-white"
+                        : isPending
                           ? "bg-amber-600 text-white"
                           : "bg-rose-600 text-white"
-                      }`}
+                        }`}
                     >
                       <meta.icon size={14} strokeWidth={3} />
                       {meta.label.toUpperCase()}
@@ -948,11 +1011,11 @@ export default function GraduationForecastPage() {
                     {isPending && (
                       <span>
                         Sinh viên đã tích lũy đủ <strong>{studentElecCredits}/{requiredElecCredits} tín chỉ tự chọn</strong>
-                        {excessElecCredits > 0 ? ` (đạt và vượt +${excessElecCredits} TC theo CTĐT K44)` : ""}, hiện đang chờ công bố điểm thi của{" "}
+                        {excessElecCredits > 0 ? ` (đạt và vượt +${excessElecCredits} TC theo CTĐT)` : ""}, hiện đang chờ công bố điểm thi của{" "}
                         <strong>{pendingCourses.length} học phần</strong> ({pendingCourses.map((c: ApiData) => c.courseName || c.courseCode).join(", ")}) để hoàn tất điều kiện tốt nghiệp.
                       </span>
                     )}
-                    {isNotEligible && "Sinh viên còn nợ học phần bắt buộc, thiếu tín chỉ tích lũy hoặc GPA chưa đạt 2.00."}
+                    {isNotEligible && `Sinh viên còn nợ học phần bắt buộc, thiếu tín chỉ tích lũy hoặc GPA chưa đạt ${gpaThreshold.toFixed(2)}.`}
                     {finalStatus === "MANUAL_REVIEW" && "Hồ sơ của sinh viên cần đối soát thêm với chuyên viên đào tạo."}
                   </p>
                 </div>
@@ -962,18 +1025,17 @@ export default function GraduationForecastPage() {
                   <div className="rounded-xl bg-white/80 border border-slate-200/80 px-3.5 py-2 text-center shadow-2xs">
                     <p className="text-[10px] uppercase font-bold text-slate-500">Tín chỉ tích lũy</p>
                     <p className="font-mono text-base font-extrabold text-slate-900">
-                      {formatNumber(student?.totalCredits ?? evaluation?.totalCredits)} <span className="text-xs text-slate-400 font-normal">/ 150</span>
+                      {formatNumber(student?.totalCredits ?? evaluation?.totalCredits)} <span className="text-xs text-slate-400 font-normal">/ {formatNumber(totalCreditsThreshold)}</span>
                     </p>
                   </div>
                   <div className="rounded-xl bg-white/80 border border-slate-200/80 px-3.5 py-2 text-center shadow-2xs">
                     <p className="text-[10px] uppercase font-bold text-slate-500">GPA Hệ 4</p>
                     <p
-                      className={`font-mono text-base font-extrabold ${
-                        Number(student?.cumulativeGpa4 ?? evaluation?.cumulativeGpa4 ?? 0) < 2.0 ? "text-rose-600" : "text-slate-900"
-                      }`}
+                      className={`font-mono text-base font-extrabold ${Number(student?.cumulativeGpa4 ?? evaluation?.cumulativeGpa4 ?? 0) < gpaThreshold ? "text-rose-600" : "text-slate-900"
+                        }`}
                     >
                       {formatNumber(student?.cumulativeGpa4 ?? evaluation?.cumulativeGpa4, 2)}{" "}
-                      <span className="text-xs text-slate-400 font-normal">/ 2.0</span>
+                      <span className="text-xs text-slate-400 font-normal">/ {gpaThreshold.toFixed(2)}</span>
                     </p>
                   </div>
                   <div className="rounded-xl bg-white/80 border border-slate-200/80 px-3.5 py-2 text-center shadow-2xs">
@@ -985,17 +1047,23 @@ export default function GraduationForecastPage() {
                 </div>
               </div>
 
+              {gradeDataSource === "live_fallback" && (
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+                  <span>Phiên đánh giá cũ chưa lưu snapshot bảng điểm; bảng điểm bên dưới đang lấy từ dữ liệu hiện tại và có thể khác thời điểm chốt.</span>
+                </div>
+              )}
+
               {/* 2 TAB ĐIỀU HƯỚNG CỰC KỲ RÕ RÀNG */}
               <div className="flex items-center justify-between border-b border-slate-200 pb-0">
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setStudentModalTab("summary")}
-                    className={`inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
-                      studentModalTab === "summary"
-                        ? "border-lime-600 text-lime-800"
-                        : "border-transparent text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={`inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-bold transition cursor-pointer ${studentModalTab === "summary"
+                      ? "border-lime-600 text-lime-800"
+                      : "border-transparent text-slate-500 hover:text-slate-800"
+                      }`}
                   >
                     <AlertTriangle size={14} />
                     <span>Lý do & Tình trạng học phần</span>
@@ -1031,11 +1099,10 @@ export default function GraduationForecastPage() {
                   <button
                     type="button"
                     onClick={() => setStudentModalTab("transcript")}
-                    className={`inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-bold transition cursor-pointer ${
-                      studentModalTab === "transcript"
-                        ? "border-lime-600 text-lime-800"
-                        : "border-transparent text-slate-500 hover:text-slate-800"
-                    }`}
+                    className={`inline-flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-bold transition cursor-pointer ${studentModalTab === "transcript"
+                      ? "border-lime-600 text-lime-800"
+                      : "border-transparent text-slate-500 hover:text-slate-800"
+                      }`}
                   >
                     <FileText size={14} />
                     <span>Toàn bộ bảng điểm học phần</span>
@@ -1103,7 +1170,7 @@ export default function GraduationForecastPage() {
                                 (Điểm chữ {course.gradeInfo?.letterGrade || "F"})
                               </p>
                               <p className="text-[11px] text-rose-600 mt-1 font-medium">
-                                👉 Đây là học phần BẮT BUỘC trong CTĐT (104 tín chỉ). Sinh viên bắt buộc phải đăng ký học lại để tích lũy tín chỉ tốt nghiệp.
+                                👉 Đây là học phần BẮT BUỘC trong CTĐT ({formatNumber(compulsoryCreditsThreshold)} tín chỉ). Sinh viên bắt buộc phải đăng ký học lại để tích lũy tín chỉ tốt nghiệp.
                               </p>
                             </div>
                           </div>
@@ -1150,7 +1217,7 @@ export default function GraduationForecastPage() {
                             <div className="mt-3 pt-2.5 border-t border-amber-100 text-xs text-amber-800">
                               <p className="font-semibold">Chưa từng đăng ký học phần bắt buộc này</p>
                               <p className="text-[11px] text-amber-700 mt-1 font-medium">
-                                👉 Bắt buộc phải đăng ký học mới để hoàn thành khung 104 tín chỉ bắt buộc của CTĐT.
+                                👉 Bắt buộc phải đăng ký học mới để hoàn thành khung {formatNumber(compulsoryCreditsThreshold)} tín chỉ bắt buộc của CTĐT.
                               </p>
                             </div>
                           </div>
@@ -1166,7 +1233,7 @@ export default function GraduationForecastPage() {
                       <div>
                         <p className="font-bold text-sm">Đã hoàn thành toàn bộ học phần bắt buộc</p>
                         <p className="text-xs text-emerald-700 mt-0.5">
-                          Sinh viên không nợ môn bắt buộc nào và đã đạt đầy đủ các học phần bắt buộc theo khung CTĐT (104 tín chỉ).
+                          Sinh viên không nợ môn bắt buộc nào và đã đạt đầy đủ các học phần bắt buộc theo khung CTĐT ({formatNumber(compulsoryCreditsThreshold)} tín chỉ).
                         </p>
                       </div>
                     </div>
@@ -1217,9 +1284,8 @@ export default function GraduationForecastPage() {
 
                   {/* 4. KHỐI TÌNH TRẠNG HỌC PHẦN TỰ CHỌN (QUY CHẾ CTĐT K44: YÊU CẦU 46 TÍN CHỈ) */}
                   <div
-                    className={`rounded-2xl border p-4.5 space-y-3.5 ${
-                      isElectiveSatisfied ? "border-emerald-200 bg-emerald-50/20" : "border-amber-200 bg-amber-50/20"
-                    }`}
+                    className={`rounded-2xl border p-4.5 space-y-3.5 ${isElectiveSatisfied ? "border-emerald-200 bg-emerald-50/20" : "border-amber-200 bg-amber-50/20"
+                      }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <div>
@@ -1277,9 +1343,8 @@ export default function GraduationForecastPage() {
                             <span>Học phần tự chọn từng học nhưng chưa đạt ({failedElectiveCourses.length} môn)</span>
                           </p>
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                              isElectiveSatisfied ? "bg-slate-100 text-slate-700" : "bg-amber-100 text-amber-800"
-                            }`}
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isElectiveSatisfied ? "bg-slate-100 text-slate-700" : "bg-amber-100 text-amber-800"
+                              }`}
                           >
                             {isElectiveSatisfied ? "Không bắt buộc học lại" : "Có thể học lại hoặc chọn môn khác thay thế"}
                           </span>
@@ -1358,25 +1423,22 @@ export default function GraduationForecastPage() {
                           return (
                             <div
                               key={`${group.groupCode || "group"}-${index}`}
-                              className={`rounded-xl border p-3.5 text-xs ${
-                                isOk ? "border-slate-200 bg-white" : "border-amber-200 bg-amber-50/20"
-                              }`}
+                              className={`rounded-xl border p-3.5 text-xs ${isOk ? "border-slate-200 bg-white" : "border-amber-200 bg-amber-50/20"
+                                }`}
                             >
                               <div className="flex items-center justify-between">
                                 <p className="font-bold text-slate-900">{group.groupCode || "Nhóm tự chọn"}</p>
                                 <span
-                                  className={`font-mono text-xs font-bold ${
-                                    isOk ? "text-emerald-700" : "text-amber-700"
-                                  }`}
+                                  className={`font-mono text-xs font-bold ${isOk ? "text-emerald-700" : "text-amber-700"
+                                    }`}
                                 >
                                   {passed} / {required} tín chỉ ({percent}%)
                                 </span>
                               </div>
                               <div className="mt-2 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                                 <div
-                                  className={`h-full rounded-full transition-all ${
-                                    isOk ? "bg-emerald-500" : "bg-amber-500"
-                                  }`}
+                                  className={`h-full rounded-full transition-all ${isOk ? "bg-emerald-500" : "bg-amber-500"
+                                    }`}
                                   style={{ width: `${percent}%` }}
                                 />
                               </div>
@@ -1428,28 +1490,26 @@ export default function GraduationForecastPage() {
                               return (
                                 <div
                                   key={rule.ruleCode}
-                                  className={`rounded-lg border p-2.5 text-xs ${
-                                    isPass
-                                      ? "border-emerald-200 bg-emerald-50/30"
-                                      : isPend
+                                  className={`rounded-lg border p-2.5 text-xs ${isPass
+                                    ? "border-emerald-200 bg-emerald-50/30"
+                                    : isPend
                                       ? "border-amber-200 bg-amber-50/30"
                                       : isFail
-                                      ? "border-rose-200 bg-rose-50/30"
-                                      : "border-slate-200 bg-white"
-                                  }`}
+                                        ? "border-rose-200 bg-rose-50/30"
+                                        : "border-slate-200 bg-white"
+                                    }`}
                                 >
                                   <div className="flex items-center justify-between gap-1">
                                     <p className="font-bold text-slate-800 text-[11px]">{rule.ruleName}</p>
                                     <span
-                                      className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                                        isPass
-                                          ? "bg-emerald-100 text-emerald-800"
-                                          : isPend
+                                      className={`inline-flex rounded px-1.5 py-0.5 text-[10px] font-bold ${isPass
+                                        ? "bg-emerald-100 text-emerald-800"
+                                        : isPend
                                           ? "bg-amber-100 text-amber-800"
                                           : isFail
-                                          ? "bg-rose-100 text-rose-800"
-                                          : "bg-slate-100 text-slate-700"
-                                      }`}
+                                            ? "bg-rose-100 text-rose-800"
+                                            : "bg-slate-100 text-slate-700"
+                                        }`}
                                     >
                                       {isPass ? "Đạt" : isPend ? "Chờ xác nhận" : isFail ? "Chưa đạt" : "Chưa có dữ liệu"}
                                     </span>
@@ -1561,8 +1621,8 @@ export default function GraduationForecastPage() {
                                     isFail
                                       ? "bg-rose-50/40 hover:bg-rose-50/60"
                                       : isPendingGrade
-                                      ? "bg-amber-50/30 hover:bg-amber-50/50"
-                                      : "hover:bg-slate-50"
+                                        ? "bg-amber-50/30 hover:bg-amber-50/50"
+                                        : "hover:bg-slate-50"
                                   }
                                 >
                                   <td className="px-3.5 py-2.5 text-slate-500 font-mono text-[11px] whitespace-nowrap">
@@ -1590,8 +1650,8 @@ export default function GraduationForecastPage() {
                                           g.letterGrade === "F"
                                             ? "text-rose-700"
                                             : g.letterGrade.startsWith("A")
-                                            ? "text-emerald-700"
-                                            : "text-slate-800"
+                                              ? "text-emerald-700"
+                                              : "text-slate-800"
                                         }
                                       >
                                         {g.letterGrade}
@@ -1654,7 +1714,10 @@ export default function GraduationForecastPage() {
             <label className="block text-xs font-bold text-slate-700 mb-1">Khóa sinh viên</label>
             <select
               value={selectedCohort}
-              onChange={(e) => setSelectedCohort(e.target.value)}
+              onChange={(e) => {
+                setSelectedCohort(e.target.value);
+                setPreview(null);
+              }}
               className="h-9 w-full rounded-xl border border-slate-300 bg-white px-3 font-medium outline-none focus:border-lime-500"
             >
               {cohorts.map((c) => (
@@ -1669,7 +1732,10 @@ export default function GraduationForecastPage() {
             <label className="block text-xs font-bold text-slate-700 mb-1">Chương trình đào tạo</label>
             <select
               value={selectedProgram}
-              onChange={(e) => setSelectedProgram(e.target.value)}
+              onChange={(e) => {
+                setSelectedProgram(e.target.value);
+                setPreview(null);
+              }}
               className="h-9 w-full rounded-xl border border-slate-300 bg-white px-3 font-medium outline-none focus:border-lime-500"
             >
               {programs.map((p) => (
@@ -1690,6 +1756,7 @@ export default function GraduationForecastPage() {
                   setSelectedYear(y);
                   const matched = years.find((year) => year.id === y);
                   setSelectedTerm(matched?.terms?.[0]?.id || "");
+                  setPreview(null);
                 }}
                 className="h-9 w-full rounded-xl border border-slate-300 bg-white px-3 font-medium outline-none focus:border-lime-500"
               >
@@ -1704,7 +1771,10 @@ export default function GraduationForecastPage() {
               <label className="block text-xs font-bold text-slate-700 mb-1">Học kỳ đánh giá</label>
               <select
                 value={selectedTerm}
-                onChange={(e) => setSelectedTerm(e.target.value)}
+                onChange={(e) => {
+                  setSelectedTerm(e.target.value);
+                  setPreview(null);
+                }}
                 className="h-9 w-full rounded-xl border border-slate-300 bg-white px-3 font-medium outline-none focus:border-lime-500"
               >
                 {termsForSelectedYear.map((t: ApiData) => (
@@ -1720,7 +1790,10 @@ export default function GraduationForecastPage() {
             <label className="block text-xs font-bold text-slate-700 mb-1">Đối tượng sinh viên</label>
             <select
               value={targetType}
-              onChange={(e) => setTargetType(e.target.value)}
+              onChange={(e) => {
+                setTargetType(e.target.value);
+                setPreview(null);
+              }}
               className="h-9 w-full rounded-xl border border-slate-300 bg-white px-3 font-medium outline-none focus:border-lime-500"
             >
               <option value="all_students">Tất cả sinh viên trong khóa / ngành</option>
@@ -1729,12 +1802,36 @@ export default function GraduationForecastPage() {
           </div>
 
           {preview && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-1.5 text-xs">
-              <p className="font-bold text-slate-800">Kết quả kiểm tra dữ liệu sơ bộ:</p>
+            <div className={`rounded-xl border p-3 space-y-2 text-xs ${preview.canRun ? "border-emerald-200 bg-emerald-50/60" : "border-rose-200 bg-rose-50/70"}`}>
+              <p className={`font-bold ${preview.canRun ? "text-emerald-800" : "text-rose-800"}`}>
+                {preview.canRun ? "Dữ liệu hợp lệ, có thể chạy đánh giá" : "Chưa thể chạy đánh giá"}
+              </p>
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <p>Tổng sinh viên xét: <strong>{preview.totalStudents}</strong></p>
-                <p>Số môn đào tạo: <strong>{preview.scope?.courseCount || "—"}</strong></p>
+                <p>Tổng sinh viên xét: <strong>{preview.summary?.studentCount ?? preview.dataReadiness?.studentCount ?? "—"}</strong></p>
+                <p>Số kế hoạch CTĐT: <strong>{preview.summary?.planCount ?? "—"}</strong></p>
+                <p>Thiếu GPA: <strong>{preview.dataReadiness?.missingGpa ?? "—"}</strong></p>
+                <p>Thiếu hồ sơ xác minh: <strong>{preview.dataReadiness?.missingVerifiedRequirements ?? "—"}</strong></p>
               </div>
+              {Array.isArray(preview.blockers) && preview.blockers.length > 0 && (
+                <ul className="space-y-1 text-[11px] text-rose-700">
+                  {preview.blockers.map((item: ApiData, index: number) => (
+                    <li key={`${String(item.code || "blocker")}-${index}`} className="flex gap-1.5">
+                      <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                      <span>{String(item.message || "Dữ liệu chưa hợp lệ.")}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {Array.isArray(preview.warnings) && preview.warnings.length > 0 && (
+                <ul className="space-y-1 text-[11px] text-amber-700">
+                  {preview.warnings.map((item: ApiData, index: number) => (
+                    <li key={`${String(item.code || "warning")}-${index}`} className="flex gap-1.5">
+                      <Info size={13} className="mt-0.5 shrink-0" />
+                      <span>{String(item.message || "Cần lưu ý dữ liệu đầu vào.")}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 
@@ -1756,7 +1853,7 @@ export default function GraduationForecastPage() {
             </button>
             <button
               type="submit"
-              disabled={previewLoading || runLoading}
+              disabled={previewLoading || runLoading || Boolean(preview && !preview.canRun)}
               className="rounded-xl bg-lime-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-lime-700 cursor-pointer disabled:opacity-50"
             >
               {runLoading ? "Đang xử lý..." : "Xác nhận chạy"}
@@ -1764,6 +1861,6 @@ export default function GraduationForecastPage() {
           </div>
         </form>
       </Modal>
-    </main>
+    </div>
   );
 }

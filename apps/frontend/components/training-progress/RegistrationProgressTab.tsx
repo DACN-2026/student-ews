@@ -3,153 +3,135 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  Archive,
+  BookOpen,
   CheckCircle2,
-  ChevronLeft,
+  ChevronDown,
   ChevronRight,
   CircleAlert,
-  CopyPlus,
-  Database,
-  Eye,
-  History,
   Inbox,
   LoaderCircle,
-  LockKeyhole,
-  MoreHorizontal,
   Play,
   RefreshCw,
-  ShieldCheck,
+  Search,
+  X,
   XCircle,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
 import { toast } from "@/components/ui/Toast";
 import type {
   AcademicContext,
-  CohortOption,
+  AcademicYearOption,
   ListResponse,
   ProgramOption,
   ProgressPlan,
   RegistrationRun,
   RegistrationStudentResult,
+  StudentCourseDetail,
 } from "./types";
-import { formatDateTime, responseError, shortRunId } from "./types";
+import { responseError } from "./types";
 
-const PAGE_SIZE = 10;
-
-type PlanDetail = ProgressPlan & {
-  courses: Array<{
-    id: string;
-    courseId: string;
-    courseCode: string;
-    courseName: string;
-    credits: number;
-    requirementType: string;
-    choiceGroupCode?: string | null;
-    isRegistrationRequired: boolean;
-  }>;
-  recentRuns: Array<RegistrationRun>;
-};
-
-type PlanAction = "lock" | "activate" | "archive" | "version" | "calculate";
-
-interface ActionTarget {
-  action: PlanAction;
+interface CohortSummaryCard {
+  cohortId: string;
+  cohortCode: string;
+  cohortName?: string;
   plan: ProgressPlan;
-}
-
-const statusMeta: Record<string, { label: string; className: string }> = {
-  draft: { label: "Bản nháp", className: "border-slate-200 bg-slate-100 text-slate-700" },
-  ready: { label: "Sẵn sàng", className: "border-blue-200 bg-blue-50 text-blue-700" },
-  locked: { label: "Đã khóa", className: "border-emerald-200 bg-emerald-50 text-emerald-700" },
-  archived: { label: "Lưu trữ", className: "border-slate-200 bg-white text-slate-500" },
-  invalid: { label: "Không hợp lệ", className: "border-red-200 bg-red-50 text-red-700" },
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const meta = statusMeta[status] || { label: status, className: "border-slate-200 bg-slate-50 text-slate-600" };
-  return (
-    <span className={`inline-flex rounded-md border px-2 py-1 text-[11px] font-semibold ${meta.className}`}>
-      {meta.label}
-    </span>
-  );
+  latestRun?: RegistrationRun;
 }
 
 export default function RegistrationProgressTab() {
   const { can } = useAuthStore();
   const [plans, setPlans] = useState<ProgressPlan[]>([]);
   const [runs, setRuns] = useState<RegistrationRun[]>([]);
-  const [cohorts, setCohorts] = useState<CohortOption[]>([]);
   const [programs, setPrograms] = useState<ProgramOption[]>([]);
-  const [academicContext, setAcademicContext] = useState<AcademicContext | null>(null);
-  const [cohortId, setCohortId] = useState("");
-  const [programId, setProgramId] = useState("");
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [years, setYears] = useState<AcademicYearOption[]>([]);
+
+  // Filters
+  const [selectedTermId, setSelectedTermId] = useState<string>("");
+  const [selectedProgramId, setSelectedProgramId] = useState<string>("");
+
+  // Loading & State
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<PlanDetail | null>(null);
-  const [planLoading, setPlanLoading] = useState(false);
-  const [selectedRun, setSelectedRun] = useState<RegistrationRun | null>(null);
+
+  // Selected Cohort for Inline Drill-down
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [runStudents, setRunStudents] = useState<RegistrationStudentResult[]>([]);
   const [runStudentsLoading, setRunStudentsLoading] = useState(false);
-  const [runStatusFilter, setRunStatusFilter] = useState("");
-  const [actionTarget, setActionTarget] = useState<ActionTarget | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [studentStatusFilter, setStudentStatusFilter] = useState<string>("");
 
-  const queryString = useMemo(() => {
-    const query = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE) });
-    if (cohortId) query.set("cohortId", cohortId);
-    if (programId) query.set("trainingProgramId", programId);
-    return query.toString();
-  }, [cohortId, page, programId]);
+  // Action Dialog
+  const [confirmCalculatePlan, setConfirmCalculatePlan] = useState<ProgressPlan | null>(null);
+  const [calculating, setCalculating] = useState(false);
 
+  // Student Course Detail Modal
+  const [studentDetailOpen, setStudentDetailOpen] = useState(false);
+  const [studentDetail, setStudentDetail] = useState<StudentCourseDetail | null>(null);
+  const [studentDetailLoading, setStudentDetailLoading] = useState(false);
+
+  // Load catalogs
   const loadCatalogs = useCallback(async () => {
-    const [cohortResponse, programResponse, contextResponse] = await Promise.all([
-      apiFetch("/api/v1/cohorts?pageSize=100"),
+    const [programResponse, yearResponse, contextResponse] = await Promise.all([
       apiFetch("/api/v1/training-programs?pageSize=100"),
+      apiFetch("/api/v1/academic-years?pageSize=100"),
       apiFetch("/api/v1/academic-context"),
     ]);
-    if (cohortResponse.ok) {
-      const data = await cohortResponse.json() as ListResponse<CohortOption>;
-      setCohorts(data.items || []);
-    }
     if (programResponse.ok) {
-      const data = await programResponse.json() as ListResponse<ProgramOption>;
+      const data = (await programResponse.json()) as ListResponse<ProgramOption>;
       setPrograms(data.items || []);
     }
-    if (contextResponse.ok) setAcademicContext(await contextResponse.json() as AcademicContext | null);
+    if (yearResponse.ok) {
+      const data = (await yearResponse.json()) as ListResponse<AcademicYearOption>;
+      setYears(data.items || []);
+    }
+    if (contextResponse.ok) {
+      const ctx = (await contextResponse.json()) as AcademicContext | null;
+      if (ctx?.academicTermId) setSelectedTermId((current) => current || ctx.academicTermId);
+    }
   }, []);
 
-  const loadData = useCallback(async (quiet = false) => {
-    if (quiet) setRefreshing(true);
-    else setLoading(true);
-    setError("");
-    try {
-      const runQuery = new URLSearchParams(queryString);
-      runQuery.set("page", "1");
-      runQuery.set("pageSize", "20");
-      const [planResponse, runResponse] = await Promise.all([
-        apiFetch(`/api/v1/training-progress/plans?${queryString}`),
-        apiFetch(`/api/v1/training-progress/runs?${runQuery.toString()}`),
-      ]);
-      if (!planResponse.ok) throw new Error(await responseError(planResponse, "Không thể tải kế hoạch đào tạo."));
-      if (!runResponse.ok) throw new Error(await responseError(runResponse, "Không thể tải lịch sử đối chiếu."));
-      const planData = await planResponse.json() as ListResponse<ProgressPlan>;
-      const runData = await runResponse.json() as ListResponse<RegistrationRun>;
-      setPlans(planData.items || []);
-      setTotal(planData.total || 0);
-      setRuns(runData.items || []);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Không thể tải dữ liệu tiến độ đào tạo.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [queryString]);
+  // Load plans & runs
+  const loadData = useCallback(
+    async (quiet = false) => {
+      if (quiet) setRefreshing(true);
+      else setLoading(true);
+      setError("");
+      try {
+        const query = new URLSearchParams({ page: "1", pageSize: "100", activeOnly: "true" });
+        const runQuery = new URLSearchParams({ page: "1", pageSize: "100" });
+        if (selectedProgramId) query.set("trainingProgramId", selectedProgramId);
+        if (selectedProgramId) runQuery.set("trainingProgramId", selectedProgramId);
+        if (selectedTermId) {
+          query.set("termId", selectedTermId);
+          runQuery.set("termId", selectedTermId);
+        }
+
+        const [planResponse, runResponse] = await Promise.all([
+          apiFetch(`/api/v1/training-progress/plans?${query.toString()}`),
+          apiFetch(`/api/v1/training-progress/runs?${runQuery.toString()}`),
+        ]);
+
+        if (!planResponse.ok) throw new Error(await responseError(planResponse, "Không thể tải kế hoạch đào tạo."));
+        if (!runResponse.ok) throw new Error(await responseError(runResponse, "Không thể tải kết quả kiểm tra."));
+
+        const planData = (await planResponse.json()) as ListResponse<ProgressPlan>;
+        const runData = (await runResponse.json()) as ListResponse<RegistrationRun>;
+
+        const fetchedPlans = planData.items || [];
+        setPlans(fetchedPlans);
+        setRuns(runData.items || []);
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Không thể tải dữ liệu tiến độ đào tạo.");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [selectedProgramId, selectedTermId]
+  );
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -163,432 +145,815 @@ export default function RegistrationProgressTab() {
     return () => window.clearTimeout(timeout);
   }, [loadData]);
 
-  const openPlan = async (planId: string) => {
-    setPlanLoading(true);
-    try {
-      const response = await apiFetch(`/api/v1/training-progress/plans/${planId}`);
-      if (!response.ok) throw new Error(await responseError(response, "Không thể tải chi tiết kế hoạch."));
-      setSelectedPlan(await response.json() as PlanDetail);
-    } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : "Không thể tải chi tiết kế hoạch.");
-    } finally {
-      setPlanLoading(false);
-    }
-  };
+  // Available Terms flatten list
+  const availableTerms = useMemo(() => {
+    const list: Array<{ id: string; label: string; isCurrent: boolean }> = [];
+    years.forEach((y) => {
+      y.terms.forEach((t) => {
+        list.push({
+          id: t.id,
+          label: `${y.yearCode} • ${t.termName || t.termCode}${t.isCurrent ? " (Kỳ hiện tại)" : ""}`,
+          isCurrent: t.isCurrent,
+        });
+      });
+    });
+    return list;
+  }, [years]);
 
-  const openRun = async (run: RegistrationRun) => {
-    setSelectedRun(run);
-    setRunStudents([]);
-    setRunStatusFilter("");
+  const effectiveTermId = selectedTermId || availableTerms.find((term) => term.isCurrent)?.id || availableTerms[0]?.id || "";
+
+  // Group plans by Cohort for the selected term
+  const cohortCards = useMemo(() => {
+    if (!effectiveTermId) return [];
+
+    // Filter plans for the selected term
+    const termPlans = plans.filter(
+      (plan) => plan.academicTermId === effectiveTermId && plan.status === "locked" && plan.isCurrent,
+    );
+
+    // Group by Cohort
+    const cards: CohortSummaryCard[] = [];
+    termPlans.forEach((plan) => {
+      // Find latest run for this plan
+      const latestRun = runs.find((r) => r.planId === plan.id);
+      cards.push({
+        cohortId: plan.cohortId,
+        cohortCode: plan.cohortCode || "Khóa ?",
+        cohortName: plan.cohortName || "",
+        plan,
+        latestRun,
+      });
+    });
+
+    // Sort by Cohort Code descending (e.g. K49, K48, K47, K46...)
+    cards.sort((a, b) => b.cohortCode.localeCompare(a.cohortCode, undefined, { numeric: true }));
+    return cards;
+  }, [effectiveTermId, plans, runs]);
+
+  const effectiveSelectedPlanId = selectedPlanId && cohortCards.some((card) => card.plan.id === selectedPlanId)
+    ? selectedPlanId
+    : cohortCards[0]?.plan.id || null;
+
+  // Currently selected card
+  const activeCard = useMemo(() => {
+    return cohortCards.find((card) => card.plan.id === effectiveSelectedPlanId) || null;
+  }, [cohortCards, effectiveSelectedPlanId]);
+
+  // Load students for active card's run
+  const loadStudentsForRun = useCallback(async (runId: string) => {
     setRunStudentsLoading(true);
+    setRunStudents([]);
     try {
-      const response = await apiFetch(`/api/v1/training-progress/runs/${run.id}/students?pageSize=100`);
-      if (!response.ok) throw new Error(await responseError(response, "Không thể tải kết quả sinh viên."));
-      const data = await response.json() as ListResponse<RegistrationStudentResult>;
-      setRunStudents(data.items || []);
+      const response = await apiFetch(`/api/v1/training-progress/runs/${runId}/students?page=1&pageSize=500`);
+      if (!response.ok) throw new Error(await responseError(response, "Không thể tải danh sách sinh viên."));
+      const data = (await response.json()) as ListResponse<RegistrationStudentResult>;
+      let allStudents = data.items || [];
+      const total = data.total ?? allStudents.length;
+
+      // If there are more students beyond the first page (or backend pageSize was capped)
+      if (total > allStudents.length) {
+        const pageSize = data.pageSize || allStudents.length || 100;
+        const totalPages = Math.ceil(total / pageSize);
+        const pagePromises = [];
+        for (let p = 2; p <= totalPages; p++) {
+          pagePromises.push(
+            apiFetch(`/api/v1/training-progress/runs/${runId}/students?page=${p}&pageSize=${pageSize}`)
+              .then(async (res) => {
+                if (!res.ok) return [];
+                const pageData = (await res.json()) as ListResponse<RegistrationStudentResult>;
+                return pageData.items || [];
+              })
+              .catch(() => [])
+          );
+        }
+        const remainingPages = await Promise.all(pagePromises);
+        remainingPages.forEach((pageItems) => {
+          allStudents = allStudents.concat(pageItems);
+        });
+      }
+      setRunStudents(allStudents);
     } catch (cause) {
       toast.error(cause instanceof Error ? cause.message : "Không thể tải kết quả sinh viên.");
     } finally {
       setRunStudentsLoading(false);
     }
-  };
+  }, []);
 
-  const openLatestRunForPlan = async (planId: string) => {
-    const cached = runs.find((item) => item.planId === planId);
-    if (cached) {
-      await openRun(cached);
-      return;
-    }
-    try {
-      const response = await apiFetch(`/api/v1/training-progress/runs?planId=${encodeURIComponent(planId)}&pageSize=1`);
-      if (!response.ok) throw new Error(await responseError(response, "Không thể tải lịch sử run."));
-      const data = await response.json() as ListResponse<RegistrationRun>;
-      if (!data.items?.[0]) throw new Error("Kế hoạch chưa có run trong phạm vi được phép xem.");
-      await openRun(data.items[0]);
-    } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : "Không thể tải lịch sử run.");
-    }
-  };
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      if (activeCard?.latestRun?.id) void loadStudentsForRun(activeCard.latestRun.id);
+      else {
+        setRunStudents([]);
+        setRunStudentsLoading(false);
+      }
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [activeCard, loadStudentsForRun]);
 
-  const confirmAction = async () => {
-    if (!actionTarget) return;
-    const { action, plan } = actionTarget;
-    const endpoint = action === "version"
-      ? `/api/v1/training-progress/plans/${plan.id}/versions`
-      : `/api/v1/training-progress/plans/${plan.id}/${action}`;
-    setActionLoading(true);
+  // Run calculate action
+  const handleCalculate = async (plan: ProgressPlan) => {
+    setCalculating(true);
     try {
-      const response = await apiFetch(endpoint, { method: "POST" });
-      if (!response.ok) throw new Error(await responseError(response, "Không thể thực hiện thao tác."));
-      const messages: Record<PlanAction, string> = {
-        lock: "Đã khóa kế hoạch.",
-        activate: "Đã đặt kế hoạch hiện hành.",
-        archive: "Đã lưu trữ kế hoạch.",
-        version: "Đã tạo phiên bản kế hoạch mới.",
-        calculate: "Đã hoàn tất đối chiếu đăng ký.",
-      };
-      toast.success(messages[action]);
-      setActionTarget(null);
-      setSelectedPlan(null);
+      const response = await apiFetch(`/api/v1/training-progress/plans/${plan.id}/calculate`, {
+        method: "POST",
+      });
+      if (!response.ok) throw new Error(await responseError(response, "Không thể thực hiện kiểm tra."));
+      const newRun = (await response.json()) as RegistrationRun;
+      toast.success("Kiểm tra đăng ký hoàn tất.");
+      setConfirmCalculatePlan(null);
       await loadData(true);
+      setSelectedPlanId(plan.id);
+      if (newRun?.id) {
+        await loadStudentsForRun(newRun.id);
+      }
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : "Không thể thực hiện thao tác.");
+      toast.error(cause instanceof Error ? cause.message : "Không thể thực hiện kiểm tra.");
     } finally {
-      setActionLoading(false);
+      setCalculating(false);
     }
   };
 
-  const currentTermConfigured = Boolean(academicContext?.isActive);
-  const pageCounters = {
-    current: plans.filter((plan) => plan.isCurrent).length,
-    currentTerm: plans.filter((plan) => currentTermConfigured && plan.academicTermId === academicContext?.academicTermId).length,
-    locked: plans.filter((plan) => plan.status === "locked").length,
+  // Open student course detail modal
+  const openStudentDetail = async (student: RegistrationStudentResult) => {
+    if (!activeCard?.latestRun?.id) return;
+    setStudentDetail(null);
+    setStudentDetailOpen(true);
+    setStudentDetailLoading(true);
+    try {
+      const response = await apiFetch(
+        `/api/v1/training-progress/runs/${activeCard.latestRun.id}/students/${student.studentId}`
+      );
+      if (!response.ok) throw new Error(await responseError(response, "Không thể tải chi tiết môn học."));
+      const data = (await response.json()) as StudentCourseDetail;
+      setStudentDetail(data);
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Không thể tải chi tiết môn học.");
+      setStudentDetailOpen(false);
+    } finally {
+      setStudentDetailLoading(false);
+    }
   };
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const visibleRunStudents = runStudents.filter((student) => !runStatusFilter || student.status === runStatusFilter);
 
-  const actionCopy: Record<PlanAction, { title: string; message: string; confirmText: string; dangerous?: boolean }> = {
-    lock: {
-      title: "Khóa kế hoạch",
-      message: "Sau khi khóa, nội dung kế hoạch không thể sửa trực tiếp và sẽ được dùng làm căn cứ đối chiếu.",
-      confirmText: "Khóa kế hoạch",
-    },
-    activate: {
-      title: "Đặt kế hoạch hiện hành",
-      message: "Kế hoạch đã khóa này sẽ trở thành phiên bản hiện hành trong cùng phạm vi khóa, CTĐT và kỳ vận hành.",
-      confirmText: "Đặt hiện hành",
-    },
-    archive: {
-      title: "Lưu trữ kế hoạch",
-      message: "Kế hoạch sẽ không còn hiện hành. Các kết quả run cũ vẫn được giữ để truy vết.",
-      confirmText: "Lưu trữ",
-      dangerous: true,
-    },
-    version: {
-      title: "Tạo phiên bản mới",
-      message: "Hệ thống sẽ sao chép cấu hình hiện tại thành một bản nháp có số phiên bản mới.",
-      confirmText: "Tạo phiên bản",
-    },
-    calculate: {
-      title: "Chạy kiểm tra đăng ký",
-      message: "Hệ thống sẽ chụp dữ liệu đăng ký hiện tại và tạo một run mới. Làm mới trang không tự tạo run.",
-      confirmText: "Bắt đầu kiểm tra",
-    },
-  };
+  // Filtered students in drill-down
+  const visibleStudents = useMemo(() => {
+    return runStudents.filter((student) => {
+      const matchStatus = !studentStatusFilter || student.status === studentStatusFilter;
+      const searchNormalized = studentSearch.trim().toLowerCase();
+      const matchSearch =
+        !searchNormalized ||
+        student.studentName.toLowerCase().includes(searchNormalized) ||
+        student.studentId.toLowerCase().includes(searchNormalized) ||
+        (student.className && student.className.toLowerCase().includes(searchNormalized));
+      return matchStatus && matchSearch;
+    });
+  }, [runStudents, studentStatusFilter, studentSearch]);
+
+  const studentCounts = useMemo(() => {
+    if (activeCard?.latestRun) {
+      return {
+        total: activeCard.latestRun.totalStudents,
+        pass: activeCard.latestRun.passStudents,
+        fail: activeCard.latestRun.failStudents,
+        error: activeCard.latestRun.dataErrorStudents || 0,
+      };
+    }
+    return {
+      total: runStudents.length,
+      pass: runStudents.filter((s) => s.status === "pass").length,
+      fail: runStudents.filter((s) => s.status === "fail").length,
+      error: runStudents.filter((s) => s.status === "data_error").length,
+    };
+  }, [activeCard, runStudents]);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" aria-labelledby="registration-heading">
-      <div className="flex flex-col gap-4 border-b border-slate-100 p-5 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h2 id="registration-heading" className="text-base font-bold text-slate-950">Kiểm tra đăng ký theo kỳ</h2>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            Đối chiếu học phần đã đăng ký với kế hoạch đã khóa. Kết quả phản ánh độ khớp kế hoạch, không mặc định là vi phạm quy chế.
-          </p>
+    <div className="space-y-6">
+      {/* Top Filter Bar */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-4 sm:flex-row sm:items-center sm:justify-between shadow-xs">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Term Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-700 whitespace-nowrap">Học kỳ đánh giá:</span>
+            <div className="relative">
+              <select
+                value={effectiveTermId}
+                onChange={(e) => setSelectedTermId(e.target.value)}
+                className="h-9.5 rounded-xl border border-slate-200 bg-slate-50/70 pr-8 pl-3 text-xs font-bold text-slate-900 outline-none focus:border-lime-600 focus:bg-white focus:ring-2 focus:ring-lime-100"
+              >
+                {availableTerms.map((term) => (
+                  <option key={term.id} value={term.id}>
+                    {term.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute top-3 right-2.5 text-slate-400" />
+            </div>
+          </div>
+
+          {/* Program Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-slate-700 whitespace-nowrap">Chương trình:</span>
+            <div className="relative">
+              <select
+                value={selectedProgramId}
+                onChange={(e) => setSelectedProgramId(e.target.value)}
+                className="h-9.5 max-w-xs rounded-xl border border-slate-200 bg-slate-50/70 pr-8 pl-3 text-xs font-medium text-slate-800 outline-none focus:border-lime-600 focus:bg-white focus:ring-2 focus:ring-lime-100"
+              >
+                <option value="">Tất cả chương trình đào tạo</option>
+                {programs.map((prog) => (
+                  <option key={prog.id} value={prog.id}>
+                    {prog.programCode} - {prog.programName}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute top-3 right-2.5 text-slate-400" />
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <label className="sr-only" htmlFor="recent-registration-run">Mở run gần đây</label>
-          <select
-            id="recent-registration-run"
-            value=""
-            onChange={(event) => {
-              const run = runs.find((item) => item.id === event.target.value);
-              if (run) void openRun(run);
-            }}
-            disabled={!runs.length}
-            className="h-9 min-w-56 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none focus:border-lime-600 focus:ring-2 focus:ring-lime-100 disabled:bg-slate-50 disabled:text-slate-400"
-          >
-            <option value="">{runs.length ? "Mở run gần đây" : "Chưa có run"}</option>
-            {runs.map((run) => (
-              <option key={run.id} value={run.id}>
-                {shortRunId(run.id)} | {run.cohortCode || "Khóa"} | {run.termCode || "Kỳ"}
-              </option>
-            ))}
-          </select>
+
+        {/* Refresh & Actions */}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             type="button"
             onClick={() => void loadData(true)}
             disabled={refreshing}
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:translate-y-px disabled:cursor-wait disabled:opacity-60"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 shadow-2xs"
           >
-            <RefreshCw aria-hidden="true" size={14} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={14} className={refreshing ? "animate-spin text-lime-600" : ""} />
             Làm mới
           </button>
         </div>
       </div>
 
-      <div className="space-y-5 p-5">
-        {!currentTermConfigured && (
-          <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950" role="status">
-            <AlertTriangle aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-amber-600" />
-            <div>
-              <p className="text-xs font-bold">Chưa xác định kỳ học hiện tại</p>
-              <p className="mt-1 text-xs leading-5 text-amber-800">
-                Có thể xem và chạy thủ công theo kỳ đã chọn. Hệ thống không tự gán kỳ hiện tại hoặc học kỳ lộ trình.
-              </p>
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-3 md:grid-cols-[minmax(0,220px)_minmax(0,320px)_auto] md:items-end">
-          <div>
-            <label htmlFor="registration-cohort" className="mb-1.5 block text-xs font-semibold text-slate-700">Khóa</label>
-            <select
-              id="registration-cohort"
-              value={cohortId}
-              onChange={(event) => { setCohortId(event.target.value); setPage(1); }}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 outline-none focus:border-lime-600 focus:ring-2 focus:ring-lime-100"
-            >
-              <option value="">Tất cả khóa</option>
-              {cohorts.map((cohort) => <option key={cohort.id} value={cohort.id}>{cohort.cohortCode}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="registration-program" className="mb-1.5 block text-xs font-semibold text-slate-700">Chương trình đào tạo</label>
-            <select
-              id="registration-program"
-              value={programId}
-              onChange={(event) => { setProgramId(event.target.value); setPage(1); }}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 outline-none focus:border-lime-600 focus:ring-2 focus:ring-lime-100"
-            >
-              <option value="">Tất cả chương trình</option>
-              {programs.map((program) => (
-                <option key={program.id} value={program.id}>{program.programCode} - {program.programName}</option>
-              ))}
-            </select>
-          </div>
-          <button
-            type="button"
-            onClick={() => { setCohortId(""); setProgramId(""); setPage(1); }}
-            className="h-10 w-fit rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:translate-y-px"
-          >
-            Đặt lại
+      {/* Error state */}
+      {error && (
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800">
+          <span className="flex items-center gap-2 font-medium">
+            <CircleAlert size={16} />
+            {error}
+          </span>
+          <button type="button" onClick={() => void loadData()} className="font-bold underline underline-offset-2">
+            Thử lại
           </button>
         </div>
+      )}
 
-        <div className="flex flex-wrap gap-2" aria-label="Thống kê kế hoạch trên trang">
-          <span className="rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">Tổng {total} kế hoạch</span>
-          <span className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">{pageCounters.current} hiện hành trong trang</span>
-          <span className="rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">{pageCounters.currentTerm} thuộc kỳ hiện tại trong trang</span>
-          <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">{pageCounters.locked} đã khóa trong trang</span>
-        </div>
-      </div>
-
-      {error ? (
-        <div className="m-5 mt-0 flex items-center justify-between gap-4 rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800" role="alert">
-          <span className="flex items-center gap-2"><CircleAlert aria-hidden="true" size={16} />{error}</span>
-          <button type="button" onClick={() => void loadData()} className="font-bold underline underline-offset-2">Thử lại</button>
+      {/* Horizontal Cohort Segmented Bar */}
+      {loading ? (
+        <div className="h-14 animate-pulse rounded-2xl border border-slate-200 bg-white p-3 shadow-xs" />
+      ) : cohortCards.length === 0 ? (
+        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
+          <Inbox size={40} className="mx-auto text-slate-300" />
+          <h3 className="mt-3 text-sm font-bold text-slate-700">Chưa có kế hoạch đang áp dụng cho học kỳ này</h3>
+          <p className="mt-1 text-xs text-slate-400">
+            Hãy chọn học kỳ khác hoặc khóa và đưa một phiên bản kế hoạch vào áp dụng tại phân hệ Đào tạo.
+          </p>
         </div>
       ) : (
-        <div className="overflow-x-auto border-t border-slate-100">
-          <table className="w-full min-w-[980px] text-left text-xs">
-            <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Khóa / CTĐT</th>
-                <th className="px-4 py-3">Kỳ vận hành</th>
-                <th className="px-4 py-3">HK lộ trình</th>
-                <th className="px-4 py-3">Version</th>
-                <th className="px-4 py-3">Trạng thái</th>
-                <th className="px-4 py-3 text-center">Lượt chạy</th>
-                <th className="px-4 py-3 text-center">Hiện hành</th>
-                <th className="px-4 py-3 text-right">Vận hành</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {loading ? (
-                Array.from({ length: 5 }).map((_, index) => (
-                  <tr key={index} className="animate-pulse">
-                    {Array.from({ length: 8 }).map((__, cell) => <td key={cell} className="px-4 py-4"><div className="h-4 rounded bg-slate-100" /></td>)}
-                  </tr>
-                ))
-              ) : plans.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center">
-                    <Inbox aria-hidden="true" size={36} className="mx-auto text-slate-300" />
-                    <p className="mt-3 font-semibold text-slate-600">Chưa có kế hoạch phù hợp</p>
-                    <p className="mt-1 text-slate-400">Tạo kế hoạch tại mục Học vụ, sau đó khóa để chạy đối chiếu.</p>
-                  </td>
-                </tr>
-              ) : plans.map((plan) => {
-                const isCurrentTerm = currentTermConfigured && plan.academicTermId === academicContext?.academicTermId;
-                return (
-                  <tr key={plan.id} className={isCurrentTerm ? "bg-lime-50/40" : "hover:bg-slate-50/70"}>
-                    <td className="px-4 py-3.5">
-                      <p className="font-bold text-slate-900">{plan.cohortCode || "Chưa có mã khóa"}</p>
-                      <p className="mt-0.5 max-w-60 truncate text-slate-600" title={plan.programName}>{plan.programName || plan.programCode || "Chưa có CTĐT"}</p>
-                      {plan.programCode && <p className="mt-0.5 font-mono text-[10px] text-slate-400">{plan.programCode}</p>}
-                    </td>
-                    <td className="px-4 py-3.5 text-slate-700">
-                      <p className="font-semibold">{plan.academicYearCode || "Chưa xác định"}</p>
-                      <p className="mt-0.5 text-slate-500">{plan.termName || plan.termCode || "Chưa xác định"}</p>
-                    </td>
-                    <td className="px-4 py-3.5 font-mono font-semibold text-slate-700">HK{plan.curriculumSemesterNo}</td>
-                    <td className="px-4 py-3.5">
-                      <p className="font-mono font-bold text-slate-800">v{plan.version}</p>
-                      <p className="mt-0.5 text-[10px] text-slate-400">Snapshot kế hoạch</p>
-                    </td>
-                    <td className="px-4 py-3.5"><StatusBadge status={plan.status} /></td>
-                    <td className="px-4 py-3.5 text-center">
-                      <button
-                        type="button"
-                        onClick={() => void openLatestRunForPlan(plan.id)}
-                        disabled={!plan.runCount}
-                        className="inline-flex items-center gap-1 rounded-md px-2 py-1 font-mono font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-default disabled:text-slate-400"
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs space-y-2">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Chọn Khóa học để xem danh sách sinh viên:
+            </span>
+            <span className="text-[11px] font-medium text-slate-400">
+              {cohortCards.length} khóa đào tạo
+            </span>
+          </div>
+
+          {/* Horizontal scrollable rail */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {cohortCards.map((card) => {
+              const isSelected = effectiveSelectedPlanId === card.plan.id;
+              const hasRun = Boolean(card.latestRun);
+              const totalStud = card.latestRun?.totalStudents || 0;
+              const passStud = card.latestRun?.passStudents || 0;
+              const passRate = totalStud ? Math.round((passStud / totalStud) * 100) : 0;
+
+              return (
+                <button
+                  key={card.plan.id}
+                  type="button"
+                  onClick={() => setSelectedPlanId(card.plan.id)}
+                  className={`group flex shrink-0 items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition-all ${
+                    isSelected
+                      ? "border-lime-500 bg-lime-50/50 shadow-xs ring-2 ring-lime-500/80"
+                      : "border-slate-200/80 bg-slate-50/70 hover:border-slate-300 hover:bg-white text-slate-700"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex rounded-lg px-2 py-0.5 font-mono text-xs font-bold shadow-2xs ${
+                      isSelected ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-800"
+                    }`}
+                  >
+                    Khóa {card.cohortCode}
+                  </span>
+
+                  <span className="text-xs font-bold text-slate-900">
+                    {card.plan.programCode || card.plan.programName}
+                  </span>
+
+                  <span className="text-slate-300">•</span>
+
+                  {hasRun ? (
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-mono font-bold text-slate-800">{totalStud} SV</span>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                          passRate >= 80
+                            ? "bg-emerald-100/70 text-emerald-800"
+                            : "bg-amber-100/70 text-amber-800"
+                        }`}
                       >
-                        <History aria-hidden="true" size={13} />{plan.runCount}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3.5 text-center">
-                      {plan.isCurrent ? <CheckCircle2 aria-label="Hiện hành" size={18} className="mx-auto text-emerald-600" /> : <span className="text-slate-300">Không</span>}
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      <details className="relative inline-block text-left">
-                        <summary className="inline-flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50" aria-label="Mở menu vận hành">
-                          <MoreHorizontal aria-hidden="true" size={16} />
-                        </summary>
-                        <div className="absolute right-0 z-20 mt-1 w-52 rounded-xl border border-slate-200 bg-white p-1.5 text-left shadow-xl">
-                          <button type="button" onClick={() => void openPlan(plan.id)} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"><Eye size={14} />Xem chi tiết</button>
-                          {can("progress.plan.manage") && plan.status === "draft" && <button type="button" onClick={() => setActionTarget({ action: "lock", plan })} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"><LockKeyhole size={14} />Khóa kế hoạch</button>}
-                          {can("progress.plan.manage") && plan.status === "locked" && !plan.isCurrent && <button type="button" onClick={() => setActionTarget({ action: "activate", plan })} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"><ShieldCheck size={14} />Đặt hiện hành</button>}
-                          {can("progress.calculate") && plan.status === "locked" && <button type="button" onClick={() => setActionTarget({ action: "calculate", plan })} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"><Play size={14} />Chạy kiểm tra</button>}
-                          {can("progress.plan.manage") && plan.status !== "archived" && <button type="button" onClick={() => setActionTarget({ action: "version", plan })} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"><CopyPlus size={14} />Tạo version mới</button>}
-                          {can("progress.plan.manage") && plan.status === "locked" && <button type="button" onClick={() => setActionTarget({ action: "archive", plan })} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-50"><Archive size={14} />Lưu trữ</button>}
-                        </div>
-                      </details>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {!loading && !error && total > 0 && (
-        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
-          <span>Trang {page}/{pageCount}, tổng {total} kế hoạch</span>
-          <div className="flex gap-1">
-            <button type="button" aria-label="Trang trước" disabled={page <= 1} onClick={() => setPage((value) => value - 1)} className="rounded-lg border border-slate-200 p-2 hover:bg-slate-50 disabled:opacity-40"><ChevronLeft size={14} /></button>
-            <button type="button" aria-label="Trang sau" disabled={page >= pageCount} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-slate-200 p-2 hover:bg-slate-50 disabled:opacity-40"><ChevronRight size={14} /></button>
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            passRate >= 80 ? "bg-emerald-500" : "bg-amber-500"
+                          }`}
+                        />
+                        {passRate}% đúng
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[11px] font-medium text-slate-400">Chưa kiểm tra</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      <SlideOverDrawer
-        isOpen={Boolean(selectedPlan) || planLoading}
-        onClose={() => setSelectedPlan(null)}
-        title="Chi tiết snapshot kế hoạch"
-        subtitle={selectedPlan ? `${selectedPlan.cohortCode || "Khóa"} | ${selectedPlan.programCode || "CTĐT"} | v${selectedPlan.version}` : "Đang tải dữ liệu"}
-        width="3xl"
-      >
-        {planLoading && !selectedPlan ? (
-          <div className="flex min-h-48 items-center justify-center gap-2 text-sm text-slate-500"><LoaderCircle className="animate-spin" size={18} />Đang tải snapshot...</div>
-        ) : selectedPlan && (
-          <div className="space-y-6">
-            <div className="grid gap-3 sm:grid-cols-4">
-              <Metric label="Học kỳ lộ trình" value={`HK${selectedPlan.curriculumSemesterNo}`} />
-              <Metric label="Phiên bản" value={`v${selectedPlan.version}`} />
-              <Metric label="Học phần" value={String(selectedPlan.courses.length)} />
-              <Metric label="TC tự chọn tối thiểu" value={String(selectedPlan.requiredElectiveCredits)} />
-            </div>
+      {/* Main Content Area: Detailed Student List (Immediate, Full-Width) */}
+      {activeCard && (
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-sm space-y-5">
+          {/* Header with integrated inline KPIs */}
+          <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-900">Học phần trong snapshot</h3>
-                <StatusBadge status={selectedPlan.status} />
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex rounded-md bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white">
+                  Khóa {activeCard.cohortCode}
+                </span>
+                <h3 className="text-base font-bold text-slate-900">
+                  Danh sách sinh viên • {activeCard.plan.programName}
+                </h3>
+                <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs font-bold text-slate-700">
+                  HK{activeCard.plan.curriculumSemesterNo} CTĐT
+                </span>
               </div>
-              <div className="overflow-hidden rounded-xl border border-slate-200">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-[11px] uppercase text-slate-500"><tr><th className="px-3 py-2.5">Mã HP</th><th className="px-3 py-2.5">Tên học phần</th><th className="px-3 py-2.5">Số TC</th><th className="px-3 py-2.5">Yêu cầu</th></tr></thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {selectedPlan.courses.length ? selectedPlan.courses.map((course) => (
-                      <tr key={course.id}><td className="px-3 py-2.5 font-mono font-semibold text-slate-700">{course.courseCode}</td><td className="px-3 py-2.5 text-slate-700">{course.courseName}</td><td className="px-3 py-2.5 font-mono">{course.credits}</td><td className="px-3 py-2.5 text-slate-600">{course.requirementType === "mandatory" ? "Bắt buộc" : "Tự chọn"}</td></tr>
-                    )) : <tr><td colSpan={4} className="px-3 py-8 text-center text-slate-400">Snapshot chưa có học phần.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Đối chiếu môn học theo khung kế hoạch chuẩn bản v{activeCard.plan.version}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Compact KPI Pills right in header */}
+              {activeCard.latestRun && (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+                    <span className="text-slate-500 font-normal">Tổng:</span>
+                    <strong className="font-mono font-bold text-slate-900">{studentCounts.total}</strong> SV
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-1 text-xs font-medium text-emerald-800">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    <span>Đúng lộ trình:</span>
+                    <strong className="font-mono font-bold text-emerald-900">{studentCounts.pass}</strong>
+                    <span className="text-[11px] opacity-75">
+                      ({studentCounts.total ? Math.round((studentCounts.pass / studentCounts.total) * 100) : 0}%)
+                    </span>
+                  </div>
+                  <div className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-1 text-xs font-medium text-amber-800">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    <span>Cần tư vấn:</span>
+                    <strong className="font-mono font-bold text-amber-900">{studentCounts.fail}</strong>
+                  </div>
+                </div>
+              )}
+
+              {can("progress.calculate") && activeCard.plan.status === "locked" && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmCalculatePlan(activeCard.plan)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50 shadow-2xs"
+                >
+                  <Play size={12} className="text-lime-600" />
+                  Kiểm tra lại
+                </button>
+              )}
             </div>
           </div>
-        )}
-      </SlideOverDrawer>
 
-      <SlideOverDrawer
-        isOpen={Boolean(selectedRun)}
-        onClose={() => setSelectedRun(null)}
-        title="Kết quả kiểm tra đăng ký"
-        subtitle={selectedRun ? `${shortRunId(selectedRun.id)} | ${selectedRun.cohortCode || "Khóa"} | ${selectedRun.academicYearCode || "Năm học"} ${selectedRun.termCode || ""}` : undefined}
-        width="5xl"
-      >
-        {selectedRun && (
-          <div className="space-y-6">
-            <div className="grid gap-3 sm:grid-cols-4">
-              <Metric label="Tổng sinh viên" value={String(selectedRun.totalStudents)} icon={<Database size={15} />} />
-              <Metric label="Đáp ứng kế hoạch" value={String(selectedRun.passStudents)} tone="success" icon={<CheckCircle2 size={15} />} />
-              <Metric label="Cần rà soát" value={String(selectedRun.failStudents)} tone="danger" icon={<XCircle size={15} />} />
-              <Metric label="Lỗi dữ liệu" value={String(selectedRun.dataErrorStudents)} tone="warning" icon={<AlertTriangle size={15} />} />
+          {/* If there is no run yet */}
+          {!activeCard.latestRun ? (
+            <div className="py-12 text-center">
+              <Inbox size={36} className="mx-auto text-slate-300" />
+              <h4 className="mt-2 text-sm font-bold text-slate-700">Khóa {activeCard.cohortCode} chưa được kiểm tra đăng ký</h4>
+              <p className="mt-1 text-xs text-slate-400">
+                Nhấn nút &ldquo;Bắt đầu kiểm tra&rdquo; để hệ thống tự động đối chiếu môn học sinh viên đã đăng ký.
+              </p>
+              {can("progress.calculate") && activeCard.plan.status === "locked" && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmCalculatePlan(activeCard.plan)}
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-xs font-bold text-slate-950 transition hover:brightness-95 shadow-xs"
+                >
+                  <Play size={14} className="fill-slate-950" />
+                  Bắt đầu kiểm tra Khóa này ngay
+                </button>
+              )}
             </div>
-            <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 sm:grid-cols-3">
-              <div><span className="block font-semibold text-slate-500">Thời điểm chạy</span><span className="mt-1 block text-slate-800">{formatDateTime(selectedRun.startedAt)}</span></div>
-              <div><span className="block font-semibold text-slate-500">Dữ liệu đăng ký</span><span className="mt-1 block text-slate-800">{selectedRun.offeringCount} bản ghi</span></div>
-              <div><span className="block font-semibold text-slate-500">Hash nguồn</span><span className="mt-1 block truncate font-mono text-slate-800" title={selectedRun.sourceSnapshotHash || ""}>{selectedRun.sourceSnapshotHash?.slice(0, 16) || "Chưa có"}</span></div>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Kết quả theo sinh viên</h3>
-                <p className="mt-0.5 text-xs text-slate-500">Tách riêng mức độ khớp kế hoạch, chưa kết luận vi phạm quy chế.</p>
+          ) : (
+            <div className="space-y-4">
+
+              {/* Search & Filter Controls */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {/* Search input */}
+                <div className="relative max-w-sm flex-1">
+                  <Search size={15} className="pointer-events-none absolute top-3 left-3 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Tìm theo MSSV, họ tên, lớp..."
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    className="h-9.5 w-full rounded-xl border border-slate-200 bg-slate-50/60 pr-4 pl-9 text-xs outline-none focus:border-lime-600 focus:bg-white focus:ring-2 focus:ring-lime-100"
+                  />
+                  {studentSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setStudentSearch("")}
+                      aria-label="Xóa từ khóa tìm kiếm"
+                      className="absolute top-2.5 right-3 text-slate-400 hover:text-slate-600"
+                    >
+                      <X size={15} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter tabs */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setStudentStatusFilter("")}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                      !studentStatusFilter
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    Tất cả ({studentCounts.total})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStudentStatusFilter("pass")}
+                    className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                      studentStatusFilter === "pass"
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "border border-emerald-200 bg-emerald-50/60 text-emerald-800 hover:bg-emerald-100"
+                    }`}
+                  >
+                    <CheckCircle2 size={12} />
+                    Đúng lộ trình ({studentCounts.pass})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setStudentStatusFilter("fail")}
+                    className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                      studentStatusFilter === "fail"
+                        ? "bg-amber-600 text-white shadow-xs"
+                        : "border border-amber-200 bg-amber-50/60 text-amber-800 hover:bg-amber-100"
+                    }`}
+                  >
+                    <AlertTriangle size={12} />
+                    Cần tư vấn ({studentCounts.fail})
+                  </button>
+                </div>
               </div>
-              <select value={runStatusFilter} onChange={(event) => setRunStatusFilter(event.target.value)} className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700">
-                <option value="">Tất cả trạng thái</option>
-                <option value="pass">Đáp ứng kế hoạch</option>
-                <option value="fail">Cần rà soát</option>
-                <option value="data_error">Lỗi dữ liệu</option>
-              </select>
-            </div>
-            <div className="overflow-hidden rounded-xl border border-slate-200">
-              <div className="max-h-[480px] overflow-auto">
-                <table className="w-full min-w-[760px] text-left text-xs">
-                  <thead className="sticky top-0 bg-slate-50 text-[11px] uppercase text-slate-500"><tr><th className="px-3 py-2.5">Sinh viên</th><th className="px-3 py-2.5">Bắt buộc</th><th className="px-3 py-2.5">Tự chọn</th><th className="px-3 py-2.5">Ngoài kế hoạch</th><th className="px-3 py-2.5">Kết quả</th></tr></thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {runStudentsLoading ? <tr><td colSpan={5} className="px-3 py-12 text-center text-slate-500"><LoaderCircle className="mr-2 inline animate-spin" size={16} />Đang tải kết quả...</td></tr> : visibleRunStudents.length ? visibleRunStudents.map((student) => (
-                      <tr key={student.id} className="hover:bg-slate-50">
-                        <td className="px-3 py-3"><p className="font-semibold text-slate-900">{student.studentName}</p><p className="mt-0.5 font-mono text-[10px] text-slate-400">{student.studentId}{student.className ? ` | ${student.className}` : ""}</p></td>
-                        <td className="px-3 py-3 text-slate-700"><span className="font-mono font-bold">{student.mandatory.registeredCourses}/{student.mandatory.requiredCourses}</span> học phần<p className="mt-0.5 text-[10px] text-slate-400">{student.mandatory.registeredCredits}/{student.mandatory.requiredCredits} tín chỉ</p></td>
-                        <td className="px-3 py-3 text-slate-700"><span className="font-mono font-bold">{student.elective.registeredCredits}/{student.elective.requiredCredits}</span> tín chỉ</td>
-                        <td className="px-3 py-3 font-mono text-slate-700">{student.outsidePlanCredits} TC</td>
-                        <td className="px-3 py-3">{student.status === "pass" ? <span className="inline-flex items-center gap-1 text-emerald-700"><CheckCircle2 size={14} />Đáp ứng</span> : student.status === "data_error" ? <span className="inline-flex items-center gap-1 text-amber-700"><AlertTriangle size={14} />Lỗi dữ liệu</span> : <span className="inline-flex items-center gap-1 text-red-700"><XCircle size={14} />Cần rà soát</span>}</td>
+
+              {/* Display count indicator */}
+              <div className="flex items-center justify-between px-1 text-xs text-slate-500">
+                <span>
+                  Đang hiển thị <strong className="font-semibold text-slate-800">{visibleStudents.length}</strong> sinh viên
+                  {visibleStudents.length !== studentCounts.total && (
+                    <span> (trên tổng số {studentCounts.total} sinh viên)</span>
+                  )}
+                </span>
+                {studentSearch && (
+                  <span className="italic text-slate-400">Khớp &ldquo;{studentSearch}&rdquo;</span>
+                )}
+              </div>
+
+              {/* Student Table */}
+              <div className="overflow-hidden rounded-2xl border border-slate-200">
+                <div className="max-h-[520px] overflow-auto">
+                  <table className="w-full min-w-[760px] text-left text-xs">
+                    <thead className="sticky top-0 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 shadow-2xs">
+                      <tr>
+                        <th className="px-4 py-3">Sinh viên</th>
+                        <th className="px-4 py-3">Học phần bắt buộc</th>
+                        <th className="px-4 py-3">Tín chỉ tự chọn</th>
+                        <th className="px-4 py-3">Ngoài kế hoạch</th>
+                        <th className="px-4 py-3 text-right">Tình trạng đối chiếu</th>
                       </tr>
-                    )) : <tr><td colSpan={5} className="px-3 py-12 text-center text-slate-400">Không có sinh viên trong bộ lọc này.</td></tr>}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {runStudentsLoading ? (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-16 text-center text-slate-500">
+                            <LoaderCircle size={20} className="mr-2 inline animate-spin text-lime-600" />
+                            Đang tải kết quả sinh viên Khóa {activeCard.cohortCode}...
+                          </td>
+                        </tr>
+                      ) : visibleStudents.length ? (
+                        visibleStudents.map((student) => {
+                          const isMandatoryMissing =
+                            student.mandatory.registeredCourses < student.mandatory.requiredCourses;
+                          const isElectiveMissing = !student.elective.isEnough;
+
+                          return (
+                            <tr
+                              key={student.id}
+                              onClick={() => void openStudentDetail(student)}
+                              className="cursor-pointer transition-colors hover:bg-lime-50/60 active:bg-lime-100/60"
+                            >
+                              {/* Student Identity */}
+                              <td className="px-4 py-3.5">
+                                <p className="font-bold text-slate-900">{student.studentName}</p>
+                                <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-slate-500">
+                                  <span>{student.studentId}</span>
+                                  {student.className && (
+                                    <>
+                                      <span>•</span>
+                                      <span>Lớp: {student.className}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Mandatory Courses */}
+                              <td className="px-4 py-3.5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono font-bold text-slate-900">
+                                    {student.mandatory.registeredCourses} / {student.mandatory.requiredCourses}
+                                  </span>
+                                  <span className="text-slate-500">môn</span>
+                                </div>
+                                {isMandatoryMissing ? (
+                                  <span className="mt-0.5 inline-flex rounded-md bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-800">
+                                    Thiếu {student.mandatory.requiredCourses - student.mandatory.registeredCourses} môn
+                                  </span>
+                                ) : (
+                                  <span className="mt-0.5 inline-flex text-[10px] text-emerald-700">Đủ môn bắt buộc</span>
+                                )}
+                              </td>
+
+                              {/* Electives */}
+                              <td className="px-4 py-3.5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono font-bold text-slate-900">
+                                    {student.elective.registeredCredits} / {student.elective.requiredCredits}
+                                  </span>
+                                  <span className="text-slate-500">TC</span>
+                                </div>
+                                {isElectiveMissing && student.elective.requiredCredits > 0 ? (
+                                  <span className="mt-0.5 inline-flex rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                                    Thiếu {student.elective.requiredCredits - student.elective.registeredCredits} TC
+                                  </span>
+                                ) : (
+                                  <span className="mt-0.5 inline-flex text-[10px] text-emerald-700">Đủ tín chỉ</span>
+                                )}
+                              </td>
+
+                              {/* Outside Plan */}
+                              <td className="px-4 py-3.5">
+                                {student.outsidePlanCredits > 0 ? (
+                                  <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-blue-800">
+                                    +{student.outsidePlanCredits} TC ngoài kế hoạch
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400">0 TC</span>
+                                )}
+                              </td>
+
+                              {/* Status Tag + Detail hint */}
+                              <td className="px-4 py-3.5 text-right">
+                                {student.status === "pass" ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                                    <CheckCircle2 size={13} /> Khớp lộ trình
+                                  </span>
+                                ) : student.status === "data_error" ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
+                                    <CircleAlert size={13} /> Lỗi dữ liệu
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
+                                    <AlertTriangle size={13} /> Cần tư vấn
+                                  </span>
+                                )}
+                                <div className="mt-1.5 flex items-center justify-end gap-1 text-[10px] font-medium text-lime-700 opacity-70 group-hover:opacity-100">
+                                  <BookOpen size={10} />
+                                  <span>Xem chi tiết môn học</span>
+                                  <ChevronRight size={10} />
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-12 text-center text-slate-400">
+                            {studentSearch
+                              ? `Không tìm thấy sinh viên nào khớp "${studentSearch}".`
+                              : "Không có sinh viên trong bộ lọc này."}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </SlideOverDrawer>
+          )}
+        </div>
+      )}
 
+      {/* Confirmation Modal for Check */}
       <ConfirmDialog
-        isOpen={Boolean(actionTarget)}
-        onClose={() => !actionLoading && setActionTarget(null)}
-        onConfirm={() => void confirmAction()}
-        title={actionTarget ? actionCopy[actionTarget.action].title : "Xác nhận"}
-        message={actionTarget ? actionCopy[actionTarget.action].message : ""}
-        confirmText={actionTarget ? actionCopy[actionTarget.action].confirmText : "Xác nhận"}
-        isDangerous={Boolean(actionTarget && actionCopy[actionTarget.action].dangerous)}
-        loading={actionLoading}
+        isOpen={Boolean(confirmCalculatePlan)}
+        onClose={() => !calculating && setConfirmCalculatePlan(null)}
+        onConfirm={() => confirmCalculatePlan && void handleCalculate(confirmCalculatePlan)}
+        title={confirmCalculatePlan ? `Kiểm tra đăng ký: Khóa ${confirmCalculatePlan.cohortCode}` : "Xác nhận"}
+        message={
+          confirmCalculatePlan
+            ? `Hệ thống sẽ đối chiếu danh sách môn học sinh viên Khóa ${confirmCalculatePlan.cohortCode} đã đăng ký với kế hoạch chuẩn của kỳ này.`
+            : ""
+        }
+        confirmText="Bắt đầu kiểm tra ngay"
+        loading={calculating}
       />
-    </section>
-  );
-}
 
-function Metric({ label, value, tone = "neutral", icon }: { label: string; value: string; tone?: "neutral" | "success" | "danger" | "warning"; icon?: React.ReactNode }) {
-  const tones = {
-    neutral: "border-slate-200 bg-white text-slate-900",
-    success: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    danger: "border-red-200 bg-red-50 text-red-800",
-    warning: "border-amber-200 bg-amber-50 text-amber-800",
-  };
-  return (
-    <div className={`rounded-xl border p-3 ${tones[tone]}`}>
-      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide opacity-70">{icon}{label}</div>
-      <div className="mt-1 font-mono text-xl font-bold">{value}</div>
+      {/* Student Course Detail Modal */}
+      {studentDetailOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-end sm:items-center sm:justify-center"
+          onClick={(e) => { if (e.target === e.currentTarget) setStudentDetailOpen(false); }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="registration-student-detail-title"
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs" onClick={() => setStudentDetailOpen(false)} />
+
+          {/* Panel */}
+          <div className="relative z-10 flex w-full max-h-[90vh] flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-w-2xl sm:rounded-2xl">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-slate-100 px-6 py-4">
+              <div>
+                {studentDetailLoading ? (
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <LoaderCircle size={16} className="animate-spin text-lime-600" />
+                    <span className="text-sm font-semibold">Đang tải chi tiết môn học...</span>
+                  </div>
+                ) : studentDetail ? (
+                  <>
+                    <h3 id="registration-student-detail-title" className="font-bold text-slate-900">{studentDetail.studentName}</h3>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                      <span className="font-mono">{studentDetail.studentId}</span>
+                      {studentDetail.className && (
+                        <><span>•</span><span>Lớp: {studentDetail.className}</span></>
+                      )}
+                      {studentDetail.status === "pass" ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">
+                          <CheckCircle2 size={11} /> Khớp lộ trình
+                        </span>
+                      ) : studentDetail.status === "data_error" ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
+                          <CircleAlert size={11} /> Lỗi dữ liệu
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-800">
+                          <AlertTriangle size={11} /> Cần tư vấn
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => setStudentDetailOpen(false)}
+                aria-label="Đóng chi tiết môn học"
+                className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Summary KPI row */}
+            {studentDetail && !studentDetailLoading && (
+              <div className="grid grid-cols-3 gap-px bg-slate-100">
+                <div className="bg-white px-5 py-3 text-center">
+                  <p className="text-[11px] font-semibold text-slate-500">Môn bắt buộc</p>
+                  <p className="mt-0.5 font-mono text-lg font-bold text-slate-900">
+                    {studentDetail.mandatory.registeredCourses}
+                    <span className="text-sm text-slate-400">/{studentDetail.mandatory.requiredCourses}</span>
+                  </p>
+                </div>
+                <div className="bg-white px-5 py-3 text-center">
+                  <p className="text-[11px] font-semibold text-slate-500">TC tự chọn</p>
+                  <p className="mt-0.5 font-mono text-lg font-bold text-slate-900">
+                    {studentDetail.elective.registeredCredits}
+                    <span className="text-sm text-slate-400">/{studentDetail.elective.requiredCredits} TC</span>
+                  </p>
+                </div>
+                <div className="bg-white px-5 py-3 text-center">
+                  <p className="text-[11px] font-semibold text-slate-500">Ngoài kế hoạch</p>
+                  <p className="mt-0.5 font-mono text-lg font-bold text-blue-800">
+                    +{studentDetail.outsidePlanCredits}
+                    <span className="text-sm font-medium"> TC</span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Course list */}
+            <div className="flex-1 overflow-y-auto">
+              {studentDetailLoading ? (
+                <div className="flex items-center justify-center py-20 text-slate-400">
+                  <LoaderCircle size={24} className="animate-spin text-lime-500" />
+                </div>
+              ) : studentDetail && studentDetail.courses.length > 0 ? (
+                <div className="divide-y divide-slate-50">
+                  {/* Group courses */}
+                  {["mandatory", "elective", "outside_plan"].map((group) => {
+                    const courses = studentDetail.courses.filter((c) => c.group === group);
+                    if (!courses.length) return null;
+                    const groupLabel = group === "mandatory" ? "Học phần bắt buộc theo kế hoạch"
+                      : group === "elective" ? "Học phần tự chọn theo kế hoạch"
+                      : "Học phần ngoài kế hoạch (sinh viên đăng ký thêm)";
+                    const groupColor = group === "mandatory" ? "text-slate-700 bg-slate-50"
+                      : group === "elective" ? "text-violet-800 bg-violet-50"
+                      : "text-blue-800 bg-blue-50";
+                    return (
+                      <div key={group}>
+                        <div className={`px-5 py-2.5 text-[11px] font-bold uppercase tracking-wider ${groupColor}`}>
+                          {groupLabel} ({courses.length} môn)
+                        </div>
+                        <table className="w-full text-xs">
+                          <thead className="border-b border-slate-100 text-[11px] font-semibold text-slate-500">
+                            <tr>
+                              <th className="px-5 py-2 text-left">Mã môn</th>
+                              <th className="px-5 py-2 text-left">Tên môn học</th>
+                              <th className="px-5 py-2 text-center">Tín chỉ</th>
+                              <th className="px-5 py-2 text-center">Tình trạng</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {courses.map((course) => (
+                              <tr key={`${course.courseCode}-${course.group}`} className="hover:bg-slate-50/60">
+                                <td className="px-5 py-2.5 font-mono font-semibold text-slate-700">
+                                  {course.courseCode}
+                                </td>
+                                <td className="px-5 py-2.5 text-slate-800">{course.courseName}</td>
+                                <td className="px-5 py-2.5 text-center font-mono text-slate-600">{course.credits}</td>
+                                <td className="px-5 py-2.5 text-center">
+                                  {course.registrationStatus === "registered" ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
+                                      <CheckCircle2 size={10} /> Đã đăng ký
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-700">
+                                      <XCircle size={10} /> Chưa đăng ký
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : !studentDetailLoading && (
+                <div className="px-6 py-16 text-center text-sm text-slate-400">Không có dữ liệu môn học.</div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3">
+              <p className="text-xs text-slate-400">
+                {studentDetail ? `${studentDetail.courses.length} môn học trong kỳ này` : ""}
+              </p>
+              <button
+                type="button"
+                onClick={() => setStudentDetailOpen(false)}
+                className="rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -17,9 +17,20 @@ Chức năng có nhiệm vụ:
 
 ---
 
-# 2. Nguồn “luật cứng”
+# 2. Nguồn “luật cứng” và phạm vi áp dụng
 
-Thiết kế này chỉ coi ba tài liệu sau là nguồn quy tắc chính thức:
+Mỗi lần đánh giá phải dùng đúng phiên bản văn bản còn hiệu lực tại mốc đánh giá và đúng CTĐT của khóa/ngành. Không được dùng một bộ số liệu của K44 cho K46–K49 chỉ vì cùng ngành.
+
+Các nguồn phải được quản lý theo ma trận áp dụng:
+
+| Nhóm quy tắc | Nguồn | Phạm vi bắt buộc |
+|---|---|---|
+| Điều kiện tốt nghiệp chung | Quy chế đào tạo hiện hành (Quyết định 600/2021 và văn bản sửa đổi 1602/2023, hoặc văn bản thay thế) | Theo ngày hiệu lực của đợt đánh giá |
+| Cấu trúc học phần/tín chỉ | CTĐT đã ban hành | Đúng ngành, khóa và phiên bản CTĐT |
+| Rèn luyện | Quy định đánh giá kết quả rèn luyện hiện hành | Theo ngày hiệu lực |
+| Chứng chỉ, kỷ luật, pháp lý | Nguồn nghiệp vụ được Nhà trường xác minh | Theo từng sinh viên và thời điểm chốt dữ liệu |
+
+Ba tài liệu trong thư mục hiện là căn cứ đối chiếu ban đầu:
 
 1. **Quy chế đào tạo đại học và cao đẳng hệ chính quy theo hệ thống tín chỉ**
    - Đặc biệt sử dụng các nội dung tại Chương IV về xét và công nhận tốt nghiệp.
@@ -44,6 +55,8 @@ Thiết kế này chỉ coi ba tài liệu sau là nguồn quy tắc chính th�
      - Chứng chỉ Giáo dục thể chất.
      - Chứng chỉ Giáo dục quốc phòng và an ninh.
      - Đạt chuẩn đầu ra ngoại ngữ.
+
+> Bộ số liệu 150/104/46 ở trên chỉ được kích hoạt cho CNTT K44 sau khi đối chiếu CTĐT. Các khóa khác phải có rule pack riêng và đầy đủ; nếu thiếu, hệ thống phải chặn chạy đánh giá.
 
 ---
 
@@ -415,11 +428,11 @@ Ví dụ:
 ```text
 Nhóm A6: cần tối thiểu 9 TC tự chọn
 Nhóm A7: cần tối thiểu 6 TC tự chọn
-Nhóm B2: cần tối thiểu 25 TC tự chọn
+Nhóm B2: lấy số tín chỉ tối thiểu từ cấu trúc CTĐT đã được duyệt
 Nhóm B3: cần tối thiểu 6 TC tự chọn
 ```
 
-Hệ thống phải kiểm tra riêng từng nhóm.
+Hệ thống phải kiểm tra riêng từng nhóm. Không hard-code giá trị B2 khi bảng tổng hợp và danh mục học phần trong tài liệu nguồn chưa được đối soát thống nhất.
 
 Pseudo logic:
 
@@ -681,22 +694,19 @@ reason = "Chưa có kết quả rèn luyện toàn khóa"
 
 # 10. Thuật toán tổng hợp trạng thái
 
-Ưu tiên trạng thái:
+Ưu tiên trạng thái kết luận:
 
 ```text
-MANUAL_REVIEW
 NOT_ELIGIBLE
 PENDING_GRADE
 PENDING_REQUIREMENT
+MANUAL_REVIEW
 EXPECTED_ELIGIBLE
 ```
 
 Đề xuất logic:
 
 ```pseudo
-if data_error or critical_data_missing:
-    return MANUAL_REVIEW
-
 if has_failed_mandatory_condition:
     return NOT_ELIGIBLE
 
@@ -706,8 +716,13 @@ if has_waiting_grade:
 if has_pending_requirement:
     return PENDING_REQUIREMENT
 
+if data_error or critical_data_missing:
+    return MANUAL_REVIEW
+
 return EXPECTED_ELIGIBLE
 ```
+
+Ngoài `final_status`, lưu cờ độc lập `needs_manual_review`. Vì vậy một sinh viên có điều kiện đã xác định là không đạt và đồng thời thiếu dữ liệu khác vẫn có kết luận `NOT_ELIGIBLE`, nhưng cán bộ vẫn nhìn thấy yêu cầu đối soát. Không để dữ liệu thiếu che mất một điều kiện trượt đã biết.
 
 ---
 
@@ -823,13 +838,13 @@ Số sinh viên thiếu dữ liệu điểm: 5
 Số sinh viên thiếu dữ liệu rèn luyện: 8
 ```
 
-Nếu có lỗi nghiêm trọng:
+Nếu thiếu/xung đột bộ rule, không xác định được CTĐT hoặc dữ liệu nền không bảo đảm tính toán cho toàn phiên:
 
 ```text
 Không cho chạy đánh giá
 ```
 
-hoặc:
+Nếu bộ rule và CTĐT hợp lệ nhưng chỉ một số sinh viên thiếu dữ liệu xác minh cá nhân:
 
 ```text
 Cho phép chạy nhưng đánh dấu MANUAL_REVIEW
@@ -1055,8 +1070,13 @@ discipline_status
 legal_status
 
 final_status
+needs_manual_review
+reasons
+grade_snapshot
 evaluated_at
 ```
+
+`grade_snapshot` phải chứa bảng điểm đúng đến học kỳ đánh giá. Màn hình chi tiết của phiên đã chốt đọc snapshot này, không đọc lại bảng điểm hiện tại. Với dữ liệu lịch sử cũ chưa có snapshot, nếu buộc phải fallback sang dữ liệu live thì API/UI phải ghi rõ nguồn `live_fallback`.
 
 ---
 
@@ -1567,18 +1587,16 @@ foreign_language = NOT_PASSED
 Kết quả:
 
 ```text
-PENDING_REQUIREMENT
+NOT_ELIGIBLE
 ```
 
-hoặc `NOT_ELIGIBLE` tùy quy ước nghiệp vụ của Nhà trường.
-
-Khuyến nghị:
+Chỉ dùng:
 
 ```text
 PENDING_REQUIREMENT
 ```
 
-nếu sinh viên vẫn còn khả năng bổ sung trước đợt xét.
+khi nguồn nghiệp vụ trả về đúng trạng thái `PENDING` (đang chờ xác nhận/bổ sung). `NOT_PASSED` là dữ liệu đã xác định chưa đạt nên không được hạ thành trạng thái chờ.
 
 ---
 
@@ -1783,6 +1801,8 @@ Evaluation Snapshot
     ↓
 Kết quả dự kiến
 ```
+
+Snapshot tối thiểu gồm: scope đánh giá, học kỳ chốt, bộ rule đã resolve (mỗi mã chỉ có một rule hiệu lực), completion run, bảng điểm theo sinh viên và thời điểm chụp. Mọi dữ liệu GPA, tín chỉ, rèn luyện và học phần phải được cắt tại cùng học kỳ đánh giá.
 
 Theo cách này, chức năng có thể mở rộng từ CNTT K44 sang các khóa và ngành khác mà không cần viết lại toàn bộ logic nghiệp vụ.
 

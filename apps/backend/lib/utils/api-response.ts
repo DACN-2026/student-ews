@@ -16,7 +16,7 @@ export function errorResponse(message: string, code = "ERROR", status = 400) {
   );
 }
 
-export function parsePagination(searchParams: URLSearchParams) {
+export function parsePagination(searchParams: URLSearchParams, maxPageSize = 100) {
   const pageStr = searchParams.get("page");
   const pageSizeStr = searchParams.get("pageSize") || searchParams.get("page_size");
 
@@ -25,7 +25,7 @@ export function parsePagination(searchParams: URLSearchParams) {
 
   let pageSize = parseInt(pageSizeStr || "20", 10);
   if (isNaN(pageSize) || pageSize < 1) pageSize = 20;
-  if (pageSize > 100) pageSize = 100;
+  if (pageSize > maxPageSize) pageSize = maxPageSize;
 
   const skip = (page - 1) * pageSize;
   const take = pageSize;

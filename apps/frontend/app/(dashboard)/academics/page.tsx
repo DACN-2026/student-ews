@@ -607,9 +607,8 @@ export default function AcademicsPage() {
                       <tr key={y.id} className="hover:bg-slate-50/70 transition-colors">
                         <td className="py-3.5 px-4 font-bold font-mono text-slate-900">{y.sYearCode || y.yearCode}</td>
                         <td className="py-3.5 px-4">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                            y.status === "open" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
-                          }`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${y.status === "open" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                            }`}>
                             {y.status === "open" ? "Đang mở" : "Đã đóng"}
                           </span>
                         </td>
@@ -694,41 +693,41 @@ export default function AcademicsPage() {
                       ) : (
                         terms.map((t, index) => (
                           <Fragment key={t.id}>
-                          {(index === 0 || Boolean(terms[index - 1]?.isSummer) !== Boolean(t.isSummer)) && (
-                            <tr className={t.isSummer ? "bg-amber-50/70" : "bg-slate-50/70"}>
-                              <td colSpan={6} className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider ${t.isSummer ? "text-amber-800" : "text-slate-500"}`}>
-                                {t.isSummer ? "Kỳ phụ" : "Học kỳ chính"}
+                            {(index === 0 || Boolean(terms[index - 1]?.isSummer) !== Boolean(t.isSummer)) && (
+                              <tr className={t.isSummer ? "bg-amber-50/70" : "bg-slate-50/70"}>
+                                <td colSpan={6} className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider ${t.isSummer ? "text-amber-800" : "text-slate-500"}`}>
+                                  {t.isSummer ? "Kỳ phụ" : "Học kỳ chính"}
+                                </td>
+                              </tr>
+                            )}
+                            <tr className="hover:bg-slate-50/70 transition-colors">
+                              <td className="py-3.5 px-4 font-bold font-mono text-slate-900">{t.sTermCode || t.termCode}</td>
+                              <td className="py-3.5 px-4 font-semibold text-slate-800">{t.sTermName || t.termName}</td>
+                              <td className="py-3.5 px-4 text-slate-600">{t.sTermOrder || t.termOrder}</td>
+                              <td className="py-3.5 px-4">
+                                {t.bIsSummer || t.isSummer ? (
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                    Học kỳ hè
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400">Chính</span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4">
+                                {t.isCurrent ? (
+                                  <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                    Đang dùng
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                                  {t.status || "Đang mở"}
+                                </span>
                               </td>
                             </tr>
-                          )}
-                          <tr className="hover:bg-slate-50/70 transition-colors">
-                            <td className="py-3.5 px-4 font-bold font-mono text-slate-900">{t.sTermCode || t.termCode}</td>
-                            <td className="py-3.5 px-4 font-semibold text-slate-800">{t.sTermName || t.termName}</td>
-                            <td className="py-3.5 px-4 text-slate-600">{t.sTermOrder || t.termOrder}</td>
-                            <td className="py-3.5 px-4">
-                              {t.bIsSummer || t.isSummer ? (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                  Học kỳ hè
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">Chính</span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {t.isCurrent ? (
-                                <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                  Đang dùng
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">—</span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                                {t.status || "Đang mở"}
-                              </span>
-                            </td>
-                          </tr>
                           </Fragment>
                         ))
                       )}
@@ -983,7 +982,15 @@ export default function AcademicsPage() {
                         </td>
                       </tr>
                     ) : (
-                      plans.map((pl: ApiData) => (
+                      [...plans].sort((a, b) => {
+                        const c1 = a.cohortCode || "";
+                        const c2 = b.cohortCode || "";
+                        if (c1 !== c2) return c1.localeCompare(c2);
+                        const p1 = a.programCode || "";
+                        const p2 = b.programCode || "";
+                        if (p1 !== p2) return p1.localeCompare(p2);
+                        return (a.curriculumSemesterNo || 0) - (b.curriculumSemesterNo || 0);
+                      }).map((pl: ApiData) => (
                         <tr key={pl.id} className="hover:bg-slate-50/70 transition-colors">
                           <td className="py-3.5 px-4 font-bold text-slate-900">
                             <div>{pl.cohortCode || "Khóa"}</div>
@@ -1001,13 +1008,12 @@ export default function AcademicsPage() {
                           <td className="py-3.5 px-4">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  pl.status === "locked"
-                                    ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                    : pl.status === "archived"
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${pl.status === "locked"
+                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                  : pl.status === "archived"
                                     ? "bg-slate-100 text-slate-600 border border-slate-200"
                                     : "bg-amber-50 text-amber-700 border border-amber-200"
-                                }`}
+                                  }`}
                               >
                                 {pl.status === "locked" ? "Đã khóa" : pl.status === "archived" ? "Lưu trữ" : "Bản nháp"}
                               </span>
@@ -1505,11 +1511,10 @@ export default function AcademicsPage() {
                       </td>
                       <td className="py-2 px-3">
                         <span
-                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                            c.requirementType === "mandatory"
-                              ? "bg-blue-50 text-blue-700"
-                              : "bg-amber-50 text-amber-700"
-                          }`}
+                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${c.requirementType === "mandatory"
+                            ? "bg-blue-50 text-blue-700"
+                            : "bg-amber-50 text-amber-700"
+                            }`}
                         >
                           {c.requirementType === "mandatory" ? "Bắt buộc" : "Tự chọn"}
                         </span>
@@ -1691,9 +1696,8 @@ export default function AcademicsPage() {
                   return (
                     <div
                       key={c.id || c.courseId}
-                      className={`p-2.5 flex items-center justify-between text-xs gap-2 ${
-                        isChecked ? "bg-emerald-50/40" : "hover:bg-slate-50"
-                      }`}
+                      className={`p-2.5 flex items-center justify-between text-xs gap-2 ${isChecked ? "bg-emerald-50/40" : "hover:bg-slate-50"
+                        }`}
                     >
                       <div className="flex items-center gap-2 flex-1">
                         <input

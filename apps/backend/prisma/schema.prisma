@@ -868,7 +868,9 @@ model GraduationEvaluationStudent {
   missingElectiveCredits   Int      @default(0) @map("missing_elective_credits")
   pendingResultCourses     Int      @default(0) @map("pending_result_courses")
   finalStatus              String   @map("final_status") @db.VarChar(32)
+  needsManualReview        Boolean  @default(false) @map("needs_manual_review")
   reasons                  Json     @default("[]")
+  gradeSnapshot            Json     @default("[]") @map("grade_snapshot")
   evaluatedAt              DateTime @default(now()) @map("evaluated_at") @db.Timestamptz(6)
 
   @@unique([evaluationId, studentId], map: "graduation_evaluation_students_run_student_key")

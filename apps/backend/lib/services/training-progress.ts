@@ -31,7 +31,7 @@ interface ChoiceGroupResult {
   requiredCredits: number;
   registeredCredits: number;
   selectedCourseIDs: string[];
-  status: string; // "pass" | "missing" | "over_registered"
+  status: string; // "pass" | "missing"
 }
 
 interface ProgressEvaluation {
@@ -181,7 +181,6 @@ export function evaluateProgress(
         const group = choiceGroups.get(course.choiceGroupCode) || [];
         group.push(course);
         choiceGroups.set(course.choiceGroupCode, group);
-        continue; // choice groups handled below
       }
       if (course.isRegistrationRequired) {
         eval_.requiredElectiveCourses++;
@@ -200,11 +199,12 @@ export function evaluateProgress(
 
   // Choice group evaluation
   for (const [code, groupCourses] of choiceGroups) {
+    const requiredGroupCourses = groupCourses.filter((course) => course.isRegistrationRequired);
     const result: ChoiceGroupResult = {
       code,
-      requiredCourses: 1,
+      requiredCourses: requiredGroupCourses.length,
       registeredCourses: 0,
-      requiredCredits: groupCourses[0].credits,
+      requiredCredits: requiredGroupCourses.reduce((sum, course) => sum + course.credits, 0),
       registeredCredits: 0,
       selectedCourseIDs: [],
       status: "pass",
@@ -216,13 +216,9 @@ export function evaluateProgress(
         result.selectedCourseIDs.push(course.courseCode);
       }
     }
-    if (result.registeredCourses === 0) {
+    const registeredRequiredCourses = requiredGroupCourses.filter((course) => byCourse.has(course.courseId)).length;
+    if (registeredRequiredCourses < requiredGroupCourses.length) {
       result.status = "missing";
-    } else if (result.registeredCourses > 1) {
-      result.status = "over_registered";
-    }
-    if (result.status !== "pass") {
-      eval_.status = "fail";
     }
     eval_.choiceGroupResults.push(result);
   }
@@ -316,7 +312,6 @@ export function evaluateCompletionPlan(
       const g = groups.get(course.choiceGroupCode) || [];
       g.push(course);
       groups.set(course.choiceGroupCode, g);
-      continue;
     }
 
     if (course.requirementType === "mandatory" && !assumedPassed) {
@@ -342,24 +337,14 @@ export function evaluateCompletionPlan(
         credits += course.credits;
       }
     }
-    result.passedElectiveCredits += credits;
-    let status = "pass";
-    if (selected.length === 0) {
-      status = "missing";
-      result.isPass = false;
-      const pendingSelections = groupCourses.filter((course) => pendingEligible && registrations.has(course.courseId)).length;
-      if (pendingSelections !== 1) pendingOnly = false;
-    }
-    if (selected.length > 1) {
-      status = "over_registered";
-      result.isPass = false;
-      pendingOnly = false;
-    }
+    const requiredGroupCourses = groupCourses.filter((course) => course.isRegistrationRequired);
+    const missingRequired = requiredGroupCourses.filter((course) => !selected.includes(course.courseCode));
+    const status = missingRequired.length > 0 ? "missing" : "pass";
     result.choiceGroups.push({
       code,
-      requiredCourses: 1,
+      requiredCourses: requiredGroupCourses.length,
       registeredCourses: selected.length,
-      requiredCredits: groupCourses[0].credits,
+      requiredCredits: requiredGroupCourses.reduce((sum, course) => sum + course.credits, 0),
       registeredCredits: credits,
       selectedCourseIDs: selected,
       status,
@@ -414,7 +399,9 @@ async function loadCalcStudents(programCode: string, cohortId: string): Promise<
     FROM students s
     LEFT JOIN classes c ON c.class_id = s.s_class_student_id AND c.deleted_at IS NULL
     LEFT JOIN cohorts co ON co.id = c.cohort_id AND co.deleted_at IS NULL
-    WHERE s.s_study_program_id = ${programCode} AND s.deleted_at IS NULL
+    WHERE s.s_study_program_id = ${programCode}
+      AND s.deleted_at IS NULL
+      AND c.cohort_id = ${cohortId}::uuid
     ORDER BY s.s_student_id
   `;
 
@@ -489,6 +476,7 @@ async function loadCalcOfferings(
 
 async function loadPassingEvidence(
   studentIds: string[],
+  programCode: string,
   assessmentYear: string,
   assessmentOrder: number,
 ): Promise<Map<string, Map<string, PassingEvidence>>> {
@@ -502,6 +490,7 @@ async function loadPassingEvidence(
     JOIN academic_terms t ON t.id = o.academic_term_id
     JOIN academic_years y ON y.id = t.academic_year_id
     WHERE o.student_id = ANY(${studentIds}::uuid[])
+      AND o.s_program_code = ${programCode}
       AND g.is_pass = true AND g.score_status = 'graded' AND g.not_score = false
       AND (y.s_year_code < ${assessmentYear} OR (y.s_year_code = ${assessmentYear} AND t.s_term_order <= ${assessmentOrder}))
     ORDER BY o.student_id, o.course_id, y.s_year_code DESC, t.s_term_order DESC, o.id DESC
@@ -530,6 +519,7 @@ async function loadPassingEvidence(
 
 async function loadCumulativeGPAs(
   studentIds: string[],
+  programCode: string,
   assessmentYear: string,
   assessmentOrder: number,
 ): Promise<Map<string, { gpa10: number | null; gpa4: number | null; academicYear: string; termCode: string }>> {
@@ -541,6 +531,7 @@ async function loadCumulativeGPAs(
     JOIN academic_terms t ON t.id = s.academic_term_id
     JOIN academic_years y ON y.id = t.academic_year_id
     WHERE s.student_id = ANY(${studentIds}::uuid[])
+      AND s.s_program_code = ${programCode}
       AND (y.s_year_code < ${assessmentYear} OR (y.s_year_code = ${assessmentYear} AND t.s_term_order <= ${assessmentOrder}))
     ORDER BY s.student_id, y.s_year_code DESC, t.s_term_order DESC, s.id DESC
   `;
@@ -676,6 +667,59 @@ async function validateCompletionCoverage(programId: string, plans: CompletionPl
     const count = counts.get(requirement.courseId) || 0;
     if (mandatory && count === 0) issues.push(`Học phần bắt buộc chưa có trong kế hoạch: ${course?.sCourseCode || requirement.courseId}`);
     if (count > 1) issues.push(`Học phần xuất hiện trong nhiều kế hoạch: ${course?.sCourseCode || requirement.courseId}`);
+  }
+  return { valid: issues.length === 0, issues: [...new Set(issues)].sort() };
+}
+
+async function validatePlanForLock(planId: string) {
+  const plan = await prisma.trainingProgressPlan.findUnique({ where: { id: planId } });
+  if (!plan) return { valid: false, issues: ["Không tìm thấy kế hoạch đào tạo."] };
+  const [planCourses, requirements] = await Promise.all([
+    prisma.trainingProgressPlanCourse.findMany({ where: { planId } }),
+    prisma.trainingProgramCourse.findMany({
+      where: { trainingProgramId: plan.trainingProgramId, sSemesterNo: plan.curriculumSemesterNo },
+    }),
+  ]);
+  const catalog = await prisma.course.findMany({
+    where: { id: { in: requirements.map((item) => item.courseId) }, deletedAt: null },
+  });
+  const catalogById = new Map(catalog.map((course) => [course.id, course]));
+  const requirementByCourse = new Map(requirements.map((item) => [item.courseId, item]));
+  const planCourseIds = new Set(planCourses.map((course) => course.courseId));
+  const issues: string[] = [];
+
+  if (plan.curriculumSemesterNo < 1) issues.push("Học kỳ lộ trình phải lớn hơn 0.");
+  if (planCourses.length === 0) issues.push("Kế hoạch chưa có học phần.");
+  if (plan.requiredElectiveCredits < 0) issues.push("Ngưỡng tín chỉ tự chọn không được âm.");
+
+  for (const course of planCourses) {
+    const requirement = requirementByCourse.get(course.courseId);
+    if (!requirement) {
+      issues.push(`Học phần ${course.sCourseCode} không thuộc học kỳ ${plan.curriculumSemesterNo} của CTĐT.`);
+      continue;
+    }
+    const normalized = requirement.sRequirementType.toLocaleLowerCase("vi");
+    const expectedType = normalized.includes("bắt") || normalized === "mandatory" ? "mandatory" : "elective";
+    if (course.requirementType !== expectedType) issues.push(`Loại yêu cầu của ${course.sCourseCode} không khớp CTĐT.`);
+    if (course.sCredits !== requirement.sCredits) issues.push(`Số tín chỉ của ${course.sCourseCode} không khớp CTĐT.`);
+    if (course.requirementType === "mandatory" && course.choiceGroupCode) {
+      issues.push(`Học phần bắt buộc ${course.sCourseCode} không được gắn nhóm lựa chọn.`);
+    }
+  }
+
+  for (const requirement of requirements) {
+    const normalized = requirement.sRequirementType.toLocaleLowerCase("vi");
+    const mandatory = normalized.includes("bắt") || normalized === "mandatory";
+    if (mandatory && !planCourseIds.has(requirement.courseId)) {
+      issues.push(`Thiếu học phần bắt buộc ${catalogById.get(requirement.courseId)?.sCourseCode || requirement.courseId}.`);
+    }
+  }
+
+  const electiveCreditsInPlan = planCourses
+    .filter((course) => course.requirementType === "elective")
+    .reduce((sum, course) => sum + course.sCredits, 0);
+  if (electiveCreditsInPlan < plan.requiredElectiveCredits) {
+    issues.push(`Danh mục tự chọn chỉ có ${electiveCreditsInPlan}/${plan.requiredElectiveCredits} tín chỉ yêu cầu.`);
   }
   return { valid: issues.length === 0, issues: [...new Set(issues)].sort() };
 }
@@ -1153,6 +1197,10 @@ export class TrainingProgressService {
     const plan = await prisma.trainingProgressPlan.findUnique({ where: { id } });
     if (!plan) throw new Error("Plan not found");
     if (plan.status !== "draft") throw new Error("Only draft plans can be locked");
+    const validation = await validatePlanForLock(id);
+    if (!validation.valid) {
+      throw new ApiError(validation.issues.join(" "), "PLAN_INVALID", 422);
+    }
 
     const updated = await prisma.trainingProgressPlan.updateMany({
       where: { id, status: "draft" },
@@ -1213,6 +1261,7 @@ export class TrainingProgressService {
     const plan = await prisma.trainingProgressPlan.findUnique({ where: { id: planId } });
     if (!plan) throw new Error("Plan not found");
     if (plan.status !== "locked") throw new Error("Only locked plans can be calculated");
+    if (!plan.isCurrent) throw new ApiError("Chỉ kế hoạch hiện hành mới được dùng để kiểm tra đăng ký.", "PLAN_NOT_CURRENT", 422);
 
     // Load plan courses
     const planCourses = await prisma.trainingProgressPlanCourse.findMany({
@@ -1673,6 +1722,80 @@ export class TrainingProgressService {
     };
   }
 
+  /**
+   * Get per-course detail for a single student within a registration run.
+   * Looks up TrainingProgressStudentResult by (runId, sStudentId) then
+   * fetches all TrainingProgressCourseResult rows for that student result.
+   */
+  static async getStudentCourseDetail(
+    runId: string,
+    studentIdentifier: string,
+    allowedClassIds?: string[] | null,
+  ) {
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(studentIdentifier);
+
+    const studentResult = await prisma.trainingProgressStudentResult.findFirst({
+      where: {
+        runId,
+        ...(allowedClassIds !== undefined && allowedClassIds !== null
+          ? { classId: { in: allowedClassIds } }
+          : {}),
+        ...(isUuid
+          ? {
+              OR: [
+                { id: studentIdentifier },
+                { studentId: studentIdentifier },
+                { sStudentId: studentIdentifier },
+              ],
+            }
+          : {
+              sStudentId: studentIdentifier,
+            }),
+      },
+    });
+    if (!studentResult) return null;
+
+    const courseResults = await prisma.trainingProgressCourseResult.findMany({
+      where: { studentResultId: studentResult.id },
+      orderBy: [
+        { resultGroup: "asc" },
+        { sCourseCode: "asc" },
+      ],
+    });
+
+    return {
+      studentId: studentResult.sStudentId,
+      studentName: studentResult.sStudentName,
+      className: studentResult.sClassStudentId,
+      cohortCode: studentResult.sProgramCode,
+      status: studentResult.status,
+      mandatory: {
+        requiredCourses: studentResult.mandatoryRequiredCourses,
+        registeredCourses: studentResult.mandatoryRegisteredCourses,
+        requiredCredits: studentResult.mandatoryRequiredCredits,
+        registeredCredits: studentResult.mandatoryRegisteredCredits,
+      },
+      elective: {
+        requiredCredits: studentResult.requiredElectiveCredits,
+        registeredCredits: studentResult.registeredElectiveCredits,
+      },
+      outsidePlanCourses: studentResult.outsidePlanCourses,
+      outsidePlanCredits: studentResult.outsidePlanCredits,
+      missingCredits: studentResult.missingCredits,
+      choiceGroupResults: studentResult.choiceGroupResults,
+      courses: courseResults.map((c) => ({
+        courseCode: c.sCourseCode,
+        courseName: c.sCourseName,
+        credits: c.sCredits,
+        group: c.resultGroup,
+        choiceGroupCode: c.choiceGroupCode,
+        isRegistrationRequired: c.isRegistrationRequired,
+        registrationStatus: c.registrationStatus,
+      })),
+    };
+  }
+
   // ===================== Student Registrations =====================
 
   static async listStudentRegistrations(
@@ -1891,7 +2014,8 @@ export class TrainingProgressService {
     const maxSemester = duePlans.reduce((max, plan) => Math.max(max, plan.curriculumSemesterNo), 0);
     const finalPlans = plans.filter((plan) => plan.isProgramFinal);
     const maximumCurrentSemester = plans.reduce((max, plan) => Math.max(max, plan.curriculumSemesterNo), 0);
-    const finalConfigurationValid = finalPlans.every((plan) => plan.curriculumSemesterNo === maximumCurrentSemester);
+    const finalConfigurationValid = finalPlans.length <= 1 &&
+      finalPlans.every((plan) => plan.curriculumSemesterNo === maximumCurrentSemester);
     const finalReached = duePlans.some((plan) => plan.isProgramFinal);
     const evaluationScope = finalReached ? "program_completion" : "milestone_progress";
     const coverage = await validateCompletionCoverage(data.trainingProgramId, duePlans);
@@ -1899,10 +2023,9 @@ export class TrainingProgressService {
     if (!plans.length) blockers.push({ code: "NO_CURRENT_LOCKED_PLANS", message: "Khóa và chương trình đào tạo chưa có kế hoạch hiện hành đã khóa." });
     if (!finalConfigurationValid) blockers.push({ code: "PROGRAM_FINAL_PLAN_INVALID", message: "Kế hoạch cuối CTĐT phải nằm ở học kỳ lộ trình lớn nhất." });
     if (!coverage.valid && duePlans.length) {
-      warnings.push({
+      blockers.push({
         code: "PROGRAM_COVERAGE_INVALID",
-        message: "Bao phủ chương trình đào tạo chưa hợp lệ; kết quả có thể không kết luận.",
-        details: coverage.issues,
+        message: `Bao phủ chương trình đào tạo chưa hợp lệ: ${coverage.issues.join("; ")}`,
       });
     }
     const canRun = blockers.length === 0;
@@ -1957,6 +2080,10 @@ export class TrainingProgressService {
     evaluationMode?: string;
   }) {
     const mode = data.evaluationMode === "graduation_forecast" ? "graduation_forecast" : "standard";
+    const preview = await this.previewCompletionRun({ ...data, evaluationMode: mode });
+    if (!preview.canRun) {
+      throw new ApiError(preview.blockers[0]?.message || "Dữ liệu chưa đủ để chạy đánh giá tiến độ.", "COMPLETION_PREVIEW_BLOCKED", 422);
+    }
 
     // Resolve assessment term info
     const assessmentInfo: any[] = await prisma.$queryRaw`
@@ -1991,10 +2118,10 @@ export class TrainingProgressService {
     const studentIds = students.map((s) => s.id);
 
     // Load passing evidence
-    const evidence = await loadPassingEvidence(studentIds, assessmentYear, assessmentOrder);
+    const evidence = await loadPassingEvidence(studentIds, program.sProgramCode, assessmentYear, assessmentOrder);
 
     // Load cumulative GPAs
-    const gpas = await loadCumulativeGPAs(studentIds, assessmentYear, assessmentOrder);
+    const gpas = await loadCumulativeGPAs(studentIds, program.sProgramCode, assessmentYear, assessmentOrder);
 
     const currentTerm = await prisma.academicTerm.findFirst({
       where: { isCurrent: true, deletedAt: null },
@@ -2362,11 +2489,18 @@ export class TrainingProgressService {
     };
   }
 
-  static async getCompletionStudentDetail(runId: string, studentIdentifier: string) {
+  static async getCompletionStudentDetail(
+    runId: string,
+    studentIdentifier: string,
+    allowedClassIds?: string[] | null,
+  ) {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(studentIdentifier);
     const studentResult = await prisma.trainingProgressCompletionStudentResult.findFirst({
       where: {
         runId,
+        ...(allowedClassIds !== undefined && allowedClassIds !== null
+          ? { classId: { in: allowedClassIds } }
+          : {}),
         OR: [
           { sStudentId: studentIdentifier },
           ...(isUuid ? [{ studentId: studentIdentifier }] : []),

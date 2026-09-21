@@ -30,6 +30,28 @@ Chức năng giải quyết 2 bài toán khác nhau nhưng dùng chung một n�
      - có dữ liệu nào chưa đủ để kết luận.
    - Kết quả hệ thống chỉ là **đánh giá điều kiện sơ bộ**, không thay thế quyết định xét và công nhận tốt nghiệp của Hội đồng/Hiệu trưởng.
 
+### 1.1. Quy ước kết luận trên giao diện
+
+Hai tab phải thể hiện đúng phạm vi dữ liệu mà engine đang đánh giá:
+
+| Tab | Kết luận được phép hiển thị | Không được suy diễn |
+|---|---|---|
+| Kiểm tra đăng ký môn học theo kỳ | `Khớp lộ trình`, `Cần tư vấn`, `Lỗi dữ liệu` | Không đồng nhất lệch lộ trình với vi phạm quy chế |
+| Tiến độ tích lũy toàn khóa | `Đã hoàn thành yêu cầu học phần`, `Chưa hoàn thành`, `Chờ điểm`, `Cần đối soát` | Không gọi là `Đủ điều kiện tốt nghiệp` khi chưa kiểm tra chứng chỉ, quyết định và điều kiện hành chính |
+
+GPA trên tab tích lũy là dữ liệu tham chiếu. Việc kết luận đủ điều kiện tốt nghiệp chính thức thuộc phân hệ **Dự kiến tốt nghiệp**, nơi tổng hợp thêm GDTC, GDQP, ngoại ngữ, kỷ luật và các điều kiện hành chính.
+
+### 1.2. Các bất biến bắt buộc của engine
+
+- Chỉ kế hoạch đã khóa và đang là phiên bản hiện hành mới được dùng để chạy đối chiếu đăng ký.
+- Trước khi khóa, kế hoạch phải qua kiểm tra độ phủ CTĐT, học kỳ lộ trình, loại học phần, số tín chỉ và các học phần bắt buộc.
+- Nhóm tự chọn được đánh giá theo **số tín chỉ tối thiểu**; sinh viên có thể chọn nhiều học phần hợp lệ trong cùng nhóm. Không tự coi việc chọn hơn một học phần là đăng ký thừa nếu CTĐT không cấu hình giới hạn tối đa.
+- Một học phần chỉ được cộng tín chỉ một lần, kể cả khi xuất hiện trong nhóm lựa chọn hoặc sinh viên học lại.
+- Bằng chứng điểm đạt và GPA phải được giới hạn theo đúng chương trình của sinh viên; không được lấy dữ liệu của chương trình cũ sau khi chuyển ngành.
+- Sinh viên chưa gắn lớp chỉ được đưa vào đúng khóa tuyển sinh của lần chạy, không được rơi vào mọi khóa.
+- Preview là cổng chặn bắt buộc của lần chạy tích lũy; không được bỏ qua các lỗi thiếu kế hoạch, sai độ phủ hoặc thiếu cấu hình học kỳ cuối.
+- API chi tiết sinh viên phải kiểm tra đồng thời quyền trên run và phạm vi dữ liệu của chính sinh viên đó.
+
 ---
 
 ## 2. Tài liệu “luật cứng” sử dụng làm nguồn quy tắc

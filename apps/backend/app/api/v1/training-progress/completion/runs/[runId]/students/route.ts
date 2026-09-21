@@ -13,7 +13,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ runI
     const scheduleStatus = url.searchParams.get("scheduleStatus") || undefined;
     const programStatus = url.searchParams.get("programCompletionStatus") || url.searchParams.get("programStatus") || undefined;
     const classId = url.searchParams.get("classId") || undefined;
-    const { page, pageSize } = parsePagination(url.searchParams);
+    const { page, pageSize } = parsePagination(url.searchParams, 1000);
     const result = await TrainingProgressService.listCompletionStudents(
       runId,
       scheduleStatus,

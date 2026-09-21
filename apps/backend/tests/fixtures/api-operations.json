@@ -89,6 +89,7 @@
   "GET /training-progress/runs/{param}/classes",
   "GET /training-progress/runs/{param}/cohort",
   "GET /training-progress/runs/{param}/students",
+  "GET /training-progress/runs/{param}/students/{param}",
   "PATCH /academic-warnings/actions/{param}",
   "PATCH /academic-years/{param}",
   "PATCH /academic-years/{param}/terms/{param}",

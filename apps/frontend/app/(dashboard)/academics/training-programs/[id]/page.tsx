@@ -408,11 +408,10 @@ export default function TrainingProgramDetailPage({
       <div className="flex items-center gap-2 border-b border-slate-200">
         <button
           onClick={() => setActiveTab("curriculum")}
-          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "curriculum"
-              ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary-light)]/40 rounded-t-xl"
-              : "border-transparent text-slate-500 hover:text-slate-900"
-          }`}
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${activeTab === "curriculum"
+            ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary-light)]/40 rounded-t-xl"
+            : "border-transparent text-slate-500 hover:text-slate-900"
+            }`}
           style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
         >
           <span>Khung chương trình</span>
@@ -423,11 +422,10 @@ export default function TrainingProgramDetailPage({
 
         <button
           onClick={() => setActiveTab("plans")}
-          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "plans"
-              ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary-light)]/40 rounded-t-xl"
-              : "border-transparent text-slate-500 hover:text-slate-900"
-          }`}
+          className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer ${activeTab === "plans"
+            ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary-light)]/40 rounded-t-xl"
+            : "border-transparent text-slate-500 hover:text-slate-900"
+            }`}
           style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
         >
           <span>Kế hoạch đào tạo áp dụng</span>
@@ -576,11 +574,10 @@ export default function TrainingProgramDetailPage({
                                     </td>
                                     <td className="py-3 px-4">
                                       <span
-                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                          course.requirementType === "Bắt Buộc"
-                                            ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                            : "bg-amber-50 text-amber-700 border border-amber-200"
-                                        }`}
+                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${course.requirementType === "Bắt Buộc"
+                                          ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                          : "bg-amber-50 text-amber-700 border border-amber-200"
+                                          }`}
                                       >
                                         {course.requirementType}
                                       </span>
@@ -663,7 +660,12 @@ export default function TrainingProgramDetailPage({
                     </td>
                   </tr>
                 ) : (
-                  plans.map((pl) => (
+                  [...plans].sort((a, b) => {
+                    const c1 = a.cohortCode || "";
+                    const c2 = b.cohortCode || "";
+                    if (c1 !== c2) return c1.localeCompare(c2);
+                    return (a.curriculumSemesterNo || 0) - (b.curriculumSemesterNo || 0);
+                  }).map((pl) => (
                     <tr key={pl.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="py-3.5 px-4 font-bold text-slate-900">{pl.cohortCode || "Khóa"}</td>
                       <td className="py-3.5 px-4 text-slate-700">{pl.termCode || "HK01"}</td>
@@ -671,13 +673,12 @@ export default function TrainingProgramDetailPage({
                       <td className="py-3.5 px-4 font-mono">v{pl.version}</td>
                       <td className="py-3.5 px-4">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                            pl.status === "locked"
-                              ? "bg-blue-100 text-blue-800"
-                              : pl.status === "archived"
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${pl.status === "locked"
+                            ? "bg-blue-100 text-blue-800"
+                            : pl.status === "archived"
                               ? "bg-slate-100 text-slate-600"
                               : "bg-amber-100 text-amber-800"
-                          }`}
+                            }`}
                         >
                           {pl.status === "locked" ? "Đã khóa" : pl.status === "archived" ? "Lưu trữ" : "Bản nháp"}
                         </span>

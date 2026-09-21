@@ -122,6 +122,38 @@ export interface RegistrationStudentResult {
   status: string;
 }
 
+export interface StudentCourseItem {
+  courseCode: string;
+  courseName: string;
+  credits: number;
+  group: string; // "mandatory" | "elective" | "outside_plan"
+  choiceGroupCode?: string | null;
+  isRegistrationRequired: boolean;
+  registrationStatus: string; // "registered" | "missing"
+}
+
+export interface StudentCourseDetail {
+  studentId: string;
+  studentName: string;
+  className?: string | null;
+  cohortCode?: string | null;
+  status: string;
+  mandatory: {
+    requiredCourses: number;
+    registeredCourses: number;
+    requiredCredits: number;
+    registeredCredits: number;
+  };
+  elective: {
+    requiredCredits: number;
+    registeredCredits: number;
+  };
+  outsidePlanCourses: number;
+  outsidePlanCredits: number;
+  missingCredits: number;
+  courses: StudentCourseItem[];
+}
+
 export interface CompletionRun {
   id: string;
   cohortId: string;

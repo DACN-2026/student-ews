@@ -29,7 +29,7 @@ import {
   safeExportStem,
   workbookBuffer,
 } from "../lib/services/export";
-import { resolveGraduationStatus } from "../lib/services/graduation-evaluations";
+import { isExcludedFromGraduationCredits, resolveGraduationStatus } from "../lib/services/graduation-evaluations";
 
 const IDS = {
   student: "11111111-1111-4111-8111-111111111111",
@@ -61,7 +61,7 @@ test("graduation status uses the documented conservative priority", () => {
     { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
     { ruleCode: "LEGAL", result: "NOT_AVAILABLE" },
     { ruleCode: "CUMULATIVE_GPA", result: "FAIL" },
-  ]), "MANUAL_REVIEW");
+  ]), "NOT_ELIGIBLE");
   assert.equal(resolveGraduationStatus([
     { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
     { ruleCode: "CUMULATIVE_GPA", result: "FAIL" },
@@ -69,6 +69,10 @@ test("graduation status uses the documented conservative priority", () => {
   assert.equal(resolveGraduationStatus([
     { ruleCode: "PROGRAM_COMPLETION", result: "PENDING" },
     { ruleCode: "CUMULATIVE_GPA", result: "PASS" },
+  ]), "PENDING_GRADE");
+  assert.equal(resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
+    { ruleCode: "CUMULATIVE_GPA", result: "PENDING" },
   ]), "PENDING_GRADE");
   assert.equal(resolveGraduationStatus([
     { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
@@ -102,6 +106,13 @@ test("graduation status uses the documented conservative priority", () => {
     { ruleCode: "DISCIPLINE", result: "PASS" },
     { ruleCode: "LEGAL", result: "PASS" },
   ]), "EXPECTED_ELIGIBLE");
+});
+
+test("graduation credit calculation excludes physical education and national defense", () => {
+  assert.equal(isExcludedFromGraduationCredits("TC1001", "Giáo dục thể chất 1"), true);
+  assert.equal(isExcludedFromGraduationCredits("QP1001", "Giáo dục quốc phòng"), true);
+  assert.equal(isExcludedFromGraduationCredits("20CT4201", "Thực tập nghề nghiệp"), false);
+  assert.equal(isExcludedFromGraduationCredits("20CT4202", "Đồ án tốt nghiệp"), false);
 });
 
 test("Phase 3 export helpers produce real XLSX/PDF files and safe names", async () => {
@@ -375,8 +386,50 @@ test("progress evaluation handles repeated registrations, outside credits and el
   ], false);
   assert.equal(result.status, "pass");
   assert.equal(result.choiceGroupResults[0].status, "pass");
+  assert.equal(result.registeredElectiveCredits, 2);
   assert.equal(result.outsidePlanCourses, 1);
   assert.equal(result.outsidePlanCredits, 3);
+});
+
+test("progress elective groups allow multiple valid selections and count their credits once", () => {
+  const courses = [
+    { courseId: IDS.courseA, courseCode: "A1", courseName: "Tự chọn 1", credits: 2, requirementType: "elective", choiceGroupCode: "SPECIALIZED", isRegistrationRequired: false },
+    { courseId: IDS.courseB, courseCode: "A2", courseName: "Tự chọn 2", credits: 3, requirementType: "elective", choiceGroupCode: "SPECIALIZED", isRegistrationRequired: false },
+  ];
+  const registration = evaluateProgress(courses, [
+    { courseId: IDS.courseA, courseCode: "A1", courseName: "Tự chọn 1", credits: 2 },
+    { courseId: IDS.courseB, courseCode: "A2", courseName: "Tự chọn 2", credits: 3 },
+  ], false);
+  applyElectiveThreshold(registration, 5);
+  assert.equal(registration.status, "pass");
+  assert.equal(registration.registeredElectiveCredits, 5);
+  assert.equal(registration.choiceGroupResults[0].registeredCourses, 2);
+
+  const evidence = new Map(courses.map((course) => [course.courseId, {
+    offeringId: course.courseId,
+    studentId: IDS.student,
+    courseId: course.courseId,
+    academicYear: "2026-2027",
+    termCode: "HK01",
+    termOrder: 1,
+    scoreStatus: "graded",
+  }]));
+  const completion = evaluateCompletionPlan({
+    id: IDS.plan,
+    version: 1,
+    academicTermId: IDS.term,
+    academicYearCode: "2026-2027",
+    termOrder: 1,
+    termCode: "HK01",
+    curriculumSemesterNo: 1,
+    requiredElective: 5,
+    status: "locked",
+    isCurrent: true,
+    isProgramFinal: false,
+    courses,
+  }, evidence, true);
+  assert.equal(completion.isPass, true);
+  assert.equal(completion.passedElectiveCredits, 5);
 });
 
 test("completion distinguishes pending results from forecast assumptions", () => {
@@ -609,3 +662,28 @@ test("warning trend uses only data from each exact term and omits empty future t
     { label: "HK02 (2025-2026)", high: 1, medium: 0, evaluated: 1 },
   ]);
 });
+
+test("curriculum import deduplicates redundant courses by prioritizing real student grades and semesters", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { deduplicateCurricula } = require("../scripts/import-apidog-data.cjs");
+  const curricula = [
+    { MaCTDT: "CQ22CT-PM", MaHP: "20TN1202", TenHP: "Toán rời rạc", STC: 4, HocKy: "Học kỳ 1", BatBuoc: "Bắt Buộc" },
+    { MaCTDT: "CQ22CT-PM", MaHP: "TN1008D", TenHP: "Toán rời rạc", STC: 4, HocKy: "Học kỳ 1", BatBuoc: "Bắt Buộc" },
+    { MaCTDT: "CQ22CT-PM", MaHP: "20CT3102D", TenHP: "Phát triển ứng dụng di động", STC: 3, HocKy: "Học kỳ 1", BatBuoc: "Bắt Buộc" },
+    { MaCTDT: "CQ22CT-PM", MaHP: "20CT3132D", TenHP: "Phát triển ứng dụng di động", STC: 3, HocKy: "Học kỳ 6", BatBuoc: "Bắt Buộc" },
+  ];
+  const gradeRows = [
+    { grade: { CurriculumID: "20TN1202" } },
+    { grade: { CurriculumID: "20TN1202" } },
+    { grade: { CurriculumID: "20CT3132D" } },
+  ];
+
+  const result = deduplicateCurricula(curricula, gradeRows);
+  assert.equal(result.length, 2);
+  const math = result.find((c: any) => c.TenHP === "Toán rời rạc");
+  assert.equal(math.MaHP, "20TN1202");
+  const mobile = result.find((c: any) => c.TenHP === "Phát triển ứng dụng di động");
+  assert.equal(mobile.MaHP, "20CT3132D");
+  assert.equal(mobile.HocKy, "Học kỳ 6");
+});
+
