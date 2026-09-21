@@ -961,122 +961,125 @@ export default function AcademicsPage() {
                 </button>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                      <th className="py-3 px-4">Khóa / CTĐT</th>
-                      <th className="py-3 px-4">Học kỳ / Năm học</th>
-                      <th className="py-3 px-4 text-center">Lộ trình</th>
-                      <th className="py-3 px-4 text-center">Phiên bản</th>
-                      <th className="py-3 px-4">Trạng thái</th>
-                      <th className="py-3 px-4 text-right">Tự chọn yêu cầu</th>
-                      <th className="py-3 px-4 text-right">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {plans.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="py-8 text-center text-slate-400">
-                          Chưa có kế hoạch đào tạo nào được tạo. Nhấn &quot;Tạo Kế hoạch mới&quot; để bắt đầu.
-                        </td>
-                      </tr>
+              <div className="flex flex-col">
+                {[
+                  { key: 'locked', title: 'Đã khóa', data: plans.filter((p: ApiData) => p.status === 'locked') },
+                  { key: 'draft', title: 'Bản nháp', data: plans.filter((p: ApiData) => p.status === 'draft') },
+                  { key: 'archived', title: 'Lưu trữ', data: plans.filter((p: ApiData) => p.status === 'archived') }
+                ].map(group => (
+                  <div key={group.key} className="border-t border-slate-100 first:border-0">
+                    <div className="px-4 py-2.5 bg-slate-50/50 flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide">{group.title} ({group.data.length})</span>
+                    </div>
+                    {group.data.length === 0 ? (
+                      <div className="py-6 text-center text-slate-400 text-xs">
+                        Không có kế hoạch nào.
+                      </div>
                     ) : (
-                      [...plans].sort((a, b) => {
-                        const c1 = a.cohortCode || "";
-                        const c2 = b.cohortCode || "";
-                        if (c1 !== c2) return c1.localeCompare(c2);
-                        const p1 = a.programCode || "";
-                        const p2 = b.programCode || "";
-                        if (p1 !== p2) return p1.localeCompare(p2);
-                        return (a.curriculumSemesterNo || 0) - (b.curriculumSemesterNo || 0);
-                      }).map((pl: ApiData) => (
-                        <tr key={pl.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-3.5 px-4 font-bold text-slate-900">
-                            <div>{pl.cohortCode || "Khóa"}</div>
-                            <div className="text-[11px] text-slate-400 font-mono">{pl.programCode || "CTĐT"}</div>
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-700 font-medium">
-                            {pl.termCode || "HK01"}
-                          </td>
-                          <td className="py-3.5 px-4 text-center font-mono font-bold text-slate-800">
-                            HK {pl.curriculumSemesterNo}
-                          </td>
-                          <td className="py-3.5 px-4 text-center font-mono">
-                            v{pl.version || 1}
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${pl.status === "locked"
-                                  ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                  : pl.status === "archived"
-                                    ? "bg-slate-100 text-slate-600 border border-slate-200"
-                                    : "bg-amber-50 text-amber-700 border border-amber-200"
-                                  }`}
-                              >
-                                {pl.status === "locked" ? "Đã khóa" : pl.status === "archived" ? "Lưu trữ" : "Bản nháp"}
-                              </span>
-                              {pl.isCurrent && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  Hiện hành
-                                </span>
-                              )}
-                              {pl.isProgramFinal && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                  Cuối CTĐT
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-600">
-                            {pl.requiredElectiveCredits || 0} TC
-                          </td>
-                          <td className="py-3.5 px-4 text-right space-x-1 whitespace-nowrap">
-                            <button
-                              type="button"
-                              onClick={() => handleViewPlanCourses(pl.id)}
-                              className="px-2.5 py-1 text-xs font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                              title="Xem chi tiết học phần kế hoạch"
-                            >
-                              Xem học phần
-                            </button>
-                            {pl.status === "draft" && (
-                              <button
-                                type="button"
-                                onClick={() => handleLockPlan(pl.id)}
-                                className="px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
-                                title="Khóa kế hoạch để tính toán"
-                              >
-                                Khóa
-                              </button>
-                            )}
-                            {pl.status === "locked" && !pl.isCurrent && (
-                              <button
-                                type="button"
-                                onClick={() => handleActivatePlan(pl.id)}
-                                className="px-2 py-1 text-xs font-semibold text-purple-700 hover:bg-purple-50 rounded-lg transition-colors cursor-pointer"
-                                title="Kích hoạt làm kế hoạch hiện hành"
-                              >
-                                Kích hoạt
-                              </button>
-                            )}
-                            {pl.status !== "archived" && (
-                              <button
-                                type="button"
-                                onClick={() => handleArchivePlan(pl.id)}
-                                className="px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                                title="Lưu trữ kế hoạch"
-                              >
-                                Lưu trữ
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="bg-slate-50/30 border-y border-slate-100 text-slate-500 font-semibold uppercase text-[10px]">
+                              <th className="py-2.5 px-4">Khóa / CTĐT</th>
+                              <th className="py-2.5 px-4">Học kỳ / Năm học</th>
+                              <th className="py-2.5 px-4 text-center">Lộ trình</th>
+                              <th className="py-2.5 px-4 text-center">Phiên bản</th>
+                              <th className="py-2.5 px-4">Trạng thái</th>
+                              <th className="py-2.5 px-4 text-right">Thao tác</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {[...group.data].sort((a, b) => {
+                              const c1 = a.cohortCode || "";
+                              const c2 = b.cohortCode || "";
+                              if (c1 !== c2) return c2.localeCompare(c1);
+                              const p1 = a.programCode || "";
+                              const p2 = b.programCode || "";
+                              if (p1 !== p2) return p1.localeCompare(p2);
+                              return (a.curriculumSemesterNo || 0) - (b.curriculumSemesterNo || 0);
+                            }).map((pl: ApiData) => (
+                              <tr key={pl.id} className="hover:bg-slate-50/70 transition-colors">
+                                <td className="py-3 px-4 font-bold text-slate-900">
+                                  <div>{pl.cohortCode || "Khóa"}</div>
+                                  <div className="text-[10px] text-slate-400 font-mono">{pl.programCode || "CTĐT"}</div>
+                                </td>
+                                <td className="py-3 px-4 text-slate-700 font-medium">
+                                  <div>{pl.termCode || "HK01"}</div>
+                                  <div className="text-[10px] text-slate-400">{pl.academicYearCode || ""}</div>
+                                </td>
+                                <td className="py-3 px-4 text-center font-mono font-bold text-slate-800">
+                                  HK {pl.curriculumSemesterNo}
+                                </td>
+                                <td className="py-3 px-4 text-center font-mono">
+                                  v{pl.version || 1}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex flex-wrap items-center gap-1.5">
+                                    <span
+                                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${pl.status === "locked"
+                                        ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                        : pl.status === "archived"
+                                          ? "bg-slate-100 text-slate-600 border border-slate-200"
+                                          : "bg-amber-50 text-amber-700 border border-amber-200"
+                                        }`}
+                                    >
+                                      {pl.status === "locked" ? "Đã khóa" : pl.status === "archived" ? "Lưu trữ" : "Bản nháp"}
+                                    </span>
+                                    {pl.isCurrent && (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Hiện hành
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleViewPlanCourses(pl.id)}
+                                    className="px-2 py-1 text-[11px] font-semibold text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
+                                    title="Xem chi tiết học phần kế hoạch"
+                                  >
+                                    Xem học phần
+                                  </button>
+                                  {pl.status === "draft" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleLockPlan(pl.id)}
+                                      className="px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
+                                      title="Khóa kế hoạch để tính toán"
+                                    >
+                                      Khóa
+                                    </button>
+                                  )}
+                                  {pl.status === "locked" && !pl.isCurrent && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleActivatePlan(pl.id)}
+                                      className="px-2 py-1 text-[11px] font-semibold text-purple-700 hover:bg-purple-50 rounded-md transition-colors cursor-pointer"
+                                      title="Kích hoạt làm kế hoạch hiện hành"
+                                    >
+                                      Kích hoạt
+                                    </button>
+                                  )}
+                                  {pl.status !== "archived" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleArchivePlan(pl.id)}
+                                      className="px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+                                      title="Lưu trữ kế hoạch"
+                                    >
+                                      Lưu trữ
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
-                  </tbody>
-                </table>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -1469,7 +1472,7 @@ export default function AcademicsPage() {
                 </div>
               </div>
               <div className="bg-blue-50/70 p-3 rounded-xl border border-blue-200/80">
-                <div className="text-[10px] uppercase font-bold text-blue-500">Tổng tín chỉ</div>
+                <div className="text-[10px] uppercase font-bold text-blue-500">TC các học phần</div>
                 <div className="text-lg font-bold font-mono text-blue-700">
                   {selectedPlanDetail.courses?.reduce((s: number, c: ApiData) => s + (c.credits || 0), 0) || 0} TC
                 </div>
@@ -1483,7 +1486,7 @@ export default function AcademicsPage() {
               <div className="bg-amber-50/70 p-3 rounded-xl border border-amber-200/80">
                 <div className="text-[10px] uppercase font-bold text-amber-500">Tự chọn yêu cầu</div>
                 <div className="text-lg font-bold font-mono text-amber-700">
-                  {selectedPlanDetail.requiredElectiveCredits || 0} TC
+                  &ge; {selectedPlanDetail.requiredElectiveCredits || 0} TC
                 </div>
               </div>
             </div>
@@ -1497,7 +1500,6 @@ export default function AcademicsPage() {
                     <th className="py-2.5 px-3">Tên học phần</th>
                     <th className="py-2.5 px-3 text-right">Số TC</th>
                     <th className="py-2.5 px-3">Nhóm môn</th>
-                    <th className="py-2.5 px-3">Nhóm chọn</th>
                     <th className="py-2.5 px-3">Đăng ký</th>
                   </tr>
                 </thead>
@@ -1519,22 +1521,13 @@ export default function AcademicsPage() {
                           {c.requirementType === "mandatory" ? "Bắt buộc" : "Tự chọn"}
                         </span>
                       </td>
-                      <td className="py-2 px-3 font-mono text-slate-600">
-                        {c.choiceGroupCode ? (
-                          <span className="px-1.5 py-0.5 bg-cyan-50 text-cyan-700 rounded border border-cyan-200 font-bold">
-                            {c.choiceGroupCode}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
                       <td className="py-2 px-3">
                         {c.isRegistrationRequired ? (
                           <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
                             Bắt buộc
                           </span>
                         ) : (
-                          <span className="text-[10px] text-slate-400">Tùy chọn</span>
+                          <span className="text-[10px] text-slate-500">{c.choiceGroupCode ? "Chọn trong nhóm" : "Tùy chọn"}</span>
                         )}
                       </td>
                     </tr>

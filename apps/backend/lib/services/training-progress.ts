@@ -34,6 +34,13 @@ interface ChoiceGroupResult {
   status: string; // "pass" | "missing"
 }
 
+// A code such as "GDTC3:1" records the minimum credits for that choice group.
+// Older groups without a suffix keep their individual required-course semantics.
+function choiceGroupMinimum(code: string): number | null {
+  const match = code.match(/:([1-9]\d*)$/);
+  return match ? Number(match[1]) : null;
+}
+
 interface ProgressEvaluation {
   mandatoryRequiredCourses: number;
   mandatoryRegisteredCourses: number;
@@ -200,11 +207,12 @@ export function evaluateProgress(
   // Choice group evaluation
   for (const [code, groupCourses] of choiceGroups) {
     const requiredGroupCourses = groupCourses.filter((course) => course.isRegistrationRequired);
+    const minimum = choiceGroupMinimum(code);
     const result: ChoiceGroupResult = {
       code,
       requiredCourses: requiredGroupCourses.length,
       registeredCourses: 0,
-      requiredCredits: requiredGroupCourses.reduce((sum, course) => sum + course.credits, 0),
+      requiredCredits: minimum ?? requiredGroupCourses.reduce((sum, course) => sum + course.credits, 0),
       registeredCredits: 0,
       selectedCourseIDs: [],
       status: "pass",
@@ -217,7 +225,7 @@ export function evaluateProgress(
       }
     }
     const registeredRequiredCourses = requiredGroupCourses.filter((course) => byCourse.has(course.courseId)).length;
-    if (registeredRequiredCourses < requiredGroupCourses.length) {
+    if (registeredRequiredCourses < requiredGroupCourses.length || (minimum !== null && result.registeredCredits < minimum)) {
       result.status = "missing";
     }
     eval_.choiceGroupResults.push(result);
@@ -246,7 +254,7 @@ export function evaluateProgress(
 
   if (dataError) {
     eval_.status = "data_error";
-  } else if (eval_.missingMandatoryCourses > 0 || eval_.missingRequiredElectiveCourses > 0) {
+  } else if (eval_.missingMandatoryCourses > 0 || eval_.missingRequiredElectiveCourses > 0 || eval_.choiceGroupResults.some((group) => group.status === "missing")) {
     eval_.status = "fail";
   }
 
@@ -339,12 +347,13 @@ export function evaluateCompletionPlan(
     }
     const requiredGroupCourses = groupCourses.filter((course) => course.isRegistrationRequired);
     const missingRequired = requiredGroupCourses.filter((course) => !selected.includes(course.courseCode));
-    const status = missingRequired.length > 0 ? "missing" : "pass";
+    const minimum = choiceGroupMinimum(code);
+    const status = missingRequired.length > 0 || (minimum !== null && credits < minimum) ? "missing" : "pass";
     result.choiceGroups.push({
       code,
       requiredCourses: requiredGroupCourses.length,
       registeredCourses: selected.length,
-      requiredCredits: requiredGroupCourses.reduce((sum, course) => sum + course.credits, 0),
+      requiredCredits: minimum ?? requiredGroupCourses.reduce((sum, course) => sum + course.credits, 0),
       registeredCredits: credits,
       selectedCourseIDs: selected,
       status,
@@ -360,6 +369,7 @@ export function evaluateCompletionPlan(
     result.missingMandatoryCourses > 0 ||
     result.missingRequiredElectives > 0 ||
     result.missingElectiveCredits > 0 ||
+    result.choiceGroups.some((group) => group.status === "missing") ||
     plan.courses.length === 0
   ) {
     result.isPass = false;
@@ -628,12 +638,12 @@ async function loadCompletionPlans(cohortId: string, programId: string): Promise
 }
 
 async function validateCompletionCoverage(programId: string, plans: CompletionPlan[]) {
-  const maxSemester = plans.reduce((max, plan) => Math.max(max, plan.curriculumSemesterNo), 0);
+  const plannedSemesters = new Set(plans.map((plan) => plan.curriculumSemesterNo));
   // Coverage is not applicable before the first plan becomes due. This is a
   // legitimate "no_due_plan" state, not corrupt curriculum data.
-  if (!maxSemester) return { valid: true, issues: [] as string[] };
+  if (!plannedSemesters.size) return { valid: true, issues: [] as string[] };
   const requirements = await prisma.trainingProgramCourse.findMany({
-    where: { trainingProgramId: programId, sSemesterNo: { lte: maxSemester } },
+    where: { trainingProgramId: programId, sSemesterNo: { in: [...plannedSemesters] } },
   });
   const catalog = await prisma.course.findMany({
     where: { id: { in: requirements.map((requirement) => requirement.courseId) }, deletedAt: null },
@@ -778,7 +788,7 @@ export class TrainingProgressService {
     pageSize = 20,
     scope: Prisma.TrainingProgressPlanWhereInput = {},
   ) {
-    const where: Prisma.TrainingProgressPlanWhereInput = { AND: [scope] };
+    const where: Prisma.TrainingProgressPlanWhereInput = { AND: [scope], status: { not: "archived" } };
     if (cohortId) where.cohortId = cohortId;
     if (trainingProgramId) where.trainingProgramId = trainingProgramId;
     if (termId) where.academicTermId = termId;
@@ -825,6 +835,15 @@ export class TrainingProgressService {
     ` : [];
     const runCountMap = Object.fromEntries(runCounts.map((r: any) => [r.plan_id, Number(r.run_count)]));
 
+    // Calculate mandatory credits per plan
+    const mandatoryCreditsRaw: any[] = planIds.length > 0 ? await prisma.$queryRaw`
+      SELECT plan_id::text, sum(s_credits)::int as mandatory_credits
+      FROM training_progress_plan_courses
+      WHERE plan_id = ANY(${planIds}::uuid[]) AND requirement_type = 'mandatory'
+      GROUP BY plan_id
+    ` : [];
+    const mandatoryCreditsMap = Object.fromEntries(mandatoryCreditsRaw.map((r: any) => [r.plan_id, Number(r.mandatory_credits)]));
+
     return {
       items: plans.map((p) => ({
         id: p.id,
@@ -845,6 +864,7 @@ export class TrainingProgressService {
         status: p.status,
         isCurrent: p.isCurrent,
         isProgramFinal: p.is_program_final,
+        requiredMandatoryCredits: mandatoryCreditsMap[p.id] || 0,
         requiredElectiveCredits: p.requiredElectiveCredits,
         runCount: runCountMap[p.id] || 0,
         createdAt: p.createdAt,

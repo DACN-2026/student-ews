@@ -432,6 +432,31 @@ test("progress elective groups allow multiple valid selections and count their c
   assert.equal(completion.passedElectiveCredits, 5);
 });
 
+test("separate elective minima still require physical education when overall credits are met", () => {
+  const courses = [
+    { courseId: IDS.courseA, courseCode: "GDTC", courseName: "Thể chất", credits: 1, requirementType: "elective", choiceGroupCode: "GDTC3:1", isRegistrationRequired: false },
+    { courseId: IDS.courseB, courseCode: "A", courseName: "Tự chọn A", credits: 3, requirementType: "elective", choiceGroupCode: "DAI_CUONG:6", isRegistrationRequired: false },
+    { courseId: IDS.plan, courseCode: "B", courseName: "Tự chọn B", credits: 3, requirementType: "elective", choiceGroupCode: "DAI_CUONG:6", isRegistrationRequired: false },
+  ];
+  const registrations = courses.slice(1).map((course) => ({ courseId: course.courseId, courseCode: course.courseCode, courseName: course.courseName, credits: course.credits }));
+  const registration = evaluateProgress(courses, registrations, false);
+  applyElectiveThreshold(registration, 6);
+  assert.equal(registration.status, "fail");
+  assert.equal(registration.choiceGroupResults.find((group) => group.code === "GDTC3:1")?.status, "missing");
+
+  const evidence = new Map(courses.slice(1).map((course) => [course.courseId, {
+    offeringId: course.courseId, studentId: IDS.student, courseId: course.courseId,
+    academicYear: "2026-2027", termCode: "HK01", termOrder: 1, scoreStatus: "graded",
+  }]));
+  const completion = evaluateCompletionPlan({
+    id: IDS.plan, version: 1, academicTermId: IDS.term, academicYearCode: "2026-2027",
+    termOrder: 1, termCode: "HK01", curriculumSemesterNo: 3, requiredElective: 6,
+    status: "locked", isCurrent: true, isProgramFinal: false, courses,
+  }, evidence, true);
+  assert.equal(completion.isPass, false);
+  assert.equal(completion.choiceGroups.find((group) => group.code === "GDTC3:1")?.status, "missing");
+});
+
 test("completion distinguishes pending results from forecast assumptions", () => {
   const plan = {
     id: IDS.plan,
@@ -680,10 +705,9 @@ test("curriculum import deduplicates redundant courses by prioritizing real stud
 
   const result = deduplicateCurricula(curricula, gradeRows);
   assert.equal(result.length, 2);
-  const math = result.find((c: any) => c.TenHP === "Toán rời rạc");
+  const math = result.find((c: Record<string, unknown>) => c.TenHP === "Toán rời rạc");
   assert.equal(math.MaHP, "20TN1202");
-  const mobile = result.find((c: any) => c.TenHP === "Phát triển ứng dụng di động");
+  const mobile = result.find((c: Record<string, unknown>) => c.TenHP === "Phát triển ứng dụng di động");
   assert.equal(mobile.MaHP, "20CT3132D");
   assert.equal(mobile.HocKy, "Học kỳ 6");
 });
-
