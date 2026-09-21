@@ -865,7 +865,7 @@ model GraduationEvaluationStudent {
   legalStatus              String   @map("legal_status") @db.VarChar(32)
   wholeCourseTrainingScore Decimal? @map("whole_course_training_score") @db.Decimal(5, 2)
   missingRequiredCourses   Int      @default(0) @map("missing_required_courses")
-  missingElectiveCredits   Int      @default(0) @map("missing_elective_credits")
+  missingElectiveCredits   Int?     @map("missing_elective_credits")
   pendingResultCourses     Int      @default(0) @map("pending_result_courses")
   finalStatus              String   @map("final_status") @db.VarChar(32)
   needsManualReview        Boolean  @default(false) @map("needs_manual_review")

@@ -3,6 +3,7 @@ import type { GraduationRule, Prisma, StudentGraduationRequirement } from "@pris
 import { prisma } from "@/lib/prisma";
 import { TrainingProgressService } from "@/lib/services/training-progress";
 import { GradesService } from "@/lib/services/grades";
+import { buildGraduationForecast, type ForecastCourse, type ForecastGrade, type ForecastSchedule } from "@/lib/services/graduation-forecast";
 
 export const GRADUATION_STATUSES = [
   "EXPECTED_ELIGIBLE",
@@ -73,12 +74,11 @@ function requirementResult(value: string, failedValue: string): DetailResult {
 
 export function resolveGraduationStatus(details: Array<{ ruleCode: string; result: DetailResult }>): GraduationStatus {
   if (details.some((detail) => detail.result === "FAIL")) return "NOT_ELIGIBLE";
+  if (details.some((detail) => detail.result === "NOT_AVAILABLE")) return "MANUAL_REVIEW";
   if (
     details.some(
       (detail) =>
         (detail.ruleCode === "PROGRAM_COMPLETION" ||
-          detail.ruleCode === "20CT4201" ||
-          detail.ruleCode === "20CT4202" ||
           detail.ruleCode === "CUMULATIVE_GPA" ||
           detail.ruleCode === "TOTAL_CREDITS" ||
           detail.ruleCode === "COMPULSORY_CREDITS" ||
@@ -89,13 +89,33 @@ export function resolveGraduationStatus(details: Array<{ ruleCode: string; resul
     return "PENDING_GRADE";
   }
   if (details.some((detail) => detail.result === "PENDING")) return "PENDING_REQUIREMENT";
-  if (details.some((detail) => detail.result === "NOT_AVAILABLE")) return "MANUAL_REVIEW";
   return "EXPECTED_ELIGIBLE";
 }
 
 function resultReason(code: string, result: DetailResult, actual: string | null) {
   if (result === "PASS") return null;
-  if (result === "NOT_AVAILABLE") return SOURCE_MISSING_REASON;
+  if (result === "NOT_AVAILABLE") {
+    switch (code) {
+      case "FOREIGN_LANGUAGE":
+        return "Chưa có dữ liệu chuẩn đầu ra ngoại ngữ.";
+      case "PHYSICAL_EDUCATION":
+        return "Chưa có dữ liệu chứng chỉ Giáo dục thể chất.";
+      case "NATIONAL_DEFENSE":
+        return "Chưa có dữ liệu chứng chỉ Giáo dục quốc phòng và an ninh.";
+      case "DISCIPLINE":
+        return "Chưa có dữ liệu tình trạng kỷ luật.";
+      case "LEGAL":
+        return "Chưa có dữ liệu tình trạng pháp lý.";
+      case "WHOLE_COURSE_TRAINING":
+        return "Chưa có dữ liệu điểm rèn luyện toàn khóa.";
+      case "CUMULATIVE_GPA":
+        return "Chưa có GPA tích lũy tại mốc đánh giá.";
+      case "PROGRAM_COMPLETION":
+        return "Chưa đủ quy tắc hoặc dữ liệu CTĐT để kết luận hoàn thành.";
+      default:
+        return SOURCE_MISSING_REASON;
+    }
+  }
   if (code === "PROGRAM_COMPLETION" && result === "PENDING") {
     return `Còn ${actual || "học phần"} đang chờ kết quả chính thức.`;
   }
@@ -152,6 +172,13 @@ function ruleSpecificity(rule: GraduationRuleRow, scope: EvaluationScope) {
   return -1;
 }
 
+export function isApplicableGraduationRule(rule: Pick<GraduationRuleRow, "ruleCode" | "trainingProgramId" | "cohortId">, scope: Pick<EvaluationScope, "trainingProgramId" | "cohortId">) {
+  if (PROGRAM_SCOPED_RULES.has(rule.ruleCode)) return rule.trainingProgramId === scope.trainingProgramId &&
+    (!rule.cohortId || rule.cohortId === scope.cohortId);
+  return (!rule.trainingProgramId || rule.trainingProgramId === scope.trainingProgramId) &&
+    (!rule.cohortId || rule.cohortId === scope.cohortId);
+}
+
 async function loadResolvedRules(scope: EvaluationScope) {
   const rules = await prisma.graduationRule.findMany({
     where: {
@@ -166,6 +193,7 @@ async function loadResolvedRules(scope: EvaluationScope) {
   });
   const candidates = new Map<string, GraduationRuleRow[]>();
   for (const rule of rules) {
+    if (!isApplicableGraduationRule(rule, scope)) continue;
     const list = candidates.get(rule.ruleCode) || [];
     list.push(rule);
     candidates.set(rule.ruleCode, list);
@@ -176,13 +204,17 @@ async function loadResolvedRules(scope: EvaluationScope) {
     const maxSpecificity = Math.max(...codeRules.map((rule) => ruleSpecificity(rule, scope)));
     const winners = codeRules.filter((rule) => ruleSpecificity(rule, scope) === maxSpecificity);
     if (winners.length > 1) conflicts.push(code);
-    if (winners[0]) resolved.set(code, winners[0]);
+    // A numeric graduation threshold belongs to a particular curriculum. A global
+    // K44 seed rule must never become the threshold for CQ22–CQ25 by fallback.
+    if (winners.length === 1) resolved.set(code, winners[0]);
   }
   const missing = REQUIRED_RULE_CODES.filter((code) => !resolved.has(code));
   const invalid = ["CUMULATIVE_GPA", "TOTAL_CREDITS", "COMPULSORY_CREDITS", "ELECTIVE_CREDITS"]
-    .filter((code) => numberValue(resolved.get(code)?.requiredValue) === null);
+    .filter((code) => resolved.has(code) && numberValue(resolved.get(code)?.requiredValue) === null);
   return { rules: [...resolved.values()], ruleByCode: resolved, missing, conflicts, invalid };
 }
+
+const PROGRAM_SCOPED_RULES = new Set(["TOTAL_CREDITS", "COMPULSORY_CREDITS", "ELECTIVE_CREDITS", "CUMULATIVE_GPA"]);
 
 export function isExcludedFromGraduationCredits(courseCode: string | null | undefined, courseName: string | null | undefined) {
   const code = (courseCode || "").trim().toUpperCase();
@@ -376,6 +408,22 @@ export class GraduationEvaluationsService {
     const verified = [...derivedReqs.values()].filter((item) => item.isVerified).length;
     const conductAvailable = [...derivedReqs.values()].filter((item) => item.conductScore !== null).length;
     const gpaAvailable = new Set(termSummaries.map((item) => item.studentId)).size;
+    const curriculumRows = await prisma.trainingProgramCourse.findMany({ where: { trainingProgramId: scope.trainingProgramId } });
+    const curriculumCatalog = await prisma.course.findMany({ where: { id: { in: curriculumRows.map((item) => item.courseId) } } });
+    const courseById = new Map(curriculumCatalog.map((item) => [item.id, item]));
+    const curriculumCheck = buildGraduationForecast({
+      courses: curriculumRows.flatMap((item) => {
+        const course = courseById.get(item.courseId);
+        if (!course || isExcludedFromGraduationCredits(course.sCourseCode, course.sCourseName)) return [];
+        return [{ courseId: item.courseId, courseCode: course.sCourseCode, courseName: course.sCourseName,
+          credits: item.sCredits, requirementType: item.sRequirementType, semesterNo: item.sSemesterNo }];
+      }),
+      grades: [],
+      requiredElectiveCredits: numberValue(ruleResolution.ruleByCode.get("ELECTIVE_CREDITS")?.requiredValue),
+      requiredTotalCredits: numberValue(ruleResolution.ruleByCode.get("TOTAL_CREDITS")?.requiredValue),
+      requiredCompulsoryCredits: numberValue(ruleResolution.ruleByCode.get("COMPULSORY_CREDITS")?.requiredValue),
+    });
+    const curriculumReady = curriculumCheck.summary.remainingCredits !== null;
 
     const targetBlockers = [
       ...(targetType === "final_year"
@@ -387,15 +435,6 @@ export class GraduationEvaluationsService {
       ...(scope.specialization?.trim()
         ? [{ code: "SPECIALIZATION_UNSUPPORTED", message: "Dữ liệu hiện chưa ánh xạ được CTĐT theo chuyên ngành; không thể lọc an toàn." }]
         : []),
-      ...(ruleResolution.missing.length
-        ? [{ code: "GRADUATION_RULES_INCOMPLETE", message: `Thiếu quy tắc tốt nghiệp: ${ruleResolution.missing.join(", ")}.` }]
-        : []),
-      ...(ruleResolution.conflicts.length
-        ? [{ code: "GRADUATION_RULES_CONFLICT", message: `Có nhiều quy tắc active cùng mức ưu tiên: ${ruleResolution.conflicts.join(", ")}.` }]
-        : []),
-      ...(ruleResolution.invalid.length
-        ? [{ code: "GRADUATION_RULES_INVALID", message: `Ngưỡng quy tắc không hợp lệ: ${ruleResolution.invalid.join(", ")}.` }]
-        : []),
     ];
     return {
       ...completionPreview,
@@ -403,7 +442,7 @@ export class GraduationEvaluationsService {
       canRun: completionPreview.canRun && targetBlockers.length === 0,
       dataReadiness: {
         studentCount: students.length,
-        missingCurriculum: completionPreview.summary.coverageValid ? 0 : students.length,
+        missingCurriculum: completionPreview.summary.coverageValid && curriculumReady ? 0 : students.length,
         missingGpa: Math.max(0, students.length - gpaAvailable),
         missingWholeCourseTraining: Math.max(0, students.length - conductAvailable),
         missingVerifiedRequirements: Math.max(0, students.length - verified),
@@ -412,6 +451,10 @@ export class GraduationEvaluationsService {
       },
       warnings: [
         ...completionPreview.warnings,
+        ...(ruleResolution.missing.length ? [{ code: "GRADUATION_RULES_INCOMPLETE", message: `Thiếu quy tắc cho CTĐT ${program?.sProgramCode || "chưa xác định"}: ${ruleResolution.missing.join(", ")}. Kết quả phụ thuộc các quy tắc này cần đối soát.` }] : []),
+        ...(ruleResolution.conflicts.length ? [{ code: "GRADUATION_RULES_CONFLICT", message: `Quy tắc xung đột: ${ruleResolution.conflicts.join(", ")}.` }] : []),
+        ...(ruleResolution.invalid.length ? [{ code: "GRADUATION_RULES_INVALID", message: `Ngưỡng không hợp lệ: ${ruleResolution.invalid.join(", ")}.` }] : []),
+        ...(!curriculumReady ? [{ code: "GRADUATION_CURRICULUM_INCOMPLETE", message: "Danh mục CTĐT hiện lưu chưa đủ để xác định toàn bộ tín chỉ còn thiếu; kết quả sinh viên sẽ cần đối soát." }] : []),
         ...(verified < students.length
           ? [{
               code: "GRADUATION_REQUIREMENTS_INCOMPLETE",
@@ -444,11 +487,35 @@ export class GraduationEvaluationsService {
     const rules = ruleResolution.rules;
     const ruleVersions = [...new Set(rules.map((rule) => rule.version))];
     const ruleVersion = (ruleVersions.join("+") || "NO_ACTIVE_RULE").slice(0, 64);
+    const programCourses = await prisma.trainingProgramCourse.findMany({ where: { trainingProgramId: scope.trainingProgramId } });
+    const catalog = await prisma.course.findMany({ where: { id: { in: programCourses.map((item) => item.courseId) } } });
+    const catalogById = new Map(catalog.map((course) => [course.id, course]));
+    const curriculum: ForecastCourse[] = programCourses.flatMap((item) => {
+      const course = catalogById.get(item.courseId);
+      if (!course || isExcludedFromGraduationCredits(course.sCourseCode, course.sCourseName)) return [];
+      return [{ courseId: item.courseId, courseCode: course.sCourseCode, courseName: course.sCourseName,
+        credits: item.sCredits, requirementType: item.sRequirementType, semesterNo: item.sSemesterNo }];
+    });
+    const currentPlanIds = preview.plans.map((plan) => plan.id);
+    const planCourses = currentPlanIds.length
+      ? await prisma.trainingProgressPlanCourse.findMany({ where: { planId: { in: currentPlanIds } } })
+      : [];
+    const planById = new Map(preview.plans.map((plan) => [plan.id, plan]));
+    const schedule: ForecastSchedule[] = planCourses.flatMap((course) => {
+      const plan = planById.get(course.planId);
+      if (!plan) return [];
+      return [{ courseId: course.courseId, courseCode: course.sCourseCode, courseName: course.sCourseName,
+        academicYear: plan.academicYear, termCode: plan.termCode, semesterNo: plan.curriculumSemesterNo,
+        choiceGroupCode: course.choiceGroupCode, isProgramFinal: plan.isProgramFinal }];
+    });
     const snapshot = {
+      calculationVersion: "curriculum-gap-v2",
       scope: preview.scope,
       readiness: preview.dataReadiness,
       completionRunId: completionRun.id,
       completionSnapshotHash: completionRun.sourceSnapshotHash,
+      curriculum,
+      schedule,
       rules: rules.map((rule) => ({
         code: rule.ruleCode,
         operator: rule.operator,
@@ -494,32 +561,12 @@ export class GraduationEvaluationsService {
       const completionStudents = activeStudentIds
         ? allCompletionStudents.filter((item) => activeStudentIds.has(item.studentId))
         : allCompletionStudents;
-      const completionStudentIds = completionStudents.map((item) => item.id);
       const studentIds = completionStudents.map((item) => item.studentId);
 
-      const [planResults, derivedReqs, gradeSnapshots] = await Promise.all([
-        prisma.trainingProgressCompletionPlanResult.findMany({
-          where: { studentResultId: { in: completionStudentIds } },
-        }),
+      const [derivedReqs, gradeSnapshots] = await Promise.all([
         fetchDerivedRequirements(studentIds, cutoff.termIds),
         fetchGradeSnapshots(studentIds, cutoff),
       ]);
-
-      const planIds = planResults.map((item) => item.id);
-      const courseResults = planIds.length
-        ? await prisma.training_progress_completion_course_results.findMany({
-            where: { plan_result_id: { in: planIds } },
-          })
-        : [];
-      const planOwner = new Map(planResults.map((item) => [item.id, item.studentResultId]));
-      const coursesByStudentResult = new Map<string, typeof courseResults>();
-      for (const course of courseResults) {
-        const studentResultId = planOwner.get(course.plan_result_id);
-        if (!studentResultId) continue;
-        const current = coursesByStudentResult.get(studentResultId) || [];
-        current.push(course);
-        coursesByStudentResult.set(studentResultId, current);
-      }
 
       const studentRows: Prisma.GraduationEvaluationStudentCreateManyInput[] = [];
       const detailRows: Prisma.GraduationEvaluationDetailCreateManyInput[] = [];
@@ -532,44 +579,39 @@ export class GraduationEvaluationsService {
       };
 
       const ruleByCode = ruleResolution.ruleByCode;
+      const requiredElectiveCredits = numberValue(ruleByCode.get("ELECTIVE_CREDITS")?.requiredValue);
+      const requiredTotalCredits = numberValue(ruleByCode.get("TOTAL_CREDITS")?.requiredValue);
+      const requiredCompulsoryCredits = numberValue(ruleByCode.get("COMPULSORY_CREDITS")?.requiredValue);
 
-      const gpaThreshold = numberValue(ruleByCode.get("CUMULATIVE_GPA")?.requiredValue) ?? 2;
+      const gpaThreshold = numberValue(ruleByCode.get("CUMULATIVE_GPA")?.requiredValue);
 
       for (const student of completionStudents) {
         const derived = derivedReqs.get(student.studentId);
         const requirement = derived?.requirement;
-        const courses = coursesByStudentResult.get(student.id) || [];
-        const passedCourses = new Map<string, (typeof courses)[number]>();
-        const pendingCourses = new Map<string, (typeof courses)[number]>();
-        for (const course of courses) {
-          if (course.passed && !course.pending_result) {
-            passedCourses.set(course.course_id, course);
-          } else if (course.pending_result) {
-            pendingCourses.set(course.course_id, course);
-          }
-        }
-        const isCountedCourse = (course: (typeof courses)[number]) =>
-          !isExcludedFromGraduationCredits(course.s_course_code, course.s_course_name);
-        const compulsoryCredits = [...passedCourses.values()]
-          .filter((course) => course.requirement_type === "mandatory" && isCountedCourse(course))
-          .reduce((sum, course) => sum + course.s_credits, 0);
-        const pendingCompulsoryCredits = [...pendingCourses.values()]
-          .filter((course) => course.requirement_type === "mandatory" && isCountedCourse(course))
-          .reduce((sum, course) => sum + course.s_credits, 0);
-        const electiveCredits = [...passedCourses.values()]
-          .filter((course) => course.requirement_type !== "mandatory" && isCountedCourse(course))
-          .reduce((sum, course) => sum + course.s_credits, 0);
-        const pendingElectiveCredits = [...pendingCourses.values()]
-          .filter((course) => course.requirement_type !== "mandatory" && isCountedCourse(course))
-          .reduce((sum, course) => sum + course.s_credits, 0);
+        const forecast = buildGraduationForecast({
+          courses: curriculum,
+          grades: (gradeSnapshots.get(student.studentId) ?? []) as ForecastGrade[],
+          schedule,
+          requiredElectiveCredits,
+          requiredTotalCredits,
+          requiredCompulsoryCredits,
+        });
+        const compulsoryCredits = forecast.requirements.requiredCourses.completedCredits;
+        const electiveCredits = forecast.requirements.electives.passedCredits;
+        const pendingCompulsoryCredits = 0;
+        const pendingElectiveCredits = 0;
         const gpa = numberValue(student.cumulativeGpa4);
-        const totalCredits = compulsoryCredits + electiveCredits;
-        const pendingTotalCredits = [...pendingCourses.values()].filter(isCountedCourse).reduce((sum, c) => sum + c.s_credits, 0);
-        const curriculumResult: DetailResult = student.programCompletionStatus === "cannot_determine"
-          ? "NOT_AVAILABLE"
-          : student.programCompletionStatus === "completed"
-            ? student.pendingResultCourses > 0 ? "PENDING" : "PASS"
-            : "FAIL";
+        const totalCredits = forecast.summary.completedCredits;
+        const pendingTotalCredits = 0;
+        const programMapped = student.sProgramCode === preview.scope.programCode && curriculum.length > 0;
+        const knownCurriculumFailure = forecast.missingRequiredCourses.length > 0 ||
+          (forecast.requirements.electives.remainingCredits !== null && forecast.requirements.electives.remainingCredits > 0) ||
+          (forecast.summary.remainingCredits !== null && forecast.summary.remainingCredits > 0) ||
+          forecast.electiveGroups.some((group) => group.remainingCredits !== null && group.remainingCredits > 0);
+        const curriculumDetermined = programMapped && forecast.summary.remainingCredits !== null &&
+          forecast.electiveGroups.every((group) => group.remainingCredits !== null);
+        const curriculumResult: DetailResult = !programMapped ? "NOT_AVAILABLE"
+          : knownCurriculumFailure ? "FAIL" : !curriculumDetermined ? "NOT_AVAILABLE" : "PASS";
 
         const physicalStatus = derived?.physicalStatus || "NOT_AVAILABLE";
         const defenseStatus = derived?.defenseStatus || "NOT_AVAILABLE";
@@ -582,7 +624,7 @@ export class GraduationEvaluationsService {
           (conductScore !== null && (derived?.conductCount || 0) >= expectedConductTerms);
         const trainingStatus = conductComplete ? "AVAILABLE" : "NOT_AVAILABLE";
 
-        const isCurriculumDetermined = student.programCompletionStatus !== "cannot_determine" && Boolean(student.sProgramCode);
+        const isCurriculumDetermined = programMapped;
 
         const details: DetailDraft[] = [
           {
@@ -600,33 +642,32 @@ export class GraduationEvaluationsService {
             ruleName: "Hoàn thành cấu trúc chương trình đào tạo",
             category: "CURRICULUM",
             requiredValue: "Đạt toàn bộ kế hoạch CTĐT đã khóa",
-            actualValue: curriculumResult === "PASS" ? "Đã hoàn thành" : curriculumResult === "PENDING" ? `${student.pendingResultCourses} học phần chờ điểm` : `${student.missingMandatoryCourses} học phần bắt buộc và ${student.missingElectiveCredits} TC tự chọn còn thiếu`,
+            actualValue: curriculumResult === "PASS" ? "Đã hoàn thành" : `${forecast.missingRequiredCourses.length} học phần bắt buộc và ${forecast.requirements.electives.remainingCredits ?? "?"} TC tự chọn còn thiếu`,
             result: curriculumResult,
-            reason: resultReason("PROGRAM_COMPLETION", curriculumResult, String(student.pendingResultCourses)),
+            reason: curriculumResult === "FAIL" ? "Còn học phần bắt buộc hoặc tín chỉ CTĐT đã xác định chưa đạt."
+              : curriculumResult === "NOT_AVAILABLE" ? "Chưa đủ quy tắc hoặc dữ liệu CTĐT để kết luận hoàn thành." : null,
             evidence: { completionRunId: completionRun.id, completionStudentResultId: student.id },
           },
           {
             ruleCode: "CUMULATIVE_GPA",
             ruleName: "Điểm trung bình tích lũy hệ 4",
             category: "ACADEMIC",
-            requiredValue: `>= ${gpaThreshold.toFixed(2)}`,
+            requiredValue: gpaThreshold == null ? null : `>= ${gpaThreshold.toFixed(2)}`,
             actualValue: gpa == null ? null : gpa.toFixed(2),
-            result: gpa == null ? "NOT_AVAILABLE" : gpa >= gpaThreshold ? "PASS" : student.pendingResultCourses > 0 ? "PENDING" : "FAIL",
-            reason: gpa == null
-              ? "Chưa có GPA tích lũy tại mốc đánh giá."
+            result: gpa == null || gpaThreshold == null ? "NOT_AVAILABLE" : gpa >= gpaThreshold ? "PASS" : "FAIL",
+            reason: gpaThreshold == null ? `MISSING_RULE: Chưa có ngưỡng GPA cho CTĐT ${student.sProgramCode}.` : gpa == null
+              ? "UNKNOWN_REQUIREMENT: Chưa có GPA tích lũy tại mốc đánh giá."
               : gpa >= gpaThreshold
                 ? null
-                : student.pendingResultCourses > 0
-                  ? `GPA ${gpa.toFixed(2)} chưa đạt ngưỡng ${gpaThreshold.toFixed(2)} và còn ${student.pendingResultCourses} học phần chờ điểm.`
-                  : `GPA ${gpa.toFixed(2)} thấp hơn ngưỡng ${gpaThreshold.toFixed(2)}.`,
+                : `GPA ${gpa.toFixed(2)} thấp hơn ngưỡng ${gpaThreshold.toFixed(2)}.`,
             evidence: { source: "completion_run_snapshot", assessmentAcademicTermId: scope.assessmentAcademicTermId },
           },
           ...[
             ...(ruleByCode.has("PHYSICAL_EDUCATION") ? [["PHYSICAL_EDUCATION", "Chứng chỉ Giáo dục thể chất", physicalStatus, "NOT_PASSED"]] : []),
             ...(ruleByCode.has("NATIONAL_DEFENSE") ? [["NATIONAL_DEFENSE", "Chứng chỉ Giáo dục quốc phòng và an ninh", defenseStatus, "NOT_PASSED"]] : []),
             ...(ruleByCode.has("FOREIGN_LANGUAGE") ? [["FOREIGN_LANGUAGE", "Chuẩn đầu ra ngoại ngữ", languageStatus, "NOT_PASSED"]] : []),
-            ["DISCIPLINE", "Không trong thời gian đình chỉ học tập", disciplineStatus, "SUSPENDED"],
-            ["LEGAL", "Không bị truy cứu trách nhiệm hình sự", legalStatus, "UNDER_CRIMINAL_PROCEEDING"],
+            ...(ruleByCode.has("DISCIPLINE") ? [["DISCIPLINE", "Không trong thời gian đình chỉ học tập", disciplineStatus, "SUSPENDED"]] : []),
+            ...(ruleByCode.has("LEGAL") ? [["LEGAL", "Không bị truy cứu trách nhiệm hình sự", legalStatus, "UNDER_CRIMINAL_PROCEEDING"]] : []),
           ].map(([ruleCode, ruleName, value, failedValue]) => {
             const result = requirementResult(value, failedValue);
             return {
@@ -646,8 +687,8 @@ export class GraduationEvaluationsService {
             category: "TRAINING",
             requiredValue: "Có dữ liệu toàn khóa, không áp ngưỡng đậu rớt",
             actualValue: conductScore == null ? null : conductScore.toFixed(2),
-            result: conductComplete ? "PASS" : "NOT_AVAILABLE",
-            reason: conductComplete ? null : `Mới có ${derived?.conductCount || 0}/${expectedConductTerms} kỳ rèn luyện dự kiến.`,
+            result: !ruleByCode.has("WHOLE_COURSE_TRAINING") || !conductComplete ? "NOT_AVAILABLE" : "PASS",
+            reason: !ruleByCode.has("WHOLE_COURSE_TRAINING") ? "MISSING_RULE: Chưa có quy tắc rèn luyện toàn khóa." : conductComplete ? null : `UNKNOWN_REQUIREMENT: Mới có ${derived?.conductCount || 0}/${expectedConductTerms} kỳ rèn luyện dự kiến.`,
             evidence: {
               source: derived?.conductSource || "student_conduct_records",
               termCount: derived?.conductCount || 0,
@@ -663,13 +704,12 @@ export class GraduationEvaluationsService {
           { code: "ELECTIVE_CREDITS", name: "Tín chỉ tự chọn", actual: electiveCredits, pending: pendingElectiveCredits },
         ]) {
           const rule = ruleByCode.get(creditRule.code);
-          if (!rule) continue;
-          const required = numberValue(rule.requiredValue);
+          const required = numberValue(rule?.requiredValue);
           let result: DetailResult = "NOT_AVAILABLE";
           let reason: string | null = null;
           if (creditRule.actual == null || required == null) {
             result = "NOT_AVAILABLE";
-            reason = "Chưa có dữ liệu tín chỉ đủ tin cậy.";
+            reason = required == null ? `MISSING_RULE: Chưa có ngưỡng ${creditRule.name.toLowerCase()} cho CTĐT ${student.sProgramCode}.` : "Chưa có dữ liệu tín chỉ đủ tin cậy.";
           } else if (creditRule.actual >= required) {
             result = "PASS";
             reason = null;
@@ -684,7 +724,7 @@ export class GraduationEvaluationsService {
             ruleCode: creditRule.code,
             ruleName: creditRule.name,
             category: "CREDIT",
-            requiredValue: required == null ? rule.requiredValue : `>= ${required}`,
+            requiredValue: required == null ? rule?.requiredValue ?? null : `>= ${required}`,
             actualValue: creditRule.actual == null ? null : String(creditRule.actual),
             result,
             reason,
@@ -692,48 +732,90 @@ export class GraduationEvaluationsService {
           });
         }
 
-        const internshipCourse = courses.find((item) =>
-          item.s_course_code?.startsWith("20CT4201") ||
-          item.s_course_name?.toLowerCase().includes("thực tập nghề nghiệp")
-        );
-        if (internshipCourse) {
-          const result: DetailResult = internshipCourse.pending_result ? "PENDING" : internshipCourse.passed ? "PASS" : "FAIL";
-          details.push({
-            ruleCode: "20CT4201",
-            ruleName: "Thực tập nghề nghiệp",
-            category: "CURRICULUM",
-            requiredValue: "PASSED",
-            actualValue: internshipCourse.pending_result ? "PENDING" : internshipCourse.passed ? "PASSED" : "NOT_PASSED",
-            result,
-            reason: resultReason("20CT4201", result, internshipCourse.s_course_code),
-            evidence: { courseId: internshipCourse.course_id, courseCode: internshipCourse.s_course_code },
-          });
+        for (const code of ruleResolution.missing.filter((item) => !details.some((detail) => detail.ruleCode === item))) {
+          details.push({ ruleCode: code, ruleName: code, category: "DATA", requiredValue: null, actualValue: null,
+            result: "NOT_AVAILABLE", reason: `MISSING_RULE: Chưa có quy tắc ${code} áp dụng cho CTĐT ${student.sProgramCode}.`, evidence: { trainingProgramId: scope.trainingProgramId } });
         }
-
-        const thesisCourse = courses.find((item) =>
-          item.s_course_code?.startsWith("20CT4202") ||
-          item.s_course_name?.toLowerCase().includes("đồ án tốt nghiệp")
-        );
-        if (thesisCourse) {
-          const result: DetailResult = thesisCourse.pending_result ? "PENDING" : thesisCourse.passed ? "PASS" : "FAIL";
-          details.push({
-            ruleCode: "20CT4202",
-            ruleName: "Đồ án tốt nghiệp",
-            category: "CURRICULUM",
-            requiredValue: "PASSED",
-            actualValue: thesisCourse.pending_result ? "PENDING" : thesisCourse.passed ? "PASSED" : "NOT_PASSED",
-            result,
-            reason: resultReason("20CT4202", result, thesisCourse.s_course_code),
-            evidence: { courseId: thesisCourse.course_id, courseCode: thesisCourse.s_course_code },
-          });
+        for (const code of [...ruleResolution.conflicts, ...ruleResolution.invalid]) {
+          details.push({ ruleCode: `${code}_CONFIG`, ruleName: code, category: "DATA", requiredValue: null, actualValue: null,
+            result: "NOT_AVAILABLE", reason: `Quy tắc ${code} bị xung đột hoặc có ngưỡng không hợp lệ; cần đối soát.`, evidence: { trainingProgramId: scope.trainingProgramId } });
         }
 
         const status = resolveGraduationStatus(details);
         const needsManualReview = details.some((detail) => detail.result === "NOT_AVAILABLE");
         counts[status]++;
-        const reasons = details
-          .filter((detail) => detail.result !== "PASS")
-          .map((detail) => ({ code: detail.ruleCode, result: detail.result, message: detail.reason || detail.ruleName }));
+        const reasons: Array<{ code: string; result: DetailResult; message: string }> = [];
+
+        // 1. Failed courses (mandatory or elective failed attempts)
+        for (const course of forecast.failedCourses) {
+          reasons.push({
+            code: "FAILED_COURSE",
+            result: "FAIL",
+            message: `Học phần ${course.courseCode} - ${course.courseName} chưa đạt.`,
+          });
+        }
+
+        // 2. Missing required courses (unregistered / no score / no record, excluding already failed)
+        for (const course of forecast.missingRequiredCourses) {
+          if (course.state === "failed") continue;
+          if (course.state === "no_score") {
+            reasons.push({
+              code: "MISSING_REQUIRED_COURSE",
+              result: "FAIL",
+              message: `Học phần bắt buộc ${course.courseCode} - ${course.courseName} chưa có điểm đạt.`,
+            });
+          } else {
+            reasons.push({
+              code: "MISSING_REQUIRED_COURSE",
+              result: "FAIL",
+              message: `Chưa hoàn thành ${course.courseCode} - ${course.courseName}.`,
+            });
+          }
+        }
+
+        // 3. Missing elective credits by group
+        for (const group of forecast.electiveGroups) {
+          if (group.remainingCredits !== null && group.remainingCredits > 0) {
+            reasons.push({
+              code: "MISSING_ELECTIVE_CREDITS",
+              result: "FAIL",
+              message: `Nhóm tự chọn ${group.code} còn thiếu ${group.remainingCredits} tín chỉ.`,
+            });
+          }
+        }
+
+        // 4. Overall elective shortfall if not covered by individual groups
+        if (
+          forecast.requirements.electives.remainingCredits !== null &&
+          forecast.requirements.electives.remainingCredits > 0 &&
+          !forecast.electiveGroups.some((g) => g.remainingCredits !== null && g.remainingCredits > 0)
+        ) {
+          reasons.push({
+            code: "MISSING_ELECTIVE_CREDITS",
+            result: "FAIL",
+            message: `Còn thiếu ${forecast.requirements.electives.remainingCredits} tín chỉ tự chọn theo CTĐT.`,
+          });
+        }
+
+        // 5. Details that are not PASS
+        for (const detail of details) {
+          if (detail.result === "PASS") continue;
+          if (detail.ruleCode === "PROGRAM_COMPLETION") continue; // already detailed in courses
+
+          let reasonCode = detail.ruleCode;
+          if (detail.result === "NOT_AVAILABLE") {
+            if (detail.reason?.startsWith("MISSING_RULE")) {
+              reasonCode = "MISSING_RULE";
+            } else {
+              reasonCode = "UNKNOWN_REQUIREMENT";
+            }
+          }
+          reasons.push({
+            code: reasonCode,
+            result: detail.result,
+            message: detail.reason || detail.ruleName,
+          });
+        }
         const evaluationStudentId = crypto.randomUUID();
         studentRows.push({
           id: evaluationStudentId,
@@ -749,7 +831,7 @@ export class GraduationEvaluationsService {
           compulsoryCredits,
           electiveCredits,
           cumulativeGpa4: gpa,
-          curriculumStatus: curriculumResult === "PASS" ? "PASSED" : curriculumResult === "PENDING" ? "PENDING" : curriculumResult === "FAIL" ? "NOT_PASSED" : "NOT_AVAILABLE",
+          curriculumStatus: curriculumResult === "PASS" ? "PASSED" : curriculumResult === "FAIL" ? "NOT_PASSED" : "NOT_AVAILABLE",
           physicalEducationStatus: physicalStatus,
           nationalDefenseStatus: defenseStatus,
           foreignLanguageStatus: languageStatus,
@@ -757,9 +839,9 @@ export class GraduationEvaluationsService {
           disciplineStatus,
           legalStatus,
           wholeCourseTrainingScore: conductScore,
-          missingRequiredCourses: student.missingMandatoryCourses,
-          missingElectiveCredits: student.missingElectiveCredits,
-          pendingResultCourses: student.pendingResultCourses,
+          missingRequiredCourses: forecast.missingRequiredCourses.length,
+          missingElectiveCredits: forecast.requirements.electives.remainingCredits,
+          pendingResultCourses: forecast.noScoreCourses.length,
           finalStatus: status,
           needsManualReview,
           reasons: reasons as unknown as Prisma.InputJsonValue,
@@ -929,146 +1011,181 @@ export class GraduationEvaluationsService {
     const storedGrades = Array.isArray(student.gradeSnapshot)
       ? student.gradeSnapshot as Array<Record<string, unknown>>
       : [];
-    const [details, completionDetail, liveGrades] = await Promise.all([
+    const sourceSnapshot = evaluation.sourceSnapshot as Record<string, unknown> | null;
+    const hasFullSnapshot = sourceSnapshot?.calculationVersion === "curriculum-gap-v2" &&
+      Array.isArray(sourceSnapshot.curriculum) && Array.isArray(sourceSnapshot.schedule);
+    const studentProgram = student.sProgramCode
+      ? await prisma.trainingProgram.findFirst({ where: { sProgramCode: student.sProgramCode, deletedAt: null } })
+      : null;
+    const programId = studentProgram?.id ?? evaluation.trainingProgramId;
+    const [details, liveGrades, programCourses, plans] = await Promise.all([
       prisma.graduationEvaluationDetail.findMany({
         where: { evaluationStudentId: student.id },
         orderBy: [{ category: "asc" }, { ruleCode: "asc" }],
       }),
-      evaluation.completionRunId
-        ? TrainingProgressService.getCompletionStudentDetail(evaluation.completionRunId, student.studentId)
-        : null,
-      storedGrades.length === 0 ? GradesService.list(student.studentId) : Promise.resolve([]),
+      !hasFullSnapshot && storedGrades.length === 0 ? GradesService.list(student.studentId) : Promise.resolve([]),
+      hasFullSnapshot ? Promise.resolve([]) : prisma.trainingProgramCourse.findMany({ where: { trainingProgramId: programId } }),
+      hasFullSnapshot ? Promise.resolve([]) : prisma.trainingProgressPlan.findMany({
+        where: { cohortId: evaluation.cohortId, trainingProgramId: programId, status: "locked", isCurrent: true },
+        orderBy: [{ curriculumSemesterNo: "asc" }, { version: "desc" }],
+      }),
     ]);
-    const grades = (storedGrades.length > 0 ? storedGrades : liveGrades) as Awaited<ReturnType<typeof GradesService.list>>;
-
-    const gradeByCourseCode = new Map<string, (typeof grades)[number]>();
-    for (const g of grades) {
-      if (g.courseCode) gradeByCourseCode.set(g.courseCode.toUpperCase(), g);
+    const grades = (hasFullSnapshot || storedGrades.length > 0 ? storedGrades : liveGrades) as Awaited<ReturnType<typeof GradesService.list>>;
+    const planIds = plans.map((plan) => plan.id);
+    const termIds = [...new Set(plans.map((plan) => plan.academicTermId))];
+    const [courseCatalog, planCourses, terms] = hasFullSnapshot
+      ? [[], [], []]
+      : await Promise.all([
+          programCourses.length
+            ? prisma.course.findMany({ where: { id: { in: programCourses.map((course) => course.courseId) } } })
+            : Promise.resolve([]),
+          planIds.length
+            ? prisma.trainingProgressPlanCourse.findMany({ where: { planId: { in: planIds } } })
+            : Promise.resolve([]),
+          termIds.length
+            ? prisma.academicTerm.findMany({ where: { id: { in: termIds } } })
+            : Promise.resolve([]),
+        ]);
+    const years = terms.length
+      ? await prisma.academicYear.findMany({ where: { id: { in: terms.map((term) => term.academicYearId) } } })
+      : [];
+    const catalogById = new Map(courseCatalog.map((course) => [course.id, course]));
+    const termById = new Map(terms.map((term) => [term.id, term]));
+    const yearById = new Map(years.map((year) => [year.id, year]));
+    const electiveDetail = details.find((detail) => detail.ruleCode === "ELECTIVE_CREDITS");
+    const totalDetail = details.find((detail) => detail.ruleCode === "TOTAL_CREDITS");
+    const parseThreshold = (value: string | null | undefined) => {
+      const match = value?.match(/\d+(?:\.\d+)?/);
+      return match ? Number(match[0]) : null;
+    };
+    const electiveMinimum = parseThreshold(electiveDetail?.requiredValue);
+    const forecast = buildGraduationForecast({
+      courses: hasFullSnapshot ? sourceSnapshot.curriculum as ForecastCourse[] : studentProgram ? programCourses.flatMap((item) => {
+        const course = catalogById.get(item.courseId);
+        if (!course || isExcludedFromGraduationCredits(course.sCourseCode, course.sCourseName)) return [];
+        return [{ courseId: item.courseId, courseCode: course.sCourseCode, courseName: course.sCourseName,
+          credits: item.sCredits, requirementType: item.sRequirementType, semesterNo: item.sSemesterNo }];
+      }) : [],
+      grades,
+      requiredElectiveCredits: electiveMinimum,
+      requiredTotalCredits: parseThreshold(totalDetail?.requiredValue),
+      requiredCompulsoryCredits: parseThreshold(details.find((detail) => detail.ruleCode === "COMPULSORY_CREDITS")?.requiredValue),
+      schedule: hasFullSnapshot ? sourceSnapshot.schedule as ForecastSchedule[] : planCourses.flatMap((course) => {
+        const plan = plans.find((item) => item.id === course.planId);
+        const term = plan ? termById.get(plan.academicTermId) : null;
+        const year = term ? yearById.get(term.academicYearId) : null;
+        if (!plan || !term || !year) return [];
+        return [{
+          courseId: course.courseId,
+          courseCode: course.sCourseCode,
+          courseName: course.sCourseName,
+          academicYear: year.sYearCode,
+          termCode: term.sTermCode,
+          semesterNo: plan.curriculumSemesterNo,
+          choiceGroupCode: course.choiceGroupCode,
+          isProgramFinal: plan.is_program_final,
+        }];
+      }),
+    });
+    if (!hasFullSnapshot && !studentProgram && student.sProgramCode) {
+      forecast.warnings.push("Không tìm thấy CTĐT theo mã của sinh viên; chưa thể tính tín chỉ tốt nghiệp.");
+    } else if (programId !== evaluation.trainingProgramId) {
+      forecast.warnings.push("CTĐT của sinh viên khác CTĐT của đợt đánh giá; kết quả đối chiếu cần xác minh.");
     }
 
-    const uniqueByCourseCode = <T extends { courseCode?: string | null }>(list: T[]): T[] => {
-      const seen = new Set<string>();
-      return list.filter((item) => {
-        const code = item.courseCode?.toUpperCase();
-        if (!code || seen.has(code)) return false;
-        seen.add(code);
-        return true;
-      });
+    const studentFormatted = {
+      ...student,
+      totalCredits: numberValue(student.totalCredits),
+      compulsoryCredits: numberValue(student.compulsoryCredits),
+      electiveCredits: numberValue(student.electiveCredits),
+      cumulativeGpa4: numberValue(student.cumulativeGpa4),
+      wholeCourseTrainingScore: numberValue(student.wholeCourseTrainingScore),
     };
 
-    const allCourses = completionDetail?.plans.flatMap((plan) => plan.courses.map((course) => {
-      const g = course.courseCode ? gradeByCourseCode.get(course.courseCode.toUpperCase()) : null;
-      return {
-        ...course,
-        curriculumSemesterNo: plan.curriculumSemesterNo,
-        gradeInfo: g ? {
-          score10: g.score10,
-          score4: g.score4,
-          letterGrade: g.letterGrade,
-          scoreStatus: g.scoreStatus,
-          isPassed: g.isPassed,
-          notScore: g.notScore,
-          academicYear: g.academicYear,
-          termCode: g.termCode,
-        } : null,
-      };
-    })) || [];
+    const curriculumInfo = studentProgram ? {
+      id: studentProgram.id,
+      programCode: studentProgram.sProgramCode,
+      programName: studentProgram.sProgramName,
+      degreeLevel: studentProgram.sDegreeLevel,
+      major: studentProgram.sMajor,
+      studyType: studentProgram.sStudyType,
+    } : {
+      programCode: student.sProgramCode || "UNKNOWN",
+      programName: student.sProgramCode ? `Chương trình ${student.sProgramCode}` : "Chưa xác định",
+      degreeLevel: "Đại học",
+      major: "Công nghệ thông tin",
+      studyType: "Chính quy",
+    };
 
-    const electiveRule = details.find((d) => d.ruleCode === "ELECTIVE_CREDITS");
-    const requiredElectiveCredits = electiveRule && electiveRule.requiredValue
-      ? Number(String(electiveRule.requiredValue).replace(/[^0-9.]/g, "")) || 46
-      : 46;
+    const completion = {
+      curriculumComplete: forecast.curriculumComplete,
+      requiredCredits: forecast.summary.requiredCredits,
+      completedCredits: forecast.summary.completedCredits,
+      remainingCredits: forecast.summary.remainingCredits,
+      completionPercent: forecast.summary.completionPercent,
+    };
 
-    const compulsoryRule = details.find((d) => d.ruleCode === "COMPULSORY_CREDITS");
-    const requiredCompulsoryCredits = compulsoryRule && compulsoryRule.requiredValue
-      ? Number(String(compulsoryRule.requiredValue).replace(/[^0-9.]/g, "")) || 104
-      : 104;
+    const requiredCourses = {
+      completed: forecast.requiredCoursesBreakdown.completed,
+      missing: forecast.requiredCoursesBreakdown.missing,
+      failed: forecast.requiredCoursesBreakdown.failed,
+      noScore: forecast.requiredCoursesBreakdown.noScore,
+    };
 
-    const studentElectiveCredits = numberValue(student.electiveCredits) ?? 0;
-    const studentCompulsoryCredits = numberValue(student.compulsoryCredits) ?? 0;
-
-    const isElectiveSatisfied = studentElectiveCredits >= requiredElectiveCredits;
-    const missingElectiveCredits = Math.max(0, requiredElectiveCredits - studentElectiveCredits);
-    const excessElectiveCredits = Math.max(0, studentElectiveCredits - requiredElectiveCredits);
-
-    // Filter pending courses (e.g. Practicum, Graduation Thesis, or current semester courses)
-    const pendingCourses = uniqueByCourseCode(allCourses.filter((c) => c.pendingResult));
-
-    // Mandatory courses analysis
-    const mandatoryCourses = allCourses.filter((c) => c.requirementType === "mandatory");
-    const unpassedMandatory = uniqueByCourseCode(mandatoryCourses.filter((c) => !c.passed && !c.pendingResult));
-    const failedMandatory = unpassedMandatory.filter(
-      (c) => Boolean(c.gradeInfo) && (c.gradeInfo?.isPassed === false || c.gradeInfo?.letterGrade === "F"),
-    );
-    const unregisteredMandatory = unpassedMandatory.filter(
-      (c) => !c.gradeInfo || (c.gradeInfo?.isPassed !== false && c.gradeInfo?.letterGrade !== "F"),
-    );
-
-    // Elective courses analysis
-    const electiveCourses = allCourses.filter((c) => c.requirementType !== "mandatory");
-    const unpassedElectives = uniqueByCourseCode(electiveCourses.filter((c) => !c.passed && !c.pendingResult));
-    const failedElectives = unpassedElectives.filter(
-      (c) => Boolean(c.gradeInfo) && (c.gradeInfo?.isPassed === false || c.gradeInfo?.letterGrade === "F"),
-    );
-    const unchosenElectives = unpassedElectives.filter(
-      (c) => !c.gradeInfo || (c.gradeInfo?.isPassed !== false && c.gradeInfo?.letterGrade !== "F"),
-    );
-
-    const electiveGroups = completionDetail?.plans.flatMap((plan) =>
-      Array.isArray(plan.choiceGroupResults)
-        ? (plan.choiceGroupResults as Array<Record<string, unknown>>).map((group) => ({
-            ...group,
-            curriculumSemesterNo: plan.curriculumSemesterNo,
-          }))
-        : [],
-    ) || [];
-
-    // For backwards compatibility: missingCourses should only contain mandatory missing courses
-    // plus elective options ONLY IF student has an elective credit deficit.
-    const missingCourses = isElectiveSatisfied
-      ? unpassedMandatory
-      : [...unpassedMandatory, ...unchosenElectives];
+    const graduationRequirements = details.map((detail) => ({
+      code: detail.ruleCode,
+      required: detail.requiredValue,
+      actual: detail.actualValue,
+      status: detail.result === "NOT_AVAILABLE" ? "UNKNOWN" : detail.result,
+      reason: detail.reason,
+    }));
 
     return {
+      // SPEC 14 standardized output:
+      student: studentFormatted,
+      curriculum: curriculumInfo,
+      completion,
+      requiredCourses,
+      electiveGroups: forecast.electiveGroups,
+      graduationRequirements,
+      finalStatus: student.finalStatus,
+      needsManualReview: student.needsManualReview,
+      reasons: Array.isArray(student.reasons) ? student.reasons : [],
+      warnings: forecast.warnings,
+
+      // Retain backward compatibility properties for existing UI:
       evaluation: {
         id: evaluation.id,
         evaluationCode: evaluation.evaluationCode,
         ruleVersion: evaluation.ruleVersion,
         sourceCapturedAt: evaluation.sourceCapturedAt,
-      },
-      student: {
-        ...student,
-        totalCredits: numberValue(student.totalCredits),
-        compulsoryCredits: studentCompulsoryCredits,
-        electiveCredits: studentElectiveCredits,
-        cumulativeGpa4: numberValue(student.cumulativeGpa4),
-        wholeCourseTrainingScore: numberValue(student.wholeCourseTrainingScore),
+        calculationVersion: (evaluation.sourceSnapshot as Record<string, unknown>)?.calculationVersion ?? null,
       },
       requirements: details,
-      missingCourses,
-      pendingCourses,
-      missingMandatoryCourses: unpassedMandatory,
+      missingCourses: [...forecast.missingRequiredCourses, ...forecast.electiveOptions],
+      pendingCourses: forecast.noScoreCourses,
+      missingMandatoryCourses: forecast.missingRequiredCourses,
       mandatoryAnalysis: {
-        requiredCredits: requiredCompulsoryCredits,
-        accumulatedCredits: studentCompulsoryCredits,
-        isSatisfied: studentCompulsoryCredits >= requiredCompulsoryCredits,
-        failedCourses: failedMandatory,
-        unregisteredCourses: unregisteredMandatory,
-        pendingCourses: pendingCourses.filter((c) => c.requirementType === "mandatory"),
+        requiredCredits: forecast.requirements.requiredCourses.requiredCredits,
+        accumulatedCredits: forecast.requirements.requiredCourses.completedCredits,
+        isSatisfied: forecast.requirements.requiredCourses.remaining === 0,
+        failedCourses: forecast.failedCourses.filter((course) => /bắt buộc|mandatory/i.test(course.requirementType)),
+        unregisteredCourses: forecast.missingRequiredCourses.filter((course) => course.state === "not_completed"),
+        pendingCourses: forecast.noScoreCourses.filter((course) => /bắt buộc|mandatory/i.test(course.requirementType)),
       },
       electiveAnalysis: {
-        requiredCredits: requiredElectiveCredits,
-        accumulatedCredits: studentElectiveCredits,
-        missingCredits: missingElectiveCredits,
-        excessCredits: excessElectiveCredits,
-        isSatisfied: isElectiveSatisfied,
-        failedCourses: failedElectives,
-        availableOptions: unchosenElectives,
-        groups: electiveGroups,
+        requiredCredits: forecast.requirements.electives.requiredCredits,
+        accumulatedCredits: forecast.requirements.electives.passedCredits,
+        missingCredits: forecast.requirements.electives.remainingCredits,
+        excessCredits: forecast.requirements.electives.excessCredits,
+        isSatisfied: forecast.requirements.electives.remainingCredits === 0,
+        failedCourses: forecast.failedCourses.filter((course) => /tự chọn|elective/i.test(course.requirementType)),
+        availableOptions: forecast.electiveOptions,
+        groups: forecast.electiveGroups,
       },
-      electiveGroups,
       grades,
-      gradeDataSource: storedGrades.length > 0 ? "evaluation_snapshot" : "live_fallback",
+      gradeDataSource: hasFullSnapshot || storedGrades.length > 0 ? "evaluation_snapshot" : "live_fallback",
+      forecast,
     };
   }
 }

@@ -243,3 +243,153 @@ export function formatDateTime(value?: string | null) {
 export function shortRunId(id: string) {
   return `RUN-${id.slice(0, 8).toUpperCase()}`;
 }
+
+export type CourseProgressStatus = "PASSED" | "FAILED" | "NO_SCORE" | "NOT_COMPLETED";
+export type CourseTimelineCategory = "PAST_DUE" | "CURRENT_PLAN" | "FUTURE" | "AHEAD";
+
+export interface StudentProgressCourseItem {
+  courseId: string;
+  courseCode: string;
+  courseName: string;
+  credits: number;
+  requirementType: string;
+  semesterNo: number;
+  choiceGroupCode?: string | null;
+  status: CourseProgressStatus;
+  timelineCategory?: CourseTimelineCategory | null;
+  attemptCount?: number;
+  latestScore10?: number | null;
+  latestScore4?: number | null;
+  latestLetterCode?: string | null;
+  passedAcademicYear?: string | null;
+  passedTermCode?: string | null;
+}
+
+export interface StudentProgressElectiveGroup {
+  code: string;
+  groupCode: string;
+  groupName?: string;
+  requiredCredits: number | null;
+  passedCredits?: number;
+  earnedCredits?: number;
+  creditedCredits: number | null;
+  remainingCredits: number | null;
+  extraCredits: number;
+  status: "PASS" | "FAIL" | "UNKNOWN" | "SUFFICIENT" | "DEFICIENT" | "UNKNOWN_REQUIREMENT";
+  courses: StudentProgressCourseItem[];
+}
+
+export interface StudentProgressAttentionItem {
+  courseCode: string;
+  courseName?: string | null;
+  credits?: number | null;
+  reason?: string;
+  status?: string;
+  semesterNo?: number | null;
+  attemptCount?: number;
+  latestScore10?: number | null;
+  latestLetterCode?: string | null;
+  score10?: number | null;
+  letterCode?: string | null;
+}
+
+export interface StudentProgressSemesterItem {
+  semesterNo: number;
+  yearStudy: number;
+  termNo: number;
+  name: string;
+  semesterLabel?: string;
+  yearLabel?: string;
+  requiredCredits: number;
+  plannedCredits?: number;
+  completedCredits: number;
+  remainingCredits?: number;
+  completionPercentage?: number;
+  completedCourses?: number;
+  failedCourses?: number;
+  noScoreCourses?: number;
+  notCompletedCourses?: number;
+  status?: string;
+  isFullyCompleted?: boolean;
+  isPastDue?: boolean;
+  isCurrentBenchmark?: boolean;
+  isFuture?: boolean;
+  courses: StudentProgressCourseItem[];
+}
+
+export interface StudentTrainingProgressData {
+  student: {
+    id: string;
+    studentCode: string;
+    fullName: string;
+    classCode?: string | null;
+    className?: string | null;
+    cohortCode?: string | null;
+    programCode?: string | null;
+  };
+  curriculum: {
+    programId?: string | null;
+    programCode: string | null;
+    programName?: string | null;
+    totalCourses: number;
+    totalCurriculumCredits?: number;
+    totalCreditsInCurriculum?: number;
+  };
+  summary: {
+    requiredCredits: number | null;
+    completedCredits: number;
+    remainingCredits?: number | null;
+    progressPercent?: number | null;
+    completionPercentage?: number | null;
+    completedCourses?: number;
+    passedCoursesCount?: number;
+    failedCourses?: number;
+    failedCoursesCount?: number;
+    noScoreCourses?: number;
+    noScoreCoursesCount?: number;
+    notCompletedCourses?: number;
+    notCompletedCoursesCount?: number;
+    unmatchedCoursesCount?: number;
+    overdueCredits?: number;
+    aheadCredits?: number;
+    currentCredits?: number;
+  };
+  scheduleProgress: {
+    currentAcademicYear?: string;
+    currentTermCode?: string;
+    expectedYear?: number;
+    expectedSemester?: number;
+    expectedSemesterNo?: number;
+    currentBenchmarkSemester?: number | null;
+    benchmarkLabel?: string;
+    lastCompletedSemester?: number;
+    lastFullyCompletedSemester?: number | null;
+    progressGap?: number;
+    isOnTrack: boolean;
+    isBehind: boolean;
+    isAhead: boolean;
+    overdueCredits?: number;
+    currentPlanCredits?: number;
+    aheadCredits?: number;
+    tags?: Array<"ON_TRACK" | "BEHIND" | "AHEAD">;
+  };
+  semesters: StudentProgressSemesterItem[];
+  courseStatus?: {
+    passed: StudentProgressCourseItem[];
+    failed: StudentProgressCourseItem[];
+    noScore: StudentProgressCourseItem[];
+    notCompleted: StudentProgressCourseItem[];
+    pastDue: StudentProgressCourseItem[];
+    future: StudentProgressCourseItem[];
+    unmatched: StudentProgressAttentionItem[];
+  };
+  attentionCourses?: {
+    failedCourses: StudentProgressAttentionItem[];
+    noScoreCourses: StudentProgressAttentionItem[];
+    pastDueCourses: StudentProgressAttentionItem[];
+    unmatchedCourses: StudentProgressAttentionItem[];
+  };
+  electiveGroups: StudentProgressElectiveGroup[];
+  warnings: Array<{ code: string; message: string }>;
+}
+

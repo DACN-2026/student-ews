@@ -5,6 +5,7 @@ import { ReportsService } from "@/lib/services/reports";
 
 export interface StudentFilter {
   search?: string;
+  cohortId?: string;
   classStudentId?: string;
   isInClass?: boolean;
   gender?: string;
@@ -46,6 +47,26 @@ export class StudentsService {
         { sStudentId: { contains: q, mode: "insensitive" } },
         { sFullName: { contains: q, mode: "insensitive" } },
       ];
+    }
+
+    if (filter.cohortId) {
+      let cohortUuid = filter.cohortId;
+      const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(filter.cohortId);
+      if (!isGuid) {
+        const cohortRecord = await prisma.cohort.findFirst({
+          where: { sCohortCode: filter.cohortId, deletedAt: null },
+          select: { id: true },
+        });
+        if (cohortRecord) {
+          cohortUuid = cohortRecord.id;
+        }
+      }
+      const cohortClasses = await prisma.class.findMany({
+        where: { cohortId: cohortUuid, deletedAt: null },
+        select: { classId: true },
+      });
+      const classCodes = cohortClasses.map((c) => c.classId);
+      where.sClassStudentId = { in: classCodes };
     }
 
     if (filter.classStudentId) {
@@ -116,8 +137,34 @@ export class StudentsService {
       });
     }
 
+    // Resolve class and cohort metadata
+    const classIds = Array.from(new Set(items.map((s) => s.sClassStudentId).filter(Boolean) as string[]));
+    const classes = classIds.length
+      ? await prisma.class.findMany({
+          where: { classId: { in: classIds }, deletedAt: null },
+          select: { classId: true, className: true, cohortId: true },
+        })
+      : [];
+    const cohortIds = Array.from(new Set(classes.map((c) => c.cohortId).filter(Boolean) as string[]));
+    const cohorts = cohortIds.length
+      ? await prisma.cohort.findMany({
+          where: { id: { in: cohortIds }, deletedAt: null },
+          select: { id: true, sCohortCode: true, sCohortName: true },
+        })
+      : [];
+    const cohortMap = new Map(cohorts.map((c) => [c.id, c.sCohortCode]));
+    const classMap = new Map(
+      classes.map((c) => [
+        c.classId,
+        {
+          className: c.className,
+          cohortCode: c.cohortId ? cohortMap.get(c.cohortId) : null,
+        },
+      ])
+    );
+
     return {
-      items: items.map((s) => mapStudent(s, warningMap.get(s.id))),
+      items: items.map((s) => mapStudent(s, warningMap.get(s.id), s.sClassStudentId ? classMap.get(s.sClassStudentId) : undefined)),
       total,
       page,
       pageSize,
@@ -351,7 +398,7 @@ export class StudentsService {
       where: { deletedAt: null, AND: [scope] },
       orderBy: { sStudentId: "asc" },
     });
-    return items.map(mapStudent);
+    return items.map((s) => mapStudent(s));
   }
 
   static async importBatch(items: StudentUpsertInput[], scope: Prisma.StudentWhereInput = {}) {
@@ -413,7 +460,11 @@ export class StudentsService {
   }
 }
 
-function mapStudent(s: any, warningResult?: any) {
+function mapStudent(
+  s: any,
+  warningResult?: any,
+  classMeta?: { className?: string | null; cohortCode?: string | null }
+) {
   let warningLevel: "red" | "yellow" | "green" = "green";
   if (warningResult?.maxSeverity === "high") {
     warningLevel = "red";
@@ -435,8 +486,9 @@ function mapStudent(s: any, warningResult?: any) {
     permanentResidence: s.sPermanentResidence,
     isInClass: s.sIsInClass,
     classStudentId: s.sClassStudentId,
-    className: s.sClassStudentId,
+    className: classMeta?.className || s.sClassStudentId,
     classId: s.sClassStudentId,
+    cohortCode: classMeta?.cohortCode || null,
     studyProgramId: s.sStudyProgramId,
     warningLevel,
     warningInfo: warningResult ? {

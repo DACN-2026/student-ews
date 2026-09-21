@@ -10,6 +10,7 @@ import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
 import Modal from "@/components/ui/Modal";
 import { useAuthStore } from "@/stores/authStore";
 import { apiFetch } from "@/lib/api-client";
+import StudentProgressDetail from "@/components/training-progress/StudentProgressDetail";
 
 type ActiveTab = "overview" | "conduct" | "grades" | "decisions" | "fee_policies" | "registrations" | "training_plan" | "warnings";
 
@@ -267,11 +268,6 @@ export default function StudentDetailPage() {
   const passedCourseCodes = new Set(
     gradesData.filter((grade: ApiData) => grade.isPassed).map((grade: ApiData) => grade.courseCode),
   );
-  const plannedCredits = trainingPlanData.reduce((total: number, course: ApiData) => total + Number(course.credits || 0), 0);
-  const completedPlanCredits = trainingPlanData.reduce(
-    (total: number, course: ApiData) => total + (passedCourseCodes.has(course.courseCode) ? Number(course.credits || 0) : 0),
-    0,
-  );
 
   // GPA Trend data from summaries
   const gpaTrend = (summariesData?.terms || [])
@@ -415,17 +411,17 @@ export default function StudentDetailPage() {
       {/* 6 Nav Tabs */}
       <div className="flex items-center space-x-1 border-b border-[var(--color-border)] overflow-x-auto scrollbar-hide">
         {[
-          { id: "overview", label: "1. Tổng quan", icon: "📊" },
-          { id: "conduct", label: "2. Rèn luyện", icon: "🌱" },
-          { id: "grades", label: "3. Điểm học phần", icon: "📝" },
-          { id: "decisions", label: "4. Quyết định", icon: "📜" },
-          { id: "fee_policies", label: "5. Chính sách học phí", icon: "💰" },
-          { id: "registrations", label: "6. Đăng ký học phần", icon: "📚" },
-          { id: "training_plan", label: "7. Kế hoạch đào tạo", icon: "🎯" },
+          { id: "overview", label: "1. Tổng quan" },
+          { id: "conduct", label: "2. Rèn luyện" },
+          { id: "grades", label: "3. Điểm học phần" },
+          { id: "decisions", label: "4. Quyết định" },
+          { id: "fee_policies", label: "5. Chính sách học phí" },
+          { id: "registrations", label: "6. Đăng ký học phần" },
+          { id: "training_plan", label: "7. Kế hoạch đào tạo" },
           {
             id: "warnings",
             label: "8. Cảnh báo học vụ",
-            icon: "⚠️",
+            
             badge: (student?.warningHistory?.length || (student?.warningLevel && student.warningLevel !== "green")) ? "!" : undefined,
           },
         ].map((t) => (
@@ -439,8 +435,12 @@ export default function StudentDetailPage() {
             }`}
             style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
-            <span>{t.icon}</span>
             <span>{t.label}</span>
+            {t.badge && (
+              <span className="rounded-full bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
+                {t.badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -1091,74 +1091,10 @@ export default function StudentDetailPage() {
       {/* 6. Training plan tab */}
       {activeTab === "training_plan" && (
         <div className="space-y-5">
-          <section className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs">
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                  Khung chương trình đào tạo
-                </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  {student?.program?.name || sProgram} · đối chiếu với kết quả học phần hiện có
-                </p>
-              </div>
-              <div className="flex gap-2 overflow-x-auto">
-                <div className="min-w-28 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
-                  <span className="block text-[10px] text-slate-500">Học phần CTĐT</span>
-                  <strong className="font-mono text-lg text-slate-900">{trainingPlanData.length}</strong>
-                </div>
-                <div className="min-w-28 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
-                  <span className="block text-[10px] text-slate-500">Tín chỉ kế hoạch</span>
-                  <strong className="font-mono text-lg text-slate-900">{plannedCredits}</strong>
-                </div>
-                <div className="min-w-28 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
-                  <span className="block text-[10px] text-emerald-700">Đã đạt trong CTĐT</span>
-                  <strong className="font-mono text-lg text-emerald-800">{completedPlanCredits}</strong>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-semibold text-slate-500 uppercase">
-                    <th className="py-3 px-3">HK kế hoạch</th>
-                    <th className="py-3 px-3">Mã HP</th>
-                    <th className="py-3 px-3">Tên học phần</th>
-                    <th className="py-3 px-3">TC</th>
-                    <th className="py-3 px-3">Loại</th>
-                    <th className="py-3 px-3">Kết quả</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {trainingPlanData.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-10 text-center text-slate-400">
-                        Chưa có khung học phần cho chương trình này.
-                      </td>
-                    </tr>
-                  ) : trainingPlanData.map((course: ApiData) => {
-                    const passed = passedCourseCodes.has(course.courseCode);
-                    return (
-                      <tr key={course.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3 px-3 text-slate-600">Học kỳ {course.semesterNo}</td>
-                        <td className="py-3 px-3 font-mono font-bold text-slate-900">{course.courseCode}</td>
-                        <td className="py-3 px-3 font-medium text-slate-800">{course.courseName}</td>
-                        <td className="py-3 px-3 font-mono">{course.credits}</td>
-                        <td className="py-3 px-3 text-slate-600">{course.requirementType || "—"}</td>
-                        <td className="py-3 px-3">
-                          <span className={`inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold ${
-                            passed ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
-                          }`}>
-                            {passed ? "Đã đạt" : "Chưa đạt"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
+          <StudentProgressDetail
+            studentId={studentId}
+            showStudentHeader={false}
+          />
         </div>
       )}
 

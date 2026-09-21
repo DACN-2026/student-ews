@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
 
     const filter = {
       search: searchParams.get("q") || searchParams.get("search") || undefined,
+      cohortId: searchParams.get("cohortId") || searchParams.get("cohort_id") || undefined,
       classStudentId: searchParams.get("class_student_id") || searchParams.get("classStudentId") || undefined,
       gender: searchParams.get("gender") || undefined,
       studyProgramId: searchParams.get("studyProgramId") || undefined,

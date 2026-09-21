@@ -21,6 +21,7 @@ import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import Modal from "@/components/ui/Modal";
 import { toast } from "@/components/ui/Toast";
+import StudentProgressDetail from "./StudentProgressDetail";
 import type {
   AcademicYearOption,
   CohortOption,
@@ -960,11 +961,11 @@ export default function CompletionProgressTab() {
         </div>
       </Modal>
 
-      {/* Modal: Requirement Tree of a Student */}
+      {/* Modal: Student Training Progress Detail */}
       <Modal
         isOpen={Boolean(selectedStudent) || studentLoading}
         onClose={() => setSelectedStudent(null)}
-        title={selectedStudent ? `Cây yêu cầu CTĐT: ${selectedStudent.studentName}` : "Cây yêu cầu CTĐT"}
+        title={selectedStudent ? `Tiến độ đào tạo: ${selectedStudent.studentName}` : "Tiến độ đào tạo"}
         description={
           selectedStudent
             ? `MSSV: ${selectedStudent.studentId} • Lớp: ${selectedStudent.className || selectedStudent.classId || "Chưa có"} • CTĐT: ${selectedStudent.programCode || "CNTT"}`
@@ -975,10 +976,17 @@ export default function CompletionProgressTab() {
         {studentLoading && !selectedStudent ? (
           <div className="flex min-h-48 items-center justify-center gap-2 text-sm text-slate-500">
             <LoaderCircle size={20} className="animate-spin text-lime-600" />
-            Đang tổng hợp cây yêu cầu học phần...
+            Đang tổng hợp tiến độ đào tạo sinh viên...
           </div>
         ) : (
-          selectedStudent && <RequirementTree student={selectedStudent} />
+          selectedStudent && (
+            <div className="py-2">
+              <StudentProgressDetail
+                studentId={selectedStudent.studentUuid || selectedStudent.studentId}
+                showStudentHeader={false}
+              />
+            </div>
+          )
         )}
       </Modal>
     </div>

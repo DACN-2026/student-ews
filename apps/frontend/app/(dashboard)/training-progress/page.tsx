@@ -1,29 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { ClipboardCheck, GraduationCap } from "lucide-react";
-import Tabs from "@/components/ui/Tabs";
-import CompletionProgressTab from "@/components/training-progress/CompletionProgressTab";
-import RegistrationProgressTab from "@/components/training-progress/RegistrationProgressTab";
-
-type ActiveTab = "registration" | "completion";
-
-const tabs = [
-  {
-    id: "registration",
-    label: "Kiểm tra đăng ký môn học theo kỳ",
-    icon: <ClipboardCheck aria-hidden="true" size={16} />,
-  },
-  {
-    id: "completion",
-    label: "Tiến độ tích lũy toàn khóa",
-    icon: <GraduationCap aria-hidden="true" size={16} />,
-  },
-];
+import StudentProgressLookupTab from "@/components/training-progress/StudentProgressLookupTab";
 
 export default function TrainingProgressPage() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("registration");
-
   return (
     <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
       {/* Clean page header without heavy boxing */}
@@ -40,22 +19,15 @@ export default function TrainingProgressPage() {
             Theo dõi Tiến độ Đào tạo
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Rà soát học phần sinh viên đăng ký theo từng học kỳ và đánh giá điều kiện tích lũy toàn khóa.
+            Theo dõi sinh viên đang đi tới đâu trong chương trình đào tạo, đánh giá học phần đạt, nợ, học trước và chỉ tiêu tự chọn.
           </p>
         </div>
       </div>
 
-      {/* Clean Tab Bar */}
-      <div className="border-b border-slate-200">
-        <Tabs
-          tabs={tabs}
-          activeTab={activeTab}
-          onChange={(tabId) => setActiveTab(tabId as ActiveTab)}
-        />
-      </div>
-
-      {/* Active Tab View */}
-      {activeTab === "registration" ? <RegistrationProgressTab /> : <CompletionProgressTab />}
+      {/* Active Main View */}
+      <StudentProgressLookupTab />
     </main>
   );
 }
+
+

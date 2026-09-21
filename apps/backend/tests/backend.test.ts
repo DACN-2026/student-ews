@@ -29,7 +29,9 @@ import {
   safeExportStem,
   workbookBuffer,
 } from "../lib/services/export";
-import { isExcludedFromGraduationCredits, resolveGraduationStatus } from "../lib/services/graduation-evaluations";
+import { isApplicableGraduationRule, isExcludedFromGraduationCredits, resolveGraduationStatus } from "../lib/services/graduation-evaluations";
+import { buildGraduationForecast, normalizeCourseCode } from "../lib/services/graduation-forecast";
+import { evaluateStudentTrainingProgress } from "../lib/services/student-training-progress";
 
 const IDS = {
   student: "11111111-1111-4111-8111-111111111111",
@@ -83,7 +85,7 @@ test("graduation status uses the documented conservative priority", () => {
     { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
     { ruleCode: "20CT4202", result: "PENDING" },
     { ruleCode: "CUMULATIVE_GPA", result: "PASS" },
-  ]), "PENDING_GRADE");
+  ]), "PENDING_REQUIREMENT");
   assert.equal(resolveGraduationStatus([
     { ruleCode: "PROGRAM_COMPLETION", result: "PASS" },
     { ruleCode: "FOREIGN_LANGUAGE", result: "PENDING" },
@@ -108,11 +110,133 @@ test("graduation status uses the documented conservative priority", () => {
   ]), "EXPECTED_ELIGIBLE");
 });
 
+test("K44 global credit thresholds do not apply to a different program", () => {
+  const scope = { trainingProgramId: "cq25-id", cohortId: "k49-id" };
+  assert.equal(isApplicableGraduationRule({ ruleCode: "TOTAL_CREDITS", trainingProgramId: null, cohortId: null }, scope), false);
+  assert.equal(isApplicableGraduationRule({ ruleCode: "ELECTIVE_CREDITS", trainingProgramId: "cq22-id", cohortId: null }, scope), false);
+  assert.equal(isApplicableGraduationRule({ ruleCode: "TOTAL_CREDITS", trainingProgramId: "cq25-id", cohortId: null }, scope), true);
+});
+
 test("graduation credit calculation excludes physical education and national defense", () => {
   assert.equal(isExcludedFromGraduationCredits("TC1001", "Giáo dục thể chất 1"), true);
   assert.equal(isExcludedFromGraduationCredits("QP1001", "Giáo dục quốc phòng"), true);
   assert.equal(isExcludedFromGraduationCredits("20CT4201", "Thực tập nghề nghiệp"), false);
   assert.equal(isExcludedFromGraduationCredits("20CT4202", "Đồ án tốt nghiệp"), false);
+});
+
+test("graduation forecast handles missing, pass, fail, no score, repeats and duplicate curriculum rows", () => {
+  const courses = [
+    { courseId: "a", courseCode: "A", courseName: "Môn A", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    { courseId: "b", courseCode: "B", courseName: "Môn B", credits: 4, requirementType: "mandatory", semesterNo: 2 },
+    { courseId: "c", courseCode: "C", courseName: "Môn C", credits: 2, requirementType: "mandatory", semesterNo: 3 },
+    { courseId: "d", courseCode: "D", courseName: "Môn D", credits: 1, requirementType: "mandatory", semesterNo: 4 },
+  ];
+  const forecast = buildGraduationForecast({
+    courses: [...courses, { ...courses[0] }],
+    grades: [
+      { courseCode: "B", isPassed: false, scoreStatus: "graded", score10: 3 },
+      { courseCode: "B", isPassed: true, scoreStatus: "graded", score10: 6 },
+      { courseCode: "B", isPassed: true, scoreStatus: "graded", score10: 6 },
+      { courseCode: "C", isPassed: false, scoreStatus: "graded", letterGrade: "F" },
+      { courseCode: "D", isPassed: false, scoreStatus: "pending", notScore: true },
+      { courseCode: "X", courseName: "Ngoài CTĐT", isPassed: true, scoreStatus: "graded" },
+    ],
+    requiredElectiveCredits: 0,
+    requiredTotalCredits: 10,
+  });
+  assert.equal(forecast.summary.requiredCredits, 10);
+  assert.equal(forecast.summary.completedCredits, 4);
+  assert.deepEqual(forecast.missingRequiredCourses.map((course) => course.courseCode), ["A", "C", "D"]);
+  assert.deepEqual(forecast.failedCourses.map((course) => course.courseCode), ["C"]);
+  assert.deepEqual(forecast.noScoreCourses.map((course) => course.courseCode), ["D"]);
+  assert.equal(forecast.unmatchedGrades.length, 1);
+});
+
+test("graduation forecast caps elective credits and uses configured minimum", () => {
+  const courses = ["E1", "E2", "E3", "E4"].map((code) => ({ courseId: code, courseCode: code, courseName: code, credits: 3, requirementType: "elective", semesterNo: 2 }));
+  const grades = ["E1", "E2", "E3"].map((courseCode) => ({ courseCode, isPassed: true, scoreStatus: "graded" }));
+  const complete = buildGraduationForecast({ courses, grades, requiredElectiveCredits: 6 });
+  assert.equal(complete.requirements.electives.completedCredits, 6);
+  assert.equal(complete.requirements.electives.remainingCredits, 0);
+  assert.equal(complete.requirements.electives.excessCredits, 3);
+  assert.equal(complete.electiveOptions.length, 0);
+  const short = buildGraduationForecast({ courses, grades: grades.slice(0, 1), requiredElectiveCredits: 6 });
+  assert.equal(short.requirements.electives.remainingCredits, 3);
+  assert.equal(short.electiveOptions.length, 3);
+  const unspecified = buildGraduationForecast({ courses, grades });
+  assert.equal(unspecified.summary.remainingCredits, null);
+});
+
+test("course matching uses exact normalized code, then unique normalized name without guessing suffixes", () => {
+  const courses = [{ courseId: "one", courseCode: "20CT4105D", courseName: "Cơ sở dữ liệu", credits: 3, requirementType: "mandatory", semesterNo: 5 }];
+  assert.notEqual(normalizeCourseCode("20CT4105D"), normalizeCourseCode("20CT4105"));
+  const forecast = buildGraduationForecast({
+    courses,
+    grades: [{ courseCode: "20CT4105", courseName: "  CƠ SỞ   DỮ LIỆU ", isPassed: true, scoreStatus: "graded" }],
+    schedule: [{ courseCode: "20CT4105", courseName: "Cơ sở dữ liệu", academicYear: "2026-2027", termCode: "HK2", semesterNo: 5 }],
+    requiredElectiveCredits: 0,
+    requiredTotalCredits: 3,
+  });
+  assert.equal(forecast.summary.completedCredits, 3);
+  assert.equal(forecast.unmatchedGrades.length, 0);
+});
+
+test("different curriculum codes with the same name are not silently treated as equivalent", () => {
+  const forecast = buildGraduationForecast({
+    courses: [
+      { courseId: "old", courseCode: "OLD", courseName: "Toán rời rạc", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "new", courseCode: "NEW", courseName: "Toán rời rạc", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    ],
+    grades: [{ courseCode: "NEW", courseName: "Toán rời rạc", isPassed: true, scoreStatus: "graded" }],
+    requiredElectiveCredits: 0,
+    requiredTotalCredits: 6,
+  });
+  assert.equal(forecast.summary.requiredCredits, 6);
+  assert.equal(forecast.summary.completedCredits, 3);
+  assert.equal(forecast.warnings.length, 1);
+});
+
+test("graduation forecast groups only configured elective minima and schedules missing final courses", () => {
+  const forecast = buildGraduationForecast({
+    courses: [
+      { courseId: "final", courseCode: "F", courseName: "Final", credits: 4, requirementType: "mandatory", semesterNo: 8 },
+      { courseId: "e1", courseCode: "E1", courseName: "Elective 1", credits: 3, requirementType: "elective", semesterNo: 8 },
+      { courseId: "e2", courseCode: "E2", courseName: "Elective 2", credits: 3, requirementType: "elective", semesterNo: 8 },
+    ],
+    grades: [{ courseCode: "E1", isPassed: true, scoreStatus: "graded" }],
+    requiredElectiveCredits: 6,
+    schedule: [
+      { courseId: "final", academicYear: "2027-2028", termCode: "HK2", semesterNo: 8, isProgramFinal: true },
+      { courseId: "e1", academicYear: "2027-2028", termCode: "HK2", semesterNo: 8, choiceGroupCode: "SPECIALIZED:6" },
+      { courseId: "e2", academicYear: "2027-2028", termCode: "HK2", semesterNo: 8, choiceGroupCode: "SPECIALIZED:6" },
+    ],
+  });
+  assert.equal(forecast.electiveGroups[0].remainingCredits, 3);
+  assert.deepEqual(forecast.graduationRequirements.map((course) => course.courseCode), ["F"]);
+  assert.deepEqual(forecast.remainingBySemester[0].courses.map((course) => course.courseCode), ["F"]);
+});
+
+test("elective credits from an overfilled group cannot cover another group's shortfall", () => {
+  const courses = ["A1", "B1", "B2", "B3"].map((code) => ({ courseId: code, courseCode: code, courseName: code, credits: 3, requirementType: "elective", semesterNo: 4 }));
+  const schedule = courses.map((course) => ({ courseId: course.courseId, academicYear: "2026-2027", termCode: "HK1", semesterNo: 4,
+    choiceGroupCode: course.courseCode.startsWith("A") ? "A:6" : "B:6" }));
+  const forecast = buildGraduationForecast({ courses, schedule, requiredElectiveCredits: 12,
+    grades: ["A1", "B1", "B2", "B3"].map((courseCode) => ({ courseCode, isPassed: true, scoreStatus: "graded" })) });
+  assert.equal(forecast.requirements.electives.passedCredits, 12);
+  assert.equal(forecast.requirements.electives.completedCredits, 9);
+  assert.equal(forecast.requirements.electives.remainingCredits, 3);
+});
+
+test("incomplete curriculum coverage does not publish a precise remaining total", () => {
+  const forecast = buildGraduationForecast({
+    courses: [{ courseId: "m", courseCode: "M", courseName: "Mandatory", credits: 3, requirementType: "mandatory", semesterNo: 1 }],
+    grades: [{ courseCode: "M", isPassed: true, scoreStatus: "graded" }],
+    requiredElectiveCredits: 6,
+    requiredTotalCredits: 9,
+  });
+  assert.equal(forecast.summary.requiredCredits, 9);
+  assert.equal(forecast.summary.remainingCredits, null);
+  assert.ok(forecast.warnings.some((warning) => warning.includes("không đủ")));
 });
 
 test("Phase 3 export helpers produce real XLSX/PDF files and safe names", async () => {
@@ -710,4 +834,290 @@ test("curriculum import deduplicates redundant courses by prioritizing real stud
   const mobile = result.find((c: Record<string, unknown>) => c.TenHP === "Phát triển ứng dụng di động");
   assert.equal(mobile.MaHP, "20CT3132D");
   assert.equal(mobile.HocKy, "Học kỳ 6");
+});
+
+// ============================================================================
+// STUDENT TRAINING PROGRESS SPEC TESTS: TC01 - TC15
+// ============================================================================
+
+const defaultTimeline = {
+  currentAcademicYear: "2026-2027",
+  currentTermCode: "HK01",
+  expectedYear: 2,
+  expectedSemester: "HK1",
+  expectedSemesterNo: 3,
+};
+
+const defaultStudent = {
+  id: IDS.student,
+  studentCode: "2549A067",
+  fullName: "Trịnh Minh Bảo",
+  classCode: "ITK49A",
+  className: "ITK49A",
+  cohortCode: "K49",
+  programCode: "CQ25CT",
+};
+
+test("Training Progress TC01: Môn bắt buộc PASS -> cộng tín chỉ -> PASSED", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c1", courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    ],
+    grades: [
+      { courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, isPass: true, notScore: false, scoreStatus: "graded", score10: 7.0 },
+    ],
+    timeline: defaultTimeline,
+  });
+  assert.equal(result.courseStatus.passed.length, 1);
+  assert.equal(result.courseStatus.passed[0].status, "PASSED");
+  assert.equal(result.summary.completedCredits, 3);
+});
+
+test("Training Progress TC02: Môn bắt buộc FAIL -> không cộng tín chỉ -> FAILED", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c1", courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    ],
+    grades: [
+      { courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, isPass: false, notScore: false, scoreStatus: "graded", score10: 2.0 },
+    ],
+    timeline: defaultTimeline,
+  });
+  assert.equal(result.courseStatus.failed.length, 1);
+  assert.equal(result.courseStatus.failed[0].status, "FAILED");
+  assert.equal(result.summary.completedCredits, 0);
+});
+
+test("Training Progress TC03: Có record nhưng chưa có điểm -> NO_SCORE -> không mặc định đang học", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c1", courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    ],
+    grades: [
+      { courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, isPass: false, notScore: true, scoreStatus: "pending" },
+    ],
+    timeline: defaultTimeline,
+  });
+  assert.equal(result.courseStatus.noScore.length, 1);
+  assert.equal(result.courseStatus.noScore[0].status, "NO_SCORE");
+  assert.equal(result.summary.completedCredits, 0);
+});
+
+test("Training Progress TC04: Không có record -> NOT_COMPLETED", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c1", courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    ],
+    grades: [],
+    timeline: defaultTimeline,
+  });
+  assert.equal(result.courseStatus.notCompleted.length, 1);
+  assert.equal(result.courseStatus.notCompleted[0].status, "NOT_COMPLETED");
+  assert.equal(result.summary.completedCredits, 0);
+});
+
+test("Training Progress TC05: Học lại một môn 2 lần, lần sau PASS -> course completed -> tín chỉ chỉ cộng 1 lần", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c1", courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    ],
+    grades: [
+      { courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, isPass: false, notScore: false, scoreStatus: "graded", score10: 3.0 },
+      { courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, isPass: true, notScore: false, scoreStatus: "graded", score10: 6.5 },
+    ],
+    timeline: defaultTimeline,
+  });
+  assert.equal(result.courseStatus.passed.length, 1);
+  assert.equal(result.summary.completedCredits, 3);
+  assert.equal(result.courseStatus.passed[0].attemptCount, 2);
+});
+
+test("Training Progress TC06: Nhóm tự chọn cần 6 TC, SV đạt 9 TC -> credited = 6, extra = 3, remaining = 0", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "e1", courseCode: "E1", courseName: "Tự chọn 1", credits: 3, requirementType: "elective", choiceGroupCode: "GROUP_A:6", semesterNo: 2 },
+      { courseId: "e2", courseCode: "E2", courseName: "Tự chọn 2", credits: 3, requirementType: "elective", choiceGroupCode: "GROUP_A:6", semesterNo: 2 },
+      { courseId: "e3", courseCode: "E3", courseName: "Tự chọn 3", credits: 3, requirementType: "elective", choiceGroupCode: "GROUP_A:6", semesterNo: 2 },
+    ],
+    grades: [
+      { courseCode: "E1", courseName: "Tự chọn 1", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "E2", courseName: "Tự chọn 2", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "E3", courseName: "Tự chọn 3", isPass: true, notScore: false, scoreStatus: "graded" },
+    ],
+    timeline: defaultTimeline,
+  });
+  const group = result.electiveGroups.find((g) => g.code === "GROUP_A:6");
+  assert.ok(group);
+  assert.equal(group.passedCredits, 9);
+  assert.equal(group.creditedCredits, 6);
+  assert.equal(group.extraCredits, 3);
+  assert.equal(group.remainingCredits, 0);
+  assert.equal(group.status, "PASS");
+});
+
+test("Training Progress TC07: Nhóm tự chọn cần 6 TC, SV đạt 3 TC -> remaining = 3", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "e1", courseCode: "E1", courseName: "Tự chọn 1", credits: 3, requirementType: "elective", choiceGroupCode: "GROUP_A:6", semesterNo: 2 },
+      { courseId: "e2", courseCode: "E2", courseName: "Tự chọn 2", credits: 3, requirementType: "elective", choiceGroupCode: "GROUP_A:6", semesterNo: 2 },
+    ],
+    grades: [
+      { courseCode: "E1", courseName: "Tự chọn 1", isPass: true, notScore: false, scoreStatus: "graded" },
+    ],
+    timeline: defaultTimeline,
+  });
+  const group = result.electiveGroups.find((g) => g.code === "GROUP_A:6");
+  assert.ok(group);
+  assert.equal(group.passedCredits, 3);
+  assert.equal(group.creditedCredits, 3);
+  assert.equal(group.remainingCredits, 3);
+  assert.equal(group.status, "FAIL");
+});
+
+test("Training Progress TC08: Hai nhóm tự chọn A dư 3 TC, B thiếu 3 TC -> A không bù B", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "a1", courseCode: "A1", courseName: "A1", credits: 3, requirementType: "elective", choiceGroupCode: "GROUP_A:3", semesterNo: 2 },
+      { courseId: "a2", courseCode: "A2", courseName: "A2", credits: 3, requirementType: "elective", choiceGroupCode: "GROUP_A:3", semesterNo: 2 },
+      { courseId: "b1", courseCode: "B1", courseName: "B1", credits: 3, requirementType: "elective", choiceGroupCode: "GROUP_B:3", semesterNo: 2 },
+    ],
+    grades: [
+      { courseCode: "A1", courseName: "A1", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "A2", courseName: "A2", isPass: true, notScore: false, scoreStatus: "graded" },
+    ],
+    timeline: defaultTimeline,
+  });
+  const groupA = result.electiveGroups.find((g) => g.code === "GROUP_A:3");
+  const groupB = result.electiveGroups.find((g) => g.code === "GROUP_B:3");
+  assert.ok(groupA && groupB);
+  assert.equal(groupA.creditedCredits, 3);
+  assert.equal(groupA.extraCredits, 3);
+  assert.equal(groupB.creditedCredits, 0);
+  assert.equal(groupB.remainingCredits, 3);
+  assert.equal(groupB.status, "FAIL");
+});
+
+test("Training Progress TC09: Môn kỳ trước chưa hoàn thành -> PAST_DUE -> overdueCredits tăng", () => {
+  // expectedSemesterNo is 3; course is semester 1
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c1", courseCode: "PAST_COURSE", courseName: "Môn kỳ 1", credits: 4, requirementType: "mandatory", semesterNo: 1 },
+    ],
+    grades: [],
+    timeline: defaultTimeline, // expectedSemesterNo = 3
+  });
+  assert.equal(result.courseStatus.pastDue.length, 1);
+  assert.equal(result.scheduleProgress.overdueCredits, 4);
+  assert.equal(result.scheduleProgress.isBehind, true);
+});
+
+test("Training Progress TC10: Môn kỳ tương lai đã PASS -> AHEAD -> aheadCredits tăng", () => {
+  // expectedSemesterNo is 3; course is semester 5
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c5", courseCode: "FUTURE_COURSE", courseName: "Môn kỳ 5", credits: 3, requirementType: "mandatory", semesterNo: 5 },
+    ],
+    grades: [
+      { courseCode: "FUTURE_COURSE", courseName: "Môn kỳ 5", isPass: true, notScore: false, scoreStatus: "graded" },
+    ],
+    timeline: defaultTimeline, // expectedSemesterNo = 3
+  });
+  assert.equal(result.scheduleProgress.aheadCredits, 3);
+  assert.equal(result.scheduleProgress.isAhead, true);
+});
+
+test("Training Progress TC11: Môn kỳ tương lai chưa học -> FUTURE -> không cảnh báo", () => {
+  // expectedSemesterNo is 3; course is semester 5
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c5", courseCode: "FUTURE_COURSE", courseName: "Môn kỳ 5", credits: 3, requirementType: "mandatory", semesterNo: 5 },
+    ],
+    grades: [],
+    timeline: defaultTimeline, // expectedSemesterNo = 3
+  });
+  assert.equal(result.courseStatus.future.length, 1);
+  assert.equal(result.scheduleProgress.overdueCredits, 0);
+  assert.equal(result.scheduleProgress.isBehind, false);
+});
+
+test("Training Progress TC12: Course bảng điểm không match CTĐT -> UNMATCHED -> không cộng tín chỉ", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c1", courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    ],
+    grades: [
+      { courseCode: "UNRELATED_001", courseName: "Môn ngoài lề", credits: 3, isPass: true, notScore: false, scoreStatus: "graded" },
+    ],
+    timeline: defaultTimeline,
+  });
+  assert.equal(result.courseStatus.unmatched.length, 1);
+  assert.equal(result.summary.completedCredits, 0);
+});
+
+test("Training Progress TC13: CTĐT có record trùng -> không double-count", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c1_a", courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "c1_b", courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    ],
+    grades: [
+      { courseCode: "20CT1101", courseName: "Nhập môn CNTT", isPass: true, notScore: false, scoreStatus: "graded" },
+    ],
+    timeline: defaultTimeline,
+  });
+  assert.equal(result.curriculum.totalCourses, 1);
+  assert.equal(result.summary.completedCredits, 3);
+});
+
+test("Training Progress TC14: Thiếu totalCredits/elective rule -> không bịa % tiến độ -> trả unknown + warning", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c1", courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "e1", courseCode: "ELEC1", courseName: "Tự chọn 1", credits: 3, requirementType: "elective", semesterNo: 2 },
+    ],
+    grades: [
+      { courseCode: "20CT1101", courseName: "Nhập môn CNTT", isPass: true, notScore: false, scoreStatus: "graded" },
+    ],
+    timeline: defaultTimeline,
+    rules: {
+      requiredTotalCredits: null, // rule missing
+    },
+  });
+  assert.equal(result.summary.requiredCredits, null);
+  assert.equal(result.summary.progressPercent, null);
+  assert.ok(result.warnings.some((w) => w.includes("chưa cấu hình") || w.includes("UNKNOWN_REQUIREMENT")));
+});
+
+test("Training Progress TC15: Sinh viên vừa thiếu môn kỳ trước vừa học trước kỳ sau -> isBehind = true, isAhead = true", () => {
+  // expectedSemesterNo = 3
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "c1", courseCode: "OLD_COURSE", courseName: "Môn kỳ 1", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "c5", courseCode: "AHEAD_COURSE", courseName: "Môn kỳ 5", credits: 4, requirementType: "mandatory", semesterNo: 5 },
+    ],
+    grades: [
+      // Did not pass OLD_COURSE, but passed AHEAD_COURSE
+      { courseCode: "AHEAD_COURSE", courseName: "Môn kỳ 5", isPass: true, notScore: false, scoreStatus: "graded" },
+    ],
+    timeline: defaultTimeline,
+  });
+  assert.equal(result.scheduleProgress.isBehind, true);
+  assert.equal(result.scheduleProgress.isAhead, true);
+  assert.equal(result.scheduleProgress.overdueCredits, 3);
+  assert.equal(result.scheduleProgress.aheadCredits, 4);
 });

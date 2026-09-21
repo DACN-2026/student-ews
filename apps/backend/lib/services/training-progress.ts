@@ -2040,10 +2040,10 @@ export class TrainingProgressService {
     const evaluationScope = finalReached ? "program_completion" : "milestone_progress";
     const coverage = await validateCompletionCoverage(data.trainingProgramId, duePlans);
     const students = await loadCalcStudents(program.sProgramCode, data.cohortId);
-    if (!plans.length) blockers.push({ code: "NO_CURRENT_LOCKED_PLANS", message: "Khóa và chương trình đào tạo chưa có kế hoạch hiện hành đã khóa." });
-    if (!finalConfigurationValid) blockers.push({ code: "PROGRAM_FINAL_PLAN_INVALID", message: "Kế hoạch cuối CTĐT phải nằm ở học kỳ lộ trình lớn nhất." });
+    if (!plans.length) (data.evaluationMode === "graduation_forecast" ? warnings : blockers).push({ code: "NO_CURRENT_LOCKED_PLANS", message: "Khóa và chương trình đào tạo chưa có kế hoạch hiện hành đã khóa." });
+    if (!finalConfigurationValid) (data.evaluationMode === "graduation_forecast" ? warnings : blockers).push({ code: "PROGRAM_FINAL_PLAN_INVALID", message: "Kế hoạch cuối CTĐT phải nằm ở học kỳ lộ trình lớn nhất." });
     if (!coverage.valid && duePlans.length) {
-      blockers.push({
+      (data.evaluationMode === "graduation_forecast" ? warnings : blockers).push({
         code: "PROGRAM_COVERAGE_INVALID",
         message: `Bao phủ chương trình đào tạo chưa hợp lệ: ${coverage.issues.join("; ")}`,
       });
@@ -2122,7 +2122,7 @@ export class TrainingProgressService {
 
     // Load current locked plans for this cohort+program
     const plans = await loadCompletionPlans(data.cohortId, data.trainingProgramId);
-    if (plans.length === 0) throw new Error("No current locked plans found");
+    if (plans.length === 0 && mode !== "graduation_forecast") throw new Error("No current locked plans found");
 
     // Determine due plans
     const duePlans = plans.filter((p) => termDue(p, assessmentYear, assessmentOrder));
@@ -2214,7 +2214,7 @@ export class TrainingProgressService {
 
       for (const plan of duePlans) {
         const isDuePlan = termDue(plan, assessmentYear, assessmentOrder);
-        const pendingEligible = Boolean(
+        const pendingEligible = mode !== "graduation_forecast" && Boolean(
           currentTerm &&
           data.assessmentAcademicTermId === currentTerm.id &&
           plan.academicTermId === currentTerm.id,
@@ -2225,7 +2225,7 @@ export class TrainingProgressService {
           isDuePlan,
           registrations,
           pendingEligible,
-          mode === "graduation_forecast",
+          false,
         );
         planResults.push(evalResult);
 
