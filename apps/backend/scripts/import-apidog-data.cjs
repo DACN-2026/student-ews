@@ -618,6 +618,42 @@ async function replaceBusinessData(prisma, source) {
         academicTermId: validYear(yearCode) && termCode ? termIdMap.get(`${yearCode}|${termCode}`) || null : null,
       });
     }
+    // Normalize semesters and inherit base courses for specialized branch programs
+    for (const [programCode, progId] of programIdMap.entries()) {
+      if (!programCode.includes("-")) continue;
+      const [baseCode] = programCode.split("-");
+      const baseProgId = programIdMap.get(baseCode);
+      if (!baseProgId) continue;
+
+      const progCourses = [...curriculumMap.values()].filter((c) => c.trainingProgramId === progId);
+      const baseCourses = [...curriculumMap.values()].filter((c) => c.trainingProgramId === baseProgId);
+
+      const nonSem1Semesters = progCourses.map((c) => c.sSemesterNo).filter((s) => s > 1);
+      const minSpecializedSemester = nonSem1Semesters.length > 0 ? Math.min(...nonSem1Semesters) : 5;
+
+      const baseByCourseId = new Map(baseCourses.map((c) => [c.courseId, c]));
+
+      for (const pc of progCourses) {
+        const base = baseByCourseId.get(pc.courseId);
+        if (pc.sSemesterNo === 1 && base && base.sSemesterNo > 1 && base.sSemesterNo < minSpecializedSemester) {
+          pc.sSemesterNo = base.sSemesterNo;
+        }
+      }
+
+      const existingCourseIds = new Set(progCourses.map((c) => c.courseId));
+      for (const bc of baseCourses) {
+        if (!existingCourseIds.has(bc.courseId) && bc.sSemesterNo < minSpecializedSemester) {
+          const key = `${programCode}|inherit_${bc.courseId}`;
+          curriculumMap.set(key, {
+            ...bc,
+            id: crypto.randomUUID(),
+            trainingProgramId: progId,
+          });
+          existingCourseIds.add(bc.courseId);
+        }
+      }
+    }
+
     const programCourseRows = [...curriculumMap.values()];
     await createManyInChunks(tx.trainingProgramCourse, programCourseRows);
 

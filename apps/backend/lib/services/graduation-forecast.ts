@@ -85,6 +85,9 @@ export function buildGraduationForecast(input: {
   const unmatchedGrades: ForecastGrade[] = [];
   for (const grade of input.grades) {
     if (!grade || typeof grade !== "object") continue;
+    const code = String(grade.courseCode || "").toUpperCase();
+    const name = String(grade.courseName || "").toLowerCase();
+    if (code.startsWith("SHCD") || name.includes("sinh hoạt công dân")) continue;
     const course = match(grade.courseCode, grade.courseName);
     if (!course) { unmatchedGrades.push(grade); continue; }
     gradeMap.set(course.courseId, [...(gradeMap.get(course.courseId) ?? []), grade]);
@@ -190,6 +193,7 @@ export function buildGraduationForecast(input: {
     graduationRequirements: missingRequiredCourses.filter((course) => course.schedule?.isProgramFinal),
     electiveGroups,
     electiveOptions: remainingElectiveCredits !== null && remainingElectiveCredits > 0 ? elective.filter((course) => course.state !== "passed") : [],
+    electiveCourses: elective,
     remainingBySemester,
     unmatchedGrades,
     warnings,

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { Search } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Scatter,
@@ -116,6 +117,53 @@ export default function StudentDetailPage() {
   });
   const [feeSubmitting, setFeeSubmitting] = useState(false);
 
+  // Transcript filter and search states
+  const [transcriptSearch, setTranscriptSearch] = useState("");
+  const [transcriptTermFilter, setTranscriptTermFilter] = useState("all");
+  const [transcriptStatusFilter, setTranscriptStatusFilter] = useState<"all" | "passed" | "failed" | "pending">("all");
+
+  const passedGrades = useMemo(() => gradesData.filter((g: ApiData) => g.isPassed), [gradesData]);
+  const failedGrades = useMemo(
+    () =>
+      gradesData.filter(
+        (g: ApiData) =>
+          !g.isPassed &&
+          g.scoreStatus === "graded" &&
+          !g.notScore &&
+          (g.score10 != null || g.score4 != null || g.letterGrade),
+      ),
+    [gradesData],
+  );
+  const pendingGrades = useMemo(
+    () => gradesData.filter((g: ApiData) => !g.isPassed && !failedGrades.includes(g)),
+    [gradesData, failedGrades],
+  );
+
+  const uniqueTerms = useMemo(() => {
+    return Array.from(
+      new Set(gradesData.map((g: ApiData) => `${g.academicYear} • ${g.termCode}`)),
+    ).filter(Boolean) as string[];
+  }, [gradesData]);
+
+  const filteredGrades = useMemo(() => {
+    return gradesData.filter((g: ApiData) => {
+      if (transcriptTermFilter !== "all") {
+        const termKey = `${g.academicYear} • ${g.termCode}`;
+        if (termKey !== transcriptTermFilter) return false;
+      }
+      if (transcriptStatusFilter === "passed" && !g.isPassed) return false;
+      if (transcriptStatusFilter === "failed" && !failedGrades.includes(g)) return false;
+      if (transcriptStatusFilter === "pending" && !pendingGrades.includes(g)) return false;
+      if (transcriptSearch.trim()) {
+        const q = transcriptSearch.toLowerCase();
+        const matchCode = String(g.courseCode || "").toLowerCase().includes(q);
+        const matchName = String(g.courseName || "").toLowerCase().includes(q);
+        if (!matchCode && !matchName) return false;
+      }
+      return true;
+    });
+  }, [gradesData, transcriptTermFilter, transcriptStatusFilter, transcriptSearch, failedGrades, pendingGrades]);
+
   // Warning Action interactive state
   const [showActionModal, setShowActionModal] = useState(false);
   const [actionForm, setActionForm] = useState({
@@ -194,7 +242,41 @@ export default function StudentDetailPage() {
 
         if (gRes.ok) {
           const gJson = await gRes.json();
-          setGradesData(gJson.items || gJson || []);
+          const rawGrades = gJson.items || gJson || [];
+          const cleanGrades = (Array.isArray(rawGrades) ? rawGrades : []).filter((g: ApiData) => {
+            const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
+            const name = String(g.courseName || g.sCourseName || "").toLowerCase();
+            return !code.startsWith("SHCD") && !name.includes("sinh hoạt công dân");
+          });
+          const byCode = new Map<string, ApiData>();
+          for (const g of cleanGrades) {
+            const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
+            if (!code) continue;
+            if (!byCode.has(code)) {
+              byCode.set(code, g);
+              continue;
+            }
+            const existing = byCode.get(code)!;
+            const gPass = Boolean(g.isPass || g.isPassed);
+            const exPass = Boolean(existing.isPass || existing.isPassed);
+            if (gPass && !exPass) { byCode.set(code, g); continue; }
+            if (!gPass && exPass) continue;
+            if (gPass && exPass) {
+              const scoreG = Number(g.score10 ?? g.score4 ?? 0);
+              const scoreEx = Number(existing.score10 ?? existing.score4 ?? 0);
+              if (scoreG > scoreEx) { byCode.set(code, g); continue; }
+              if (scoreG === scoreEx && String(g.academicYear || "") > String(existing.academicYear || "")) {
+                byCode.set(code, g); continue;
+              }
+              continue;
+            }
+            const hasScoreG = g.score10 != null || g.score4 != null || Boolean(g.letterGrade || g.letterCode);
+            const hasScoreEx = existing.score10 != null || existing.score4 != null || Boolean(existing.letterGrade || existing.letterCode);
+            if (hasScoreG && !hasScoreEx) { byCode.set(code, g); continue; }
+            if (!hasScoreG && hasScoreEx) continue;
+            if (String(g.academicYear || "") > String(existing.academicYear || "")) { byCode.set(code, g); }
+          }
+          setGradesData(Array.from(byCode.values()));
         } else issues.push("bảng điểm");
 
         if (sumRes.ok) {
@@ -841,58 +923,155 @@ export default function StudentDetailPage() {
             </div>
           )}
 
-          <div className="overflow-x-auto">
+          {/* 4 Thẻ số liệu tổng quan bảng điểm đồng bộ với Dự kiến tốt nghiệp */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
+              <p className="text-[10px] font-bold uppercase text-slate-500">Tổng môn học</p>
+              <p className="font-mono text-xl font-extrabold text-slate-900">{gradesData.length}</p>
+            </div>
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 text-center">
+              <p className="text-[10px] font-bold uppercase text-emerald-700">Học phần đạt (Qua môn)</p>
+              <p className="font-mono text-xl font-extrabold text-emerald-800">{passedGrades.length}</p>
+            </div>
+            <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-3 text-center">
+              <p className="text-[10px] font-bold uppercase text-rose-700">Môn rớt (Điểm F)</p>
+              <p className="font-mono text-xl font-extrabold text-rose-800">{failedGrades.length}</p>
+            </div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3 text-center">
+              <p className="text-[10px] font-bold uppercase text-amber-700">Chưa có điểm</p>
+              <p className="font-mono text-xl font-extrabold text-amber-800">{pendingGrades.length}</p>
+            </div>
+          </div>
+
+          {/* Thanh tìm kiếm môn học & Lọc học kỳ, kết quả */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search size={14} className="pointer-events-none absolute left-3 top-2.5 text-slate-400" />
+              <input
+                value={transcriptSearch}
+                onChange={(e) => setTranscriptSearch(e.target.value)}
+                placeholder="Tìm tên môn học hoặc mã môn..."
+                className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
+              />
+            </div>
+            <select
+              value={transcriptTermFilter}
+              onChange={(e) => setTranscriptTermFilter(e.target.value)}
+              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-lime-500"
+            >
+              <option value="all">Tất cả học kỳ</option>
+              {uniqueTerms.map((term: string) => (
+                <option key={term} value={term}>
+                  {term}
+                </option>
+              ))}
+            </select>
+            <select
+              value={transcriptStatusFilter}
+              onChange={(e) => setTranscriptStatusFilter(e.target.value as "all" | "passed" | "failed" | "pending")}
+              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-lime-500"
+            >
+              <option value="all">Tất cả kết quả</option>
+              <option value="failed">Chỉ xem môn rớt (F)</option>
+              <option value="pending">Chỉ xem môn chưa có điểm</option>
+              <option value="passed">Chỉ xem môn đã đạt</option>
+            </select>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="bg-[var(--color-surface2)]/50 border-b border-[var(--color-border)] text-slate-500 uppercase font-semibold text-[11px]">
-                  <th className="py-3 px-3">Mã HP</th>
-                  <th className="py-3 px-3">Tên học phần</th>
-                  <th className="py-3 px-3">Số TC</th>
-                  <th className="py-3 px-3">Học kỳ</th>
-                  <th className="py-3 px-3">Điểm 10</th>
-                  <th className="py-3 px-3">Điểm 4</th>
-                  <th className="py-3 px-3">Điểm chữ</th>
-                  <th className="py-3 px-3">Kết quả</th>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px]">
+                  <th className="py-2.5 px-3">Mã HP</th>
+                  <th className="py-2.5 px-3">Tên học phần</th>
+                  <th className="py-2.5 px-2 text-center">Số TC</th>
+                  <th className="py-2.5 px-3">Học kỳ</th>
+                  <th className="py-2.5 px-2 text-center">Điểm 10</th>
+                  <th className="py-2.5 px-2 text-center">Điểm 4</th>
+                  <th className="py-2.5 px-2 text-center">Điểm chữ</th>
+                  <th className="py-2.5 px-3 text-right">Kết quả</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {gradesData.length === 0 ? (
+                {filteredGrades.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-8 text-center text-slate-400">
-                      Chưa có dữ liệu điểm học phần.
+                      Không tìm thấy môn học nào phù hợp bộ lọc.
                     </td>
                   </tr>
                 ) : (
-                  gradesData.map((g: ApiData, i: number) => (
-                    <tr key={g.id || i} className="hover:bg-slate-50">
-                      <td className="py-3 px-3 font-mono font-bold text-slate-800">{g.courseCode}</td>
-                      <td className="py-3 px-3 font-medium text-slate-900">{g.courseName}</td>
-                      <td className="py-3 px-3 font-mono">{g.credits}</td>
-                      <td className="py-3 px-3 text-slate-500">
-                        <span>{g.termCode} ({g.academicYear})</span>
-                        {g.isSummer && (
-                          <span
-                            className="ml-2 inline-flex rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
-                            title={g.rankingMainTerm
-                              ? `Kết quả dùng khi xếp hạng cùng ${g.rankingMainTerm.termCode} ${g.rankingMainTerm.academicYear}`
-                              : "Kỳ phụ; chưa xác định kỳ chính ngay trước"}
-                          >
-                            Hè
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 font-mono font-semibold">{g.score10 ?? "—"}</td>
-                      <td className="py-3 px-3 font-mono font-semibold">{g.score4 ?? "—"}</td>
-                      <td className="py-3 px-3 font-mono font-bold">{g.letterGrade || "—"}</td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
-                          g.isPassed ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
-                        }`}>
-                          {g.isPassed ? "Đạt" : "Không đạt"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
+                  filteredGrades.map((g: ApiData, i: number) => {
+                    const isFail = failedGrades.includes(g);
+                    const isPendingGrade = pendingGrades.includes(g);
+
+                    return (
+                      <tr
+                        key={g.id || i}
+                        className={
+                          isFail
+                            ? "bg-rose-50/40 hover:bg-rose-50/60"
+                            : isPendingGrade
+                              ? "bg-amber-50/30 hover:bg-amber-50/50"
+                              : "hover:bg-slate-50"
+                        }
+                      >
+                        <td className="py-2.5 px-3 font-mono font-bold text-slate-900 whitespace-nowrap">{g.courseCode}</td>
+                        <td className="py-2.5 px-3 font-medium text-slate-800">{g.courseName}</td>
+                        <td className="py-2.5 px-2 text-center font-mono font-semibold text-slate-700">{g.credits}</td>
+                        <td className="py-2.5 px-3 text-slate-500 whitespace-nowrap">
+                          <span>{g.termCode} ({g.academicYear})</span>
+                          {g.isSummer && (
+                            <span
+                              className="ml-2 inline-flex rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
+                              title={g.rankingMainTerm
+                                ? `Kết quả dùng khi xếp hạng cùng ${g.rankingMainTerm.termCode} ${g.rankingMainTerm.academicYear}`
+                                : "Kỳ phụ; chưa xác định kỳ chính ngay trước"}
+                            >
+                              Hè
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-2 text-center font-mono font-bold">
+                          {g.score10 != null ? Number(g.score10).toFixed(1) : "—"}
+                        </td>
+                        <td className="py-2.5 px-2 text-center font-mono font-bold">
+                          {g.score4 != null ? Number(g.score4).toFixed(1) : "—"}
+                        </td>
+                        <td className="py-2.5 px-2 text-center font-mono font-extrabold">
+                          {g.letterGrade ? (
+                            <span
+                              className={
+                                g.letterGrade === "F"
+                                  ? "text-rose-700"
+                                  : g.letterGrade.startsWith("A")
+                                    ? "text-emerald-700"
+                                    : "text-slate-800"
+                              }
+                            >
+                              {g.letterGrade}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 text-right">
+                          {isFail ? (
+                            <span className="inline-flex rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                              Không đạt (F)
+                            </span>
+                          ) : isPendingGrade ? (
+                            <span className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                              Chưa có điểm
+                            </span>
+                          ) : (
+                            <span className="inline-flex rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                              Đạt
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

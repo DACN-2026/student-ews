@@ -836,6 +836,62 @@ test("curriculum import deduplicates redundant courses by prioritizing real stud
   assert.equal(mobile.HocKy, "Học kỳ 6");
 });
 
+test("Training Progress: evaluates all semesters accurately without empty semesters for specialized programs", () => {
+  const specializedStudent = {
+    id: IDS.student,
+    studentCode: "2246A001",
+    fullName: "Lâm Anh Vỹ",
+    classCode: "ITK46A",
+    className: "ITK46A",
+    cohortCode: "K46",
+    programCode: "CQ22CT-PM",
+  };
+
+  const curriculum = [
+    { courseId: "c1", courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    { courseId: "c2", courseCode: "TC1004D", courseName: "GDTC 2 - Bóng đá", credits: 1, requirementType: "elective", semesterNo: 2 },
+    { courseId: "c3", courseCode: "TC2003D", courseName: "GDTC 3", credits: 1, requirementType: "mandatory", semesterNo: 3 },
+    { courseId: "c4", courseCode: "20CT2201", courseName: "Cơ sở dữ liệu", credits: 4, requirementType: "mandatory", semesterNo: 4 },
+    { courseId: "c5", courseCode: "20CT2101", courseName: "Thiết kế Web", credits: 4, requirementType: "mandatory", semesterNo: 5 },
+  ];
+
+  const grades = [
+    { courseCode: "20CT1101", courseName: "Nhập môn CNTT", credits: 3, isPass: true, notScore: false, scoreStatus: "graded", score10: 7.0 },
+    { courseCode: "TC1004D", courseName: "GDTC 2 - Bóng đá", credits: 1, isPass: true, notScore: false, scoreStatus: "graded", score10: 5.5 },
+    { courseCode: "TC2003D", courseName: "GDTC 3", credits: 1, isPass: true, notScore: false, scoreStatus: "graded", score10: 7.0 },
+    { courseCode: "20CT2201", courseName: "Cơ sở dữ liệu", credits: 4, isPass: true, notScore: false, scoreStatus: "graded", score10: 6.0 },
+    { courseCode: "20CT2101", courseName: "Thiết kế Web", credits: 4, isPass: true, notScore: false, scoreStatus: "graded", score10: 6.5 },
+  ];
+
+  const result = evaluateStudentTrainingProgress({
+    student: specializedStudent,
+    curriculum,
+    grades,
+    timeline: {
+      currentAcademicYear: "2026-2027",
+      currentTermCode: "HK01",
+      expectedYear: 5,
+      expectedSemester: "HK1",
+      expectedSemesterNo: 9,
+    },
+  });
+
+  const sem1 = result.semesters.find((s) => s.semesterNo === 1);
+  const sem2 = result.semesters.find((s) => s.semesterNo === 2);
+  const sem3 = result.semesters.find((s) => s.semesterNo === 3);
+  const sem4 = result.semesters.find((s) => s.semesterNo === 4);
+  const sem5 = result.semesters.find((s) => s.semesterNo === 5);
+
+  assert.equal(sem1?.courses.length, 1);
+  assert.equal(sem2?.courses.length, 1);
+  assert.equal(sem2?.courses[0].courseCode, "TC1004D");
+  assert.equal(sem3?.courses.length, 1);
+  assert.equal(sem3?.courses[0].courseCode, "TC2003D");
+  assert.equal(sem4?.courses.length, 1);
+  assert.equal(sem4?.courses[0].courseCode, "20CT2201");
+  assert.equal(sem5?.courses.length, 1);
+});
+
 // ============================================================================
 // STUDENT TRAINING PROGRESS SPEC TESTS: TC01 - TC15
 // ============================================================================

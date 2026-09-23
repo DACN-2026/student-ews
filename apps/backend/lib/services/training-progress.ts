@@ -1831,7 +1831,13 @@ export class TrainingProgressService {
     });
     if (!student) return { items: [], total: 0, page, pageSize };
 
-    const where: Prisma.StudentCourseOfferingWhereInput = { studentId: student.id };
+    const where: Prisma.StudentCourseOfferingWhereInput = {
+      studentId: student.id,
+      NOT: [
+        { sCurriculumId: { startsWith: "SHCD", mode: "insensitive" } },
+        { sCourseName: { contains: "sinh hoạt công dân", mode: "insensitive" } },
+      ],
+    };
     if (courseCode) where.sCurriculumId = { equals: courseCode, mode: "insensitive" };
     if (academicYear) {
       const year = await prisma.academicYear.findFirst({ where: { sYearCode: academicYear, deletedAt: null } });

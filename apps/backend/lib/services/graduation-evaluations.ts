@@ -219,7 +219,7 @@ const PROGRAM_SCOPED_RULES = new Set(["TOTAL_CREDITS", "COMPULSORY_CREDITS", "EL
 export function isExcludedFromGraduationCredits(courseCode: string | null | undefined, courseName: string | null | undefined) {
   const code = (courseCode || "").trim().toUpperCase();
   const name = (courseName || "").trim().toLocaleLowerCase("vi");
-  return /^TC\d/.test(code) || /^QP\d/.test(code) || name.includes("giáo dục thể chất") || name.includes("giáo dục quốc phòng");
+  return /^TC\d/.test(code) || /^QP\d/.test(code) || code.startsWith("SHCD") || name.includes("giáo dục thể chất") || name.includes("giáo dục quốc phòng") || name.includes("sinh hoạt công dân");
 }
 
 export async function fetchDerivedRequirements(studentIds: string[], allowedTermIds: string[]) {
@@ -324,6 +324,10 @@ async function fetchGradeSnapshots(studentIds: string[], cutoff: AssessmentCutof
     : [];
   const gradeByOffering = new Map(grades.map((grade) => [grade.offeringId, grade]));
   for (const offering of offerings) {
+    const code = (offering.sCurriculumId || "").toUpperCase();
+    const name = (offering.sCourseName || "").toLowerCase();
+    if (code.startsWith("SHCD") || name.includes("sinh hoạt công dân")) continue;
+
     const grade = gradeByOffering.get(offering.id);
     const term = cutoff.termById.get(offering.academicTermId);
     const year = cutoff.yearById.get(offering.academicYearId);
@@ -350,6 +354,52 @@ async function fetchGradeSnapshots(studentIds: string[], cutoff: AssessmentCutof
     } satisfies Prisma.InputJsonObject);
     result.set(offering.studentId, rows);
   }
+
+  for (const [studentId, studentRows] of result.entries()) {
+    const byCode = new Map<string, Prisma.InputJsonValue>();
+    for (const row of studentRows) {
+      const r = row as Record<string, unknown>;
+      const code = String(r.courseCode || "").toUpperCase();
+      if (!code) continue;
+      if (!byCode.has(code)) {
+        byCode.set(code, row);
+        continue;
+      }
+      const existing = byCode.get(code)! as Record<string, unknown>;
+      const rPass = Boolean(r.isPassed);
+      const exPass = Boolean(existing.isPassed);
+      if (rPass && !exPass) {
+        byCode.set(code, row);
+        continue;
+      }
+      if (!rPass && exPass) continue;
+      if (rPass && exPass) {
+        const scoreR = Number(r.score10 ?? r.score4 ?? 0);
+        const scoreEx = Number(existing.score10 ?? existing.score4 ?? 0);
+        if (scoreR > scoreEx) {
+          byCode.set(code, row);
+          continue;
+        }
+        if (scoreR === scoreEx && String(r.academicYear || "") > String(existing.academicYear || "")) {
+          byCode.set(code, row);
+          continue;
+        }
+        continue;
+      }
+      const hasScoreR = r.score10 != null || r.score4 != null || Boolean(r.letterGrade);
+      const hasScoreEx = existing.score10 != null || existing.score4 != null || Boolean(existing.letterGrade);
+      if (hasScoreR && !hasScoreEx) {
+        byCode.set(code, row);
+        continue;
+      }
+      if (!hasScoreR && hasScoreEx) continue;
+      if (String(r.academicYear || "") > String(existing.academicYear || "")) {
+        byCode.set(code, row);
+      }
+    }
+    result.set(studentId, Array.from(byCode.values()));
+  }
+
   return result;
 }
 
@@ -1030,7 +1080,52 @@ export class GraduationEvaluationsService {
         orderBy: [{ curriculumSemesterNo: "asc" }, { version: "desc" }],
       }),
     ]);
-    const grades = (hasFullSnapshot || storedGrades.length > 0 ? storedGrades : liveGrades) as Awaited<ReturnType<typeof GradesService.list>>;
+    const rawGrades = (hasFullSnapshot || storedGrades.length > 0 ? storedGrades : liveGrades) as Awaited<ReturnType<typeof GradesService.list>>;
+    const byCode = new Map<string, (typeof rawGrades)[number]>();
+    for (const g of rawGrades) {
+      const code = String(g.courseCode || (g as Record<string, unknown>).sCurriculumId || "").toUpperCase();
+      const name = String(g.courseName || (g as Record<string, unknown>).sCourseName || "").toLowerCase();
+      if (!code || code.startsWith("SHCD") || name.includes("sinh hoạt công dân")) continue;
+
+      if (!byCode.has(code)) {
+        byCode.set(code, g);
+        continue;
+      }
+      const existing = byCode.get(code)!;
+      const gObj = g as Record<string, unknown>;
+      const exObj = existing as Record<string, unknown>;
+      const gPass = Boolean(g.isPassed || gObj.isPass);
+      const exPass = Boolean(existing.isPassed || exObj.isPass);
+      if (gPass && !exPass) {
+        byCode.set(code, g);
+        continue;
+      }
+      if (!gPass && exPass) continue;
+      if (gPass && exPass) {
+        const scoreG = Number(g.score10 ?? g.score4 ?? 0);
+        const scoreEx = Number(existing.score10 ?? existing.score4 ?? 0);
+        if (scoreG > scoreEx) {
+          byCode.set(code, g);
+          continue;
+        }
+        if (scoreG === scoreEx && String(g.academicYear || "") > String(existing.academicYear || "")) {
+          byCode.set(code, g);
+          continue;
+        }
+        continue;
+      }
+      const hasScoreG = g.score10 != null || g.score4 != null || Boolean(g.letterGrade || (g as Record<string, unknown>).letterCode);
+      const hasScoreEx = existing.score10 != null || existing.score4 != null || Boolean(existing.letterGrade || (existing as Record<string, unknown>).letterCode);
+      if (hasScoreG && !hasScoreEx) {
+        byCode.set(code, g);
+        continue;
+      }
+      if (!hasScoreG && hasScoreEx) continue;
+      if (String(g.academicYear || "") > String(existing.academicYear || "")) {
+        byCode.set(code, g);
+      }
+    }
+    const grades = Array.from(byCode.values());
     const planIds = plans.map((plan) => plan.id);
     const termIds = [...new Set(plans.map((plan) => plan.academicTermId))];
     const [courseCatalog, planCourses, terms] = hasFullSnapshot

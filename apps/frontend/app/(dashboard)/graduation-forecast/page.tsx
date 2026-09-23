@@ -902,7 +902,43 @@ export default function GraduationForecastPage() {
       >
         {(() => {
           if (!selectedStudent) return null;
-          const { grades = [], gradeDataSource, forecast } = selectedStudent;
+          const { grades: rawGrades = [], gradeDataSource, forecast } = selectedStudent;
+          const cleanGrades = (rawGrades || []).filter((g: ApiData) => {
+            const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
+            const name = String(g.courseName || g.sCourseName || "").toLowerCase();
+            return !code.startsWith("SHCD") && !name.includes("sinh hoạt công dân");
+          });
+
+          // Khử trùng lặp môn học (giữ bản ghi tốt nhất / có điểm đạt)
+          const byCode = new Map<string, ApiData>();
+          for (const g of cleanGrades) {
+            const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
+            if (!code) continue;
+            if (!byCode.has(code)) {
+              byCode.set(code, g);
+              continue;
+            }
+            const existing = byCode.get(code)!;
+            const gPass = Boolean(g.isPass || g.isPassed);
+            const exPass = Boolean(existing.isPass || existing.isPassed);
+            if (gPass && !exPass) { byCode.set(code, g); continue; }
+            if (!gPass && exPass) continue;
+            if (gPass && exPass) {
+              const scoreG = Number(g.score10 ?? g.score4 ?? 0);
+              const scoreEx = Number(existing.score10 ?? existing.score4 ?? 0);
+              if (scoreG > scoreEx) { byCode.set(code, g); continue; }
+              if (scoreG === scoreEx && String(g.academicYear || "") > String(existing.academicYear || "")) {
+                byCode.set(code, g); continue;
+              }
+              continue;
+            }
+            const hasScoreG = g.score10 != null || g.score4 != null || Boolean(g.letterGrade || g.letterCode);
+            const hasScoreEx = existing.score10 != null || existing.score4 != null || Boolean(existing.letterGrade || existing.letterCode);
+            if (hasScoreG && !hasScoreEx) { byCode.set(code, g); continue; }
+            if (!hasScoreG && hasScoreEx) continue;
+            if (String(g.academicYear || "") > String(existing.academicYear || "")) { byCode.set(code, g); }
+          }
+          const grades = Array.from(byCode.values());
 
           // Calculate grade statistics
           const passedGrades = grades.filter((g: ApiData) => g.isPassed);
@@ -971,6 +1007,7 @@ export default function GraduationForecastPage() {
                   reasons={Array.isArray(selectedStudent.student?.reasons) ? selectedStudent.student.reasons : []}
                   additionalRequirements={Array.isArray(selectedStudent.requirements) ? selectedStudent.requirements : []}
                   student={selectedStudent.student}
+                  grades={grades}
                 />
               ) : (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-slate-600">

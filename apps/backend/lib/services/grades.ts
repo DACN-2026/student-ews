@@ -185,7 +185,23 @@ export class GradesService {
       endDate: term.endDate,
     })));
 
-    return offerings
+    const courseCodes = [...new Set(offerings.map((o) => o.sCurriculumId))];
+    let gradedCourseCodes = new Set<string>();
+
+    if (courseCodes.length > 0) {
+      const gradedResult: Array<{ s_curriculum_id: string }> = await prisma.$queryRaw`
+        SELECT DISTINCT o.s_curriculum_id
+        FROM student_course_offerings o
+        JOIN student_course_grades g ON g.offering_id = o.id
+        WHERE o.s_curriculum_id IN (${Prisma.join(courseCodes)})
+          AND (g.score_10 IS NOT NULL OR g.score_4 IS NOT NULL OR g.letter_code IS NOT NULL)
+      `;
+      gradedCourseCodes = new Set(gradedResult.map((r) => r.s_curriculum_id));
+    }
+
+    const mapped = offerings
+      .filter((o) => gradedCourseCodes.has(o.sCurriculumId))
+      .filter((o) => !o.sCurriculumId.toUpperCase().startsWith("SHCD") && !o.sCourseName.toLowerCase().includes("sinh hoạt công dân"))
       .map((o) => {
         const grade = gradeMap[o.id];
         const term = termMap[o.academicTermId];
@@ -222,7 +238,47 @@ export class GradesService {
           scoreStatus: grade?.scoreStatus || "graded",
           createdAt: o.createdAt,
         };
-      })
+      });
+
+    const byCode = new Map<string, (typeof mapped)[number]>();
+    for (const item of mapped) {
+      const code = item.courseCode.toUpperCase();
+      if (!byCode.has(code)) {
+        byCode.set(code, item);
+        continue;
+      }
+      const existing = byCode.get(code)!;
+      if (item.isPassed && !existing.isPassed) {
+        byCode.set(code, item);
+        continue;
+      }
+      if (!item.isPassed && existing.isPassed) continue;
+      if (item.isPassed && existing.isPassed) {
+        const scoreI = item.score10 ?? item.score4 ?? 0;
+        const scoreE = existing.score10 ?? existing.score4 ?? 0;
+        if (scoreI > scoreE) {
+          byCode.set(code, item);
+          continue;
+        }
+        if (scoreI === scoreE && String(item.academicYear || "") > String(existing.academicYear || "")) {
+          byCode.set(code, item);
+          continue;
+        }
+        continue;
+      }
+      const hasScoreI = item.score10 != null || item.score4 != null || Boolean(item.letterGrade);
+      const hasScoreE = existing.score10 != null || existing.score4 != null || Boolean(existing.letterGrade);
+      if (hasScoreI && !hasScoreE) {
+        byCode.set(code, item);
+        continue;
+      }
+      if (!hasScoreI && hasScoreE) continue;
+      if (String(item.academicYear || "") > String(existing.academicYear || "")) {
+        byCode.set(code, item);
+      }
+    }
+
+    return Array.from(byCode.values())
       .filter((item) => {
         if (filters.academicYear && item.academicYear !== filters.academicYear) return false;
         if (filters.termCode && item.termCode !== filters.termCode) return false;
@@ -334,14 +390,16 @@ export class GradesService {
       ),
     );
 
-    const mappedUnscopedGrades = unscopedGrades.map((grade) => ({
-      id: grade.id,
-      courseCode: grade.sCourseCode,
-      courseName: grade.sCourseName,
-      credits: grade.sCredits,
-      reason: grade.reason,
-      createdAt: grade.createdAt,
-    }));
+    const mappedUnscopedGrades = unscopedGrades
+      .filter((grade) => !grade.sCourseCode?.toUpperCase().startsWith("SHCD") && !grade.sCourseName?.toLowerCase().includes("sinh hoạt công dân"))
+      .map((grade) => ({
+        id: grade.id,
+        courseCode: grade.sCourseCode,
+        courseName: grade.sCourseName,
+        credits: grade.sCredits,
+        reason: grade.reason,
+        createdAt: grade.createdAt,
+      }));
 
     return {
       terms: mappedTerms,

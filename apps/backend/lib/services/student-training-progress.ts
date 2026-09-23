@@ -109,6 +109,7 @@ export type StudentTrainingProgressOutput = {
     notCompletedCourses: number;
   };
   scheduleProgress: {
+    benchmarkLabel?: string;
     currentAcademicYear: string;
     currentTermCode: string;
     expectedYear: number;
@@ -423,6 +424,48 @@ export function evaluateStudentTrainingProgress(input: {
     warnings.push("Chưa cấu hình tổng tín chỉ yêu cầu chính thức của CTĐT; tiến độ % được đặt là unknown.");
   }
 
+  // Detect studying semester from NO_SCORE courses if present:
+  // "Ở học kì mà có nhiều môn 'Chưa có điểm' thì đó là học kì 'đang theo học' của sinh viên đó"
+  const semNoScoreCounts = new Map<number, number>();
+  for (const c of assessedCourses) {
+    if (c.status === "NO_SCORE") {
+      semNoScoreCounts.set(c.semesterNo, (semNoScoreCounts.get(c.semesterNo) || 0) + 1);
+    }
+  }
+
+  let effectiveSemesterNo = input.timeline.expectedSemesterNo;
+  let effectiveYear = input.timeline.expectedYear;
+  let effectiveSemester = input.timeline.expectedSemester;
+
+  if (semNoScoreCounts.size > 0) {
+    let maxCount = 0;
+    let bestSem = effectiveSemesterNo;
+    for (const [sNo, count] of semNoScoreCounts.entries()) {
+      if (count > maxCount || (count === maxCount && sNo > bestSem)) {
+        maxCount = count;
+        bestSem = sNo;
+      }
+    }
+    effectiveSemesterNo = bestSem;
+    effectiveYear = Math.ceil(bestSem / 2);
+    effectiveSemester = bestSem % 2 === 1 ? "HK1" : "HK2";
+
+    // Recalculate timelineCategory for all courses based on effectiveSemesterNo
+    for (const course of assessedCourses) {
+      if (course.status === "PASSED") {
+        course.timelineCategory = course.semesterNo > effectiveSemesterNo ? "AHEAD" : null;
+      } else {
+        if (course.semesterNo < effectiveSemesterNo) {
+          course.timelineCategory = "PAST_DUE";
+        } else if (course.semesterNo === effectiveSemesterNo) {
+          course.timelineCategory = "CURRENT_PLAN";
+        } else {
+          course.timelineCategory = "FUTURE";
+        }
+      }
+    }
+  }
+
   // Course counts
   const completedCourses = assessedCourses.filter((c) => c.status === "PASSED");
   const failedCourses = assessedCourses.filter((c) => c.status === "FAILED");
@@ -446,7 +489,7 @@ export function evaluateStudentTrainingProgress(input: {
   // 9. Semester-by-semester breakdown (Accordion/timeline structure)
   const maxSemester = Math.max(
     ...deduplicatedCurriculum.map((c) => c.semesterNo),
-    input.timeline.expectedSemesterNo,
+    effectiveSemesterNo,
     8,
   );
 
@@ -473,10 +516,11 @@ export function evaluateStudentTrainingProgress(input: {
     let sStatus: "COMPLETED" | "INCOMPLETE" | "CURRENT_PLAN" | "FUTURE" | "UNKNOWN";
     const allMandatoryPassed = sMandatory.every((c) => c.status === "PASSED");
 
-    if (s < input.timeline.expectedSemesterNo) {
-      sStatus = allMandatoryPassed && sRemainingCredits === 0 ? "COMPLETED" : "INCOMPLETE";
-    } else if (s === input.timeline.expectedSemesterNo) {
-      sStatus = allMandatoryPassed && sRemainingCredits === 0 ? "COMPLETED" : "CURRENT_PLAN";
+    if (s < effectiveSemesterNo) {
+      // Past semester: "các kì có các môn 'Chưa đăng ký' không tính vào kì 'nợ môn'"
+      sStatus = sFailedCount > 0 ? "INCOMPLETE" : "COMPLETED";
+    } else if (s === effectiveSemesterNo) {
+      sStatus = allMandatoryPassed && sRemainingCredits === 0 && sNoScoreCount === 0 ? "COMPLETED" : "CURRENT_PLAN";
     } else {
       if (sCourses.length === 0) {
         sStatus = "FUTURE";
@@ -491,7 +535,7 @@ export function evaluateStudentTrainingProgress(input: {
 
     if (sStatus === "COMPLETED" && consecutivePass) {
       lastCompletedSemester = s;
-    } else if (s < input.timeline.expectedSemesterNo) {
+    } else if (s < effectiveSemesterNo) {
       consecutivePass = false;
     }
 
@@ -515,7 +559,7 @@ export function evaluateStudentTrainingProgress(input: {
     });
   }
 
-  const progressGap = Math.max(0, input.timeline.expectedSemesterNo - lastCompletedSemester);
+  const progressGap = Math.max(0, effectiveSemesterNo - lastCompletedSemester);
 
   return {
     student: {
@@ -545,11 +589,12 @@ export function evaluateStudentTrainingProgress(input: {
       notCompletedCourses: notCompletedCourses.length,
     },
     scheduleProgress: {
+      benchmarkLabel: `Năm ${effectiveYear} - ${effectiveSemester} (Học kỳ ${effectiveSemesterNo})`,
       currentAcademicYear: input.timeline.currentAcademicYear,
       currentTermCode: input.timeline.currentTermCode,
-      expectedYear: input.timeline.expectedYear,
-      expectedSemester: input.timeline.expectedSemester,
-      expectedSemesterNo: input.timeline.expectedSemesterNo,
+      expectedYear: effectiveYear,
+      expectedSemester: effectiveSemester,
+      expectedSemesterNo: effectiveSemesterNo,
       lastCompletedSemester,
       progressGap,
       isOnTrack,
@@ -716,6 +761,58 @@ export class StudentTrainingProgressService {
         WHERE pc.training_program_id = ${program.id}::uuid
         ORDER BY pc.s_semester_no, c.s_course_code
       `;
+
+      if (programCode.includes("-")) {
+        const baseCode = programCode.split("-")[0];
+        const baseProgram = await prisma.trainingProgram.findFirst({
+          where: { sProgramCode: baseCode, deletedAt: null },
+        });
+        if (baseProgram) {
+          const baseCourses = await prisma.$queryRaw<Array<{
+            course_id: string;
+            s_course_code: string;
+            s_course_name: string;
+            s_credits: number;
+            s_requirement_type: string;
+            s_semester_no: number;
+          }>>`
+            SELECT c.id::text as course_id, c.s_course_code, c.s_course_name,
+                   pc.s_credits, pc.s_requirement_type, pc.s_semester_no
+            FROM training_program_courses pc
+            JOIN courses c ON c.id = pc.course_id AND c.deleted_at IS NULL
+            WHERE pc.training_program_id = ${baseProgram.id}::uuid
+            ORDER BY pc.s_semester_no, c.s_course_code
+          `;
+
+          const nonSem1Semesters = rawCurriculumCourses
+            .map((c) => Number(c.s_semester_no))
+            .filter((s) => s > 1);
+          const minSpecializedSemester = nonSem1Semesters.length > 0 ? Math.min(...nonSem1Semesters) : 5;
+
+          const baseCourseMap = new Map(
+            baseCourses.map((c) => [normalizeCourseCode(c.s_course_code), c])
+          );
+
+          rawCurriculumCourses = rawCurriculumCourses.map((c) => {
+            const base = baseCourseMap.get(normalizeCourseCode(c.s_course_code));
+            if (c.s_semester_no === 1 && base && base.s_semester_no > 1 && base.s_semester_no < minSpecializedSemester) {
+              return { ...c, s_semester_no: base.s_semester_no };
+            }
+            return c;
+          });
+
+          const existingCodes = new Set(
+            rawCurriculumCourses.map((c) => normalizeCourseCode(c.s_course_code))
+          );
+          for (const baseCourse of baseCourses) {
+            const normCode = normalizeCourseCode(baseCourse.s_course_code);
+            if (!existingCodes.has(normCode) && baseCourse.s_semester_no < minSpecializedSemester) {
+              rawCurriculumCourses.push(baseCourse);
+              existingCodes.add(normCode);
+            }
+          }
+        }
+      }
     }
 
     let choiceGroupsFromPlans: Array<{ sCourseCode: string; choiceGroupCode: string | null }> = [];
@@ -776,22 +873,52 @@ export class StudentTrainingProgressService {
       ORDER BY y.s_year_code, t.s_term_order, o.s_curriculum_id
     `;
 
-    const grades: StudentGradeAttempt[] = offerings.map((r) => ({
-      courseCode: r.s_curriculum_id,
-      courseName: r.s_course_name,
-      credits: Number(r.s_credits),
-      academicYear: r.s_year_code,
-      termCode: r.s_term_code,
-      termOrder: Number(r.s_term_order),
-      score10: r.score_10 != null ? Number(r.score_10) : null,
-      score4: r.score_4 != null ? Number(r.score_4) : null,
-      letterCode: r.letter_code,
-      isPass: r.is_pass,
-      notScore: r.not_score,
-      scoreStatus: r.score_status,
-    }));
+    const grades: StudentGradeAttempt[] = offerings
+      .filter((r) => {
+        const code = (r.s_curriculum_id || "").toUpperCase();
+        const name = (r.s_course_name || "").toLowerCase();
+        return !code.startsWith("SHCD") && !name.includes("sinh hoạt công dân");
+      })
+      .map((r) => ({
+        courseCode: r.s_curriculum_id,
+        courseName: r.s_course_name,
+        credits: Number(r.s_credits),
+        academicYear: r.s_year_code,
+        termCode: r.s_term_code,
+        termOrder: Number(r.s_term_order),
+        score10: r.score_10 != null ? Number(r.score_10) : null,
+        score4: r.score_4 != null ? Number(r.score_4) : null,
+        letterCode: r.letter_code,
+        isPass: r.is_pass,
+        notScore: r.not_score,
+        scoreStatus: r.score_status,
+      }));
+
+    // Detect student's actual active semester based on enrolled courses in the current academic term
+    const currentOfferings = offerings.filter(
+      (o) =>
+        o.s_year_code === timeline.currentAcademicYear &&
+        o.s_term_code === timeline.currentTermCode,
+    );
+    if (currentOfferings.length > 0) {
+      const activeSemesters = currentOfferings
+        .map((o) => {
+          const norm = normalizeCourseCode(o.s_curriculum_id);
+          const found = curriculum.find((c) => normalizeCourseCode(c.courseCode) === norm);
+          return found?.semesterNo;
+        })
+        .filter((s): s is number => typeof s === "number" && s > 0);
+
+      if (activeSemesters.length > 0) {
+        const activeSemesterNo = Math.max(...activeSemesters);
+        timeline.expectedSemesterNo = activeSemesterNo;
+        timeline.expectedYear = Math.ceil(activeSemesterNo / 2);
+        timeline.expectedSemester = activeSemesterNo % 2 === 1 ? "HK1" : "HK2";
+      }
+    }
 
     // 5. Load Program Rules if configured
+
     let requiredTotalCredits: number | null = null;
     let requiredElectiveCredits: number | null = null;
 
