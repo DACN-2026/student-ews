@@ -1177,3 +1177,222 @@ test("Training Progress TC15: Sinh viên vừa thiếu môn kỳ trước vừa 
   assert.equal(result.scheduleProgress.overdueCredits, 3);
   assert.equal(result.scheduleProgress.aheadCredits, 4);
 });
+
+// ============================================================================
+// BUSINESS SPECIFIC EXAMPLES: VÍ DỤ A, B, C, D
+// ============================================================================
+
+test("Training Progress Ví dụ A: Đến hết năm 2 kế hoạch 65 TC, đạt 65 TC, không thiếu HP bắt buộc -> Đúng tiến độ (ON_TRACK)", () => {
+  // Current semester is Sem 5 (Year 3 HK1), completed semesters are 1, 2, 3, 4 (end of Year 2)
+  const curriculum = [
+    { courseId: "m1", courseCode: "M1", courseName: "Môn bắt buộc 1", credits: 25, requirementType: "mandatory", semesterNo: 1 },
+    { courseId: "m2", courseCode: "M2", courseName: "Môn bắt buộc 2", credits: 20, requirementType: "mandatory", semesterNo: 2 },
+    { courseId: "m3", courseCode: "M3", courseName: "Môn bắt buộc 3", credits: 20, requirementType: "mandatory", semesterNo: 3 },
+  ];
+  const grades = [
+    { courseCode: "M1", isPass: true, notScore: false, scoreStatus: "graded" },
+    { courseCode: "M2", isPass: true, notScore: false, scoreStatus: "graded" },
+    { courseCode: "M3", isPass: true, notScore: false, scoreStatus: "graded" },
+  ];
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum,
+    grades,
+    timeline: {
+      currentAcademicYear: "2026-2027",
+      currentTermCode: "HK01",
+      expectedYear: 3,
+      expectedSemester: "HK1",
+      expectedSemesterNo: 5,
+    },
+    semesterPlans: new Map([[1, 25], [2, 20], [3, 20]]),
+  });
+
+  assert.equal(result.scheduleProgress.expectedCreditsToDate, 65);
+  assert.equal(result.scheduleProgress.earnedCreditsToDate, 65);
+  assert.equal(result.scheduleProgress.missingRequiredCoursesCount, 0);
+  assert.equal(result.scheduleProgress.progressStatus, "ON_TRACK");
+  assert.equal(result.scheduleProgress.isOnTrack, true);
+  assert.equal(result.scheduleProgress.isBehind, false);
+});
+
+test("Training Progress Ví dụ B: Kế hoạch 65 TC, đạt 59 TC -> Chậm tiến độ 6 TC", () => {
+  const curriculum = [
+    { courseId: "m1", courseCode: "M1", courseName: "Môn bắt buộc 1", credits: 25, requirementType: "mandatory", semesterNo: 1 },
+    { courseId: "m2", courseCode: "M2", courseName: "Môn bắt buộc 2", credits: 20, requirementType: "mandatory", semesterNo: 2 },
+    { courseId: "m3", courseCode: "M3", courseName: "Môn bắt buộc 3", credits: 20, requirementType: "mandatory", semesterNo: 3 },
+  ];
+  // Student only passed M1 (25) + M2 (20) + 14 credits of M3 (or missed a 6-credit course)
+  const grades = [
+    { courseCode: "M1", isPass: true, notScore: false, scoreStatus: "graded" },
+    { courseCode: "M2", isPass: true, notScore: false, scoreStatus: "graded" },
+    // M3 not passed
+  ];
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "m1", courseCode: "M1", courseName: "M1", credits: 35, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "m2", courseCode: "M2", courseName: "M2", credits: 24, requirementType: "mandatory", semesterNo: 2 },
+      { courseId: "m3", courseCode: "M3", courseName: "M3", credits: 6, requirementType: "mandatory", semesterNo: 3 },
+    ],
+    grades: [
+      { courseCode: "M1", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "M2", isPass: true, notScore: false, scoreStatus: "graded" },
+      // M3 failed (6 TC)
+      { courseCode: "M3", isPass: false, notScore: false, scoreStatus: "graded", score10: 3.0 },
+    ],
+    timeline: {
+      currentAcademicYear: "2026-2027",
+      currentTermCode: "HK01",
+      expectedYear: 3,
+      expectedSemester: "HK1",
+      expectedSemesterNo: 5,
+    },
+    semesterPlans: new Map([[1, 35], [2, 24], [3, 6]]),
+  });
+
+  assert.equal(result.scheduleProgress.expectedCreditsToDate, 65);
+  assert.equal(result.scheduleProgress.earnedCreditsToDate, 59);
+  assert.equal(result.scheduleProgress.creditDifference, -6);
+  assert.equal(result.scheduleProgress.creditDifferenceText, "Chậm 6 TC");
+  assert.equal(result.scheduleProgress.progressStatus, "BEHIND");
+  assert.equal(result.scheduleProgress.isOnTrack, false);
+  assert.equal(result.scheduleProgress.isBehind, true);
+});
+
+test("Training Progress Ví dụ C: Kế hoạch 65 TC, đạt 68 TC nhưng thiếu 1 HP bắt buộc 3 TC -> Chậm tiến độ (BEHIND)", () => {
+  // Plan: 65 TC. Student earned 68 TC (by passing a 6-credit ahead elective in Sem 5), but missed a 3-credit mandatory course in Sem 1
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "m1", courseCode: "M1_PASS", courseName: "HP đạt", credits: 62, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "m2", courseCode: "M2_MISSED", courseName: "HP bắt buộc nợ", credits: 3, requirementType: "mandatory", semesterNo: 2 },
+      { courseId: "m5", courseCode: "AHEAD_ELEC", courseName: "Tự chọn học vượt", credits: 6, requirementType: "elective", semesterNo: 5 },
+    ],
+    grades: [
+      { courseCode: "M1_PASS", isPass: true, notScore: false, scoreStatus: "graded" },
+      // M2_MISSED not passed
+      { courseCode: "AHEAD_ELEC", isPass: true, notScore: false, scoreStatus: "graded" },
+    ],
+    timeline: {
+      currentAcademicYear: "2026-2027",
+      currentTermCode: "HK01",
+      expectedYear: 3,
+      expectedSemester: "HK1",
+      expectedSemesterNo: 5,
+    },
+    semesterPlans: new Map([[1, 62], [2, 3]]),
+  });
+
+  // Expected to date: 62 + 3 = 65 TC
+  assert.equal(result.scheduleProgress.expectedCreditsToDate, 65);
+  // Earned: 62 + 6 = 68 TC (> 65 TC!)
+  assert.equal(result.scheduleProgress.earnedCreditsToDate, 68);
+  assert.equal(result.scheduleProgress.creditDifference, 3);
+  // But has 1 missing mandatory course:
+  assert.equal(result.scheduleProgress.missingRequiredCoursesCount, 1);
+  assert.equal(result.scheduleProgress.missingRequiredCredits, 3);
+  // Must NOT conclude ON_TRACK just because 68 > 65:
+  assert.equal(result.scheduleProgress.progressStatus, "BEHIND");
+  assert.equal(result.scheduleProgress.isBehind, true);
+  assert.equal(result.scheduleProgress.isOnTrack, false);
+});
+
+test("Training Progress Ví dụ D: Học kỳ hiện tại có 18 TC chưa có điểm -> Không tính vào earnedCreditsToDate, không làm chậm, hiển thị Đang theo học", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      { courseId: "m1", courseCode: "M1", courseName: "M1", credits: 13, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "m2", courseCode: "M2", courseName: "M2", credits: 16, requirementType: "mandatory", semesterNo: 2 },
+      { courseId: "curr1", courseCode: "CURR1", courseName: "Môn kỳ hiện tại 1", credits: 10, requirementType: "mandatory", semesterNo: 3 },
+      { courseId: "curr2", courseCode: "CURR2", courseName: "Môn kỳ hiện tại 2", credits: 8, requirementType: "mandatory", semesterNo: 3 },
+    ],
+    grades: [
+      { courseCode: "M1", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "M2", isPass: true, notScore: false, scoreStatus: "graded" },
+      // 18 credits in current semester (Sem 3) with NO_SCORE / pending
+      { courseCode: "CURR1", academicYear: "2026-2027", termCode: "HK01", notScore: true, scoreStatus: "pending" },
+      { courseCode: "CURR2", academicYear: "2026-2027", termCode: "HK01", notScore: true, scoreStatus: "pending" },
+    ],
+    timeline: {
+      currentAcademicYear: "2026-2027",
+      currentTermCode: "HK01",
+      expectedYear: 2,
+      expectedSemester: "HK1",
+      expectedSemesterNo: 3,
+    },
+  });
+
+  // Expected to date: only semesters 1 and 2 (13 + 16 = 29)
+  assert.equal(result.scheduleProgress.expectedCreditsToDate, 29);
+  // Earned to date: 29 (CURR1 and CURR2 not counted into earnedCreditsToDate)
+  assert.equal(result.scheduleProgress.earnedCreditsToDate, 29);
+  assert.equal(result.scheduleProgress.missingRequiredCoursesCount, 0);
+  assert.equal(result.scheduleProgress.progressStatus, "ON_TRACK");
+
+  // Current semester status:
+  const sem3 = result.semesters.find((s) => s.semesterNo === 3);
+  assert.equal(sem3?.status, "CURRENT_PLAN");
+  assert.equal(sem3?.timelineType, "CURRENT_STUDYING");
+  assert.equal(sem3?.statusLabel, "Đang theo học");
+  assert.equal(sem3?.noScoreCourses, 2);
+});
+
+test("Training Progress TC16: Các môn GDTC và GDQP không tính vào số tín chỉ trong kỳ và không làm sinh viên bị Chậm tiến độ", () => {
+  const result = evaluateStudentTrainingProgress({
+    student: defaultStudent,
+    curriculum: [
+      // HK1 Academic courses (13 TC)
+      { courseId: "c1", courseCode: "TRIET", courseName: "Triết học Mác - Lênin", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "c2", courseCode: "DSTT", courseName: "Đại số tuyến tính", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "c3", courseCode: "GT1", courseName: "Giải tích 1", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "c4", courseCode: "NMTH", courseName: "Nhập môn tin học", credits: 4, requirementType: "mandatory", semesterNo: 1 },
+      // HK1 Conditional courses (GDTC & GDQP)
+      { courseId: "tc1", courseCode: "TC1001D", courseName: "Giáo dục thể chất 1", credits: 1, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "qp1", courseCode: "QP2101D", courseName: "GDQP-AN 1: Đường lối quốc phòng", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "qp2", courseCode: "QP2102D", courseName: "GDQP-AN 2: Công tác quốc phòng", credits: 2, requirementType: "mandatory", semesterNo: 1 },
+      // HK2 Academic courses
+      { courseId: "c5", courseCode: "TRR", courseName: "Toán rời rạc", credits: 3, requirementType: "mandatory", semesterNo: 2 },
+    ],
+    grades: [
+      // Student only took & passed the 4 academic courses in HK1 (13 TC)
+      // Did NOT take TC1001D or QP courses yet
+      { courseCode: "TRIET", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "DSTT", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "GT1", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "NMTH", isPass: true, notScore: false, scoreStatus: "graded" },
+    ],
+    timeline: {
+      currentAcademicYear: "2026-2027",
+      currentTermCode: "HK01",
+      expectedYear: 1,
+      expectedSemester: "HK2",
+      expectedSemesterNo: 2, // Evaluating at milestone HK1 completed
+    },
+  });
+
+  // 1. GDTC and GDQP must NOT be added to expected semester credits
+  assert.equal(result.scheduleProgress.expectedCreditsToDate, 13);
+  assert.equal(result.scheduleProgress.earnedCreditsToDate, 13);
+  assert.equal(result.scheduleProgress.creditDifference, 0);
+
+  // 2. Missing GDTC/GDQP must NOT count as missing mandatory courses
+  assert.equal(result.scheduleProgress.missingRequiredCoursesCount, 0);
+  assert.equal(result.scheduleProgress.missingRequiredCredits, 0);
+
+  // 3. Must conclude ON_TRACK, NOT BEHIND
+  assert.equal(result.scheduleProgress.progressStatus, "ON_TRACK");
+  assert.equal(result.scheduleProgress.isOnTrack, true);
+  assert.equal(result.scheduleProgress.isBehind, false);
+
+  // 4. Sem 1 semester plan must only count academic credits (13 TC)
+  const sem1 = result.semesters.find((s) => s.semesterNo === 1);
+  assert.equal(sem1?.plannedCredits, 13);
+  assert.equal(sem1?.completedCredits, 13);
+  assert.equal(sem1?.status, "COMPLETED");
+  assert.equal(sem1?.timelineType, "PAST_COMPLETED");
+});
+
+
+
+

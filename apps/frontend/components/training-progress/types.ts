@@ -245,7 +245,15 @@ export function shortRunId(id: string) {
 }
 
 export type CourseProgressStatus = "PASSED" | "FAILED" | "NO_SCORE" | "NOT_COMPLETED";
-export type CourseTimelineCategory = "PAST_DUE" | "CURRENT_PLAN" | "FUTURE" | "AHEAD";
+export type CourseTimelineCategory = "PAST_DUE" | "CURRENT" | "CURRENT_PLAN" | "FUTURE" | "AHEAD";
+
+export interface StudentProgressMissingCourseItem {
+  courseCode: string;
+  courseName: string;
+  credits: number;
+  semesterNo: number;
+  reason?: string;
+}
 
 export interface StudentProgressCourseItem {
   courseId: string;
@@ -263,6 +271,7 @@ export interface StudentProgressCourseItem {
   latestLetterCode?: string | null;
   passedAcademicYear?: string | null;
   passedTermCode?: string | null;
+  isConditional?: boolean;
 }
 
 export interface StudentProgressElectiveGroup {
@@ -310,6 +319,8 @@ export interface StudentProgressSemesterItem {
   noScoreCourses?: number;
   notCompletedCourses?: number;
   status?: string;
+  timelineType?: "PAST_COMPLETED" | "CURRENT_STUDYING" | "FUTURE_PLANNED";
+  statusLabel?: string;
   isFullyCompleted?: boolean;
   isPastDue?: boolean;
   isCurrentBenchmark?: boolean;
@@ -362,12 +373,26 @@ export interface StudentTrainingProgressData {
     expectedSemesterNo?: number;
     currentBenchmarkSemester?: number | null;
     benchmarkLabel?: string;
+    latestCompletedSemester?: number;
     lastCompletedSemester?: number;
     lastFullyCompletedSemester?: number | null;
     progressGap?: number;
+    progressStatus?: "ON_TRACK" | "BEHIND";
     isOnTrack: boolean;
     isBehind: boolean;
     isAhead: boolean;
+    statusReason?: string;
+    expectedCreditsToDate?: number;
+    earnedCreditsToDate?: number;
+    creditDifference?: number;
+    creditDifferenceText?: string;
+    expectedRequiredCoursesCount?: number;
+    completedRequiredCoursesCount?: number;
+    missingRequiredCoursesCount?: number;
+    missingRequiredCredits?: number;
+    missingRequiredCourses?: StudentProgressMissingCourseItem[];
+    expectedElectiveCredits?: number;
+    earnedElectiveCredits?: number;
     overdueCredits?: number;
     currentPlanCredits?: number;
     aheadCredits?: number;
@@ -391,5 +416,43 @@ export interface StudentTrainingProgressData {
   };
   electiveGroups: StudentProgressElectiveGroup[];
   warnings: Array<{ code: string; message: string }>;
+}
+
+export interface DepartmentProgressStudentItem {
+  id: string;
+  studentId: string;
+  fullName: string;
+  className: string;
+  cohortCode: string;
+  programCode: string;
+  benchmarkLabel: string;
+  latestCompletedSemester: number;
+  currentSemesterNo: number;
+  expectedCredits: number;
+  earnedCredits: number;
+  creditDifference: number;
+  creditDifferenceText: string;
+  missingRequiredCoursesCount: number;
+  missingRequiredCredits: number;
+  progressStatus: "ON_TRACK" | "BEHIND";
+  statusReason: string;
+}
+
+export interface DepartmentProgressOverviewResult {
+  kpi: {
+    totalStudents: number;
+    onTrackCount: number;
+    behindCount: number;
+    onTrackPercentage: number;
+    behindPercentage: number;
+    avgDeficitCredits: number;
+  };
+  items: DepartmentProgressStudentItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
 }
 

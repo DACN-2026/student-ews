@@ -82,6 +82,7 @@
   "GET /training-progress/completion/runs/{param}/groups",
   "GET /training-progress/completion/runs/{param}/students",
   "GET /training-progress/completion/runs/{param}/students/{param}",
+  "GET /training-progress/overview",
   "GET /training-progress/plans",
   "GET /training-progress/plans/{param}",
   "GET /training-progress/plans/{param}/latest-run",
