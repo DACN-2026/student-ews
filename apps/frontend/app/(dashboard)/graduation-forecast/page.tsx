@@ -4,7 +4,6 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
-  Award,
   BookOpen,
   Check,
   CheckCircle2,
@@ -313,11 +312,6 @@ export default function GraduationForecastPage() {
   const [studentLoading, setStudentLoading] = useState(false);
   const [studentModalTab, setStudentModalTab] = useState<"summary" | "transcript">("summary");
 
-  // Transcript filters
-  const [transcriptSearch, setTranscriptSearch] = useState("");
-  const [transcriptTermFilter, setTranscriptTermFilter] = useState("all");
-  const [transcriptStatusFilter, setTranscriptStatusFilter] = useState("all");
-
   // New evaluation run modal
   const [showRunModal, setShowRunModal] = useState(false);
   const [selectedCohort, setSelectedCohort] = useState("");
@@ -425,9 +419,6 @@ export default function GraduationForecastPage() {
     if (!selectedRun) return;
     setStudentLoading(true);
     setStudentModalTab(defaultTab);
-    setTranscriptSearch("");
-    setTranscriptTermFilter("all");
-    setTranscriptStatusFilter("all");
     try {
       const response = await apiFetch(`/api/v1/graduation-evaluations/${selectedRun.id}/students/${student.studentId}`);
       const data = await response.json();
@@ -2172,17 +2163,51 @@ export default function GraduationForecastPage() {
         </section>
       )}
 
-      {/* 4. MODAL CHI TIẾT SINH VIÊN VÀ BẢNG ĐIỂM */}
+      {/* 4. MODAL CHI TIẾT SINH VIÊN VÀ TIẾN ĐỘ CTĐT */}
       <Modal
         isOpen={Boolean(selectedStudent)}
         onClose={() => setSelectedStudent(null)}
-        title={selectedStudent ? selectedStudent.student?.sStudentName || selectedStudent.student?.studentName || "Hồ sơ sinh viên" : "Hồ sơ sinh viên"}
-        description={
-          selectedStudent
-            ? `MSSV: ${selectedStudent.student?.sStudentId || selectedStudent.student?.studentId} • Lớp: ${selectedStudent.student?.sClassName || selectedStudent.student?.className || "Chưa có"} • Ngành: ${selectedStudent.student?.sProgramCode || selectedStudent.student?.programName || ""}`
-            : undefined
+        title={
+          selectedStudent ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-base font-bold text-slate-900">
+                {selectedStudent.student?.sStudentName || selectedStudent.student?.studentName || "Hồ sơ sinh viên"}
+              </span>
+              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                MSSV: {selectedStudent.student?.sStudentId || selectedStudent.student?.studentId}
+              </span>
+            </div>
+          ) : (
+            "Hồ sơ sinh viên"
+          )
         }
-        maxWidth="5xl"
+        description={
+          selectedStudent ? (() => {
+            const s = selectedStudent.student;
+            const cohortMatch =
+              s?.sClassName?.match(/K(\d{2})/i) ||
+              s?.cohortCode?.match(/K(\d{2})/i) ||
+              s?.sStudentId?.match(/^\d{2}(\d{2})/i);
+            const cohortNum = cohortMatch ? Number(cohortMatch[1]) : null;
+            const isOngoing = cohortNum ? cohortNum >= 47 : false;
+            const sYear = cohortNum ? Math.max(1, 51 - cohortNum) : null;
+
+            return (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 mt-1">
+                <span>Lớp: <strong className="font-medium text-slate-700">{s?.sClassName || s?.className || "Chưa có"}</strong></span>
+                <span>•</span>
+                <span>Ngành: <strong className="font-medium text-slate-700">{s?.sProgramCode || s?.programName || "Chính quy"}</strong></span>
+                {cohortNum && (
+                  <>
+                    <span>•</span>
+                    <span>Khóa: <strong className="font-medium text-slate-700">K{cohortNum} {isOngoing ? `(Năm ${sYear})` : "(Năm cuối)"}</strong></span>
+                  </>
+                )}
+              </div>
+            );
+          })() : undefined
+        }
+        maxWidth="6xl"
       >
         {(() => {
           if (!selectedStudent) return null;
@@ -2224,247 +2249,25 @@ export default function GraduationForecastPage() {
           }
           const grades = Array.from(byCode.values());
 
-          const passedGrades = grades.filter((g: ApiData) => g.isPassed);
-          const failedGrades = grades.filter((g: ApiData) => !g.isPassed && g.scoreStatus === "graded" && !g.notScore && (g.score10 != null || g.score4 != null || g.letterGrade));
-          const pendingGrades = grades.filter((g: ApiData) => !g.isPassed && !failedGrades.includes(g));
-
-          const uniqueTerms: string[] = Array.from(
-            new Set(grades.map((g: ApiData) => `${g.academicYear} • ${g.termCode}`)),
-          ).filter(Boolean) as string[];
-
-          const filteredGrades = grades.filter((g: ApiData) => {
-            if (transcriptTermFilter !== "all") {
-              const termKey = `${g.academicYear} • ${g.termCode}`;
-              if (termKey !== transcriptTermFilter) return false;
-            }
-            if (transcriptStatusFilter === "passed" && !g.isPassed) return false;
-            if (transcriptStatusFilter === "failed") {
-              if (!failedGrades.includes(g)) return false;
-            }
-            if (transcriptStatusFilter === "pending") {
-              if (!pendingGrades.includes(g)) return false;
-            }
-            if (transcriptSearch.trim()) {
-              const q = transcriptSearch.toLowerCase();
-              const matchCode = String(g.courseCode || "").toLowerCase().includes(q);
-              const matchName = String(g.courseName || "").toLowerCase().includes(q);
-              if (!matchCode && !matchName) return false;
-            }
-            return true;
-          });
-
-          return (
-            <div className="space-y-5 text-slate-800">
-              <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
-                <button
-                  type="button"
-                  onClick={() => setStudentModalTab("summary")}
-                  className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
-                    studentModalTab === "summary"
-                      ? "bg-slate-900 text-white shadow-xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  <GraduationCap size={14} />
-                  <span>Tổng quan & Điều kiện CTĐT</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStudentModalTab("transcript")}
-                  className={`flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition cursor-pointer ${
-                    studentModalTab === "transcript"
-                      ? "bg-slate-900 text-white shadow-xs"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  <FileText size={14} />
-                  <span>Bảng điểm học phần ({grades.length} môn)</span>
-                </button>
-              </div>
-
-              {studentModalTab === "summary" && (forecast ? (
-                <ForecastDetail
-                  forecast={forecast}
-                  programCode={selectedStudent.student?.sProgramCode}
-                  finalStatus={selectedStudent.student?.finalStatus}
-                  reasons={Array.isArray(selectedStudent.student?.reasons) ? selectedStudent.student.reasons : []}
-                  additionalRequirements={Array.isArray(selectedStudent.requirements) ? selectedStudent.requirements : []}
-                  student={selectedStudent.student}
-                  grades={grades}
-                />
-              ) : (
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-slate-600">
-                  <Info size={24} className="mx-auto text-slate-400 mb-2" />
-                  <p className="font-bold text-slate-800">Chưa có danh mục chương trình đào tạo để đối chiếu</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Vui lòng cấu hình danh mục môn học của CTĐT hoặc liên hệ quản trị viên để cập nhật dữ liệu.
-                  </p>
-                </div>
-              ))}
-
-              {studentModalTab === "transcript" && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
-                      <p className="text-[10px] font-bold uppercase text-slate-500">Tổng môn học</p>
-                      <p className="font-mono text-xl font-extrabold text-slate-900">{grades.length}</p>
-                    </div>
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 text-center">
-                      <p className="text-[10px] font-bold uppercase text-emerald-700">Học phần đạt (Qua môn)</p>
-                      <p className="font-mono text-xl font-extrabold text-emerald-800">{passedGrades.length}</p>
-                    </div>
-                    <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-3 text-center">
-                      <p className="text-[10px] font-bold uppercase text-rose-700">Môn rớt (Điểm F)</p>
-                      <p className="font-mono text-xl font-extrabold text-rose-800">{failedGrades.length}</p>
-                    </div>
-                    <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3 text-center">
-                      <p className="text-[10px] font-bold uppercase text-amber-700">Chưa có điểm</p>
-                      <p className="font-mono text-xl font-extrabold text-amber-800">{pendingGrades.length}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <div className="relative flex-1">
-                      <Search size={14} className="pointer-events-none absolute left-3 top-2.5 text-slate-400" />
-                      <input
-                        value={transcriptSearch}
-                        onChange={(e) => setTranscriptSearch(e.target.value)}
-                        placeholder="Tìm tên môn học hoặc mã môn..."
-                        className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
-                      />
-                    </div>
-                    <select
-                      value={transcriptTermFilter}
-                      onChange={(e) => setTranscriptTermFilter(e.target.value)}
-                      className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-lime-500"
-                    >
-                      <option value="all">Tất cả học kỳ</option>
-                      {uniqueTerms.map((term: string) => (
-                        <option key={term} value={term}>
-                          {term}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={transcriptStatusFilter}
-                      onChange={(e) => setTranscriptStatusFilter(e.target.value)}
-                      className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-lime-500"
-                    >
-                      <option value="all">Tất cả kết quả</option>
-                      <option value="failed">Chỉ xem môn rớt (F)</option>
-                      <option value="pending">Chỉ xem môn chưa có điểm</option>
-                      <option value="passed">Chỉ xem môn đã đạt</option>
-                    </select>
-                  </div>
-
-                  <div className="overflow-hidden rounded-xl border border-slate-200">
-                    <div className="max-h-[50vh] overflow-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                          <tr>
-                            <th className="px-3.5 py-3">Học kỳ</th>
-                            <th className="px-3 py-3">Mã HP</th>
-                            <th className="px-3.5 py-3">Tên môn học</th>
-                            <th className="px-2 py-3 text-center">Số TC</th>
-                            <th className="px-2 py-3 text-center">Điểm 10</th>
-                            <th className="px-2 py-3 text-center">Điểm 4</th>
-                            <th className="px-2 py-3 text-center">Điểm chữ</th>
-                            <th className="px-3.5 py-3 text-right">Trạng thái</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {filteredGrades.length === 0 ? (
-                            <tr>
-                              <td colSpan={8} className="py-12 text-center text-slate-400">
-                                Không tìm thấy môn học nào phù hợp bộ lọc.
-                              </td>
-                            </tr>
-                          ) : (
-                            filteredGrades.map((g: ApiData) => {
-                              const isFail = failedGrades.includes(g);
-                              const isPendingGrade = pendingGrades.includes(g);
-
-                              return (
-                                <tr
-                                  key={g.id}
-                                  className={
-                                    isFail
-                                      ? "bg-rose-50/40 hover:bg-rose-50/60"
-                                      : isPendingGrade
-                                        ? "bg-amber-50/30 hover:bg-amber-50/50"
-                                        : "hover:bg-slate-50"
-                                  }
-                                >
-                                  <td className="px-3.5 py-2.5 text-slate-500 font-mono text-[11px] whitespace-nowrap">
-                                    {g.academicYear} • {g.termCode}
-                                  </td>
-                                  <td className="px-3 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap">
-                                    {g.courseCode}
-                                  </td>
-                                  <td className="px-3.5 py-2.5 font-medium text-slate-800">
-                                    {g.courseName}
-                                  </td>
-                                  <td className="px-2 py-2.5 text-center font-mono text-slate-700">
-                                    {g.credits}
-                                  </td>
-                                  <td className="px-2 py-2.5 text-center font-mono font-bold">
-                                    {g.score10 != null ? Number(g.score10).toFixed(1) : "—"}
-                                  </td>
-                                  <td className="px-2 py-2.5 text-center font-mono font-bold">
-                                    {g.score4 != null ? Number(g.score4).toFixed(1) : "—"}
-                                  </td>
-                                  <td className="px-2 py-2.5 text-center font-mono font-extrabold">
-                                    {g.letterGrade ? (
-                                      <span
-                                        className={
-                                          g.letterGrade === "F"
-                                            ? "text-rose-700"
-                                            : g.letterGrade.startsWith("A")
-                                              ? "text-emerald-700"
-                                              : "text-slate-800"
-                                        }
-                                      >
-                                        {g.letterGrade}
-                                      </span>
-                                    ) : (
-                                      "—"
-                                    )}
-                                  </td>
-                                  <td className="px-3.5 py-2.5 text-right">
-                                    {isFail ? (
-                                      <span className="inline-flex rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                                        Không đạt (F)
-                                      </span>
-                                    ) : isPendingGrade ? (
-                                      <span className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                                        Chưa có điểm
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                                        Đạt
-                                      </span>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-3 border-t border-slate-200 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setSelectedStudent(null)}
-                  className="rounded-xl border border-slate-300 bg-white px-5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
-                >
-                  Đóng cửa sổ
-                </button>
-              </div>
+          return forecast ? (
+            <ForecastDetail
+              forecast={forecast}
+              programCode={selectedStudent.student?.sProgramCode}
+              finalStatus={selectedStudent.student?.finalStatus}
+              reasons={Array.isArray(selectedStudent.student?.reasons) ? selectedStudent.student.reasons : []}
+              additionalRequirements={Array.isArray(selectedStudent.requirements) ? selectedStudent.requirements : []}
+              student={selectedStudent.student}
+              grades={grades}
+              initialTab={studentModalTab}
+              onClose={() => setSelectedStudent(null)}
+            />
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-slate-600">
+              <Info size={24} className="mx-auto text-slate-400 mb-2" />
+              <p className="font-bold text-slate-800">Chưa có danh mục chương trình đào tạo để đối chiếu</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Vui lòng cấu hình danh mục môn học của CTĐT hoặc liên hệ quản trị viên để cập nhật dữ liệu.
+              </p>
             </div>
           );
         })()}

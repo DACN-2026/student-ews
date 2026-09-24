@@ -5,10 +5,10 @@ import React, { useEffect } from "react";
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
-  description?: string;
+  title: React.ReactNode;
+  description?: React.ReactNode;
   children: React.ReactNode;
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl";
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl";
   footer?: React.ReactNode;
 }
 
@@ -21,6 +21,7 @@ const maxWidthMap = {
   "3xl": "max-w-3xl",
   "4xl": "max-w-4xl",
   "5xl": "max-w-5xl",
+  "6xl": "max-w-6xl",
 };
 
 export default function Modal({
@@ -73,9 +74,9 @@ export default function Modal({
               {title}
             </h3>
             {description && (
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+              <div className="text-xs text-slate-500 mt-1 leading-relaxed">
                 {description}
-              </p>
+              </div>
             )}
           </div>
           <button
