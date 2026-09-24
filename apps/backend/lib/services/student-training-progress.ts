@@ -71,6 +71,9 @@ export type SemesterProgress = {
   termNo: number;
   name: string;
   requiredCredits: number;
+  plannedCredits?: number;
+  mandatoryCredits?: number;
+  completionPercentage?: number;
   completedCredits: number;
   remainingCredits: number;
   completedCourses: number;
@@ -163,6 +166,58 @@ export function isMandatory(reqType: string | null | undefined): boolean {
 }
 
 // ============================================================================
+// Standard Semester Credit Plans (Căn cứ PDF 2026-Ke-hoach-giang-day-nh-26-27 (1).pdf - Mẫu 07/QLĐT)
+// ============================================================================
+
+export function getStandardSemesterPlannedCredits(
+  semesterNo: number,
+  programCode?: string | null,
+): number {
+  const code = (programCode || "").toUpperCase();
+  const isPM = code.includes("PM");
+  const isKHDL = code.includes("KHDL");
+  const isMMT = code.includes("MMT");
+
+  switch (semesterNo) {
+    case 1:
+      // K50 Năm 1 HK1: 9 học phần bắt buộc trong CTĐT (13 TC tích lũy + 10 TC môn điều kiện GDTC/GDQP = 23 TC)
+      return 23;
+    case 2:
+      // K50 Năm 1 HK2: 4 học phần bắt buộc (10 TC) + 1 môn GDTC 2 (1 TC) + SV chọn 6/12 TC tự chọn = 16 TC (PDF Trang 1: Tổng cộng 16/22)
+      return 16;
+    case 3:
+      // K49 Năm 2 HK1: 6 học phần bắt buộc (12 TC) + 1 môn GDTC 3 (1 TC) + SV chọn 6/9 TC tự chọn = 18 TC (PDF Trang 2: Tổng cộng 18/21)
+      return 18;
+    case 4:
+      // K49 Năm 2 HK2: 4 học phần bắt buộc (13 TC) + SV chọn 3/9 TC tự chọn = 16 TC (PDF Trang 2: Tổng cộng 16/22)
+      return 16;
+    case 5:
+      // K48 Năm 3 HK1: 4 học phần bắt buộc (13 TC) + SV chọn 3/6 TC tự chọn = 16 TC (PDF Trang 3: Tổng cộng 16/19)
+      return 16;
+    case 6:
+      // K48 Năm 3 HK2: 3 học phần bắt buộc (10 TC) + 1 môn bổ trợ (3 TC) + tự chọn chuyên ngành
+      // - Chuyên ngành Kỹ thuật phần mềm (PM): 10 + 3 + 6 = 19 TC (PDF Trang 4: Tổng cộng 19/22)
+      // - Chuyên ngành Mạng máy tính (MMT): 10 + 3 + 4 = 17 TC (PDF Trang 3: Tổng cộng 17/25)
+      // - Chuyên ngành Khoa học dữ liệu (KHDL): 10 + 3 + 3 = 16 TC (PDF Trang 4: Tổng cộng 16/21)
+      if (isPM) return 19;
+      if (isKHDL) return 16;
+      if (isMMT) return 17;
+      return 17;
+    case 7:
+      // K47 Năm 4 HK1: 3 học phần bắt buộc (9 TC) + SV chọn 9/12 TC tự chọn ngành = 18 TC (PDF Trang 5: Tổng cộng 18/21)
+      return 18;
+    case 8:
+      // K47 Năm 4 HK2: 2 học phần bắt buộc (6 TC) + SV chọn 12/15-16 TC tự chọn ngành = 18 TC (PDF Trang 6: Tổng cộng 18/21 - 18/22)
+      return 18;
+    case 9:
+      // K46 Năm 5 HK1 (Tốt nghiệp): Thực tập nghề nghiệp (8 TC) + Đồ án tốt nghiệp (10 TC) = 18 TC (PDF Trang 7: Tổng cộng 18/18)
+      return 18;
+    default:
+      return 16;
+  }
+}
+
+// ============================================================================
 // Pure Engine: evaluateStudentTrainingProgress
 // ============================================================================
 
@@ -190,6 +245,7 @@ export function evaluateStudentTrainingProgress(input: {
     requiredElectiveCredits?: number | null;
     choiceGroups?: Array<{ code: string; requiredCredits: number }>;
   };
+  semesterPlans?: Map<number, number>;
 }): StudentTrainingProgressOutput {
   const warnings: string[] = [];
 
@@ -505,8 +561,13 @@ export function evaluateStudentTrainingProgress(input: {
       .filter((c) => c.status === "PASSED")
       .reduce((sum, c) => sum + c.credits, 0);
 
-    const sRequiredCredits = sMandatoryRequiredCredits;
-    const sRemainingCredits = Math.max(0, sRequiredCredits - sCompletedCredits);
+    // Kế hoạch tín chỉ chuẩn theo Kế hoạch giảng dạy NH 2026-2027 (Mẫu 07/QLĐT - PDF docs/2026-Ke-hoach-giang-day-nh-26-27 (1).pdf)
+    const standardPlannedCredits = getStandardSemesterPlannedCredits(s, input.student.programCode);
+    const sPlannedCredits = standardPlannedCredits;
+
+    const sRequiredCredits = sPlannedCredits;
+    const sRemainingCredits = Math.max(0, sPlannedCredits - sCompletedCredits);
+    const sCompletionPercentage = sPlannedCredits > 0 ? Math.round((sCompletedCredits / sPlannedCredits) * 100) : 0;
 
     const sCompletedCount = sCourses.filter((c) => c.status === "PASSED").length;
     const sFailedCount = sCourses.filter((c) => c.status === "FAILED").length;
@@ -548,6 +609,9 @@ export function evaluateStudentTrainingProgress(input: {
       termNo,
       name: `Năm ${yearStudy} - HK${termNo}`,
       requiredCredits: sRequiredCredits,
+      plannedCredits: sPlannedCredits,
+      mandatoryCredits: sMandatoryRequiredCredits,
+      completionPercentage: sCompletionPercentage,
       completedCredits: sCompletedCredits,
       remainingCredits: sRemainingCredits,
       completedCourses: sCompletedCount,
@@ -942,6 +1006,22 @@ export class StudentTrainingProgressService {
       }
     }
 
+    let semesterPlansMap: Map<number, number> | undefined;
+    if (program && cohort) {
+      const dbPlans = await prisma.trainingProgressPlan.findMany({
+        where: { cohortId: cohort.id, trainingProgramId: program.id },
+        select: { curriculumSemesterNo: true, requiredElectiveCredits: true },
+      });
+      if (dbPlans.length > 0) {
+        semesterPlansMap = new Map();
+        for (const pl of dbPlans) {
+          if (pl.requiredElectiveCredits > 0) {
+            semesterPlansMap.set(pl.curriculumSemesterNo, pl.requiredElectiveCredits);
+          }
+        }
+      }
+    }
+
     // 6. Run Pure Engine
     const result = evaluateStudentTrainingProgress({
       student: {
@@ -960,6 +1040,7 @@ export class StudentTrainingProgressService {
         requiredTotalCredits,
         requiredElectiveCredits,
       },
+      semesterPlans: semesterPlansMap,
     });
 
     if (program) {

@@ -160,7 +160,6 @@ export default function DashboardPage() {
   const warningTotal = redCount + yellowCount;
   const gpaMetric = summaryData?.metrics?.averageGpa as DashboardMetric | undefined;
   const completionMetric = summaryData?.metrics?.completionRate as DashboardMetric | undefined;
-  const registrationMetric = summaryData?.metrics?.registrationRate as DashboardMetric | undefined;
   const conductMetric = summaryData?.metrics?.averageConductScore as DashboardMetric | undefined;
   const graduationForecastMetric = summaryData?.metrics?.graduationForecastRate as DashboardMetric | undefined;
   const selectedClass = classes.find((item) => item.id === filters.classId);
@@ -366,7 +365,7 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* 2. 7 KPI Metric Cards according to SWE */}
+      {/* 2. 6 KPI Metric Cards */}
       <div>
         <div className="mb-3">
           <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
@@ -375,7 +374,7 @@ export default function DashboardPage() {
           <p className="text-xs text-slate-500">Các chỉ số đo lường học vụ và tiến độ đào tạo thời gian thực</p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
           {/* Card 1: Sinh viên */}
           <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-xs hover:border-[var(--color-primary)] transition-all">
             <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Sinh viên</span>
@@ -416,16 +415,7 @@ export default function DashboardPage() {
             <p className="text-[10px] text-emerald-700/80 mt-1">{metricRatio(completionMetric, "Chưa có lần tính tiến độ")}</p>
           </div>
 
-          {/* Card 5: Đăng ký đúng tiến độ */}
-          <div className="bg-white border border-emerald-200/80 rounded-2xl p-4 shadow-xs bg-emerald-50/20 hover:border-emerald-400 transition-all">
-            <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider block">Đăng ký đúng tiến độ</span>
-            <div className="text-2xl font-bold text-emerald-600 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-              {metricPercent(registrationMetric)}
-            </div>
-            <p className="text-[10px] text-emerald-700/80 mt-1">{metricRatio(registrationMetric, "Chưa có dữ liệu đăng ký")}</p>
-          </div>
-
-          {/* Card 6: Cảnh báo học tập */}
+          {/* Card 5: Cảnh báo học tập */}
           <div className="bg-white border border-amber-200/80 rounded-2xl p-4 shadow-xs bg-amber-50/20 hover:border-amber-400 transition-all">
             <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider block">Cảnh báo học tập</span>
             <div className="text-2xl font-bold text-amber-600 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
@@ -434,7 +424,7 @@ export default function DashboardPage() {
             <p className="text-[10px] text-amber-700/80 mt-1">{redCount} Đỏ · {yellowCount} Vàng</p>
           </div>
 
-          {/* Card 7: Graduation forecast */}
+          {/* Card 6: Graduation forecast */}
           <div className="bg-white border border-cyan-200/80 rounded-2xl p-4 shadow-xs bg-cyan-50/20 hover:border-cyan-400 transition-all">
             <span className="text-[11px] font-semibold text-cyan-800 uppercase tracking-wider block">Dự kiến tốt nghiệp đúng hạn</span>
             <div className="text-2xl font-bold text-cyan-700 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>

@@ -40,15 +40,12 @@ const SOURCE_MISSING_REASON = "Chưa có dữ liệu đã được xác minh cho
 const REQUIRED_RULE_CODES = [
   "PROGRAM_COMPLETION",
   "CUMULATIVE_GPA",
-  "DISCIPLINE",
-  "LEGAL",
   "WHOLE_COURSE_TRAINING",
   "TOTAL_CREDITS",
   "COMPULSORY_CREDITS",
   "ELECTIVE_CREDITS",
   "PHYSICAL_EDUCATION",
   "NATIONAL_DEFENSE",
-  "FOREIGN_LANGUAGE",
 ] as const;
 
 type GraduationRuleRow = GraduationRule;
@@ -72,7 +69,9 @@ function requirementResult(value: string, failedValue: string): DetailResult {
   return "NOT_AVAILABLE";
 }
 
-export function resolveGraduationStatus(details: Array<{ ruleCode: string; result: DetailResult }>): GraduationStatus {
+export function resolveGraduationStatus(
+  details: Array<{ ruleCode: string; result: DetailResult }>,
+): GraduationStatus {
   if (details.some((detail) => detail.result === "FAIL")) return "NOT_ELIGIBLE";
   if (details.some((detail) => detail.result === "NOT_AVAILABLE")) return "MANUAL_REVIEW";
   if (
@@ -96,16 +95,10 @@ function resultReason(code: string, result: DetailResult, actual: string | null)
   if (result === "PASS") return null;
   if (result === "NOT_AVAILABLE") {
     switch (code) {
-      case "FOREIGN_LANGUAGE":
-        return "Chưa có dữ liệu chuẩn đầu ra ngoại ngữ.";
       case "PHYSICAL_EDUCATION":
         return "Chưa có dữ liệu chứng chỉ Giáo dục thể chất.";
       case "NATIONAL_DEFENSE":
         return "Chưa có dữ liệu chứng chỉ Giáo dục quốc phòng và an ninh.";
-      case "DISCIPLINE":
-        return "Chưa có dữ liệu tình trạng kỷ luật.";
-      case "LEGAL":
-        return "Chưa có dữ liệu tình trạng pháp lý.";
       case "WHOLE_COURSE_TRAINING":
         return "Chưa có dữ liệu điểm rèn luyện toàn khóa.";
       case "CUMULATIVE_GPA":
@@ -289,10 +282,7 @@ export async function fetchDerivedRequirements(studentIds: string[], allowedTerm
 
     const isVerified =
       physicalStatus !== "NOT_AVAILABLE" &&
-      defenseStatus !== "NOT_AVAILABLE" &&
-      languageStatus !== "NOT_AVAILABLE" &&
-      disciplineStatus !== "NOT_AVAILABLE" &&
-      legalStatus !== "NOT_AVAILABLE";
+      defenseStatus !== "NOT_AVAILABLE";
 
     result.set(sId, {
       requirement: req,
@@ -508,7 +498,7 @@ export class GraduationEvaluationsService {
         ...(verified < students.length
           ? [{
               code: "GRADUATION_REQUIREMENTS_INCOMPLETE",
-              message: "Thiếu dữ liệu xác minh GDTC, GDQP, ngoại ngữ, kỷ luật hoặc pháp lý cho một số sinh viên.",
+              message: "Thiếu dữ liệu xác minh GDTC hoặc GDQP cho một số sinh viên.",
               details: ["Sinh viên thiếu dữ liệu sẽ được phân loại Cần đối soát, không tự động coi là đạt."],
             }]
           : []),
@@ -635,6 +625,20 @@ export class GraduationEvaluationsService {
 
       const gpaThreshold = numberValue(ruleByCode.get("CUMULATIVE_GPA")?.requiredValue);
 
+      // Determine expected semester for cohort to isolate past backlogs vs future courses
+      let cohortStartYear: number | null = null;
+      const codeMatch = (preview.scope.cohortCode || "").match(/K(\d+)/i);
+      if (codeMatch) {
+        cohortStartYear = 2022 + (Number(codeMatch[1]) - 46);
+      }
+      const currentYearMatch = (preview.scope.assessmentAcademicYear || "").match(/^(\d{4})/);
+      const currentYearStart = currentYearMatch ? Number(currentYearMatch[1]) : 2026;
+      const yearDiff = cohortStartYear ? Math.max(0, currentYearStart - cohortStartYear) : 0;
+      const expectedYear = yearDiff + 1;
+      const termNo = (preview.scope.assessmentTermCode || "").includes("2") ? 2 : 1;
+      const expectedSemesterNo = (expectedYear - 1) * 2 + termNo;
+      const isFinalCohort = expectedSemesterNo >= 9;
+
       for (const student of completionStudents) {
         const derived = derivedReqs.get(student.studentId);
         const requirement = derived?.requirement;
@@ -648,20 +652,42 @@ export class GraduationEvaluationsService {
         });
         const compulsoryCredits = forecast.requirements.requiredCourses.completedCredits;
         const electiveCredits = forecast.requirements.electives.passedCredits;
-        const pendingCompulsoryCredits = 0;
-        const pendingElectiveCredits = 0;
+        const pendingCompulsoryCredits = forecast.requirements.requiredCourses.pendingCredits ?? 0;
+        const pendingElectiveCredits = forecast.requirements.electives.pendingCredits ?? 0;
         const gpa = numberValue(student.cumulativeGpa4);
         const totalCredits = forecast.summary.completedCredits;
-        const pendingTotalCredits = 0;
+        const pendingTotalCredits = forecast.summary.pendingCredits ?? 0;
         const programMapped = student.sProgramCode === preview.scope.programCode && curriculum.length > 0;
-        const knownCurriculumFailure = forecast.missingRequiredCourses.length > 0 ||
-          (forecast.requirements.electives.remainingCredits !== null && forecast.requirements.electives.remainingCredits > 0) ||
-          (forecast.summary.remainingCredits !== null && forecast.summary.remainingCredits > 0) ||
-          forecast.electiveGroups.some((group) => group.remainingCredits !== null && group.remainingCredits > 0);
+        
+        const trulyMissingRequired = forecast.missingRequiredCourses.some((c) => c.state !== "no_score");
+        const pendingRequired = forecast.missingRequiredCourses.some((c) => c.state === "no_score");
+        
+        const electiveRemaining = forecast.requirements.electives.remainingCredits ?? 0;
+        const trulyMissingElective = electiveRemaining > pendingElectiveCredits;
+        
+        const totalRemaining = forecast.summary.remainingCredits ?? 0;
+        const trulyMissingTotal = totalRemaining > pendingTotalCredits;
+        
+        let trulyMissingGroup = false;
+        let pendingGroup = false;
+        for (const group of forecast.electiveGroups) {
+          const groupRemaining = group.remainingCredits ?? 0;
+          const groupPending = group.pendingCredits ?? 0;
+          if (groupRemaining > groupPending) trulyMissingGroup = true;
+          else if (groupRemaining > 0) pendingGroup = true;
+        }
+
+        const knownCurriculumFailure = trulyMissingRequired || trulyMissingElective || trulyMissingTotal || trulyMissingGroup;
+        const knownCurriculumPending = !knownCurriculumFailure && (
+          pendingRequired || (electiveRemaining > 0) || (totalRemaining > 0) || pendingGroup
+        );
+
         const curriculumDetermined = programMapped && forecast.summary.remainingCredits !== null &&
           forecast.electiveGroups.every((group) => group.remainingCredits !== null);
+          
         const curriculumResult: DetailResult = !programMapped ? "NOT_AVAILABLE"
-          : knownCurriculumFailure ? "FAIL" : !curriculumDetermined ? "NOT_AVAILABLE" : "PASS";
+          : knownCurriculumFailure ? "FAIL" : !curriculumDetermined ? "NOT_AVAILABLE" 
+          : knownCurriculumPending ? "PENDING" : "PASS";
 
         const physicalStatus = derived?.physicalStatus || "NOT_AVAILABLE";
         const defenseStatus = derived?.defenseStatus || "NOT_AVAILABLE";
@@ -715,16 +741,13 @@ export class GraduationEvaluationsService {
           ...[
             ...(ruleByCode.has("PHYSICAL_EDUCATION") ? [["PHYSICAL_EDUCATION", "Chứng chỉ Giáo dục thể chất", physicalStatus, "NOT_PASSED"]] : []),
             ...(ruleByCode.has("NATIONAL_DEFENSE") ? [["NATIONAL_DEFENSE", "Chứng chỉ Giáo dục quốc phòng và an ninh", defenseStatus, "NOT_PASSED"]] : []),
-            ...(ruleByCode.has("FOREIGN_LANGUAGE") ? [["FOREIGN_LANGUAGE", "Chuẩn đầu ra ngoại ngữ", languageStatus, "NOT_PASSED"]] : []),
-            ...(ruleByCode.has("DISCIPLINE") ? [["DISCIPLINE", "Không trong thời gian đình chỉ học tập", disciplineStatus, "SUSPENDED"]] : []),
-            ...(ruleByCode.has("LEGAL") ? [["LEGAL", "Không bị truy cứu trách nhiệm hình sự", legalStatus, "UNDER_CRIMINAL_PROCEEDING"]] : []),
           ].map(([ruleCode, ruleName, value, failedValue]) => {
             const result = requirementResult(value, failedValue);
             return {
               ruleCode,
               ruleName,
-              category: ruleCode === "PHYSICAL_EDUCATION" || ruleCode === "NATIONAL_DEFENSE" ? "CERTIFICATE" : ruleCode === "FOREIGN_LANGUAGE" ? "OUTCOME" : "STATUS",
-              requiredValue: ruleCode === "DISCIPLINE" || ruleCode === "LEGAL" ? "CLEAR" : "PASSED",
+              category: "CERTIFICATE",
+              requiredValue: "PASSED",
               actualValue: value,
               result,
               reason: resultReason(ruleCode, result, value),
@@ -794,31 +817,58 @@ export class GraduationEvaluationsService {
         const status = resolveGraduationStatus(details);
         const needsManualReview = details.some((detail) => detail.result === "NOT_AVAILABLE");
         counts[status]++;
-        const reasons: Array<{ code: string; result: DetailResult; message: string }> = [];
+        const reasons: Array<{
+          code: string;
+          result: DetailResult;
+          message: string;
+          courseCode?: string;
+          courseName?: string;
+          credits?: number;
+          semesterNo?: number | null;
+          isBacklog?: boolean;
+          isMandatory?: boolean;
+        }> = [];
 
         // 1. Failed courses (mandatory or elective failed attempts)
         for (const course of forecast.failedCourses) {
+          const courseSem = course.schedule?.semesterNo ?? course.semesterNo ?? null;
           reasons.push({
             code: "FAILED_COURSE",
             result: "FAIL",
-            message: `Học phần ${course.courseCode} - ${course.courseName} chưa đạt.`,
+            message: `Học phần ${course.courseCode} - ${course.courseName} chưa đạt (cần trả nợ).`,
+            courseCode: course.courseCode,
+            courseName: course.courseName,
+            credits: course.credits,
+            semesterNo: courseSem,
+            isBacklog: true,
+            isMandatory: /bắt buộc|mandatory/i.test(course.requirementType),
           });
         }
 
-        // 2. Missing required courses (unregistered / no score / no record, excluding already failed)
+        // 2. Missing required courses (distinguish overdue backlogs from past semesters vs future courses)
+        let overdueMandatoryCount = 0;
         for (const course of forecast.missingRequiredCourses) {
           if (course.state === "failed") continue;
-          if (course.state === "no_score") {
+          if (!isFinalCohort && course.state === "no_score") continue; // Exclude courses currently being taken for ongoing students
+          const courseSem = course.schedule?.semesterNo ?? course.semesterNo ?? 0;
+          const isOverdue = !isFinalCohort ? (Boolean(courseSem) && courseSem < expectedSemesterNo) : true;
+
+          if (isOverdue) {
+            overdueMandatoryCount++;
             reasons.push({
-              code: "MISSING_REQUIRED_COURSE",
+              code: isFinalCohort ? "MISSING_REQUIRED_COURSE" : "OVERDUE_MANDATORY_COURSE",
               result: "FAIL",
-              message: `Học phần bắt buộc ${course.courseCode} - ${course.courseName} chưa có điểm đạt.`,
-            });
-          } else {
-            reasons.push({
-              code: "MISSING_REQUIRED_COURSE",
-              result: "FAIL",
-              message: `Chưa hoàn thành ${course.courseCode} - ${course.courseName}.`,
+              message: isFinalCohort
+                ? (course.state === "no_score"
+                  ? `Học phần bắt buộc ${course.courseCode} - ${course.courseName} chưa có điểm đạt.`
+                  : `Chưa hoàn thành ${course.courseCode} - ${course.courseName}.`)
+                : `Học phần bắt buộc ${course.courseCode} - ${course.courseName} (Học kỳ ${courseSem || "?"}) chưa hoàn thành.`,
+              courseCode: course.courseCode,
+              courseName: course.courseName,
+              credits: course.credits,
+              semesterNo: courseSem,
+              isBacklog: true,
+              isMandatory: true,
             });
           }
         }
@@ -889,7 +939,7 @@ export class GraduationEvaluationsService {
           disciplineStatus,
           legalStatus,
           wholeCourseTrainingScore: conductScore,
-          missingRequiredCourses: forecast.missingRequiredCourses.length,
+          missingRequiredCourses: isFinalCohort ? forecast.missingRequiredCourses.length : overdueMandatoryCount,
           missingElectiveCredits: forecast.requirements.electives.remainingCredits,
           pendingResultCourses: forecast.noScoreCourses.length,
           finalStatus: status,
@@ -1030,14 +1080,72 @@ export class GraduationEvaluationsService {
       }),
     ]);
     return {
-      items: items.map((item) => ({
-        ...item,
-        totalCredits: numberValue(item.totalCredits),
-        compulsoryCredits: numberValue(item.compulsoryCredits),
-        electiveCredits: numberValue(item.electiveCredits),
-        cumulativeGpa4: numberValue(item.cumulativeGpa4),
-        wholeCourseTrainingScore: numberValue(item.wholeCourseTrainingScore),
-      })),
+      items: items.map((item) => {
+        const reasons = Array.isArray(item.reasons) ? (item.reasons as Array<Record<string, unknown>>) : [];
+        const overdueMandatoryCourses = reasons.filter((r) => r.code === "OVERDUE_MANDATORY_COURSE");
+        const failedCourses = reasons.filter((r) => r.code === "FAILED_COURSE");
+        const failedMandatoryCourses = failedCourses.filter((r) => r.isMandatory === true);
+        const failedElectiveCourses = failedCourses.filter((r) => r.isMandatory === false);
+        const electiveGroupBacklogs = reasons.filter((r) => r.code === "MISSING_ELECTIVE_CREDITS");
+
+        const overdueMandatoryCount = overdueMandatoryCourses.length;
+        const failedCount = failedCourses.length;
+        const electiveBacklogCount = failedElectiveCourses.length + electiveGroupBacklogs.length;
+        const totalBacklogCount = overdueMandatoryCount + failedCount + electiveGroupBacklogs.length;
+
+        const hasOverdueMandatory = overdueMandatoryCount > 0;
+        const hasFailed = failedCount > 0;
+        const hasElectiveBacklog = electiveBacklogCount > 0;
+        const hasNoBacklog = !hasOverdueMandatory && !hasFailed && !hasElectiveBacklog;
+
+        return {
+          ...item,
+          totalCredits: numberValue(item.totalCredits),
+          compulsoryCredits: numberValue(item.compulsoryCredits),
+          electiveCredits: numberValue(item.electiveCredits),
+          cumulativeGpa4: numberValue(item.cumulativeGpa4),
+          wholeCourseTrainingScore: numberValue(item.wholeCourseTrainingScore),
+          backlog: {
+            status: hasNoBacklog ? "NO_BACKLOG" : hasFailed ? "HAS_FAILED" : hasOverdueMandatory ? "HAS_OVERDUE" : "HAS_ELECTIVE_OVERDUE",
+            hasNoBacklog,
+            hasOverdueMandatory,
+            hasFailed,
+            hasElectiveBacklog,
+            overdueMandatoryCount,
+            failedCount,
+            failedMandatoryCount: failedMandatoryCourses.length,
+            failedElectiveCount: failedElectiveCourses.length,
+            electiveBacklogCount,
+            totalBacklogCount,
+            overdueMandatoryCourses: overdueMandatoryCourses.map((r) => ({
+              courseCode: String(r.courseCode || ""),
+              courseName: String(r.courseName || ""),
+              credits: Number(r.credits || 0),
+              semesterNo: Number(r.semesterNo || 0),
+            })),
+            failedCourses: failedCourses.map((r) => ({
+              courseCode: String(r.courseCode || ""),
+              courseName: String(r.courseName || ""),
+              credits: Number(r.credits || 0),
+              letterGrade: r.letterGrade ? String(r.letterGrade) : undefined,
+              semesterNo: r.semesterNo ? Number(r.semesterNo) : null,
+              isMandatory: Boolean(r.isMandatory),
+            })),
+            failedElectiveCourses: failedElectiveCourses.map((r) => ({
+              courseCode: String(r.courseCode || ""),
+              courseName: String(r.courseName || ""),
+              credits: Number(r.credits || 0),
+              letterGrade: r.letterGrade ? String(r.letterGrade) : undefined,
+            })),
+            electiveGroupBacklogs: electiveGroupBacklogs.map((r) => ({
+              groupCode: String(r.groupCode || ""),
+              message: String(r.message || ""),
+              remainingCredits: Number(r.remainingCredits || 0),
+            })),
+            pendingCount: Number(item.pendingResultCourses || 0),
+          },
+        };
+      }),
       total,
       page,
       pageSize,

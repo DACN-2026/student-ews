@@ -47,7 +47,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         { header: "CTĐT", key: "curriculum", width: 16 },
         { header: "GDTC", key: "physical", width: 16 },
         { header: "GDQP", key: "defense", width: 16 },
-        { header: "Ngoại ngữ", key: "language", width: 16 },
         { header: "Rèn luyện", key: "training", width: 16 },
         { header: "Kết luận", key: "status", width: 24 },
         { header: "Lý do", key: "reasons", width: 54 },
@@ -61,7 +60,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         curriculum: student.curriculumStatus,
         physical: student.physicalEducationStatus,
         defense: student.nationalDefenseStatus,
-        language: student.foreignLanguageStatus,
         training: student.wholeCourseTrainingScore ?? student.trainingStatus,
         status: statusLabel[student.finalStatus] || student.finalStatus,
         reasons: Array.isArray(student.reasons)
@@ -72,9 +70,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         ["Tổng sinh viên", evaluation.totalStudents],
         ["Dự kiến đủ điều kiện", evaluation.expectedEligibleStudents],
         ["Chờ kết quả điểm", evaluation.pendingGradeStudents],
-        ["Chờ bổ sung điều kiện", evaluation.pendingRequirementStudents],
         ["Chưa đủ điều kiện", evaluation.notEligibleStudents],
-        ["Cần đối soát", evaluation.manualReviewStudents],
       ],
     };
     const body = format === "xlsx" ? await workbookBuffer(table) : await reportPdfBuffer(table);

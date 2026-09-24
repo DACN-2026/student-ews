@@ -129,6 +129,7 @@ export function buildGraduationForecast(input: {
     const credited = required === null ? null : Math.min(passed, required);
     const remaining = required === null ? null : Math.max(0, required - passed);
     const extra = required === null ? null : Math.max(0, passed - required);
+    const pending = options.filter((course) => course.state === "no_score").reduce((sum, course) => sum + course.credits, 0);
     return {
       code,
       groupCode: code,
@@ -138,6 +139,7 @@ export function buildGraduationForecast(input: {
       creditedCredits: credited,
       remainingCredits: remaining,
       extraCredits: extra,
+      pendingCredits: pending,
       status: required === null ? "UNKNOWN" : passed >= required ? "PASS" : "FAIL",
     };
   });
@@ -177,10 +179,16 @@ export function buildGraduationForecast(input: {
     const key = `${plan.academicYear}|${plan.termCode}`;
     return [key, { academicYear: plan.academicYear, termCode: plan.termCode, label: "Dự kiến theo kế hoạch đào tạo", courses: missingRequiredCourses.filter((item) => item.schedule?.academicYear === plan.academicYear && item.schedule?.termCode === plan.termCode) }];
   })).values()];
+  
+  const pendingMandatory = mandatory.filter((course) => course.state === "no_score");
+  const pendingMandatoryCredits = pendingMandatory.reduce((sum, course) => sum + course.credits, 0);
+  const pendingElectiveCredits = elective.filter((course) => course.state === "no_score").reduce((sum, course) => sum + course.credits, 0);
+  const pendingTotalCredits = assessed.filter((course) => course.state === "no_score").reduce((sum, course) => sum + course.credits, 0);
+
   return {
     curriculumComplete,
-    summary: { requiredCredits, completedCredits, remainingCredits, completionPercent: requiredCredits && completedCredits !== null ? Math.round(completedCredits / requiredCredits * 10000) / 100 : null },
-    requirements: { requiredCourses: { total: mandatory.length, completed: mandatory.length - missingRequiredCourses.length, remaining: missingRequiredCourses.length, requiredCredits: requiredMandatoryCredits, completedCredits: completedMandatoryCredits }, electives: { requiredCredits: validElectiveLimit, passedCredits: passedElectiveCredits, completedCredits: creditedElectiveCredits, remainingCredits: remainingElectiveCredits, excessCredits: validElectiveLimit === null ? null : Math.max(0, passedElectiveCredits - validElectiveLimit) } },
+    summary: { requiredCredits, completedCredits, remainingCredits, pendingCredits: pendingTotalCredits, completionPercent: requiredCredits && completedCredits !== null ? Math.round(completedCredits / requiredCredits * 10000) / 100 : null },
+    requirements: { requiredCourses: { total: mandatory.length, completed: mandatory.length - missingRequiredCourses.length, remaining: missingRequiredCourses.length, pending: pendingMandatory.length, requiredCredits: requiredMandatoryCredits, completedCredits: completedMandatoryCredits, pendingCredits: pendingMandatoryCredits }, electives: { requiredCredits: validElectiveLimit, passedCredits: passedElectiveCredits, completedCredits: creditedElectiveCredits, remainingCredits: remainingElectiveCredits, pendingCredits: pendingElectiveCredits, excessCredits: validElectiveLimit === null ? null : Math.max(0, passedElectiveCredits - validElectiveLimit) } },
     requiredCoursesBreakdown: {
       completed: mandatory.filter((course) => course.state === "passed"),
       missing: mandatory.filter((course) => course.state === "not_completed"),

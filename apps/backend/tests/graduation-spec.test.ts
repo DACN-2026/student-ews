@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  isApplicableGraduationRule,
-  isExcludedFromGraduationCredits,
-  resolveGraduationStatus,
-} from "../lib/services/graduation-evaluations";
+import { resolveGraduationStatus } from "../lib/services/graduation-evaluations";
 import {
   buildGraduationForecast,
   type ForecastCourse,
@@ -325,3 +321,81 @@ test("TC12: Một điều kiện FAIL + một dữ liệu UNKNOWN -> finalStatus
   assert.equal(status, "NOT_ELIGIBLE");
   assert.equal(needsManualReview, true);
 });
+
+// TC13: Môn đang học (no_score) không được coi là đạt hoặc rớt, và tín chỉ đang học không cộng vào tín chỉ tích lũy
+test("TC13: Môn đang học không cộng vào completedCredits và không coi là pass/fail", () => {
+  const courses: ForecastCourse[] = [
+    { courseId: "c1", courseCode: "20CT1101", courseName: "Môn đã đạt", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    { courseId: "c2", courseCode: "20CT1102", courseName: "Môn đang học", credits: 4, requirementType: "mandatory", semesterNo: 2 },
+  ];
+  const grades: ForecastGrade[] = [
+    { courseCode: "20CT1101", isPassed: true, scoreStatus: "graded", score10: 8.0, letterGrade: "B" },
+    { courseCode: "20CT1102", isPassed: false, scoreStatus: "ungraded", notScore: true }, // Môn đang học
+  ];
+
+  const forecast = buildGraduationForecast({
+    courses,
+    grades,
+    requiredCompulsoryCredits: 7,
+    requiredElectiveCredits: 0,
+    requiredTotalCredits: 7,
+  });
+
+  // Môn đang học có state là no_score
+  assert.equal(forecast.requiredCoursesBreakdown.noScore.length, 1);
+  assert.equal(forecast.requiredCoursesBreakdown.noScore[0].courseCode, "20CT1102");
+  assert.equal(forecast.requiredCoursesBreakdown.noScore[0].state, "no_score");
+
+  // Không nằm trong danh sách completed hay failed
+  assert.equal(forecast.requiredCoursesBreakdown.completed.length, 1);
+  assert.equal(forecast.requiredCoursesBreakdown.failed.length, 0);
+
+  // Tín chỉ tích lũy chỉ tính môn đã đạt (3 TC), KHÔNG cộng 4 TC đang học
+  assert.equal(forecast.summary.completedCredits, 3);
+  assert.equal(forecast.summary.pendingCredits, 4);
+  assert.equal(forecast.summary.remainingCredits, 4);
+  assert.equal(forecast.curriculumComplete, false);
+});
+
+// TC14: Đủ tổng tín chỉ nhưng thiếu học phần bắt buộc -> không được coi là hoàn thành CTĐT
+test("TC14: Đủ tổng tín chỉ nhưng thiếu học phần bắt buộc -> curriculumComplete = false", () => {
+  const courses: ForecastCourse[] = [
+    { courseId: "c1", courseCode: "20CT1101", courseName: "HP Bắt buộc 1", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    { courseId: "c2", courseCode: "20CT1102", courseName: "HP Bắt buộc 2 (Chưa học)", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+    { courseId: "e1", courseCode: "20CT2101", courseName: "HP Tự chọn 1", credits: 3, requirementType: "elective", semesterNo: 2 },
+    { courseId: "e2", courseCode: "20CT2102", courseName: "HP Tự chọn 2", credits: 3, requirementType: "elective", semesterNo: 2 },
+  ];
+  // SV đạt 1 bắt buộc (3 TC) + 2 tự chọn (6 TC) = 9 TC, vượt mức tổng 6 TC cần thiết
+  const grades: ForecastGrade[] = [
+    { courseCode: "20CT1101", isPassed: true, scoreStatus: "graded", score10: 8.0 },
+    { courseCode: "20CT2101", isPassed: true, scoreStatus: "graded", score10: 7.0 },
+    { courseCode: "20CT2102", isPassed: true, scoreStatus: "graded", score10: 7.5 },
+  ];
+
+  const forecast = buildGraduationForecast({
+    courses,
+    grades,
+    requiredCompulsoryCredits: 6,
+    requiredElectiveCredits: 0,
+    requiredTotalCredits: 6,
+  });
+
+  // Thiếu môn bắt buộc c2
+  assert.equal(forecast.missingRequiredCourses.length, 1);
+  assert.equal(forecast.missingRequiredCourses[0].courseCode, "20CT1102");
+  // Dù tổng tín chỉ đạt >= 6, nhưng thiếu môn bắt buộc -> curriculumComplete vẫn là false!
+  assert.equal(forecast.curriculumComplete, false);
+});
+
+// TC15: Đang hoàn thiện (PENDING_GRADE) khi tất cả điều kiện còn thiếu đều đang chờ điểm
+test("TC15: Sinh viên có điều kiện đang chờ điểm học phần -> PENDING_GRADE", () => {
+  const status = resolveGraduationStatus([
+    { ruleCode: "PROGRAM_COMPLETION", result: "PENDING" },
+    { ruleCode: "TOTAL_CREDITS", result: "PENDING" },
+    { ruleCode: "CUMULATIVE_GPA", result: "PASS" },
+  ]);
+
+  // Phải là PENDING_GRADE (Đang hoàn thiện), không bị đánh thành NOT_ELIGIBLE
+  assert.equal(status, "PENDING_GRADE");
+});
+
