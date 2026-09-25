@@ -531,7 +531,13 @@ export default function StudentProgressDetail({
                         )}
                         {isPastSemester && !isCompletedSemester && (
                           <span className="rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800">
-                            Thiếu {Math.max(0, semPlannedCredits - sem.completedCredits)} TC
+                            {sem.completedCredits < semPlannedCredits 
+                              ? `Thiếu ${semPlannedCredits - sem.completedCredits} TC` 
+                              : hasFailedCourses 
+                                ? "Nợ môn" 
+                                : hasMissingMandatory 
+                                  ? "Thiếu môn Bắt buộc" 
+                                  : "Chưa đạt kỳ"}
                           </span>
                         )}
                       </div>
@@ -588,7 +594,13 @@ export default function StudentProgressDetail({
                               ? sem.completedCredits > semPlannedCredits
                                 ? `Đạt kỳ (+${sem.completedCredits - semPlannedCredits} TC)`
                                 : "Đạt kỳ"
-                              : `Thiếu ${Math.max(0, semPlannedCredits - sem.completedCredits)} TC`}
+                              : sem.completedCredits < semPlannedCredits
+                                ? `Thiếu ${semPlannedCredits - sem.completedCredits} TC`
+                                : hasFailedCourses
+                                  ? "Nợ môn"
+                                  : hasMissingMandatory
+                                    ? "Thiếu môn Bắt buộc"
+                                    : "Chưa đạt kỳ"}
                           </div>
                         </>
                       )}
@@ -691,11 +703,6 @@ export default function StudentProgressDetail({
                                 </td>
                                 <td className="py-2.5 px-3 font-medium text-slate-800">
                                   {c.courseName}
-                                  {c.choiceGroupCode && (
-                                    <span className="ml-1.5 inline-flex rounded bg-purple-100 px-1.5 py-0.2 text-[9px] font-bold text-purple-800">
-                                      TC: {c.choiceGroupCode}
-                                    </span>
-                                  )}
                                 </td>
                                 <td className="py-2.5 px-2 font-mono text-center text-slate-700">
                                   {c.credits}

@@ -1393,6 +1393,41 @@ test("Training Progress TC16: Các môn GDTC và GDQP không tính vào số tí
   assert.equal(sem1?.timelineType, "PAST_COMPLETED");
 });
 
+test("Training Progress TC17: Số tín chỉ kế hoạch từng học kỳ (HK1..HK9) khớp 100% Kế hoạch giảng dạy NH 2026-2027 (PDF Mẫu 07/QLĐT)", () => {
+  const { getStandardSemesterPlannedCredits } = require("../lib/services/student-training-progress");
 
+  // HK1 (K50 Năm 1 HK1): 13 TC học thuật (PDF Trang 1: Tổng cộng 13/13, BB 13, TC 0/0)
+  assert.equal(getStandardSemesterPlannedCredits(1, "CQ25CT"), 13);
+  assert.equal(getStandardSemesterPlannedCredits(1, "CQ22CT-PM"), 13);
 
+  // HK2 (K50 Năm 1 HK2): 10 TC bắt buộc + 6 TC tự chọn = 16 TC (PDF Trang 1: Tổng cộng 16/22, BB 10, TC 6/12)
+  assert.equal(getStandardSemesterPlannedCredits(2, "CQ25CT"), 16);
+  assert.equal(getStandardSemesterPlannedCredits(2, "CQ22CT-PM"), 16);
 
+  // HK3 (K49 Năm 2 HK1): 12 TC bắt buộc + 6 TC tự chọn = 18 TC (PDF Trang 2: Tổng cộng 18/21, BB 12, TC 6/9)
+  assert.equal(getStandardSemesterPlannedCredits(3, "CQ24CT"), 18);
+
+  // HK4 (K49 Năm 2 HK2): 13 TC bắt buộc + 3 TC tự chọn = 16 TC (PDF Trang 2: Tổng cộng 16/22, BB 13, TC 3/9)
+  assert.equal(getStandardSemesterPlannedCredits(4, "CQ24CT"), 16);
+
+  // HK5 (K48 Năm 3 HK1): 13 TC bắt buộc + 3 TC tự chọn = 16 TC (PDF Trang 3: Tổng cộng 16/19, BB 13, TC 3/6)
+  assert.equal(getStandardSemesterPlannedCredits(5, "CQ23CT-PM"), 16);
+
+  // HK6 (K48 Năm 3 HK2): 10 TC bắt buộc + 3 TC bổ trợ + tự chọn chuyên ngành (PDF Trang 3-4)
+  // - Kỹ thuật phần mềm (PM): 10 + 3 + 6 = 19 TC (PDF Trang 4: Tổng cộng 19/22)
+  assert.equal(getStandardSemesterPlannedCredits(6, "CQ23CT-PM"), 19);
+  // - Mạng máy tính (MMT): 10 + 3 + 4 = 17 TC (PDF Trang 3: Tổng cộng 17/25)
+  assert.equal(getStandardSemesterPlannedCredits(6, "CQ23CT-MMT"), 17);
+  // - Khoa học dữ liệu (KHDL): 10 + 3 + 3 = 16 TC (PDF Trang 4: Tổng cộng 16/24)
+  assert.equal(getStandardSemesterPlannedCredits(6, "CQ23CT-KHDL"), 16);
+
+  // HK7 (K47 Năm 4 HK1): 9 TC bắt buộc + 9 TC tự chọn chuyên ngành = 18 TC (PDF Trang 5: Tổng cộng 18/21)
+  assert.equal(getStandardSemesterPlannedCredits(7, "CQ22CT-PM"), 18);
+  assert.equal(getStandardSemesterPlannedCredits(7, "CQ22CT-MMT"), 18);
+
+  // HK8 (K47 Năm 4 HK2): 6 TC bắt buộc + 12 TC tự chọn chuyên ngành = 18 TC (PDF Trang 6: Tổng cộng 18/21 - 18/22)
+  assert.equal(getStandardSemesterPlannedCredits(8, "CQ22CT-PM"), 18);
+
+  // HK9 (K46 Năm 5 HK1 Tốt nghiệp): 8 TTNN + 10 ĐATN = 18 TC (PDF Trang 7: Tổng cộng 18/18)
+  assert.equal(getStandardSemesterPlannedCredits(9, "CQ22CT-PM"), 18);
+});

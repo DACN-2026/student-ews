@@ -27,6 +27,7 @@ export type StudentGradeAttempt = {
   score10?: number | null;
   score4?: number | null;
   letterCode?: string | null;
+  specialCode?: string | null;
   isPass?: boolean | null;
   notScore?: boolean | null;
   scoreStatus?: string | null;
@@ -384,17 +385,24 @@ export function evaluateStudentTrainingProgress(input: {
     );
     const hasFail = attempts.some(
       (a) =>
-        a.isPass === false &&
+        (a.isPass === false &&
         a.notScore !== true &&
         a.scoreStatus === "graded" &&
-        (a.score10 != null || a.score4 != null || Boolean(a.letterCode)),
+        (a.score10 != null || a.score4 != null || Boolean(a.letterCode))) ||
+        (a.isPass === false && (a.scoreStatus === "special" || a.specialCode === "VT" || a.letterCode === "VT")),
     );
 
     // Active current semester attempt (enrolled in current term without final grade, or pending/notScore)
     const hasActiveCurrentAttempt = attempts.some(
       (a) =>
-        (a.notScore === true || a.scoreStatus === "pending" || (!a.isPass && a.score10 == null && a.score4 == null && !a.letterCode)) ||
-        (a.academicYear === input.timeline.currentAcademicYear && a.termCode === input.timeline.currentTermCode && a.isPass !== true && (a.score10 == null || a.letterCode == null)),
+        (a.notScore === true || a.scoreStatus === "pending") ||
+        (a.academicYear === input.timeline.currentAcademicYear &&
+         a.termCode === input.timeline.currentTermCode &&
+         a.isPass !== true &&
+         a.scoreStatus !== "special" &&
+         a.specialCode !== "VT" &&
+         a.letterCode !== "VT" &&
+         (a.score10 == null || a.letterCode == null)),
     );
 
     let status: CourseProgressStatus;
@@ -1217,20 +1225,10 @@ export class StudentTrainingProgressService {
         }
       }
 
-      if (program && cohort) {
-        const dbPlans = await prisma.trainingProgressPlan.findMany({
-          where: { cohortId: cohort.id, trainingProgramId: program.id },
-          select: { curriculumSemesterNo: true, requiredElectiveCredits: true },
-        });
-        if (dbPlans.length > 0) {
-          semesterPlansMap = new Map();
-          for (const pl of dbPlans) {
-            if (pl.requiredElectiveCredits > 0) {
-              semesterPlansMap.set(pl.curriculumSemesterNo, pl.requiredElectiveCredits);
-            }
-          }
-        }
-      }
+      // Standard semester planned credits are sourced directly from the official Dalat University
+      // Teaching Plan (2026-Ke-hoach-giang-day-nh-26-27 (1).pdf - Mẫu 07/QLĐT) via getStandardSemesterPlannedCredits.
+      // Individual training_progress_plans only define requiredElectiveCredits thresholds for specific offerings,
+      // not total semester plan overrides.
 
       this.programConfigCache.set(configCacheKey, {
         timestamp: Date.now(),
@@ -1254,13 +1252,14 @@ export class StudentTrainingProgressService {
       score_10: unknown;
       score_4: unknown;
       letter_code: string | null;
+      special_code: string | null;
       is_pass: boolean | null;
       not_score: boolean | null;
       score_status: string | null;
     }> = await prisma.$queryRaw`
       SELECT o.s_curriculum_id, o.s_course_name, o.s_credits,
              y.s_year_code, t.s_term_code, t.s_term_order,
-             g.score_10, g.score_4, g.letter_code, g.is_pass, g.not_score, g.score_status
+             g.score_10, g.score_4, g.letter_code, g.special_code, g.is_pass, g.not_score, g.score_status
       FROM student_course_offerings o
       LEFT JOIN student_course_grades g ON g.offering_id = o.id
       JOIN academic_terms t ON t.id = o.academic_term_id
@@ -1284,7 +1283,8 @@ export class StudentTrainingProgressService {
         termOrder: Number(r.s_term_order),
         score10: r.score_10 != null ? Number(r.score_10) : null,
         score4: r.score_4 != null ? Number(r.score_4) : null,
-        letterCode: r.letter_code,
+        letterCode: r.letter_code || r.special_code || null,
+        specialCode: r.special_code || null,
         isPass: r.is_pass,
         notScore: r.not_score,
         scoreStatus: r.score_status,
