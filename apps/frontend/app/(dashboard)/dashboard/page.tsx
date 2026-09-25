@@ -22,6 +22,7 @@ interface DashboardMetric {
   numerator?: number;
   denominator?: number;
   status: "available" | "unavailable";
+  scopeLabel?: string;
 }
 
 interface FilterOption {
@@ -66,8 +67,8 @@ export default function DashboardPage() {
     gpaAggregation: "average",
   });
 
-  const [completionBreakdown, setCompletionBreakdown] = useState<"program" | "cohort">("program");
-  const [registrationBreakdown, setRegistrationBreakdown] = useState<"program" | "cohort">("program");
+  const [completionBreakdown, setCompletionBreakdown] = useState<"class" | "cohort">("class");
+  const [registrationBreakdown, setRegistrationBreakdown] = useState<"class" | "cohort">("class");
 
   // Options
   const [academicYears, setAcademicYears] = useState<ApiData[]>([]);
@@ -166,8 +167,8 @@ export default function DashboardPage() {
   const metricPercent = (metric?: DashboardMetric) => metric?.status === "available" && typeof metric.value === "number"
     ? `${metric.value.toFixed(1)}%`
     : "—";
-  const metricRatio = (metric: DashboardMetric | undefined, unavailableLabel: string) => metric?.status === "available"
-    ? `${metric.numerator ?? 0}/${metric.denominator ?? 0} SV`
+  const metricRatio = (metric: DashboardMetric | undefined, unavailableLabel: string, suffix?: string) => metric?.status === "available"
+    ? `${metric.numerator ?? 0}/${metric.denominator ?? 0} SV${suffix ? ` · ${suffix}` : ""}`
     : unavailableLabel;
 
   const gradeDistributionData = Array.isArray(summaryData?.gradeDistribution) ? summaryData.gradeDistribution : [];
@@ -185,8 +186,10 @@ export default function DashboardPage() {
       error: (Number(item.error || 0) * 100) / Number(item.total),
     }));
   const programProgressData = toPercentages(summaryData?.programProgress || []);
+  const classProgressData = toPercentages(summaryData?.classProgress || []);
   const cohortProgressData = toPercentages(summaryData?.cohortProgress || []);
   const programRegistrationData = toPercentages(summaryData?.programRegistrationProgress || []);
+  const classRegistrationData = toPercentages(summaryData?.classRegistrationProgress || []);
   const cohortRegistrationData = toPercentages(summaryData?.registrationProgress || []);
   const warningByClassData = Array.isArray(summaryData?.warningByClass) ? summaryData.warningByClass.slice(0, 7) : [];
   const mainTermOptions = termOptions.filter((term: ApiData) => !term.isSummer);
@@ -407,12 +410,26 @@ export default function DashboardPage() {
           </div>
 
           {/* Card 4: Tiến độ CTĐT */}
-          <div className="bg-white border border-emerald-200/80 rounded-2xl p-4 shadow-xs bg-emerald-50/20 hover:border-emerald-400 transition-all">
-            <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider block">Tiến độ CTĐT</span>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => router.push("/training-progress")}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/training-progress"); }}
+            className="group cursor-pointer bg-white border border-emerald-200/80 rounded-2xl p-4 shadow-xs bg-emerald-50/20 hover:border-emerald-400 hover:shadow-md transition-all relative"
+            title="Nhấn để xem chi tiết Tiến độ CTĐT"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider block">Tiến độ CTĐT</span>
+              <span className="text-[10px] text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center font-medium">
+                Chi tiết →
+              </span>
+            </div>
             <div className="text-2xl font-bold text-emerald-600 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               {metricPercent(completionMetric)}
             </div>
-            <p className="text-[10px] text-emerald-700/80 mt-1">{metricRatio(completionMetric, "Chưa có lần tính tiến độ")}</p>
+            <p className="text-[10px] text-emerald-700/80 mt-1">
+              {metricRatio(completionMetric, "Chưa có lần tính tiến độ", "Đúng hạn")}
+            </p>
           </div>
 
           {/* Card 5: Cảnh báo học tập */}
@@ -425,13 +442,29 @@ export default function DashboardPage() {
           </div>
 
           {/* Card 6: Graduation forecast */}
-          <div className="bg-white border border-cyan-200/80 rounded-2xl p-4 shadow-xs bg-cyan-50/20 hover:border-cyan-400 transition-all">
-            <span className="text-[11px] font-semibold text-cyan-800 uppercase tracking-wider block">Dự kiến tốt nghiệp đúng hạn</span>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => router.push("/graduation-forecast")}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") router.push("/graduation-forecast"); }}
+            className="group cursor-pointer bg-white border border-cyan-200/80 rounded-2xl p-4 shadow-xs bg-cyan-50/20 hover:border-cyan-400 hover:shadow-md transition-all relative"
+            title="Nhấn để xem chi tiết Dự báo tốt nghiệp"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-cyan-800 uppercase tracking-wider block">Dự kiến tốt nghiệp đúng hạn</span>
+              <span className="text-[10px] text-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center font-medium">
+                Chi tiết →
+              </span>
+            </div>
             <div className="text-2xl font-bold text-cyan-700 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               {metricPercent(graduationForecastMetric)}
             </div>
             <p className="text-[10px] text-cyan-700/80 mt-1">
-              {metricRatio(graduationForecastMetric, "Chưa có kết quả dự báo")}
+              {metricRatio(
+                graduationForecastMetric,
+                "Chưa có kết quả dự báo",
+                graduationForecastMetric?.scopeLabel || (summaryData?.graduationForecast?.summary as { scopeLabel?: string } | undefined)?.scopeLabel
+              )}
             </p>
           </div>
         </div>
@@ -570,13 +603,13 @@ export default function DashboardPage() {
             <div className="inline-flex rounded-xl bg-slate-100 p-1 text-xs">
               <button
                 type="button"
-                onClick={() => setCompletionBreakdown("program")}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${completionBreakdown === "program"
+                onClick={() => setCompletionBreakdown("class")}
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${completionBreakdown === "class"
                   ? "bg-white text-slate-900 shadow-xs"
                   : "text-slate-500 hover:text-slate-900"
                   }`}
               >
-                CTĐT
+                Lớp
               </button>
               <button
                 type="button"
@@ -591,21 +624,21 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="h-[250px] w-full">
+          <div className="h-[290px] w-full">
             {!mounted ? (
               <div className="h-full w-full bg-slate-50/70 animate-pulse rounded-xl" />
-            ) : (completionBreakdown === "program" ? programProgressData : cohortProgressData).length === 0 ? (
+            ) : (completionBreakdown === "class" ? classProgressData : cohortProgressData).length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs text-slate-400">Chưa có lần tính tiến độ phù hợp</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={completionBreakdown === "program" ? programProgressData : cohortProgressData}
+                  data={completionBreakdown === "class" ? classProgressData : cohortProgressData}
                   layout="vertical"
                   margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                   <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11, fill: "#64748B" }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#64748B" }} width={60} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#64748B" }} width={70} />
                   <Tooltip
                     formatter={(val: ApiData) => [`${val}%`, ""]}
                     contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0", fontSize: 12 }}
@@ -613,8 +646,6 @@ export default function DashboardPage() {
                   <Legend wrapperStyle={{ fontSize: 12, paddingTop: 4 }} />
                   <Bar dataKey="pass" name="Đúng tiến độ" stackId="a" fill={THEME_COLORS.green} />
                   <Bar dataKey="fail" name="Chậm tiến độ" stackId="a" fill={THEME_COLORS.red} />
-                  <Bar dataKey="pending" name="Chờ kết quả" stackId="a" fill={THEME_COLORS.yellow} />
-                  <Bar dataKey="error" name="Khác" stackId="a" fill={THEME_COLORS.slate} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -634,13 +665,13 @@ export default function DashboardPage() {
             <div className="inline-flex rounded-xl bg-slate-100 p-1 text-xs">
               <button
                 type="button"
-                onClick={() => setRegistrationBreakdown("program")}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${registrationBreakdown === "program"
+                onClick={() => setRegistrationBreakdown("class")}
+                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${registrationBreakdown === "class"
                   ? "bg-white text-slate-900 shadow-xs"
                   : "text-slate-500 hover:text-slate-900"
                   }`}
               >
-                CTĐT
+                Lớp
               </button>
               <button
                 type="button"
@@ -655,21 +686,21 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="h-[250px] w-full">
+          <div className="h-[290px] w-full">
             {!mounted ? (
               <div className="h-full w-full bg-slate-50/70 animate-pulse rounded-xl" />
-            ) : (registrationBreakdown === "program" ? programRegistrationData : cohortRegistrationData).length === 0 ? (
+            ) : (registrationBreakdown === "class" ? classRegistrationData : cohortRegistrationData).length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs text-slate-400">Chưa có dữ liệu đối chiếu đăng ký</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={registrationBreakdown === "program" ? programRegistrationData : cohortRegistrationData}
+                  data={registrationBreakdown === "class" ? classRegistrationData : cohortRegistrationData}
                   layout="vertical"
                   margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
                   <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11, fill: "#64748B" }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#64748B" }} width={60} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#64748B" }} width={70} />
                   <Tooltip
                     formatter={(val: ApiData) => [`${val}%`, ""]}
                     contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0", fontSize: 12 }}

@@ -1562,6 +1562,7 @@ export class StudentTrainingProgressService {
         total,
         totalPages,
       },
+      allEvaluations: evaluatedList,
     };
   }
 }
@@ -1602,6 +1603,7 @@ export interface DepartmentProgressOverviewResult {
     total: number;
     totalPages: number;
   };
+  allEvaluations?: DepartmentProgressStudentItem[];
 }
 
 interface CachedOverview {

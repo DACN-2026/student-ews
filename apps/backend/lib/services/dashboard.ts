@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { ReportsService } from "@/lib/services/reports";
 import { buildAcademicTermLinks } from "@/lib/academic-terms";
+import { StudentTrainingProgressService } from "@/lib/services/student-training-progress";
 
 interface DashboardFilters {
   academicYear?: string;
@@ -69,10 +70,10 @@ function decimalNumber(value: Prisma.Decimal | null) {
 function progressPoint(
   code: string,
   name: string,
-  rows: WarningSnapshot[],
+  rows: Array<Record<string, any>>,
   field: "scheduleStatus" | "registrationStatus",
 ) {
-  const values = rows.map((row) => row[field]);
+  const values = rows.map((row) => String(row[field] || ""));
   if (field === "scheduleStatus") {
     return {
       code,
@@ -363,11 +364,42 @@ export class DashboardService {
     if (filters.trainingProgramId || filters.programCode) {
       warningFilter.trainingProgramId = selectedProgram ? selectedProgram.id : { in: [] };
     }
-    if (filters.academicTermId || filters.academicYear || filters.termCode || selectedTerm) {
-      warningFilter.assessmentAcademicTermId = selectedTerm ? selectedTerm.id : { in: [] };
+    if (hasExplicitTermFilter && selectedTerm) {
+      warningFilter.assessmentAcademicTermId = selectedTerm.id;
     }
 
-    const [years, programs, allVisibleClasses, cohorts, completedRuns] = await Promise.all([
+    const progressFilter: Prisma.TrainingProgressCompletionRunWhereInput = {
+      status: "completed",
+      ...(filters.cohortId ? { cohortId: filters.cohortId } : {}),
+      ...(selectedProgram
+        ? { trainingProgramId: selectedProgram.id }
+        : filters.trainingProgramId || filters.programCode
+        ? { trainingProgramId: { in: [] } }
+        : {}),
+      ...(hasExplicitTermFilter && selectedTerm ? { assessmentAcademicTermId: selectedTerm.id } : {}),
+    };
+
+    const gradEvalFilter: Prisma.GraduationEvaluationWhereInput = {
+      status: "completed",
+      ...(filters.cohortId ? { cohortId: filters.cohortId } : {}),
+      ...(selectedProgram
+        ? { trainingProgramId: selectedProgram.id }
+        : filters.trainingProgramId || filters.programCode
+        ? { trainingProgramId: { in: [] } }
+        : {}),
+      ...(hasExplicitTermFilter && selectedTerm ? { assessmentAcademicTermId: selectedTerm.id } : {}),
+    };
+
+    const [
+      years,
+      programs,
+      allVisibleClasses,
+      cohorts,
+      completedRuns,
+      completionRuns,
+      calcRuns,
+      gradEvals,
+    ] = await Promise.all([
       prisma.academicYear.findMany({ where: { deletedAt: null }, orderBy: { sYearCode: "desc" } }),
       prisma.trainingProgram.findMany({ where: { deletedAt: null, status: "active" }, orderBy: { sProgramName: "asc" } }),
       prisma.class.findMany({ where: { deletedAt: null, isActive: true }, orderBy: { className: "asc" } }),
@@ -382,6 +414,21 @@ export class DashboardService {
         orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
         take: 500,
       }),
+      prisma.trainingProgressCompletionRun.findMany({
+        where: progressFilter,
+        orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
+        take: 500,
+      }),
+      prisma.trainingProgressCalculationRun.findMany({
+        where: { status: "completed" },
+        orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
+        take: 500,
+      }),
+      prisma.graduationEvaluation.findMany({
+        where: gradEvalFilter,
+        orderBy: [{ evaluatedAt: "desc" }, { createdAt: "desc" }],
+        take: 500,
+      }),
     ]);
 
     const latestRunByScope = new Map<string, (typeof completedRuns)[number]>();
@@ -390,32 +437,142 @@ export class DashboardService {
       if (!latestRunByScope.has(key)) latestRunByScope.set(key, run);
     }
     const latestRuns = [...latestRunByScope.values()];
-    const warningRows: WarningSnapshot[] = latestRuns.length && scopedStudentIds.length
-      ? await prisma.academicWarningStudentResult.findMany({
-          where: { runId: { in: latestRuns.map((run) => run.id) }, studentId: { in: scopedStudentIds } },
-          select: {
-            runId: true,
-            studentId: true,
-            classId: true,
-            cohortId: true,
-            sStudentId: true,
-            sStudentName: true,
-            sClassName: true,
-            sProgramCode: true,
-            termGpa4: true,
-            cumulativeGpa4: true,
-            registrationStatus: true,
-            scheduleStatus: true,
-            maxSeverity: true,
-            reasonCount: true,
-          },
-        })
-      : [];
+
+    const latestCompletionByScope = new Map<string, (typeof completionRuns)[number]>();
+    for (const run of completionRuns) {
+      const key = `${run.cohortId}:${run.trainingProgramId}`;
+      if (!latestCompletionByScope.has(key)) latestCompletionByScope.set(key, run);
+    }
+    const latestCompletionRuns = [...latestCompletionByScope.values()];
+
+    const latestCalcByPlan = new Map<string, (typeof calcRuns)[number]>();
+    for (const r of calcRuns) {
+      if (!latestCalcByPlan.has(r.planId)) latestCalcByPlan.set(r.planId, r);
+    }
+    const latestCalcRuns = [...latestCalcByPlan.values()];
+
+    const latestGradByScope = new Map<string, (typeof gradEvals)[number]>();
+    for (const g of gradEvals) {
+      const key = `${g.cohortId}:${g.trainingProgramId}`;
+      if (!latestGradByScope.has(key)) latestGradByScope.set(key, g);
+    }
+    const latestGradEvals = [...latestGradByScope.values()];
+
+    const [warningRows, completionStudentRows, calcStudentRows, gradStudentRows, liveProgressOverview] = await Promise.all([
+      latestRuns.length && scopedStudentIds.length
+        ? prisma.academicWarningStudentResult.findMany({
+            where: { runId: { in: latestRuns.map((run) => run.id) }, studentId: { in: scopedStudentIds } },
+            select: {
+              runId: true,
+              studentId: true,
+              classId: true,
+              cohortId: true,
+              sStudentId: true,
+              sStudentName: true,
+              sClassName: true,
+              sProgramCode: true,
+              termGpa4: true,
+              cumulativeGpa4: true,
+              registrationStatus: true,
+              scheduleStatus: true,
+              maxSeverity: true,
+              reasonCount: true,
+            },
+          })
+        : [],
+      latestCompletionRuns.length && scopedStudentIds.length
+        ? prisma.trainingProgressCompletionStudentResult.findMany({
+            where: { runId: { in: latestCompletionRuns.map((run) => run.id) }, studentId: { in: scopedStudentIds } },
+            select: {
+              runId: true,
+              studentId: true,
+              classId: true,
+              cohortId: true,
+              sStudentId: true,
+              sStudentName: true,
+              sClassName: true,
+              sProgramCode: true,
+              scheduleStatus: true,
+              programCompletionStatus: true,
+            },
+          })
+        : [],
+      latestCalcRuns.length && scopedStudentIds.length
+        ? prisma.trainingProgressStudentResult.findMany({
+            where: { runId: { in: latestCalcRuns.map((run) => run.id) }, studentId: { in: scopedStudentIds } },
+            select: {
+              runId: true,
+              studentId: true,
+              classId: true,
+              cohortId: true,
+              sStudentId: true,
+              sStudentName: true,
+              sClassName: true,
+              sProgramCode: true,
+              status: true,
+            },
+          })
+        : [],
+      latestGradEvals.length && scopedStudentIds.length
+        ? prisma.graduationEvaluationStudent.findMany({
+            where: { evaluationId: { in: latestGradEvals.map((g) => g.id) }, studentId: { in: scopedStudentIds } },
+            select: {
+              evaluationId: true,
+              studentId: true,
+              classId: true,
+              cohortId: true,
+              sStudentId: true,
+              sStudentName: true,
+              sClassName: true,
+              sProgramCode: true,
+              finalStatus: true,
+            },
+          })
+        : [],
+      StudentTrainingProgressService.getDepartmentProgressOverview({
+        scopeWhere: studentWhere,
+        page: 1,
+        pageSize: 1,
+        progressStatus: "ALL",
+      }).catch(() => null),
+    ]);
+
     const latestWarningByStudent = new Map<string, WarningSnapshot>();
     for (const row of warningRows) {
       if (!latestWarningByStudent.has(row.studentId)) latestWarningByStudent.set(row.studentId, row);
     }
     const latestWarnings = [...latestWarningByStudent.values()];
+
+    // Progress rows: prioritize live training progress overview, fallback to completionStudentRows, then warningRows
+    const liveEvaluations = liveProgressOverview?.allEvaluations || [];
+    const latestCompletionByStudent = new Map<string, (typeof completionStudentRows)[number]>();
+    for (const row of completionStudentRows) {
+      if (!latestCompletionByStudent.has(row.studentId)) latestCompletionByStudent.set(row.studentId, row);
+    }
+    const completionRows = [...latestCompletionByStudent.values()];
+    const progressRows = liveEvaluations.length > 0
+      ? liveEvaluations.map((item) => ({
+          studentId: item.id,
+          sStudentId: item.studentId,
+          sStudentName: item.fullName,
+          sClassName: item.className,
+          cohortCode: item.cohortCode,
+          sProgramCode: item.programCode,
+          scheduleStatus: item.progressStatus === "ON_TRACK" ? "on_track" : "behind_schedule",
+        }))
+      : (completionRows.length > 0 ? completionRows : latestWarnings);
+
+    // Registration rows: prioritize TrainingProgressStudentResult, fallback to warningRows
+    const latestCalcByStudent = new Map<string, (typeof calcStudentRows)[number]>();
+    for (const row of calcStudentRows) {
+      if (!latestCalcByStudent.has(row.studentId)) latestCalcByStudent.set(row.studentId, row);
+    }
+    const calcRows = [...latestCalcByStudent.values()].map((row) => ({
+      ...row,
+      registrationStatus: row.status,
+    }));
+    const regRows = calcRows.length > 0 ? calcRows : latestWarnings;
+
     const classCodes = new Set(scopedStudents.map((student) => student.sClassStudentId).filter(Boolean));
     const programCodes = new Set(scopedStudents.map((student) => student.sStudyProgramId).filter(Boolean));
     const classes = allVisibleClasses.filter((item) => classCodes.has(item.classId));
@@ -443,25 +600,37 @@ export class DashboardService {
     const byCohort = cohorts.map((cohort) => progressPoint(
       cohort.sCohortCode,
       cohort.sCohortName,
-      latestWarnings.filter((row) => row.cohortId === cohort.id),
+      progressRows.filter((row: any) => (row.cohortCode ? row.cohortCode === cohort.sCohortCode : row.cohortId === cohort.id)),
       "scheduleStatus",
     )).filter((item) => item.total > 0);
     const byProgram = programs.map((program) => progressPoint(
       program.sProgramCode,
       program.sProgramName,
-      latestWarnings.filter((row) => row.sProgramCode === program.sProgramCode),
+      progressRows.filter((row: any) => row.sProgramCode === program.sProgramCode),
+      "scheduleStatus",
+    )).filter((item) => item.total > 0);
+    const byClass = classes.map((item) => progressPoint(
+      item.classId,
+      item.className,
+      progressRows.filter((row: any) => row.sClassName === item.className || row.sClassName === item.classId || row.classId === item.id),
       "scheduleStatus",
     )).filter((item) => item.total > 0);
     const registrationByCohort = cohorts.map((cohort) => progressPoint(
       cohort.sCohortCode,
       cohort.sCohortName,
-      latestWarnings.filter((row) => row.cohortId === cohort.id),
+      regRows.filter((row) => row.cohortId === cohort.id),
       "registrationStatus",
     )).filter((item) => item.total > 0);
     const registrationByProgram = programs.map((program) => progressPoint(
       program.sProgramCode,
       program.sProgramName,
-      latestWarnings.filter((row) => row.sProgramCode === program.sProgramCode),
+      regRows.filter((row) => row.sProgramCode === program.sProgramCode),
+      "registrationStatus",
+    )).filter((item) => item.total > 0);
+    const registrationByClass = classes.map((item) => progressPoint(
+      item.classId,
+      item.className,
+      regRows.filter((row: any) => row.sClassName === item.className || row.sClassName === item.classId || row.classId === item.id),
       "registrationStatus",
     )).filter((item) => item.total > 0);
 
@@ -476,9 +645,55 @@ export class DashboardService {
       return { classId: item.classId, className: item.className, value, count: values.length };
     });
 
-    const scheduleAll = progressPoint("all", "Toàn Khoa", latestWarnings, "scheduleStatus");
-    const registrationAll = progressPoint("all", "Toàn Khoa", latestWarnings, "registrationStatus");
-    const graduationForecastTotal = scheduleAll.pass + scheduleAll.fail + scheduleAll.pending;
+    const scheduleAll = progressPoint("all", "Toàn Khoa", progressRows, "scheduleStatus");
+    const registrationAll = progressPoint("all", "Toàn Khoa", regRows, "registrationStatus");
+
+    // Graduation Forecast metrics from GraduationEvaluationStudent
+    const latestGradByStudent = new Map<string, (typeof gradStudentRows)[number]>();
+    for (const row of gradStudentRows) {
+      if (!latestGradByStudent.has(row.studentId)) latestGradByStudent.set(row.studentId, row);
+    }
+    const uniqueGradStudents = [...latestGradByStudent.values()];
+
+    let gradTotal = 0;
+    let gradOnTime = 0;
+    let gradConditional = 0;
+    let gradIncomplete = 0;
+    let gradReview = 0;
+    let gradScopeLabel: string | undefined = undefined;
+
+    if (uniqueGradStudents.length > 0) {
+      const cohortCodeMap = new Map(cohorts.map((c) => [c.id, c.sCohortCode]));
+      const hasSpecificCohortFilter = Boolean(filters.cohortId);
+      const finalYearStudents = uniqueGradStudents.filter((s) => {
+        const code = (cohortCodeMap.get(s.cohortId || "") || "").toUpperCase();
+        const match = code.match(/^K(\d+)/);
+        if (match) return parseInt(match[1], 10) <= 46;
+        return code.includes("K46") || code.includes("K45") || code.includes("K44");
+      });
+
+      const targetGradStudents = !hasSpecificCohortFilter && finalYearStudents.length > 0
+        ? finalYearStudents
+        : uniqueGradStudents;
+
+      if (!hasSpecificCohortFilter && finalYearStudents.length > 0) {
+        gradScopeLabel = "Khóa tốt nghiệp";
+      }
+
+      gradTotal = targetGradStudents.length;
+      gradOnTime = targetGradStudents.filter((s) => s.finalStatus === "EXPECTED_ELIGIBLE" || s.finalStatus === "PENDING_GRADE").length;
+      gradConditional = targetGradStudents.filter((s) => s.finalStatus === "PENDING_REQUIREMENT").length;
+      gradIncomplete = targetGradStudents.filter((s) => s.finalStatus === "NOT_ELIGIBLE").length;
+      gradReview = targetGradStudents.filter((s) => s.finalStatus === "MANUAL_REVIEW").length;
+    } else {
+      gradTotal = scheduleAll.pass + scheduleAll.fail + scheduleAll.pending;
+      gradOnTime = scheduleAll.pass;
+      gradConditional = scheduleAll.pending;
+      gradIncomplete = scheduleAll.fail;
+      gradReview = scheduleAll.error;
+    }
+
+    const graduationForecastRate = percentage(gradOnTime, gradTotal);
     const currentYear = selectedYear || years.find((year) => year.isCurrent) || null;
     const terms = currentYear
       ? await prisma.academicTerm.findMany({ where: { academicYearId: currentYear.id, deletedAt: null }, orderBy: { sTermOrder: "asc" } })
@@ -517,7 +732,7 @@ export class DashboardService {
         completionRate: percentage(scheduleAll.pass, scheduleAll.total),
         registrationRate: percentage(registrationAll.pass, registrationAll.total),
         warningStudents: availableMetric(warningStudents, warningStudents, scopedStudents.length),
-        graduationForecastRate: percentage(scheduleAll.pass, graduationForecastTotal),
+        graduationForecastRate,
         averageConductScore: conductValues.length
           ? availableMetric(conductValues.reduce((sum, score) => sum + score, 0) / conductValues.length, conductValues.length, scopedStudents.length)
           : unavailableMetric(),
@@ -526,6 +741,7 @@ export class DashboardService {
       gpaTrend,
       cohortProgress: [scheduleAll, ...byCohort],
       programProgress: [scheduleAll, ...byProgram],
+      classProgress: [scheduleAll, ...byClass],
       conductByClass: classes.map((item) => {
         const values = approvedConduct.filter((row) => row.sClassStudentId === item.classId).map((row) => row.score);
         return { classId: item.classId, className: item.className, median: median(values), count: values.length };
@@ -534,12 +750,14 @@ export class DashboardService {
       gpaByClass,
       registrationProgress: [registrationAll, ...registrationByCohort],
       programRegistrationProgress: [registrationAll, ...registrationByProgram],
+      classRegistrationProgress: [registrationAll, ...registrationByClass],
       graduationForecast: {
-        total: graduationForecastTotal,
-        onTime: scheduleAll.pass,
-        conditional: scheduleAll.pending,
-        incomplete: scheduleAll.fail,
-        cannotDetermine: scheduleAll.error,
+        total: gradTotal,
+        onTime: gradOnTime,
+        conditional: gradConditional,
+        incomplete: gradIncomplete,
+        cannotDetermine: gradReview,
+        scopeLabel: gradScopeLabel,
       },
       academicWarnings: {
         items: liveWarningReport.items.map((row) => ({
@@ -578,12 +796,16 @@ export class DashboardService {
           unassessedStudents: liveWarningReport.counts.unassessed,
         },
         progress: {
-          code: "warning_run_snapshot",
-          label: "Đăng ký và tiến độ từ lần tính cảnh báo theo run",
+          code: completionRows.length > 0 ? "completion_run_evaluations" : "warning_run_snapshot",
+          label: completionRows.length > 0
+            ? "Đánh giá tiến độ CTĐT và hoàn thành theo đợt"
+            : "Đăng ký và tiến độ từ lần tính cảnh báo theo run",
           academicTermId: selectedTerm?.id || null,
-          runIds: latestRuns.map((run) => run.id),
-          cutoff: latestRuns[0]?.sourceCapturedAt || latestRuns[0]?.completedAt || null,
-          reasonCodes: ["REGISTRATION_BEHIND", "PROGRAM_PROGRESS_BEHIND"],
+          runIds: completionRows.length > 0 ? latestCompletionRuns.map((run) => run.id) : latestRuns.map((run) => run.id),
+          cutoff: completionRows.length > 0
+            ? latestCompletionRuns[0]?.completedAt || null
+            : latestRuns[0]?.sourceCapturedAt || latestRuns[0]?.completedAt || null,
+          reasonCodes: ["PROGRAM_PROGRESS_BEHIND"],
         },
         conduct: {
           academicTermId: selectedTerm?.id || null,
@@ -600,11 +822,12 @@ export class DashboardService {
         },
         graduationForecast: {
           academicTermId: selectedTerm?.id || null,
-          assessedStudents: graduationForecastTotal,
-          onTime: scheduleAll.pass,
-          behindSchedule: scheduleAll.fail,
-          pending: scheduleAll.pending,
-          cannotDetermine: scheduleAll.error,
+          assessedStudents: gradTotal,
+          onTime: gradOnTime,
+          behindSchedule: gradIncomplete,
+          pending: gradConditional,
+          cannotDetermine: gradReview,
+          scopeLabel: gradScopeLabel,
         },
       },
       filterOptions: {
