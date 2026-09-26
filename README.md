@@ -5,7 +5,7 @@
 
 ---
 
-## 📌 1. Giới thiệu
+## 1. Giới thiệu
 
 **SEWS** là nền tảng quản lý học vụ và cảnh báo sớm giúp tập trung dữ liệu sinh viên, điểm số, rèn luyện và tiến độ đào tạo:
 
@@ -17,7 +17,7 @@
 
 ---
 
-## 🛠 2. Công nghệ & Kiến trúc
+## 2. Công nghệ & Kiến trúc
 
 Hệ thống được tổ chức theo mô hình **npm monorepo** gồm 2 ứng dụng độc lập:
 
@@ -39,7 +39,7 @@ scripts/        # Scripts chạy đồng thời 2 ứng dụng và smoke test
 
 ---
 
-## 🚀 3. Hướng dẫn cài đặt & Khởi chạy
+## 3. Hướng dẫn cài đặt & Khởi chạy
 
 ### Yêu cầu tiên quyết
 - **Node.js** >= 20.9.0 | **npm** >= 10.x | **PostgreSQL** >= 14
@@ -102,17 +102,17 @@ npm run dev
 
 ---
 
-## 🔑 4. Tài khoản đăng nhập mặc định (Demo)
+## 4. Tài khoản đăng nhập mặc định (Demo)
 
-| Vai trò | Tên đăng nhập | Mật khẩu mặc định | Phạm vi dữ liệu (`Data Scope`) |
+| Vai trò | Tên đăng nhập | Mật khẩu mặc định | Phạm vi dữ liệu |
 | :--- | :--- | :--- | :--- |
-| **Quản trị hệ thống** | `admin` | `Admin@Dev2026` | Toàn hệ thống (`system`) |
-| **Ban chủ nhiệm Khoa** | `dean.demo` | `Dean@Dev2026` | Toàn Khoa CNTT (`faculty`) |
-| **Cố vấn học tập** | `advisor.demo` | `Advisor@Dev2026` | Lớp được phân công (`assigned_classes`) |
+| **Quản trị hệ thống** | `admin` | `Admin@123` | Toàn hệ thống |
+| **Ban chủ nhiệm Khoa** | `dean.demo` | `Dean@123456` | Toàn Khoa CNTT |
+| **Cố vấn học tập** | `advisor.demo` | `Advisor@1234566` | Lớp được phân công |
 
 ---
 
-## 💻 5. Danh mục câu lệnh thường dùng
+## 5. Danh mục câu lệnh thường dùng
 
 | Lệnh | Chức năng |
 | :--- | :--- |
@@ -130,9 +130,3 @@ npm run dev
 
 ---
 
-## ⚠️ 6. Lưu ý & Xử lý sự cố thường gặp
-
-1. **Lỗi `EPERM` khi sinh Prisma Client (Windows)**: Xảy ra khi server backend hoặc Prisma Studio đang chạy giữ khóa file DLL. Cần dừng server (`Ctrl + C`) trước khi chạy `npm run db:generate`.
-2. **Lỗi `403 Forbidden - Origin not allowed`**: Do domain/port trình duyệt không khớp với `ALLOWED_ORIGINS` trong `apps/backend/.env`.
-3. **Lỗi kết nối CSDL (`P1001`)**: Kiểm tra dịch vụ PostgreSQL đang hoạt động và các thông số (user, password, port, dbname) trong `DATABASE_URL` đã chính xác.
-4. **Tài liệu tham khảo chuyên sâu**: Xem thêm [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (Kiến trúc kỹ thuật) và [docs/USER_GUIDE.md](docs/USER_GUIDE.md) (Hướng dẫn sử dụng nghiệp vụ).
