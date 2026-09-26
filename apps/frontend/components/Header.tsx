@@ -13,12 +13,37 @@ interface HeaderProps {
 export default function Header({ title = "Cổng quản trị CNTT", onMenuToggle }: HeaderProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const userInfo = user
-    ? {
-        name: user.fullName,
-        unit: ROLE_USER_PRESETS[user.role]?.unit || "Khoa CNTT",
-      }
-    : ROLE_USER_PRESETS.SYSTEM_ADMIN;
+
+  const getRoleDisplayName = (role?: string) => {
+    if (role === "SYSTEM_ADMIN") return "Quản trị hệ thống";
+    if (role === "FACULTY_BOARD") return "Ban chủ nhiệm Khoa";
+    if (role === "CLASS_ADVISOR") return "GVCN / CVHT";
+    if (role === "FACULTY_STAFF") return "Giáo vụ Khoa";
+    if (role === "STUDENT_AFFAIRS_ASSISTANT") return "Trợ lý CTSV";
+    if (role === "COMMS_ASSISTANT") return "Tổ Truyền thông";
+    return "Người dùng";
+  };
+
+  const getScopeDisplayName = () => {
+    if (!user) return "";
+    if (user.role === "SYSTEM_ADMIN") return "Toàn hệ thống";
+    if (user.role === "FACULTY_BOARD") {
+      return user.facultyCode ? `Khoa ${user.facultyCode}` : "Phạm vi Khoa";
+    }
+    if (user.role === "CLASS_ADVISOR") {
+      return user.className ? `Lớp ${user.className}` : (user.classFullName || "Lớp phụ trách");
+    }
+    return user.facultyCode ? `Khoa ${user.facultyCode}` : "";
+  };
+
+  const roleName = getRoleDisplayName(user?.role);
+  const scopeName = getScopeDisplayName();
+  const unitText = scopeName ? `${roleName} • ${scopeName}` : roleName;
+
+  const userInfo = {
+    name: user?.fullName || (user ? ROLE_USER_PRESETS[user.role]?.name : "Quản trị viên"),
+    unit: user ? unitText : "Quản trị hệ thống",
+  };
 
   const [showNotifications, setShowNotifications] = useState(false);
 

@@ -22,7 +22,9 @@ export interface User {
   email?: string | null;
   role: Role;
   facultyId?: string;
-  className?: string;
+  facultyCode?: string | null;
+  className?: string | null;
+  classFullName?: string | null;
 }
 
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
@@ -68,10 +70,10 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   FACULTY_BOARD: [
     "student.read",
     "student.export",
-    "class.manage",
-    "academic_term.manage",
+    "grade.read",
+    "decision.read",
+    "fee_policy.read",
     "progress.read",
-    "progress.plan.manage",
     "progress.calculate",
     "graduation.read",
     "graduation.evaluate",
@@ -80,9 +82,7 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     "academic_warning.calculate",
     "academic_warning.action.create",
     "academic_warning.action.update",
-    "decision.read",
-    "fee_policy.read",
-    "grade.read",
+    "report.export",
   ],
   CLASS_ADVISOR: [
     "student.read",
@@ -95,6 +95,7 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     "academic_warning.read",
     "academic_warning.action.create",
     "academic_warning.action.update",
+    "report.export",
   ],
   FACULTY_STAFF: [
     "student.read",
@@ -140,12 +141,12 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
 };
 
 export const ROLE_USER_PRESETS: Record<Role, { name: string; unit: string; username: string }> = {
-  SYSTEM_ADMIN: { name: "Quản trị viên Hệ thống", unit: "Phòng Kỹ thuật", username: "admin" },
-  FACULTY_BOARD: { name: "PGS.TS Lê Văn Hùng", unit: "Ban CN Khoa CNTT", username: "bcn_khoa" },
-  CLASS_ADVISOR: { name: "ThS. Nguyễn Thị Hoa", unit: "Cố vấn học tập K45", username: "cvht_hoa" },
-  FACULTY_STAFF: { name: "Cô Nguyễn Bích Trâm", unit: "Giáo vụ Khoa CNTT", username: "giao_vu" },
-  STUDENT_AFFAIRS_ASSISTANT: { name: "CN. Trần Minh Phúc", unit: "Phòng Công tác SV", username: "ctsv_phuc" },
-  COMMS_ASSISTANT: { name: "Nguyễn Văn An", unit: "Tổ Truyền thông", username: "truyenthong" },
+  SYSTEM_ADMIN: { name: "Quản trị viên Hệ thống", unit: "Toàn hệ thống", username: "admin" },
+  FACULTY_BOARD: { name: "Ban Chủ nhiệm Khoa", unit: "Phạm vi Khoa", username: "dean.demo" },
+  CLASS_ADVISOR: { name: "Cố vấn học tập / GVCN", unit: "Lớp phụ trách", username: "advisor.demo" },
+  FACULTY_STAFF: { name: "Giáo vụ Khoa", unit: "Phạm vi Khoa", username: "staff.demo" },
+  STUDENT_AFFAIRS_ASSISTANT: { name: "Chuyên viên CTSV", unit: "Phòng Công tác SV", username: "ctsv.demo" },
+  COMMS_ASSISTANT: { name: "Tổ Truyền thông", unit: "Tổ Truyền thông", username: "comms.demo" },
 };
 
 interface AuthState {
@@ -218,7 +219,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   can(permission: string | string[]) {
     const state = get();
     // Admin always has all permissions
-    if (state.user?.role === "SYSTEM_ADMIN" || state.grants.some((g) => g.role === "admin")) {
+    if (
+      state.user?.role === "SYSTEM_ADMIN" ||
+      state.grants.some((g) => g.role === "admin") ||
+      state.dataScopes.has("system")
+    ) {
       return true;
     }
 
@@ -243,15 +248,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
 type StoreSetter = (partial: Partial<AuthState>) => void;
 
-function applySession(data: { user: Omit<User, "role">; actor?: { grants?: Grant[] } }, set: StoreSetter) {
+interface SessionPayload {
+  user: Omit<User, "role">;
+  actor?: {
+    userId?: string;
+    grants?: Grant[];
+  };
+  permissions?: string[];
+  scopes?: string[];
+}
+
+function applySession(data: SessionPayload, set: StoreSetter) {
   const grants = data.actor?.grants || [];
-  const permissions = new Set(grants.map((grant) => grant.permission).filter(Boolean));
+  const permissions = new Set<string>();
+
+  // Primary source of truth: server grants from actor
+  for (const grant of grants) {
+    if (grant.permission) permissions.add(grant.permission);
+  }
+
+  // Also support direct permissions array if provided by backend session
+  if (Array.isArray(data.permissions)) {
+    for (const p of data.permissions) {
+      if (p) permissions.add(p);
+    }
+  }
+
   const dataScopes = new Set(grants.map((grant) => grant.scope).filter(Boolean));
-  const isAdmin = grants.some((grant) => grant.role === "admin");
+  if (Array.isArray(data.scopes)) {
+    for (const s of data.scopes) {
+      if (s) dataScopes.add(s);
+    }
+  }
+
+  const isAdmin = grants.some((grant) => grant.role === "admin") || dataScopes.has("system");
   if (isAdmin) {
-    ROLE_PERMISSIONS.SYSTEM_ADMIN.forEach((permission) => permissions.add(permission));
     dataScopes.add("system");
   }
+
   const role = roleFromGrants(grants);
   set({
     user: { ...data.user, role },
@@ -268,7 +302,7 @@ function roleFromGrants(grants: Grant[]): Role {
   if (code === "admin") return "SYSTEM_ADMIN";
   if (code === "faculty_manager") return "FACULTY_BOARD";
   if (code === "class_advisor") return "CLASS_ADVISOR";
-  if (code === "student_affairs") return "STUDENT_AFFAIRS_ASSISTANT";
+  if (code === "student_affairs" || code === "ctsv_staff") return "STUDENT_AFFAIRS_ASSISTANT";
   if (code === "communications") return "COMMS_ASSISTANT";
   return "FACULTY_STAFF";
 }

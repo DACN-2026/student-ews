@@ -71,6 +71,46 @@ export async function studentScopeWhere(actor: Actor): Promise<Prisma.StudentWhe
   return alternatives.length ? { OR: alternatives } : { id: { in: [] } };
 }
 
+export async function classScopeWhere(actor: Actor): Promise<Prisma.ClassWhereInput> {
+  if (hasGlobalDataScope(actor)) return {};
+  const scopes = new Set(actor.grants.map((grant) => grant.scope));
+  const alternatives: Prisma.ClassWhereInput[] = [];
+
+  if (scopes.has("assigned_classes")) {
+    const assignments = await prisma.classAdvisorAssignment.findMany({
+      where: { userId: actor.userId, status: "active", revokedAt: null },
+      select: { classId: true },
+    });
+    const assignedClassIds = assignments.map((item) => item.classId);
+    alternatives.push({ id: { in: assignedClassIds } });
+  }
+
+  if (scopes.has("faculty")) {
+    const lecturer = await prisma.lecturerProfile.findUnique({
+      where: { userId: actor.userId },
+      select: { facultyCode: true },
+    });
+    if (lecturer?.facultyCode) {
+      const programs = await prisma.trainingProgram.findMany({
+        where: { s_faculty_code: lecturer.facultyCode, deletedAt: null, isActive: true },
+        select: { sProgramCode: true },
+      });
+      const programCodes = programs.map((p) => p.sProgramCode);
+      const facultyStudents = await prisma.student.findMany({
+        where: { sStudyProgramId: { in: programCodes }, sClassStudentId: { not: null }, deletedAt: null },
+        select: { sClassStudentId: true },
+        distinct: ["sClassStudentId"],
+      });
+      const facultyClassCodes = facultyStudents
+        .map((s) => s.sClassStudentId)
+        .filter((code): code is string => Boolean(code));
+      alternatives.push({ classId: { in: facultyClassCodes } });
+    }
+  }
+
+  return alternatives.length ? { OR: alternatives } : { id: { in: [] } };
+}
+
 export async function inaccessibleStudentTargetIndexes(
   actor: Actor,
   targets: Array<{ classStudentId?: string | null; studyProgramId?: string | null }>,

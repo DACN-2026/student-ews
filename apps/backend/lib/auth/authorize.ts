@@ -21,7 +21,7 @@ export async function requireAuth(request?: Request): Promise<AuthResult> {
   return { authorized: true, actor };
 }
 
-export async function requirePermission(permission: string, request?: Request): Promise<AuthResult> {
+export async function requirePermission(permission: string | string[], request?: Request): Promise<AuthResult> {
   const auth = await requireAuth(request);
   if (!auth.authorized) return auth;
 

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import FilterBar from "@/components/ui/FilterBar";
 import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import ForbiddenState from "@/components/ui/ForbiddenState";
+import { useAuthStore } from "@/stores/authStore";
 
 interface ProgramCourse {
   id: string;
@@ -34,6 +36,8 @@ interface TrainingProgramDetail {
   degreeLevel?: string;
   studyType?: string;
   status?: string;
+  facultyCode?: string;
+  facultyName?: string;
   courses: ProgramCourse[];
 }
 
@@ -43,6 +47,7 @@ export default function TrainingProgramDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const { can, status } = useAuthStore();
   const resolvedParams = use(params);
   const programId = resolvedParams.id;
 
@@ -325,6 +330,10 @@ export default function TrainingProgramDetailPage({
     );
   }
 
+  if (status !== "loading" && status !== "idle" && !can(["progress.read", "academic_term.manage"])) {
+    return <ForbiddenState requiredPermission="progress.read" />;
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Top Header & Breadcrumb */}
@@ -369,7 +378,7 @@ export default function TrainingProgramDetailPage({
             <span>Làm mới</span>
           </button>
 
-          {activeTab === "curriculum" && (
+          {activeTab === "curriculum" && can("academic_term.manage") && (
             <button
               onClick={handleOpenCreate}
               className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
@@ -400,7 +409,9 @@ export default function TrainingProgramDetailPage({
         </div>
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Đơn vị quản lý</div>
-          <div className="text-sm font-bold text-slate-800 mt-1">Khoa Công nghệ Thông tin</div>
+          <div className="text-sm font-bold text-slate-800 mt-1">
+            {program.facultyName || (program.facultyCode ? `Khoa ${program.facultyCode}` : "Khoa chuyên môn")}
+          </div>
         </div>
       </div>
 
@@ -589,28 +600,32 @@ export default function TrainingProgramDetailPage({
                                       {course.departmentCode || "—"}
                                     </td>
                                     <td className="py-3 px-4 text-right space-x-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleOpenEdit(course)}
-                                        className="p-1.5 text-slate-400 hover:text-[var(--color-primary)] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                                        title="Sửa học phần"
-                                      >
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                        </svg>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setDeleteTarget(course)}
-                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                                        title="Xóa học phần khỏi CTĐT"
-                                      >
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                          <polyline points="3 6 5 6 21 6" />
-                                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                        </svg>
-                                      </button>
+                                      {can("academic_term.manage") && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleOpenEdit(course)}
+                                            className="p-1.5 text-slate-400 hover:text-[var(--color-primary)] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                            title="Sửa học phần"
+                                          >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                            </svg>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setDeleteTarget(course)}
+                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                            title="Xóa học phần khỏi CTĐT"
+                                          >
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                              <polyline points="3 6 5 6 21 6" />
+                                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                            </svg>
+                                          </button>
+                                        </>
+                                      )}
                                     </td>
                                   </tr>
                                 ))}

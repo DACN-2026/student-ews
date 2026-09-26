@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import FilterBar from "@/components/ui/FilterBar";
 import { apiFetch } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/authStore";
 
 interface FilterState {
   academicYear?: string;
@@ -56,6 +57,28 @@ const CHART_PALETTE = ["#3B82F6", "#10B981", "#F59E0B", "#F97316", "#8B5CF6", "#
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
+
+  const isClassAdvisor = user?.role === "CLASS_ADVISOR";
+  const isFacultyBoard = user?.role === "FACULTY_BOARD";
+
+  const dashboardTitle = isClassAdvisor
+    ? `Dashboard Lớp ${user?.className || "phụ trách"}`
+    : isFacultyBoard
+    ? "Dashboard Ban chủ nhiệm Khoa"
+    : "Dashboard Quản trị Hệ thống";
+
+  const dashboardSubtitle = isClassAdvisor
+    ? "Theo dõi kết quả học tập, tiến độ và cảnh báo sớm học vụ của lớp phụ trách"
+    : isFacultyBoard
+    ? "Theo dõi kết quả, tiến độ CTĐT và cảnh báo sớm học vụ theo phạm vi Khoa"
+    : "Theo dõi toàn diện kết quả đào tạo, tiến độ và cảnh báo học vụ toàn trường";
+
+  const scopeBadgeText = isClassAdvisor
+    ? null
+    : isFacultyBoard
+    ? `Phạm vi: ${user?.facultyCode ? `Khoa ${user.facultyCode}` : "Phạm vi Khoa"}`
+    : null;
 
   // Filters state
   const [filters, setFilters] = useState<FilterState>({
@@ -68,14 +91,12 @@ export default function DashboardPage() {
   });
 
   const [completionBreakdown, setCompletionBreakdown] = useState<"class" | "cohort">("class");
-  const [registrationBreakdown, setRegistrationBreakdown] = useState<"class" | "cohort">("class");
 
   // Options
   const [academicYears, setAcademicYears] = useState<ApiData[]>([]);
   const [programs, setPrograms] = useState<ApiData[]>([]);
   const [classes, setClasses] = useState<ApiData[]>([]);
   const [summaryData, setSummaryData] = useState<ApiData>(null);
-  const [warningStudents, setWarningStudents] = useState<ApiData[]>([]);
   const [mounted, setMounted] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [summaryReload, setSummaryReload] = useState(0);
@@ -106,7 +127,6 @@ export default function DashboardPage() {
         }
         const data = await response.json();
         setSummaryData(data);
-        setWarningStudents(data.academicWarnings?.items || []);
         const options = data.filterOptions || {};
         const optionTerms = Array.isArray(options.terms) ? options.terms : [];
         const optionYear = data.filter?.academicYear || data.currentAcademicYear?.yearCode || "";
@@ -188,9 +208,6 @@ export default function DashboardPage() {
   const programProgressData = toPercentages(summaryData?.programProgress || []);
   const classProgressData = toPercentages(summaryData?.classProgress || []);
   const cohortProgressData = toPercentages(summaryData?.cohortProgress || []);
-  const programRegistrationData = toPercentages(summaryData?.programRegistrationProgress || []);
-  const classRegistrationData = toPercentages(summaryData?.classRegistrationProgress || []);
-  const cohortRegistrationData = toPercentages(summaryData?.registrationProgress || []);
   const warningByClassData = Array.isArray(summaryData?.warningByClass) ? summaryData.warningByClass.slice(0, 7) : [];
   const mainTermOptions = termOptions.filter((term: ApiData) => !term.isSummer);
   const summerTermOptions = termOptions.filter((term: ApiData) => term.isSummer);
@@ -201,22 +218,30 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-primary)] animate-pulse" />
             <span className="text-xs font-semibold text-[var(--color-primary)] uppercase tracking-wider">
               {summaryData?.currentTerm
                 ? `${summaryData.currentTerm.academicYear} • ${summaryData.currentTerm.termName}`
                 : "TOÀN BỘ DỮ LIỆU HIỆN CÓ"}
             </span>
+            {scopeBadgeText && (
+              <>
+                <span className="text-xs text-slate-300">•</span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                  {scopeBadgeText}
+                </span>
+              </>
+            )}
           </div>
           <h1
             className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
             style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
-            Dashboard Ban chủ nhiệm Khoa
+            {dashboardTitle}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Theo dõi kết quả, tiến độ CTĐT và cảnh báo sớm học vụ theo phạm vi được phân quyền
+            {dashboardSubtitle}
           </p>
         </div>
 
@@ -266,7 +291,7 @@ export default function DashboardPage() {
                 ? `${summaryData.currentTerm.academicYear} · ${summaryData.currentTerm.termName}`
                 : filters.academicYear || "Tất cả dữ liệu hiện có"}
               {filters.programCode ? ` · ${filters.programCode}` : ""}
-              {filters.classId ? ` · ${selectedClass?.classId || selectedClass?.className || filters.classId}` : ""}
+              {isClassAdvisor ? ` · ${user?.className || classes[0]?.className || "Lớp phụ trách"}` : (filters.classId ? ` · ${selectedClass?.classId || selectedClass?.className || filters.classId}` : "")}
             </span>
           </div>
         }
@@ -310,31 +335,44 @@ export default function DashboardPage() {
           )}
         </select>
 
-        <select
-          value={filters.programCode}
-          onChange={(e) => setFilters({ ...filters, programCode: e.target.value })}
-          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-        >
-          <option value="">Tất cả CTĐT</option>
-          {programs.map((p) => (
-            <option key={p.id} value={p.programCode}>
-              {p.programCode} - {p.programName}
-            </option>
-          ))}
-        </select>
+        {isClassAdvisor && programs.length <= 1 ? (
+          <div className="inline-flex items-center px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+            CTĐT: {programs[0]?.programName || programs[0]?.programCode || "Chính quy"}
+          </div>
+        ) : (
+          <select
+            value={filters.programCode}
+            onChange={(e) => setFilters({ ...filters, programCode: e.target.value })}
+            className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+          >
+            <option value="">Tất cả CTĐT</option>
+            {programs.map((p) => (
+              <option key={p.id} value={p.programCode}>
+                {p.programCode} - {p.programName}
+              </option>
+            ))}
+          </select>
+        )}
 
-        <select
-          value={filters.classId}
-          onChange={(e) => setFilters({ ...filters, classId: e.target.value })}
-          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-        >
-          <option value="">Tất cả lớp học</option>
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.classId} - {c.className}
-            </option>
-          ))}
-        </select>
+        {isClassAdvisor || classes.length <= 1 ? (
+          <div className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+            <span>Lớp: {classes[0]?.className || user?.className || "Lớp phụ trách"}</span>
+          </div>
+        ) : (
+          <select
+            value={filters.classId}
+            onChange={(e) => setFilters({ ...filters, classId: e.target.value })}
+            className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+          >
+            <option value="">Tất cả lớp học</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.classId} - {c.className}
+              </option>
+            ))}
+          </select>
+        )}
       </FilterBar>
 
       {summaryError && (
@@ -470,7 +508,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 4. 6 Charts Grid */}
+      {/* 4. Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Chart 1: Phân bổ học lực (Pie Chart) - Col 5 */}
         <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
@@ -590,8 +628,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Chart 3: Tiến độ CTĐT (Stacked Bar Chart) - Col 6 */}
-        <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+        {/* Chart 3: Tiến độ CTĐT (Stacked Bar Chart) - Col 12 */}
+        <div className="lg:col-span-12 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
@@ -600,39 +638,41 @@ export default function DashboardPage() {
               <p className="text-xs text-slate-500">Tỷ lệ đúng tiến độ / chậm tiến độ (%)</p>
             </div>
 
-            <div className="inline-flex rounded-xl bg-slate-100 p-1 text-xs">
-              <button
-                type="button"
-                onClick={() => setCompletionBreakdown("class")}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${completionBreakdown === "class"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-500 hover:text-slate-900"
-                  }`}
-              >
-                Lớp
-              </button>
-              <button
-                type="button"
-                onClick={() => setCompletionBreakdown("cohort")}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${completionBreakdown === "cohort"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-500 hover:text-slate-900"
-                  }`}
-              >
-                Khóa
-              </button>
-            </div>
+            {!isClassAdvisor && (
+              <div className="inline-flex rounded-xl bg-slate-100 p-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setCompletionBreakdown("class")}
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${completionBreakdown === "class"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-900"
+                    }`}
+                >
+                  Lớp
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCompletionBreakdown("cohort")}
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${completionBreakdown === "cohort"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-900"
+                    }`}
+                >
+                  Khóa
+                </button>
+              </div>
+            )}
           </div>
 
-          <div className="h-[290px] w-full">
+          <div className={`w-full ${isClassAdvisor ? "h-[160px]" : "h-[290px]"}`}>
             {!mounted ? (
               <div className="h-full w-full bg-slate-50/70 animate-pulse rounded-xl" />
-            ) : (completionBreakdown === "class" ? classProgressData : cohortProgressData).length === 0 ? (
+            ) : (isClassAdvisor ? classProgressData : (completionBreakdown === "class" ? classProgressData : cohortProgressData)).length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs text-slate-400">Chưa có lần tính tiến độ phù hợp</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={completionBreakdown === "class" ? classProgressData : cohortProgressData}
+                  data={isClassAdvisor ? classProgressData : (completionBreakdown === "class" ? classProgressData : cohortProgressData)}
                   layout="vertical"
                   margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
                 >
@@ -644,86 +684,24 @@ export default function DashboardPage() {
                     contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0", fontSize: 12 }}
                   />
                   <Legend wrapperStyle={{ fontSize: 12, paddingTop: 4 }} />
-                  <Bar dataKey="pass" name="Đúng tiến độ" stackId="a" fill={THEME_COLORS.green} />
-                  <Bar dataKey="fail" name="Chậm tiến độ" stackId="a" fill={THEME_COLORS.red} />
+                  <Bar dataKey="pass" name="Đúng tiến độ" stackId="a" fill={THEME_COLORS.green} maxBarSize={36} barSize={isClassAdvisor ? 28 : undefined} />
+                  <Bar dataKey="fail" name="Chậm tiến độ" stackId="a" fill={THEME_COLORS.red} maxBarSize={36} barSize={isClassAdvisor ? 28 : undefined} />
                 </BarChart>
               </ResponsiveContainer>
             )}
           </div>
         </div>
 
-        {/* Chart 4: Tiến độ đăng ký học phần (Stacked Bar Chart) - Col 6 */}
+        {/* Chart 4: Phân bố Cảnh báo theo Lớp - Col 6 */}
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                Tiến độ Đăng ký Học phần
+                {isClassAdvisor ? "Tình hình Cảnh báo Lớp phụ trách" : "Phân bố Sinh viên Cảnh báo theo Lớp"}
               </h3>
-              <p className="text-xs text-slate-500">Tỷ lệ đáp ứng học phần cần đăng ký trong kế hoạch tại thời điểm tính (%)</p>
-            </div>
-
-            <div className="inline-flex rounded-xl bg-slate-100 p-1 text-xs">
-              <button
-                type="button"
-                onClick={() => setRegistrationBreakdown("class")}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${registrationBreakdown === "class"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-500 hover:text-slate-900"
-                  }`}
-              >
-                Lớp
-              </button>
-              <button
-                type="button"
-                onClick={() => setRegistrationBreakdown("cohort")}
-                className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${registrationBreakdown === "cohort"
-                  ? "bg-white text-slate-900 shadow-xs"
-                  : "text-slate-500 hover:text-slate-900"
-                  }`}
-              >
-                Khóa
-              </button>
-            </div>
-          </div>
-
-          <div className="h-[290px] w-full">
-            {!mounted ? (
-              <div className="h-full w-full bg-slate-50/70 animate-pulse rounded-xl" />
-            ) : (registrationBreakdown === "class" ? classRegistrationData : cohortRegistrationData).length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-slate-400">Chưa có dữ liệu đối chiếu đăng ký</div>
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={registrationBreakdown === "class" ? classRegistrationData : cohortRegistrationData}
-                  layout="vertical"
-                  margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                  <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11, fill: "#64748B" }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#64748B" }} width={70} />
-                  <Tooltip
-                    formatter={(val: ApiData) => [`${val}%`, ""]}
-                    contentStyle={{ borderRadius: 12, border: "1px solid #E2E8F0", fontSize: 12 }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 4 }} />
-                  <Bar dataKey="pass" name="Đủ kế hoạch" stackId="b" fill={THEME_COLORS.blue} />
-                  <Bar dataKey="fail" name="Thiếu so với kế hoạch" stackId="b" fill={THEME_COLORS.active} />
-                  <Bar dataKey="pending" name="Chờ kết quả" stackId="b" fill={THEME_COLORS.yellow} />
-                  <Bar dataKey="error" name="Thiếu dữ liệu" stackId="b" fill={THEME_COLORS.slate} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
-
-        {/* Chart 5: Phân bố Cảnh báo theo Lớp - Col 6 */}
-        <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                Phân bố Sinh viên Cảnh báo theo Lớp
-              </h3>
-              <p className="text-xs text-slate-500">Số lượng sinh viên diện Đỏ và Vàng cần theo dõi</p>
+              <p className="text-xs text-slate-500">
+                {isClassAdvisor ? "Số lượng sinh viên diện Đỏ và Vàng trong lớp cần theo dõi hỗ trợ" : "Số lượng sinh viên diện Đỏ và Vàng cần theo dõi"}
+              </p>
             </div>
           </div>
 
@@ -750,7 +728,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Chart 6: Conduct distribution - Col 6 */}
+        {/* Chart 5: Conduct distribution - Col 6 */}
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -785,118 +763,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 5. Sinh viên Cảnh báo Học tập Gần nhất (SWE Table) */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-              Sinh viên Có Tín hiệu Cảnh báo Học tập
-            </h3>
-            <p className="text-xs text-slate-500">Danh sách các trường hợp nguy cơ cần ưu tiên đôn đốc hỗ trợ</p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => router.push("/reports")}
-            className="text-xs font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            <span>Xem toàn bộ ({warningTotal})</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                <th className="py-3 px-4">Sinh viên</th>
-                <th className="py-3 px-4">Lớp / CTĐT</th>
-                <th className="py-3 px-4">GPA</th>
-                <th className="py-3 px-4">Trạng thái</th>
-                <th className="py-3 px-4">Mức độ</th>
-                <th className="py-3 px-4 text-right">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {warningStudents.length > 0 ? (
-                warningStudents.map((st) => (
-                  <tr key={st.id || st.studentId} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="font-semibold text-slate-800">{st.studentName}</div>
-                      <div className="text-[11px] text-slate-400 font-mono">{st.studentCode}</div>
-                    </td>
-                    <td className="py-3 px-4 text-slate-600">
-                      <div>{st.className || "Chưa xếp lớp"}</div>
-                      <div className="text-[11px] text-slate-400">{st.programCode || "—"}</div>
-                    </td>
-                    <td className="py-3 px-4 font-mono">
-                      <span className="font-semibold text-slate-900">
-                        {st.termGpa4 != null || st.termGpa != null ? Number(st.termGpa4 ?? st.termGpa).toFixed(2) : "—"}
-                      </span>
-                      <span className="text-[11px] text-slate-400 ml-1.5">
-                        TL: {st.cumulativeGpa4 != null || st.cumulativeGpa != null ? Number(st.cumulativeGpa4 ?? st.cumulativeGpa).toFixed(2) : "—"}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex flex-col gap-1">
-                        <span
-                          className={`inline-flex items-center w-max px-2 py-0.5 rounded-full text-[10px] font-semibold ${st.registrationStatus === "fail"
-                            ? "bg-orange-100 text-orange-800"
-                            : st.registrationStatus === "unassessed"
-                              ? "bg-slate-100 text-slate-600"
-                              : "bg-emerald-100 text-emerald-800"
-                            }`}
-                        >
-                          {st.registrationStatus === "fail" ? "Chậm đăng ký" : st.registrationStatus === "unassessed" ? "Chưa đánh giá đăng ký" : "Đúng tiến độ"}
-                        </span>
-                        <span
-                          className={`inline-flex items-center w-max px-2 py-0.5 rounded-full text-[10px] font-semibold ${st.scheduleStatus === "behind_schedule"
-                            ? "bg-red-100 text-red-800"
-                            : st.scheduleStatus === "unassessed"
-                              ? "bg-slate-100 text-slate-600"
-                              : "bg-emerald-100 text-emerald-800"
-                            }`}
-                        >
-                          {st.scheduleStatus === "behind_schedule" ? "Chậm CTĐT" : st.scheduleStatus === "unassessed" ? "Chưa đánh giá CTĐT" : "Đúng CTĐT"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${(st.maxSeverity || st.severity) === "high"
-                          ? "bg-red-100 text-red-700 border border-red-200"
-                          : (st.maxSeverity || st.severity) === "medium"
-                            ? "bg-amber-100 text-amber-800 border border-amber-200"
-                            : "bg-emerald-100 text-emerald-800"
-                          }`}
-                      >
-                        {(st.maxSeverity || st.severity) === "high" ? "Nguy cơ cao" : "Cần lưu ý"}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/students/${st.studentId}`)}
-                        className="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
-                      >
-                        Xem hồ sơ
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
-                    Không có sinh viên cảnh báo trong phạm vi dữ liệu hiện có
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       {/* Footer Meta */}
       <div className="text-center text-[11px] text-slate-400 pt-2" suppressHydrationWarning>

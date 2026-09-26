@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
+import ForbiddenState from "@/components/ui/ForbiddenState";
 
 export default function SettingsPage() {
-  const canManagePolicy = useAuthStore((state) => state.can("academic_warning.policy.manage"));
+  const { can, status } = useAuthStore();
+  const canManagePolicy = can("academic_warning.policy.manage");
   const [policies, setPolicies] = useState<ApiData[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -15,7 +17,7 @@ export default function SettingsPage() {
   const [termGpaThreshold, setTermGpaThreshold] = useState<number>(2.0);
   const [cumulativeGpaThreshold, setCumulativeGpaThreshold] = useState<number>(2.0);
   const [conductScoreThreshold, setConductScoreThreshold] = useState<number>(50);
-  const [policyName, setPolicyName] = useState<string>("Chính sách theo dõi học vụ Khoa CNTT");
+  const [policyName, setPolicyName] = useState<string>("Chính sách Cảnh báo Học vụ");
 
   useEffect(() => {
     async function loadPolicies() {
@@ -83,6 +85,16 @@ export default function SettingsPage() {
       setSaving(false);
     }
   };
+
+  if (status !== "loading" && status !== "idle" && !canManagePolicy) {
+    return (
+      <ForbiddenState
+        title="Không có quyền cấu hình chính sách"
+        description="Mô-đun Cấu hình Chính sách Cảnh báo chỉ dành cho Quản trị viên hệ thống có thẩm quyền."
+        requiredPermission="academic_warning.policy.manage"
+      />
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">

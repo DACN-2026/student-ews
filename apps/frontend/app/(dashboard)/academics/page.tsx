@@ -7,10 +7,21 @@ import Tabs, { TabItem } from "@/components/ui/Tabs";
 import FilterBar from "@/components/ui/FilterBar";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import ForbiddenState from "@/components/ui/ForbiddenState";
+import { useAuthStore } from "@/stores/authStore";
 
 type AcademicsTab = "years" | "terms" | "courses" | "programs" | "cohorts" | "classes" | "plans";
 
 export default function AcademicsPage() {
+  const { user, can, status } = useAuthStore();
+  const isClassAdvisor = user?.role === "CLASS_ADVISOR";
+  const isFacultyBoard = user?.role === "FACULTY_BOARD";
+
+  const scopeBadgeText = isClassAdvisor
+    ? "GVCN / CVHT • Chỉ xem"
+    : isFacultyBoard
+    ? `Ban chủ nhiệm Khoa • ${user?.facultyCode ? `Khoa ${user.facultyCode}` : "Phạm vi Khoa"}`
+    : null;
   const configuredSummerTermCode = process.env.NEXT_PUBLIC_SUMMER_TERM_CODE?.trim() || "";
   const configuredSummerTermOrder = Number(process.env.NEXT_PUBLIC_SUMMER_TERM_ORDER || "");
   const [activeTab, setActiveTab] = useState<AcademicsTab>("years");
@@ -477,17 +488,28 @@ export default function AcademicsPage() {
     }
   };
 
+  if (status !== "loading" && status !== "idle" && !can(["academic_term.manage", "class.manage", "progress.read", "progress.plan.manage"])) {
+    return <ForbiddenState requiredPermission="progress.read" />;
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1
-            className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
-            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
-          >
-            Quản trị Đào tạo & Khung Chương trình
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1
+              className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
+              style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
+            >
+              Quản trị Đào tạo & Khung Chương trình
+            </h1>
+            {scopeBadgeText && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {scopeBadgeText}
+              </span>
+            )}
+          </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
             Quản lý cơ cấu năm học, học kỳ, khung CTĐT, học phần, khóa và lớp sinh viên
           </p>
@@ -495,7 +517,7 @@ export default function AcademicsPage() {
 
         {/* Action button corresponding to active tab */}
         <div>
-          {activeTab === "years" && (
+          {activeTab === "years" && can("academic_term.manage") && (
             <button
               type="button"
               onClick={() => setShowYearModal(true)}
@@ -509,7 +531,7 @@ export default function AcademicsPage() {
             </button>
           )}
 
-          {activeTab === "terms" && (
+          {activeTab === "terms" && can("academic_term.manage") && (
             <button
               type="button"
               onClick={() => setShowTermModal(true)}
@@ -524,7 +546,7 @@ export default function AcademicsPage() {
             </button>
           )}
 
-          {activeTab === "courses" && (
+          {activeTab === "courses" && can("academic_term.manage") && (
             <button
               type="button"
               onClick={() => setShowCourseModal(true)}
@@ -538,7 +560,7 @@ export default function AcademicsPage() {
             </button>
           )}
 
-          {activeTab === "cohorts" && (
+          {activeTab === "cohorts" && can("class.manage") && (
             <button
               type="button"
               onClick={() => setShowCohortModal(true)}
@@ -552,7 +574,7 @@ export default function AcademicsPage() {
             </button>
           )}
 
-          {activeTab === "classes" && (
+          {activeTab === "classes" && can("class.manage") && (
             <button
               type="button"
               onClick={() => setShowClassModal(true)}
@@ -626,17 +648,19 @@ export default function AcademicsPage() {
                           {y.endDate ? new Date(y.endDate).toLocaleDateString("vi-VN") : "—"}
                         </td>
                         <td className="py-3.5 px-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => setDeleteTarget({ type: "academic-years", id: y.id, name: y.sYearCode || y.yearCode })}
-                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                            title="Xóa năm học"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
-                          </button>
+                          {can("academic_term.manage") && (
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget({ type: "academic-years", id: y.id, name: y.sYearCode || y.yearCode })}
+                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                              title="Xóa năm học"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              </svg>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -916,17 +940,19 @@ export default function AcademicsPage() {
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => setDeleteTarget({ type: "classes", id: c.id, name: c.classId })}
-                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                            title="Xóa lớp học"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                            </svg>
-                          </button>
+                          {can("class.manage") && (
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget({ type: "classes", id: c.id, name: c.classId })}
+                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                              title="Xóa lớp học"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              </svg>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -948,17 +974,19 @@ export default function AcademicsPage() {
                     Kế hoạch mở môn và chỉ tiêu tín chỉ để đối soát tiến độ sinh viên
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleOpenPlanEditor}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  <span>Tạo Kế hoạch mới</span>
-                </button>
+                {can("progress.plan.manage") && (
+                  <button
+                    type="button"
+                    onClick={handleOpenPlanEditor}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    <span>Tạo Kế hoạch mới</span>
+                  </button>
+                )}
               </div>
 
               <div className="flex flex-col">
@@ -1041,7 +1069,7 @@ export default function AcademicsPage() {
                                   >
                                     Xem học phần
                                   </button>
-                                  {pl.status === "draft" && (
+                                  {can("progress.plan.manage") && pl.status === "draft" && (
                                     <button
                                       type="button"
                                       onClick={() => handleLockPlan(pl.id)}
@@ -1051,7 +1079,7 @@ export default function AcademicsPage() {
                                       Khóa
                                     </button>
                                   )}
-                                  {pl.status === "locked" && !pl.isCurrent && (
+                                  {can("progress.plan.manage") && pl.status === "locked" && !pl.isCurrent && (
                                     <button
                                       type="button"
                                       onClick={() => handleActivatePlan(pl.id)}
@@ -1061,7 +1089,7 @@ export default function AcademicsPage() {
                                       Kích hoạt
                                     </button>
                                   )}
-                                  {pl.status !== "archived" && (
+                                  {can("progress.plan.manage") && pl.status !== "archived" && (
                                     <button
                                       type="button"
                                       onClick={() => handleArchivePlan(pl.id)}

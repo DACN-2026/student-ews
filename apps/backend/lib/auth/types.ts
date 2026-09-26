@@ -20,9 +20,16 @@ export function hasScope(actor: Actor, scope: string): boolean {
   return false;
 }
 
-export function hasPermission(actor: Actor, permission: string): boolean {
+export function hasPermission(actor: Actor, permission: string | string[]): boolean {
   for (const g of actor.grants) {
-    if (g.permission === permission || g.role === "admin") {
+    if (g.role === "admin") {
+      return true;
+    }
+    if (Array.isArray(permission)) {
+      if (permission.includes(g.permission)) {
+        return true;
+      }
+    } else if (g.permission === permission) {
       return true;
     }
   }
@@ -35,6 +42,9 @@ export interface UserProfile {
   email: string | null;
   fullName: string;
   isActive: boolean;
+  facultyCode?: string | null;
+  className?: string | null;
+  classFullName?: string | null;
 }
 
 export interface AuthTokens {

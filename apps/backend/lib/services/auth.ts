@@ -54,6 +54,8 @@ export class AuthService {
       });
     });
 
+    const context = await AuthService.resolveUserContext(user.id);
+
     return {
       user: {
         id: user.id,
@@ -61,6 +63,9 @@ export class AuthService {
         email: user.email,
         fullName: user.fullName,
         isActive: user.isActive,
+        facultyCode: context.facultyCode,
+        className: context.className,
+        classFullName: context.classFullName,
       },
       tokens: {
         accessToken,
@@ -151,6 +156,38 @@ export class AuthService {
     });
   }
 
+  private static async resolveUserContext(userId: string) {
+    const [lecturer, advisorAssignment] = await Promise.all([
+      prisma.lecturerProfile.findUnique({
+        where: { userId },
+        select: { facultyCode: true, staffCode: true },
+      }),
+      prisma.classAdvisorAssignment.findFirst({
+        where: { userId, status: "active", revokedAt: null },
+        orderBy: { assignedAt: "desc" },
+      }),
+    ]);
+
+    let className: string | null = null;
+    let classFullName: string | null = null;
+    if (advisorAssignment) {
+      const cls = await prisma.class.findUnique({
+        where: { id: advisorAssignment.classId },
+        select: { classId: true, className: true },
+      });
+      if (cls) {
+        className = cls.classId;
+        classFullName = cls.className;
+      }
+    }
+
+    return {
+      facultyCode: lecturer?.facultyCode || null,
+      className,
+      classFullName,
+    };
+  }
+
   static async getMe(userId: string): Promise<{ user: UserProfile; actor: Actor } | null> {
     const user = await prisma.user.findUnique({
       where: { id: userId, deletedAt: null },
@@ -161,6 +198,8 @@ export class AuthService {
     const actor = await getActorById(userId);
     if (!actor) return null;
 
+    const context = await AuthService.resolveUserContext(userId);
+
     return {
       user: {
         id: user.id,
@@ -168,9 +207,11 @@ export class AuthService {
         email: user.email,
         fullName: user.fullName,
         isActive: user.isActive,
+        facultyCode: context.facultyCode,
+        className: context.className,
+        classFullName: context.classFullName,
       },
       actor,
     };
   }
-
 }

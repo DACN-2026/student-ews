@@ -19,6 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/authStore";
 import StudentProgressDetail from "./StudentProgressDetail";
 import type {
   CohortOption,
@@ -43,6 +44,9 @@ interface ProgramOption {
 }
 
 export default function StudentProgressLookupTab() {
+  const { user } = useAuthStore();
+  const isClassAdvisor = user?.role === "CLASS_ADVISOR";
+
   // Filters State
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCohort, setSelectedCohort] = useState("");
@@ -171,6 +175,7 @@ export default function StudentProgressLookupTab() {
 
   // Initial load
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchOverview(1, pageSize, "", "", "", "", "ALL");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -409,18 +414,25 @@ export default function StudentProgressLookupTab() {
 
             {/* Class filter - 2 cols */}
             <div className="lg:col-span-2">
-              <select
-                value={selectedClass}
-                onChange={(e) => handleClassChange(e.target.value)}
-                className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-xs font-medium text-slate-800 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition"
-              >
-                <option value="">Tất cả các lớp</option>
-                {filteredClasses.map((cls) => (
-                  <option key={cls.id || cls.classId} value={cls.classId}>
-                    {cls.className || cls.classId} {cls.studentCount ? `(${cls.studentCount} SV)` : ""}
-                  </option>
-                ))}
-              </select>
+              {isClassAdvisor || classes.length <= 1 ? (
+                <div className="w-full h-10 rounded-xl border border-slate-200 bg-slate-100 px-3 text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <span className="text-slate-400 font-normal">Lớp:</span>
+                  <span className="truncate">{classes[0]?.className || classes[0]?.classId || user?.className || "Lớp phụ trách"}</span>
+                </div>
+              ) : (
+                <select
+                  value={selectedClass}
+                  onChange={(e) => handleClassChange(e.target.value)}
+                  className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-xs font-medium text-slate-800 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition"
+                >
+                  <option value="">Tất cả các lớp</option>
+                  {filteredClasses.map((cls) => (
+                    <option key={cls.id || cls.classId} value={cls.classId}>
+                      {cls.className || cls.classId} {cls.studentCount ? `(${cls.studentCount} SV)` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Program filter - 2 cols */}

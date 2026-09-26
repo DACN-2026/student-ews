@@ -9,7 +9,7 @@ const PUBLIC_API_PATHS = new Set([
   "/api/v1/healthz",
 ]);
 
-export function requiredPermission(pathname: string, method: string): string | null {
+export function requiredPermission(pathname: string, method: string): string | string[] | null {
   if (pathname.startsWith("/api/v1/rbac/users")) return "user.manage";
   if (pathname.startsWith("/api/v1/rbac/roles") || pathname.startsWith("/api/v1/rbac/permissions")) {
     return "role.manage";
@@ -62,6 +62,7 @@ export function requiredPermission(pathname: string, method: string): string | n
     return "fee_policy.read";
   }
   if (pathname.startsWith("/api/v1/classes") || pathname.startsWith("/api/v1/cohorts")) {
+    if (method === "GET") return ["class.manage", "student.read", "progress.read"];
     return "class.manage";
   }
   if (
@@ -69,6 +70,7 @@ export function requiredPermission(pathname: string, method: string): string | n
     pathname.startsWith("/api/v1/courses") ||
     pathname.startsWith("/api/v1/training-programs")
   ) {
+    if (method === "GET") return ["academic_term.manage", "progress.read", "student.read"];
     return "academic_term.manage";
   }
   if (pathname.startsWith("/api/v1/training-progress")) {
@@ -102,8 +104,12 @@ export function requiredPermission(pathname: string, method: string): string | n
   return null;
 }
 
-export function hasPermission(payload: TokenPayload, permission: string): boolean {
-  return payload.roles.includes("admin") || payload.permissions.includes(permission);
+export function hasPermission(payload: TokenPayload, permission: string | string[]): boolean {
+  if (payload.roles.includes("admin")) return true;
+  if (Array.isArray(permission)) {
+    return permission.some((p) => payload.permissions.includes(p));
+  }
+  return payload.permissions.includes(permission);
 }
 
 export function hasInvalidUuidSegment(pathname: string): boolean {

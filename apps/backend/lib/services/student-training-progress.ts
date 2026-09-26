@@ -466,7 +466,6 @@ export function evaluateStudentTrainingProgress(input: {
   // 5. Separate Mandatory, Elective and Conditional (GDQP/GDTC)
   const mandatoryCourses = assessedCourses.filter((c) => c.requirementType === "mandatory" && !c.isConditional);
   const electiveCourses = assessedCourses.filter((c) => c.requirementType === "elective" && !c.isConditional);
-  const conditionalCourses = assessedCourses.filter((c) => c.isConditional || c.requirementType === "conditional");
 
   const completedMandatoryCredits = mandatoryCourses
     .filter((c) => c.status === "PASSED")

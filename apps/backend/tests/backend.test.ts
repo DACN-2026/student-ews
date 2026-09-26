@@ -31,7 +31,16 @@ import {
 } from "../lib/services/export";
 import { isApplicableGraduationRule, isExcludedFromGraduationCredits, resolveGraduationStatus } from "../lib/services/graduation-evaluations";
 import { buildGraduationForecast, normalizeCourseCode } from "../lib/services/graduation-forecast";
-import { evaluateStudentTrainingProgress } from "../lib/services/student-training-progress";
+import {
+  evaluateStudentTrainingProgress,
+  getStandardSemesterPlannedCredits,
+} from "../lib/services/student-training-progress";
+import { prisma } from "../lib/prisma";
+import { studentScopeWhere, requireStudentPermission, classScopeWhere } from "../lib/auth/data-scope";
+import { GET as getClassesRoute } from "../app/api/v1/classes/route";
+import { GET as getClassDetailRoute } from "../app/api/v1/classes/[id]/route";
+import { ExportService } from "../lib/services/export";
+import type { Actor } from "../lib/auth/types";
 
 const IDS = {
   student: "11111111-1111-4111-8111-111111111111",
@@ -1217,17 +1226,6 @@ test("Training Progress Ví dụ A: Đến hết năm 2 kế hoạch 65 TC, đ�
 });
 
 test("Training Progress Ví dụ B: Kế hoạch 65 TC, đạt 59 TC -> Chậm tiến độ 6 TC", () => {
-  const curriculum = [
-    { courseId: "m1", courseCode: "M1", courseName: "Môn bắt buộc 1", credits: 25, requirementType: "mandatory", semesterNo: 1 },
-    { courseId: "m2", courseCode: "M2", courseName: "Môn bắt buộc 2", credits: 20, requirementType: "mandatory", semesterNo: 2 },
-    { courseId: "m3", courseCode: "M3", courseName: "Môn bắt buộc 3", credits: 20, requirementType: "mandatory", semesterNo: 3 },
-  ];
-  // Student only passed M1 (25) + M2 (20) + 14 credits of M3 (or missed a 6-credit course)
-  const grades = [
-    { courseCode: "M1", isPass: true, notScore: false, scoreStatus: "graded" },
-    { courseCode: "M2", isPass: true, notScore: false, scoreStatus: "graded" },
-    // M3 not passed
-  ];
   const result = evaluateStudentTrainingProgress({
     student: defaultStudent,
     curriculum: [
@@ -1394,8 +1392,6 @@ test("Training Progress TC16: Các môn GDTC và GDQP không tính vào số tí
 });
 
 test("Training Progress TC17: Số tín chỉ kế hoạch từng học kỳ (HK1..HK9) khớp 100% Kế hoạch giảng dạy NH 2026-2027 (PDF Mẫu 07/QLĐT)", () => {
-  const { getStandardSemesterPlannedCredits } = require("../lib/services/student-training-progress");
-
   // HK1 (K50 Năm 1 HK1): 13 TC học thuật (PDF Trang 1: Tổng cộng 13/13, BB 13, TC 0/0)
   assert.equal(getStandardSemesterPlannedCredits(1, "CQ25CT"), 13);
   assert.equal(getStandardSemesterPlannedCredits(1, "CQ22CT-PM"), 13);
@@ -1431,3 +1427,541 @@ test("Training Progress TC17: Số tín chỉ kế hoạch từng học kỳ (HK
   // HK9 (K46 Năm 5 HK1 Tốt nghiệp): 8 TTNN + 10 ĐATN = 18 TC (PDF Trang 7: Tổng cộng 18/18)
   assert.equal(getStandardSemesterPlannedCredits(9, "CQ22CT-PM"), 18);
 });
+
+test("Proxy catalog permission policy splits GET vs mutating methods", () => {
+  assert.deepEqual(requiredPermission("/api/v1/classes", "GET"), ["class.manage", "student.read", "progress.read"]);
+  assert.equal(requiredPermission("/api/v1/classes", "POST"), "class.manage");
+  assert.equal(requiredPermission(`/api/v1/classes/${IDS.student}`, "DELETE"), "class.manage");
+
+  assert.deepEqual(requiredPermission("/api/v1/cohorts", "GET"), ["class.manage", "student.read", "progress.read"]);
+  assert.equal(requiredPermission("/api/v1/cohorts", "POST"), "class.manage");
+
+  assert.deepEqual(requiredPermission("/api/v1/academic-years", "GET"), ["academic_term.manage", "progress.read", "student.read"]);
+  assert.equal(requiredPermission("/api/v1/academic-years", "POST"), "academic_term.manage");
+
+  assert.deepEqual(requiredPermission("/api/v1/courses", "GET"), ["academic_term.manage", "progress.read", "student.read"]);
+  assert.equal(requiredPermission("/api/v1/courses", "POST"), "academic_term.manage");
+
+  assert.deepEqual(requiredPermission("/api/v1/training-programs", "GET"), ["academic_term.manage", "progress.read", "student.read"]);
+  assert.equal(requiredPermission("/api/v1/training-programs", "POST"), "academic_term.manage");
+});
+
+test("Proxy RBAC: class_advisor has GET catalog access but cannot mutate catalogs or perform faculty evaluations", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "test-only-secret-for-monorepo-cookie-regression";
+  try {
+    const advisorActor: Actor = {
+      userId: "11111111-2222-3333-4444-555555555555",
+      username: "advisor.test",
+      fullName: "CVHT Test",
+      grants: [
+        { role: "class_advisor", scope: "assigned_classes", permission: "student.read" },
+        { role: "class_advisor", scope: "assigned_classes", permission: "grade.read" },
+        { role: "class_advisor", scope: "assigned_classes", permission: "decision.read" },
+        { role: "class_advisor", scope: "assigned_classes", permission: "fee_policy.read" },
+        { role: "class_advisor", scope: "assigned_classes", permission: "progress.read" },
+        { role: "class_advisor", scope: "assigned_classes", permission: "graduation.read" },
+        { role: "class_advisor", scope: "assigned_classes", permission: "graduation.export" },
+        { role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.read" },
+        { role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.action.create" },
+        { role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.action.update" },
+        { role: "class_advisor", scope: "assigned_classes", permission: "report.export" },
+      ],
+    };
+    const signed = await signAccessToken(advisorActor.userId, advisorActor.username, advisorActor);
+    const cookieHeader = `sms_access_token=${signed.token}`;
+
+    // 1. GET catalog routes succeed for GVCN
+    for (const routePath of ["/classes", "/cohorts", "/academic-years", "/courses", "/training-programs"]) {
+      const res = await proxy(new NextRequest(`http://backend:3001/api/v1${routePath}`, {
+        method: "GET",
+        headers: { cookie: cookieHeader },
+      }));
+      assert.equal(res.headers.get("x-middleware-next"), "1", `GVCN must be allowed GET ${routePath}`);
+    }
+
+    // 2. Mutating catalog routes are FORBIDDEN (403) for GVCN
+    for (const routePath of ["/classes", "/academic-years", "/courses", "/training-programs"]) {
+      const res = await proxy(new NextRequest(`http://backend:3001/api/v1${routePath}`, {
+        method: "POST",
+        headers: { cookie: cookieHeader, "content-type": "application/json" },
+        body: JSON.stringify({ name: "forbidden" }),
+      }));
+      assert.equal(res.status, 403, `GVCN must not POST ${routePath}`);
+    }
+
+    // 3. Faculty evaluation / calculation actions are FORBIDDEN (403) for GVCN
+    const forbiddenEndpoints = [
+      { path: "/graduation-evaluations", method: "POST" },
+      { path: `/training-progress/plans/${IDS.plan}/calculate`, method: "POST" },
+      { path: "/academic-warnings/runs", method: "POST" },
+      { path: "/rbac/users", method: "GET" },
+      { path: `/rbac/roles/${IDS.plan}/permissions`, method: "PUT" },
+      { path: "/rbac/advisor-assignments", method: "POST" },
+    ];
+    for (const ep of forbiddenEndpoints) {
+      const res = await proxy(new NextRequest(`http://backend:3001/api/v1${ep.path}`, {
+        method: ep.method,
+        headers: { cookie: cookieHeader },
+      }));
+      assert.equal(res.status, 403, `GVCN must not ${ep.method} ${ep.path}`);
+    }
+  } finally {
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
+
+test("Proxy RBAC: faculty_manager can evaluate/calculate but lacks user/role/assignment manage; admin has full access", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "test-only-secret-for-monorepo-cookie-regression";
+  try {
+    const deanActor: Actor = {
+      userId: "22222222-3333-4444-5555-666666666666",
+      username: "dean.test",
+      fullName: "Ban Chu Nhiem Test",
+      grants: [
+        { role: "faculty_manager", scope: "faculty", permission: "student.read" },
+        { role: "faculty_manager", scope: "faculty", permission: "student.export" },
+        { role: "faculty_manager", scope: "faculty", permission: "grade.read" },
+        { role: "faculty_manager", scope: "faculty", permission: "decision.read" },
+        { role: "faculty_manager", scope: "faculty", permission: "fee_policy.read" },
+        { role: "faculty_manager", scope: "faculty", permission: "progress.read" },
+        { role: "faculty_manager", scope: "faculty", permission: "progress.calculate" },
+        { role: "faculty_manager", scope: "faculty", permission: "graduation.read" },
+        { role: "faculty_manager", scope: "faculty", permission: "graduation.evaluate" },
+        { role: "faculty_manager", scope: "faculty", permission: "graduation.export" },
+        { role: "faculty_manager", scope: "faculty", permission: "academic_warning.read" },
+        { role: "faculty_manager", scope: "faculty", permission: "academic_warning.calculate" },
+        { role: "faculty_manager", scope: "faculty", permission: "academic_warning.action.create" },
+        { role: "faculty_manager", scope: "faculty", permission: "academic_warning.action.update" },
+        { role: "faculty_manager", scope: "faculty", permission: "report.export" },
+      ],
+    };
+    const adminActor: Actor = {
+      userId: "33333333-4444-5555-6666-777777777777",
+      username: "admin.test",
+      fullName: "Admin Test",
+      grants: [
+        { role: "admin", scope: "system", permission: "student.read" },
+      ],
+    };
+
+    const deanSigned = await signAccessToken(deanActor.userId, deanActor.username, deanActor);
+    const deanCookie = `sms_access_token=${deanSigned.token}`;
+
+    const adminSigned = await signAccessToken(adminActor.userId, adminActor.username, adminActor);
+    const adminCookie = `sms_access_token=${adminSigned.token}`;
+
+    // 1. faculty_manager can run evaluations / calculations
+    const evalRes = await proxy(new NextRequest("http://backend:3001/api/v1/graduation-evaluations", {
+      method: "POST",
+      headers: { cookie: deanCookie },
+    }));
+    assert.equal(evalRes.headers.get("x-middleware-next"), "1", "Dean can evaluate graduation");
+
+    const calcRes = await proxy(new NextRequest(`http://backend:3001/api/v1/training-progress/plans/${IDS.plan}/calculate`, {
+      method: "POST",
+      headers: { cookie: deanCookie },
+    }));
+    assert.equal(calcRes.headers.get("x-middleware-next"), "1", "Dean can calculate progress");
+
+    // 2. faculty_manager CANNOT manage system configuration / users / roles / advisor assignments
+    for (const route of ["/rbac/users", "/rbac/roles"]) {
+      const res = await proxy(new NextRequest(`http://backend:3001/api/v1${route}`, {
+        method: "GET",
+        headers: { cookie: deanCookie },
+      }));
+      assert.equal(res.status, 403, `Dean must not access ${route}`);
+    }
+    const rolePutRes = await proxy(new NextRequest(`http://backend:3001/api/v1/rbac/roles/${IDS.plan}/permissions`, {
+      method: "PUT",
+      headers: { cookie: deanCookie },
+    }));
+    assert.equal(rolePutRes.status, 403, "Dean must not edit permissions");
+
+    const assignRes = await proxy(new NextRequest("http://backend:3001/api/v1/rbac/advisor-assignments", {
+      method: "POST",
+      headers: { cookie: deanCookie },
+    }));
+    assert.equal(assignRes.status, 403, "Dean must not manage advisor assignments");
+
+    // 3. Admin has unrestricted access everywhere
+    for (const ep of [
+      { path: "/rbac/users", method: "GET" },
+      { path: "/classes", method: "POST" },
+      { path: `/rbac/roles/${IDS.plan}/permissions`, method: "PUT" },
+      { path: "/rbac/advisor-assignments", method: "POST" },
+      { path: "/graduation-evaluations", method: "POST" },
+    ]) {
+      const res = await proxy(new NextRequest(`http://backend:3001/api/v1${ep.path}`, {
+        method: ep.method,
+        headers: { cookie: adminCookie },
+      }));
+      assert.equal(res.headers.get("x-middleware-next"), "1", `Admin must have full access to ${ep.method} ${ep.path}`);
+    }
+  } finally {
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
+
+function mockDelegateMethod<T extends object>(
+  target: T,
+  methodName: keyof T,
+  mockFn: unknown,
+): () => void {
+  const targetRecord = target as unknown as Record<string | symbol, unknown>;
+  const key = methodName as string | symbol;
+  const original = targetRecord[key];
+  targetRecord[key] = mockFn;
+  return () => {
+    targetRecord[key] = original;
+  };
+}
+
+test("Data Scope: studentScopeWhere filters correctly for faculty_manager, class_advisor, and admin", async () => {
+  const cleanups: Array<() => void> = [];
+  try {
+    const deanActor: Actor = {
+      userId: "44444444-5555-6666-7777-888888888888",
+      username: "dean.scope",
+      fullName: "Dean Scope Test",
+      grants: [{ role: "faculty_manager", scope: "faculty", permission: "student.read" }],
+    };
+
+    const advisorActor: Actor = {
+      userId: "55555555-6666-7777-8888-999999999999",
+      username: "advisor.scope",
+      fullName: "Advisor Scope Test",
+      grants: [{ role: "class_advisor", scope: "assigned_classes", permission: "student.read" }],
+    };
+
+    const adminActor: Actor = {
+      userId: "66666666-7777-8888-9999-000000000000",
+      username: "admin.scope",
+      fullName: "Admin Scope Test",
+      grants: [{ role: "admin", scope: "system", permission: "student.read" }],
+    };
+
+    // Mock Prisma for Dean: facultyCode "CNTT" -> programs ["CQ22CT-PM", "CQ25CT"]
+    cleanups.push(mockDelegateMethod(prisma.lecturerProfile, "findUnique", async () => ({ facultyCode: "CNTT" })));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgram, "findMany", async () => [
+      { sProgramCode: "CQ22CT-PM" },
+      { sProgramCode: "CQ25CT" },
+    ]));
+
+    const deanScope = await studentScopeWhere(deanActor);
+    assert.deepEqual(deanScope, {
+      OR: [{ sStudyProgramId: { in: ["CQ22CT-PM", "CQ25CT"] } }],
+    });
+
+    // Mock Prisma for Advisor: assignment to class "class-uuid-1" -> classId "ITK46A"
+    cleanups.push(mockDelegateMethod(prisma.classAdvisorAssignment, "findMany", async () => [{ classId: "class-uuid-1" }]));
+    cleanups.push(mockDelegateMethod(prisma.class, "findMany", async () => [{ classId: "ITK46A" }]));
+
+    const advisorScope = await studentScopeWhere(advisorActor);
+    assert.deepEqual(advisorScope, {
+      OR: [{ sClassStudentId: { in: ["ITK46A"] } }],
+    });
+
+    // Admin scope is unrestricted {}
+    const adminScope = await studentScopeWhere(adminActor);
+    assert.deepEqual(adminScope, {});
+  } finally {
+    cleanups.reverse().forEach((c) => c());
+  }
+});
+
+test("Data Scope: requireStudentPermission enforces detail-by-id scoping for faculty and assigned class", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "test-only-secret-for-monorepo-cookie-regression";
+  const cleanups: Array<() => void> = [];
+  try {
+    const deanActor: Actor = {
+      userId: "77777777-8888-9999-aaaa-bbbbbbbbbbbb",
+      username: "dean.detail",
+      fullName: "Dean Detail",
+      grants: [{ role: "faculty_manager", scope: "faculty", permission: "student.read" }],
+    };
+
+    const advisorActor: Actor = {
+      userId: "88888888-9999-aaaa-bbbb-cccccccccccc",
+      username: "advisor.detail",
+      fullName: "Advisor Detail",
+      grants: [{ role: "class_advisor", scope: "assigned_classes", permission: "student.read" }],
+    };
+
+    const deanSigned = await signAccessToken(deanActor.userId, deanActor.username, deanActor);
+    const advisorSigned = await signAccessToken(advisorActor.userId, advisorActor.username, advisorActor);
+
+    // Mock DB queries for studentScopeWhere
+    cleanups.push(mockDelegateMethod(prisma.lecturerProfile, "findUnique", async () => ({ facultyCode: "CNTT" })));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgram, "findMany", async () => [{ sProgramCode: "CQ22CT-PM" }]));
+    cleanups.push(mockDelegateMethod(prisma.classAdvisorAssignment, "findMany", async () => [{ classId: "class-uuid-1" }]));
+    cleanups.push(mockDelegateMethod(prisma.class, "findMany", async () => [{ classId: "ITK46A" }]));
+
+    // Mock prisma.$queryRaw for getActorById in requirePermission
+    cleanups.push(mockDelegateMethod(prisma, "$queryRaw", async (_strings: TemplateStringsArray, ...values: unknown[]) => {
+      const uid = values[0];
+      if (uid === deanActor.userId) {
+        return deanActor.grants.map((g) => ({
+          id: deanActor.userId,
+          username: deanActor.username,
+          full_name: deanActor.fullName,
+          role_code: g.role,
+          data_scope: g.scope,
+          permission_code: g.permission,
+        }));
+      }
+      if (uid === advisorActor.userId) {
+        return advisorActor.grants.map((g) => ({
+          id: advisorActor.userId,
+          username: advisorActor.username,
+          full_name: advisorActor.fullName,
+          role_code: g.role,
+          data_scope: g.scope,
+          permission_code: g.permission,
+        }));
+      }
+      return [];
+    }));
+
+    // Mock student lookup: SV_ACCESSIBLE exists within scope, SV_OTHER is filtered out
+    cleanups.push(mockDelegateMethod(prisma.student, "findFirst", async (args: { where: { AND: unknown[] } }) => {
+      const whereStr = JSON.stringify(args.where);
+      if (whereStr.includes("SV_ACCESSIBLE")) {
+        return { id: "student-accessible-id" };
+      }
+      return null;
+    }));
+
+    // Dean accessing student inside faculty
+    const deanOkReq = new NextRequest("http://backend:3001/api/v1/students/SV_ACCESSIBLE", {
+      headers: { authorization: `Bearer ${deanSigned.token}` },
+    });
+    const deanOk = await requireStudentPermission(deanOkReq, "SV_ACCESSIBLE", "student.read");
+    assert.equal(deanOk.authorized, true);
+
+    // Dean accessing student outside faculty -> 404
+    const deanBlockedReq = new NextRequest("http://backend:3001/api/v1/students/SV_OTHER_FACULTY", {
+      headers: { authorization: `Bearer ${deanSigned.token}` },
+    });
+    const deanBlocked = await requireStudentPermission(deanBlockedReq, "SV_OTHER_FACULTY", "student.read");
+    assert.equal(deanBlocked.authorized, false);
+    if (!deanBlocked.authorized) {
+      assert.equal(deanBlocked.response.status, 404);
+    }
+
+    // Advisor accessing student inside assigned class
+    const advisorOkReq = new NextRequest("http://backend:3001/api/v1/students/SV_ACCESSIBLE", {
+      headers: { authorization: `Bearer ${advisorSigned.token}` },
+    });
+    const advisorOk = await requireStudentPermission(advisorOkReq, "SV_ACCESSIBLE", "student.read");
+    assert.equal(advisorOk.authorized, true);
+
+    // Advisor accessing student outside assigned class -> 404
+    const advisorBlockedReq = new NextRequest("http://backend:3001/api/v1/students/SV_OTHER_CLASS", {
+      headers: { authorization: `Bearer ${advisorSigned.token}` },
+    });
+    const advisorBlocked = await requireStudentPermission(advisorBlockedReq, "SV_OTHER_CLASS", "student.read");
+    assert.equal(advisorBlocked.authorized, false);
+    if (!advisorBlocked.authorized) {
+      assert.equal(advisorBlocked.response.status, 404);
+    }
+  } finally {
+    cleanups.reverse().forEach((c) => c());
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
+
+test("Data Scope: ExportService enforces studentScope and rejects out-of-scope targets", async () => {
+  const cleanups: Array<() => void> = [];
+  try {
+    cleanups.push(mockDelegateMethod(prisma.student, "findFirst", async (args: { where: { AND: unknown[] } }) => {
+      const str = JSON.stringify(args.where);
+      if (str.includes("IN_SCOPE_SV")) {
+        return {
+          id: "student-1",
+          sStudentId: "IN_SCOPE_SV",
+          sFullName: "Nguyen Van InScope",
+          sClassStudentId: "ITK46A",
+          sStudyProgramId: "CQ22CT-PM",
+          sBirthDate: new Date("2003-01-01"),
+          sGender: "Nam",
+        };
+      }
+      return null;
+    }));
+
+    cleanups.push(mockDelegateMethod(prisma.studentTermSummary, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma.studentConductRecord, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma.studentDecision, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningStudentResult, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma.warningAction, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgressCompletionStudentResult, "findFirst", async () => null));
+    cleanups.push(mockDelegateMethod(prisma, "$queryRaw", async () => []));
+
+    // 1. Export inside scope -> returns PDF artifact
+    const inScopeExport = await ExportService.create(
+      "pdf",
+      "student-profile",
+      { studentId: "IN_SCOPE_SV" },
+      { sClassStudentId: { in: ["ITK46A"] } },
+    );
+    assert.ok(inScopeExport !== null);
+    assert.equal(inScopeExport.contentType, "application/pdf");
+
+    // 2. Export outside scope -> returns null (scoped out)
+    const outOfScopeExport = await ExportService.create(
+      "pdf",
+      "student-profile",
+      { studentId: "OUT_OF_SCOPE_SV" },
+      { sClassStudentId: { in: ["ITK46A"] } },
+    );
+    assert.equal(outOfScopeExport, null);
+  } finally {
+    cleanups.reverse().forEach((c) => c());
+  }
+});
+
+test("Data Scope: classScopeWhere restricts classes to assigned classes for class_advisor", async () => {
+  const cleanups: Array<() => void> = [];
+  try {
+    const advisorActor: Actor = {
+      userId: "99999999-aaaa-bbbb-cccc-dddddddddddd",
+      username: "advisor.class.test",
+      fullName: "Advisor Class Test",
+      grants: [{ role: "class_advisor", scope: "assigned_classes", permission: "student.read" }],
+    };
+
+    const adminActor: Actor = {
+      userId: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      username: "admin.class.test",
+      fullName: "Admin Class Test",
+      grants: [{ role: "admin", scope: "system", permission: "class.manage" }],
+    };
+
+    // 1. Advisor with assigned classes -> returns assigned class IDs
+    cleanups.push(mockDelegateMethod(prisma.classAdvisorAssignment, "findMany", async () => [
+      { classId: "class-uuid-itk46a" },
+    ]));
+
+    const advisorScope = await classScopeWhere(advisorActor);
+    assert.deepEqual(advisorScope, {
+      OR: [{ id: { in: ["class-uuid-itk46a"] } }],
+    });
+
+    // 2. Admin actor -> returns empty filter {} (global)
+    const adminScope = await classScopeWhere(adminActor);
+    assert.deepEqual(adminScope, {});
+  } finally {
+    cleanups.reverse().forEach((c) => c());
+  }
+});
+
+test("Data Scope: ClassesService and GET /classes enforce scope and query param cannot expand scope", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "test-only-secret-for-monorepo-cookie-regression";
+  const cleanups: Array<() => void> = [];
+  try {
+    const advisorActor: Actor = {
+      userId: "12345678-1234-1234-1234-123456789012",
+      username: "advisor.api.test",
+      fullName: "Advisor Api Test",
+      grants: [{ role: "class_advisor", scope: "assigned_classes", permission: "student.read" }],
+    };
+    const advisorToken = await signAccessToken(advisorActor.userId, advisorActor.username, advisorActor);
+
+    // Mock assignments: advisor only has class-1 (ITK46A)
+    cleanups.push(mockDelegateMethod(prisma.classAdvisorAssignment, "findMany", async () => [
+      { classId: "class-uuid-1" },
+    ]));
+
+    // Mock prisma.$queryRaw for getActorById in requirePermission
+    cleanups.push(mockDelegateMethod(prisma, "$queryRaw", async () => [
+      {
+        id: advisorActor.userId,
+        username: advisorActor.username,
+        full_name: advisorActor.fullName,
+        role_code: "class_advisor",
+        data_scope: "assigned_classes",
+        permission_code: "student.read",
+      },
+    ]));
+
+    // Track what query gets executed
+    let lastWhereExecuted: unknown = null;
+    cleanups.push(mockDelegateMethod(prisma.class, "count", async (args: { where: unknown }) => {
+      lastWhereExecuted = args.where;
+      return 1;
+    }));
+    cleanups.push(mockDelegateMethod(prisma.class, "findMany", async () => [
+      {
+        id: "class-uuid-1",
+        classId: "ITK46A",
+        className: "Công nghệ thông tin K46A",
+        cohortId: "cohort-1",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]));
+    cleanups.push(mockDelegateMethod(prisma.cohort, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma.student, "groupBy", async () => []));
+
+    // Request with query parameter searching for an unassigned class "ITK45B"
+    const req = new NextRequest("http://backend:3001/api/v1/classes?q=ITK45B", {
+      headers: { authorization: `Bearer ${advisorToken.token}` },
+    });
+    const res = await getClassesRoute(req);
+    assert.equal(res.status, 200);
+
+    // Verify that the Prisma where clause combined scopeWhere and the query filter inside AND
+    const whereStr = JSON.stringify(lastWhereExecuted);
+    assert.ok(whereStr.includes("class-uuid-1"), "Where clause must contain assigned class ID in scope");
+    assert.ok(whereStr.includes("ITK45B"), "Where clause must contain query filter");
+    // Verify structure has AND with scopeWhere
+    const parsedWhere = lastWhereExecuted as { AND: Array<Record<string, unknown>> };
+    assert.ok(Array.isArray(parsedWhere.AND), "Must use AND array to strictly bound results by scope");
+
+    // Detail-by-id: accessing unassigned class -> 404
+    cleanups.push(mockDelegateMethod(prisma.class, "findFirst", async (args: { where: { AND: Array<Record<string, unknown>> } }) => {
+      const targetClause = args.where.AND[0] as { OR?: Array<{ id?: string; classId?: string }> };
+      const scopeClause = args.where.AND[2] as { OR?: Array<{ id?: { in?: string[] } }> };
+      const requestedId = targetClause?.OR?.[0]?.id;
+      const allowedIds = scopeClause?.OR?.[0]?.id?.in || [];
+
+      if (requestedId && allowedIds.includes(requestedId)) {
+        return {
+          id: requestedId,
+          classId: "ITK46A",
+          className: "CNTT K46A",
+          cohortId: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      }
+      return null;
+    }));
+
+    const detailOkReq = new NextRequest("http://backend:3001/api/v1/classes/class-uuid-1", {
+      headers: { authorization: `Bearer ${advisorToken.token}` },
+    });
+    const detailOkRes = await getClassDetailRoute(detailOkReq, { params: Promise.resolve({ id: "class-uuid-1" }) });
+    assert.equal(detailOkRes.status, 200);
+
+    const detailBlockedReq = new NextRequest("http://backend:3001/api/v1/classes/class-uuid-unassigned", {
+      headers: { authorization: `Bearer ${advisorToken.token}` },
+    });
+    const detailBlockedRes = await getClassDetailRoute(detailBlockedReq, { params: Promise.resolve({ id: "class-uuid-unassigned" }) });
+    assert.equal(detailBlockedRes.status, 404);
+  } finally {
+    cleanups.reverse().forEach((c) => c());
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
+
+
+

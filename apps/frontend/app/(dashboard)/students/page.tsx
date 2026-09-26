@@ -8,6 +8,8 @@ import DataTable, { Column } from "@/components/ui/DataTable";
 import Modal from "@/components/ui/Modal";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import WarningBadge, { type WarningLevel } from "@/components/WarningBadge";
+import ForbiddenState from "@/components/ui/ForbiddenState";
+import { useAuthStore } from "@/stores/authStore";
 
 interface StudentItem {
   id: string;
@@ -31,6 +33,28 @@ interface StudentItem {
 }
 export default function StudentsPage() {
   const router = useRouter();
+  const { user, can, status } = useAuthStore();
+
+  const isClassAdvisor = user?.role === "CLASS_ADVISOR";
+  const isFacultyBoard = user?.role === "FACULTY_BOARD";
+
+  const pageTitle = isClassAdvisor
+    ? `Hồ sơ Sinh viên • Lớp ${user?.className || ""}`
+    : isFacultyBoard
+    ? "Hồ sơ Sinh viên Khoa"
+    : "Quản trị Hồ sơ Sinh viên";
+
+  const pageSubtitle = isClassAdvisor
+    ? `Theo dõi thông tin và học vụ sinh viên lớp ${user?.className || "phụ trách"}`
+    : isFacultyBoard
+    ? "Quản lý và tra cứu hồ sơ sinh viên toàn Khoa"
+    : "Quản lý hồ sơ, lớp sinh viên, tra cứu bảng điểm và cập nhật thông tin nhân thân";
+
+  const scopeBadgeText = isClassAdvisor
+    ? null
+    : isFacultyBoard
+    ? `Phạm vi: ${user?.facultyCode ? `Khoa ${user.facultyCode}` : "Phạm vi Khoa"}`
+    : null;
 
   // Student list & pagination
   const [students, setStudents] = useState<StudentItem[]>([]);
@@ -406,102 +430,123 @@ export default function StudentsPage() {
           >
             Hồ sơ
           </button>
-          <button
-            type="button"
-            onClick={() => handleOpenEdit(r)}
-            className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-            title="Sửa thông tin"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            onClick={() => setStudentToDelete(r)}
-            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-            title="Xóa sinh viên"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </button>
+          {can("student.update") && (
+            <button
+              type="button"
+              onClick={() => handleOpenEdit(r)}
+              className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              title="Sửa thông tin"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
+          )}
+          {can("student.delete") && (
+            <button
+              type="button"
+              onClick={() => setStudentToDelete(r)}
+              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+              title="Xóa sinh viên"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </button>
+          )}
         </div>
       ),
     },
   ];
+
+  if (status !== "loading" && status !== "idle" && !can("student.read")) {
+    return <ForbiddenState requiredPermission="student.read" />;
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1
-            className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
-            style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
-          >
-            Quản trị Hồ sơ Sinh viên
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1
+              className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
+              style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
+            >
+              {pageTitle}
+            </h1>
+            {scopeBadgeText && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {scopeBadgeText}
+              </span>
+            )}
+          </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Quản lý hồ sơ, lớp sinh viên, tra cứu bảng điểm và cập nhật thông tin nhân thân
+            {pageSubtitle}
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowImportModal(true)}
-            className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            <span>Import JSON</span>
-          </button>
+          {can("student.import") && (
+            <button
+              type="button"
+              onClick={() => setShowImportModal(true)}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span>Import JSON</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={handleExport}
-            className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <span>Xuất JSON</span>
-          </button>
+          {can("student.export") && (
+            <button
+              type="button"
+              onClick={handleExport}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <span>Xuất JSON</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => {
-              setFormData({
-                studentId: "",
-                firstName: "",
-                lastName: "",
-                birthDate: "2003-01-01",
-                gender: "Nam",
-                classStudentId: classList[0]?.classId || "",
-                studyProgramId: programList[0]?.programCode || "",
-                classRoleId: 0,
-                isInClass: true,
-                birthPlace: "",
-                permanentResidence: "",
-              });
-              setShowAddModal(true);
-            }}
-            className="px-4 py-2 rounded-xl bg-[var(--color-primary)] hover:opacity-90 text-white text-xs font-semibold shadow-xs transition-opacity flex items-center gap-1.5 cursor-pointer"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            <span>Thêm sinh viên</span>
-          </button>
+          {can("student.create") && (
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({
+                  studentId: "",
+                  firstName: "",
+                  lastName: "",
+                  birthDate: "2003-01-01",
+                  gender: "Nam",
+                  classStudentId: classList[0]?.classId || "",
+                  studyProgramId: programList[0]?.programCode || "",
+                  classRoleId: 0,
+                  isInClass: true,
+                  birthPlace: "",
+                  permanentResidence: "",
+                });
+                setShowAddModal(true);
+              }}
+              className="px-4 py-2 rounded-xl bg-[var(--color-primary)] hover:opacity-90 text-white text-xs font-semibold shadow-xs transition-opacity flex items-center gap-1.5 cursor-pointer"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>Thêm sinh viên</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -546,21 +591,30 @@ export default function StudentsPage() {
         </div>
 
         {/* Filter Class */}
-        <select
-          value={filterClass}
-          onChange={(e) => {
-            setFilterClass(e.target.value);
-            setPage(1);
-          }}
-          className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-        >
-          <option value="all">Tất cả lớp</option>
-          {classList.map((c) => (
-            <option key={c.id} value={c.classId}>
-              {c.classId} - {c.className}
-            </option>
-          ))}
-        </select>
+        {isClassAdvisor || classList.length <= 1 ? (
+          <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 flex items-center gap-1.5 shrink-0">
+            <span className="text-slate-400">Lớp:</span>
+            <span className="font-semibold text-slate-800">
+              {classList[0]?.className || classList[0]?.classId || user?.className || "Lớp phụ trách"}
+            </span>
+          </div>
+        ) : (
+          <select
+            value={filterClass}
+            onChange={(e) => {
+              setFilterClass(e.target.value);
+              setPage(1);
+            }}
+            className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+          >
+            <option value="all">Tất cả lớp</option>
+            {classList.map((c) => (
+              <option key={c.id} value={c.classId}>
+                {c.classId} - {c.className}
+              </option>
+            ))}
+          </select>
+        )}
 
         {/* Filter Gender */}
         <select

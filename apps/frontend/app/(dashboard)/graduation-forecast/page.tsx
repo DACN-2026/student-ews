@@ -29,6 +29,7 @@ import { apiFetch } from "@/lib/api-client";
 import Modal from "@/components/ui/Modal";
 import ForecastDetail from "@/components/graduation/ForecastDetail";
 import { toast } from "@/components/ui/Toast";
+import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
 
 const STATUS_META: Record<
@@ -269,7 +270,22 @@ export function getStudentBacklog(student: ApiData): StudentBacklogInfo {
 }
 
 export default function GraduationForecastPage() {
-  const { can } = useAuthStore();
+  const { user, can, status } = useAuthStore();
+  const isClassAdvisor = user?.role === "CLASS_ADVISOR";
+  const isFacultyBoard = user?.role === "FACULTY_BOARD";
+
+  const scopeBadgeText = isClassAdvisor
+    ? null
+    : isFacultyBoard
+    ? `Phạm vi: ${user?.facultyCode ? `Khoa ${user.facultyCode}` : "Phạm vi Khoa"}`
+    : null;
+
+  const pageTitle = isClassAdvisor
+    ? `Dự kiến tốt nghiệp • Lớp ${user?.className || ""}`
+    : isFacultyBoard
+    ? "Dự kiến tốt nghiệp Khoa"
+    : "Dự kiến tốt nghiệp & Tiến độ CTĐT";
+
   const [runs, setRuns] = useState<ApiData[]>([]);
   const [cohorts, setCohorts] = useState<ApiData[]>([]);
   const [programs, setPrograms] = useState<ApiData[]>([]);
@@ -895,17 +911,29 @@ export default function GraduationForecastPage() {
     return list;
   }, [scopedStudents, isFinalYear, statusFilter, activeReasonFilter, year23Filter, selectedCourseBacklogFilter, selectedTotalCreditsThreshold, keyword]);
 
+  if (status !== "loading" && status !== "idle" && !can("graduation.read")) {
+    return <ForbiddenState requiredPermission="graduation.read" />;
+  }
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto text-slate-800">
       {/* 1. Header & Actions */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-lime-700">
+          <div className="flex items-center gap-2 flex-wrap text-xs font-semibold uppercase tracking-wider text-lime-700">
             <GraduationCap size={18} className="text-lime-600" />
-            <span>Đại học Đà Lạt • Quản lý Đào tạo cấp Khoa</span>
+            <span>Đại học Đà Lạt • Quản lý Đào tạo</span>
+            {scopeBadgeText && (
+              <>
+                <span className="text-slate-300">•</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 lowercase first-letter:uppercase">
+                  {scopeBadgeText}
+                </span>
+              </>
+            )}
           </div>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-            Dự kiến tốt nghiệp & Tiến độ CTĐT
+            {pageTitle}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Theo dõi điều kiện tốt nghiệp cho sinh viên năm cuối (Năm 5) và mức độ hoàn thành chương trình đào tạo cho sinh viên các năm 2, 3, 4.
@@ -1379,7 +1407,7 @@ export default function GraduationForecastPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-                  {uniqueClasses.length > 1 && (
+                  {uniqueClasses.length > 1 ? (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Lớp:</span>
                       <select
@@ -1397,6 +1425,13 @@ export default function GraduationForecastPage() {
                           );
                         })}
                       </select>
+                    </div>
+                  ) : (uniqueClasses[0] || user?.className) && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Lớp:</span>
+                      <span className="h-10 px-3 flex items-center rounded-xl border border-slate-200 bg-slate-100 text-xs font-bold text-slate-800">
+                        {uniqueClasses[0] || user?.className}
+                      </span>
                     </div>
                   )}
 
@@ -1845,7 +1880,7 @@ export default function GraduationForecastPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-                  {uniqueClasses.length > 1 && (
+                  {uniqueClasses.length > 1 ? (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Lớp:</span>
                       <select
@@ -1863,6 +1898,13 @@ export default function GraduationForecastPage() {
                           );
                         })}
                       </select>
+                    </div>
+                  ) : (uniqueClasses[0] || user?.className) && (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Lớp:</span>
+                      <span className="h-10 px-3 flex items-center rounded-xl border border-slate-200 bg-slate-100 text-xs font-bold text-slate-800">
+                        {uniqueClasses[0] || user?.className}
+                      </span>
                     </div>
                   )}
 

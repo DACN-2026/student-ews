@@ -3,18 +3,23 @@ import { ApiError } from "@/lib/utils/api-error";
 import { Prisma } from "@prisma/client";
 
 export class ClassesService {
-  static async list(search = "", page = 1, pageSize = 20) {
+  static async list(search = "", page = 1, pageSize = 20, scopeWhere: Prisma.ClassWhereInput = {}) {
     const query = search.trim();
     const where: Prisma.ClassWhereInput = {
-      deletedAt: null,
-      ...(query
-        ? {
-            OR: [
-              { classId: { contains: query, mode: "insensitive" } },
-              { className: { contains: query, mode: "insensitive" } },
-            ],
-          }
-        : {}),
+      AND: [
+        { deletedAt: null },
+        scopeWhere,
+        ...(query
+          ? [
+              {
+                OR: [
+                  { classId: { contains: query, mode: "insensitive" as Prisma.QueryMode } },
+                  { className: { contains: query, mode: "insensitive" as Prisma.QueryMode } },
+                ],
+              },
+            ]
+          : []),
+      ],
     };
     const [total, classes] = await Promise.all([
       prisma.class.count({ where }),
@@ -63,11 +68,14 @@ export class ClassesService {
     return { items, total, page, pageSize };
   }
 
-  static async getById(id: string) {
+  static async getById(id: string, scopeWhere: Prisma.ClassWhereInput = {}) {
     const cls = await prisma.class.findFirst({
       where: {
-        OR: [{ id }, { classId: id }],
-        deletedAt: null,
+        AND: [
+          { OR: [{ id }, { classId: id }] },
+          { deletedAt: null },
+          scopeWhere,
+        ],
       },
     });
 

@@ -9,6 +9,7 @@ import {
 import WarningBadge from "@/components/WarningBadge";
 import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
 import Modal from "@/components/ui/Modal";
+import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
 import { apiFetch } from "@/lib/api-client";
 import StudentProgressDetail from "@/components/training-progress/StudentProgressDetail";
@@ -86,13 +87,14 @@ const conductApprovalStyle = (code: ConductRecord["approval"]["code"]) => {
 };
 
 export default function StudentDetailPage() {
-  const { can } = useAuthStore();
+  const { can, status } = useAuthStore();
   const params = useParams();
   const studentId = params?.id as string;
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [student, setStudent] = useState<ApiData>(null);
   const [gradesData, setGradesData] = useState<ApiData[]>([]);
   const [summariesData, setSummariesData] = useState<ApiData>(null);
@@ -223,6 +225,10 @@ export default function StudentDetailPage() {
           apiFetch(`/api/v1/students/${studentId}/conduct`),
         ]);
 
+        if (sRes.status === 403) {
+          setLoadError("403");
+          return;
+        }
         if (!sRes.ok) throw new Error("Không thể tải hồ sơ sinh viên");
         const sJson = await sRes.json();
         setStudent(sJson);
@@ -313,6 +319,14 @@ export default function StudentDetailPage() {
     loadStudentInfo();
   }, [studentId]);
 
+  if (status !== "loading" && status !== "idle" && !can("student.read")) {
+    return <ForbiddenState requiredPermission="student.read" />;
+  }
+
+  if (loadError === "403") {
+    return <ForbiddenState requiredPermission="student.read" />;
+  }
+
   if (loading) {
     return (
       <div className="p-12 text-center text-slate-400">
@@ -323,6 +337,21 @@ export default function StudentDetailPage() {
           </svg>
           <span>Đang tải hồ sơ sinh viên {studentId}...</span>
         </div>
+      </div>
+    );
+  }
+
+  if (!student) {
+    return (
+      <div className="p-12 text-center text-slate-500">
+        <div className="text-base font-semibold text-slate-800">Không tìm thấy hồ sơ sinh viên</div>
+        <p className="text-xs text-slate-400 mt-1">Sinh viên không tồn tại hoặc không thuộc phạm vi quản lý của tài khoản hiện tại.</p>
+        <button
+          onClick={() => router.push("/students")}
+          className="mt-4 px-4 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition cursor-pointer"
+        >
+          Quay lại danh sách
+        </button>
       </div>
     );
   }

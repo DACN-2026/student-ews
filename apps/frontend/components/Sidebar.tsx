@@ -128,14 +128,14 @@ const coreNavItems: NavItem[] = [
     href: "/graduation-forecast",
     label: "Dự kiến tốt nghiệp",
     icon: Icons.graduation,
-    permission: "progress.read",
+    permission: "graduation.read",
   },
   {
     id: "reports",
     href: "/reports",
     label: "Cảnh báo học tập",
     icon: Icons.reports,
-    permissions: ["progress.read", "academic_warning.read"],
+    permission: "academic_warning.read",
   },
   {
     id: "rbac",
@@ -159,17 +159,17 @@ const coreNavItems: NavItem[] = [
 
 const roleLabels: Record<Role, { label: string; badgeClass: string; avatar: string }> = {
   SYSTEM_ADMIN: {
-    label: "Quản trị viên",
+    label: "Quản trị hệ thống",
     badgeClass: "bg-purple-100 text-purple-700 border-purple-200",
     avatar: "AD",
   },
   FACULTY_BOARD: {
-    label: "B.Chủ nhiệm Khoa",
+    label: "Ban chủ nhiệm Khoa",
     badgeClass: "bg-amber-100 text-amber-700 border-amber-200",
-    avatar: "TK",
+    avatar: "KN",
   },
   CLASS_ADVISOR: {
-    label: "Cố vấn học tập",
+    label: "GVCN / CVHT",
     badgeClass: "bg-emerald-100 text-emerald-700 border-emerald-200",
     avatar: "CV",
   },
