@@ -82,6 +82,7 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
     "academic_warning.calculate",
     "academic_warning.action.create",
     "academic_warning.action.update",
+    "academic_warning.case.assign",
     "report.export",
   ],
   CLASS_ADVISOR: [

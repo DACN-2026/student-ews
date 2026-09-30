@@ -8,7 +8,18 @@ const env = {
   NODE_OPTIONS: `${existingOptions} --require=${JSON.stringify(shim)}`.trim(),
 };
 const cli = require.resolve("tsx/cli");
-const result = spawnSync(process.execPath, [cli, "--test", "tests/backend.test.ts", "tests/graduation-spec.test.ts"], {
+const requestedTests = process.argv.slice(2);
+const testFiles = requestedTests.length ? requestedTests : [
+  "tests/backend.test.ts",
+  "tests/graduation-spec.test.ts",
+  "tests/intervention-api.test.ts",
+  "tests/intervention-cases.test.ts",
+];
+const result = spawnSync(process.execPath, [
+  cli,
+  "--test",
+  ...testFiles,
+], {
   cwd: path.join(__dirname, ".."),
   env,
   stdio: "inherit",

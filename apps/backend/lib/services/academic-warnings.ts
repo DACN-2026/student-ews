@@ -3,220 +3,280 @@ import { Prisma } from "@prisma/client";
 import crypto from "crypto";
 import { ApiError } from "@/lib/utils/api-error";
 import { sha256Hex } from "@/lib/utils/crypto";
+import { studentIdWhere } from "@/lib/utils/is-uuid";
+import {
+  evaluateAcademicWarning,
+  evaluateSummerMonitoring,
+  warningDataStatusFromStored,
+  warningPresentationState,
+  type SummerMonitoringSource,
+  type WarningCompletionSource as CompletionSource,
+  type WarningConductSource as ConductSource,
+  type WarningDecisionSource as DecisionSource,
+  type WarningProgressSource as ProgressSource,
+  type WarningStudentSource as StudentSource,
+  type WarningSummarySource as SummarySource,
+} from "@/lib/services/academic-warning-rules";
+import {
+  academicWarningPolicyDefinitionHash,
+  assertPolicyDefinitionMutable,
+  assertPolicyExecutable,
+  createAcademicWarningPolicySnapshot,
+  createLegacyAdvisoryPolicyDefinition,
+  normalizeAcademicWarningPolicyInput,
+  parseAcademicWarningPolicyDefinition,
+  PolicyDefinitionError,
+} from "@/lib/services/academic-warning-policy";
+import {
+  createAcademicWarningCapabilitySnapshot,
+  createQd600StudentCapabilityData,
+  type AssessmentTermCourseAttempt,
+} from "@/lib/services/academic-warning-capabilities";
+import {
+  evaluateQd600ForCohort,
+  QD600_EXECUTION_PROFILE,
+  QD600_RULE_ENGINE_VERSION,
+  resolveQd600PolicyApplicability,
+  type Qd600EvaluationResult,
+  type Qd600PolicyApplicability,
+  type Qd600RuleEvaluation,
+} from "@/lib/services/academic-warning-qd600-rules";
+import { EARLY_WARNING_CASE_TYPE, InterventionCasesService } from "@/lib/services/intervention-cases";
+import { assertCohortTrainingProgramPair } from "@/lib/services/academic-warning-scope";
+import { calculateAcademicWarningProgressSignals } from "@/lib/services/academic-warning-progress";
+import {
+  AcademicTermResolutionError,
+  assertAcademicWarningAssessmentTermAllowed,
+  resolvePreviousMainAssessmentTerm,
+  type AcademicWarningRunMode,
+} from "@/lib/academic-terms";
 
-// ============================================================================
-// Types
-// ============================================================================
+export type AcademicWarningExecutionProfile = "LEGACY_SCALAR_RULES" | typeof QD600_EXECUTION_PROFILE;
 
-interface StudentSource {
-  id: string;
-  classId: string | null;
+type AcademicWarningRunPolicyContract = {
+  executionProfile?: string;
+  runMode?: AcademicWarningRunMode;
+  policyId?: string;
   cohortId: string | null;
-  code: string;
-  name: string;
-  classCode: string;
-  className: string;
-  programCode: string;
+  policy: {
+    id: string;
+    status: string;
+    policyDefinition: unknown;
+  } | null;
+};
+
+export function resolveAcademicWarningExecutionProfile(value?: string): AcademicWarningExecutionProfile {
+  if (value === undefined || value === "LEGACY_SCALAR_RULES") return "LEGACY_SCALAR_RULES";
+  if (value === QD600_EXECUTION_PROFILE) return QD600_EXECUTION_PROFILE;
+  throw new ApiError("Unsupported academic warning execution profile", "INVALID_EXECUTION_PROFILE", 422);
 }
 
-interface ProgressSource { status: string; runId: string }
-interface CompletionSource { scheduleStatus: string; runId: string }
-interface SummarySource {
-  termSummaryId: string;
-  cumulativeSummaryId: string | null;
-  registered: number | null;
-  termGPA4: number | null;
-  termGPA10: number | null;
-  cumulativeGPA4: number | null;
-  cumulativeGPA10: number | null;
-}
-interface DecisionSource { id: string; number: string; name: string; fullText: string; signDate: Date | null }
-interface ConductSource { id: string; score: number; statusId: string }
-interface SummerMonitoringSource {
-  offeringCount: number;
-  registeredCredits: number;
-  pendingResults: number;
-  failedCourses: number;
-}
+/**
+ * Validate the explicit execution contract before any run context is loaded.
+ * QĐ600 remains a controlled partial-regulatory profile backed by a draft
+ * definition; it is not the default and can never be inferred from policyId.
+ */
+export function validateAcademicWarningRunPolicyContract(input: AcademicWarningRunPolicyContract) {
+  const executionProfile = resolveAcademicWarningExecutionProfile(input.executionProfile);
+  const definition = input.policy ? parsePolicyDefinitionOrThrow(input.policy.policyDefinition) : null;
 
-interface ReasonData {
-  reasonCode: string;
-  severity: string;
-  title: string;
-  details: any;
-  sourceType: string | null;
-  sourceId: string | null;
-}
-
-interface EvalResult {
-  termRegisteredCredits: number | null;
-  termGPA4: number | null;
-  termGPA10: number | null;
-  cumulativeGPA4: number | null;
-  cumulativeGPA10: number | null;
-  registrationStatus: string;
-  scheduleStatus: string;
-  academicWarningDecisions: number;
-  maxSeverity: string;
-  reasonCount: number;
-  dataError: string | null;
-  reasons: ReasonData[];
-}
-
-// ============================================================================
-// Pure Evaluation Logic (ported from SWE service.go evaluate())
-// ============================================================================
-
-export function evaluate(
-  student: StudentSource,
-  progress: Map<string, ProgressSource>,
-  completion: Map<string, CompletionSource>,
-  summaries: Map<string, SummarySource>,
-  decisions: Map<string, DecisionSource[]>,
-  policy: { termGpaThreshold: number; cumulativeGpaThreshold: number; conductScoreThreshold?: number },
-  conduct: Map<string, ConductSource> = new Map(),
-): EvalResult {
-  const result: EvalResult = {
-    termRegisteredCredits: null,
-    termGPA4: null,
-    termGPA10: null,
-    cumulativeGPA4: null,
-    cumulativeGPA10: null,
-    registrationStatus: "unavailable",
-    scheduleStatus: "unavailable",
-    academicWarningDecisions: 0,
-    maxSeverity: "none",
-    reasonCount: 0,
-    dataError: null,
-    reasons: [],
-  };
-
-  // Load summary data
-  const summary = summaries.get(student.id);
-  if (summary) {
-    result.termRegisteredCredits = summary.registered;
-    result.termGPA4 = summary.termGPA4;
-    result.termGPA10 = summary.termGPA10;
-    result.cumulativeGPA4 = summary.cumulativeGPA4;
-    result.cumulativeGPA10 = summary.cumulativeGPA10;
-  }
-
-  const addReason = (code: string, severity: string, title: string, details: any, sourceType: string | null, sourceId: string | null) => {
-    result.reasons.push({ reasonCode: code, severity, title, details, sourceType, sourceId });
-    result.reasonCount++;
-    if (severity === "high" || result.maxSeverity === "none") {
-      result.maxSeverity = severity;
+  if (executionProfile === QD600_EXECUTION_PROFILE) {
+    if (input.runMode !== "OFFICIAL") {
+      throw new ApiError(
+        "QĐ600 partial regulatory runs require explicit runMode OFFICIAL",
+        "QD600_RUN_MODE_REQUIRED",
+        422,
+      );
     }
-  };
-
-  // Check progress (registration status)
-  const prog = progress.get(student.id);
-  if (prog) {
-    result.registrationStatus = prog.status;
-    if (prog.status === "fail") {
-      addReason("REGISTRATION_BEHIND", "medium", "Đăng ký chưa đủ theo kế hoạch",
-        { status: prog.status }, "training_progress_calculation_run", prog.runId);
+    if (!input.policyId) {
+      throw new ApiError("policyId is required for a controlled QĐ600 run", "QD600_POLICY_REQUIRED", 422);
     }
-  }
-
-  // Check completion (schedule status)
-  const comp = completion.get(student.id);
-  if (comp) {
-    result.scheduleStatus = comp.scheduleStatus;
-    if (comp.scheduleStatus === "behind_schedule") {
-      addReason("PROGRAM_PROGRESS_BEHIND", "high", "Chậm tiến độ toàn khóa",
-        { scheduleStatus: comp.scheduleStatus }, "training_progress_completion_run", comp.runId);
+    if (!input.policy) {
+      throw new ApiError("Selected QĐ600 policy was not found", "QD600_POLICY_NOT_FOUND", 404);
     }
+    if (definition?.evaluationProfile !== "QD600_ARTICLE_18") {
+      throw new ApiError(
+        "Selected policy is not a QĐ600 Điều 18 definition",
+        "QD600_POLICY_TYPE_REQUIRED",
+        422,
+      );
+    }
+    // QĐ600 is intentionally not globally active. A draft definition is the
+    // only lifecycle state accepted by this explicit controlled run profile.
+    if (input.policy.status !== "draft") {
+      throw new ApiError(
+        "QĐ600 partial regulatory runs require a draft policy definition",
+        "QD600_POLICY_LIFECYCLE_INVALID",
+        422,
+      );
+    }
+    const applicability = resolveQd600PolicyApplicability(definition, input.cohortId);
+    if (applicability.status !== "APPLICABLE") {
+      throw new ApiError(
+        "Selected QĐ600 policy is not explicitly configured for this cohort",
+        applicability.reasonCode || "REGULATORY_POLICY_NOT_APPLICABLE",
+        422,
+      );
+    }
+    return { executionProfile, definition, applicability };
   }
 
-  // Check term GPA
-  if (result.termGPA4 != null && result.termGPA4 < policy.termGpaThreshold) {
-    addReason("LOW_TERM_GPA", "medium", "GPA học kỳ thấp",
-      { gpa4: result.termGPA4, threshold: policy.termGpaThreshold }, "student_term_summary", summary!.termSummaryId);
+  if (definition?.evaluationProfile === "QD600_ARTICLE_18") {
+    throw new ApiError(
+      "QĐ600 policy requires explicit executionProfile QD600_PARTIAL_REGULATORY",
+      "QD600_EXECUTION_PROFILE_REQUIRED",
+      422,
+    );
   }
-
-  // Check cumulative GPA
-  if (result.cumulativeGPA4 != null && result.cumulativeGPA4 < policy.cumulativeGpaThreshold) {
-    addReason("LOW_CUMULATIVE_GPA", "high", "GPA tích lũy thấp",
-      { gpa4: result.cumulativeGPA4, threshold: policy.cumulativeGpaThreshold },
-      summary!.cumulativeSummaryId ? "student_cumulative_summary" : "student_term_summary",
-      summary!.cumulativeSummaryId || summary!.termSummaryId);
-  }
-
-  const conductRecord = conduct.get(student.id);
-  if (
-    conductRecord &&
-    conductRecord.statusId === "1" &&
-    policy.conductScoreThreshold != null &&
-    conductRecord.score < policy.conductScoreThreshold
-  ) {
-    addReason("LOW_CONDUCT_SCORE", "medium", "Điểm rèn luyện dưới ngưỡng theo dõi",
-      { score: conductRecord.score, threshold: policy.conductScoreThreshold, approvalStatus: "approved" },
-      "student_conduct_record", conductRecord.id);
-  }
-
-  // Check academic warning decisions
-  const decs = decisions.get(student.id);
-  if (decs && decs.length > 0) {
-    result.academicWarningDecisions = decs.length;
-    const items = decs.map((d) => ({
-      id: d.id, decisionNumber: d.number, decisionName: d.name, fullText: d.fullText, signDate: d.signDate,
-    }));
-    addReason("ACADEMIC_WARNING_DECISION", "high", "Có quyết định cảnh báo học vụ",
-      { count: decs.length, decisions: items }, "student_decisions", null);
-  }
-
-  // Fix severity
-  if (result.maxSeverity === "none" && result.reasonCount > 0) {
-    result.maxSeverity = "medium";
-  }
-
-  // Data error check
-  if (!summary) {
-    result.dataError = "missing student term summary";
-  }
-
-  return result;
+  return { executionProfile, definition, applicability: null };
 }
 
-export function evaluateSummerMonitoring(
-  student: StudentSource,
-  summaries: Map<string, SummarySource>,
-  monitoring: Map<string, SummerMonitoringSource>,
-): EvalResult {
-  const summary = summaries.get(student.id);
-  const source = monitoring.get(student.id);
-  const result: EvalResult = {
-    termRegisteredCredits: source?.registeredCredits ?? summary?.registered ?? null,
-    termGPA4: summary?.termGPA4 ?? null,
-    termGPA10: summary?.termGPA10 ?? null,
-    cumulativeGPA4: summary?.cumulativeGPA4 ?? null,
-    cumulativeGPA10: summary?.cumulativeGPA10 ?? null,
-    registrationStatus: source ? "participating" : "not_participating",
-    scheduleStatus: "not_assessed",
-    academicWarningDecisions: 0,
-    maxSeverity: "none",
-    reasonCount: 0,
-    dataError: null,
-    reasons: [],
-  };
+function asAcademicTermApiError(error: unknown): never {
+  if (error instanceof AcademicTermResolutionError) {
+    throw new ApiError(error.message, error.code, 422);
+  }
+  throw error;
+}
 
-  const addReason = (code: string, title: string, count: number) => {
-    result.reasons.push({
-      reasonCode: code,
-      severity: "medium",
-      title,
-      details: { count, monitoringOnly: true },
-      sourceType: "summer_monitoring",
+export function sanitizeWarningSourceSnapshot(
+  snapshot: Prisma.JsonValue,
+  allowedClassIds?: string[] | null,
+): Prisma.JsonValue {
+  if (allowedClassIds === undefined || allowedClassIds === null) return snapshot;
+  if (!snapshot || Array.isArray(snapshot) || typeof snapshot !== "object") return null;
+  const source = snapshot as Prisma.JsonObject;
+  const students = Array.isArray(source.students) ? source.students : [];
+  const allowed = new Set(allowedClassIds);
+  return {
+    ...source,
+    students: students.filter((item) => {
+      if (!item || Array.isArray(item) || typeof item !== "object") return false;
+      const classId = (item as Prisma.JsonObject).classId;
+      return typeof classId === "string" && allowed.has(classId);
+    }),
+    scopeRestriction: {
+      type: "assigned_classes",
+      classIds: allowedClassIds,
+    },
+  };
+}
+
+export function projectQd600EvaluationForPersistence(result: Qd600EvaluationResult) {
+  const actionableRules = result.rules.filter((rule) => rule.isThresholdBreached || rule.isNearThreshold);
+  const maxSeverity = result.businessStatus === "VERIFY_REQUIRED" || result.businessStatus === "HIGH_RISK"
+    ? "high"
+    : result.businessStatus === "MONITORING"
+      ? "medium"
+      : "none";
+  const titleForRule = (rule: Qd600RuleEvaluation) => {
+    if (rule.ruleCode === "QD600_FAILED_CREDIT_RATIO") return "Không đạt quá nhiều tín chỉ trong học kỳ";
+    if (rule.ruleCode === "QD600_CUMULATIVE_GPA_BY_YEAR") return "Điểm trung bình tích lũy (GPA) dưới chuẩn năm học";
+    if (rule.ruleCode === "QD600_TERM_GPA") return "Điểm trung bình học kỳ (GPA) thấp";
+    if (rule.ruleCode === "TRAINING_PROGRESS_CREDIT_DEFICIT") {
+      return `Chậm tiến độ học tập ${rule.observedValue ?? 0} tín chỉ`;
+    }
+    return "Điểm GPA tích lũy tiệm cận mức nguy cơ";
+  };
+  return {
+    businessStatus: result.businessStatus,
+    regulatoryCoverage: result.regulatoryCoverage.status,
+    maxSeverity,
+    reasonCount: actionableRules.length,
+    dataError: result.regulatoryCoverage.status === "FULL"
+      ? null
+      : `qd600_regulatory_coverage_${result.regulatoryCoverage.status.toLowerCase()}`,
+    ruleResults: result.rules,
+    reasons: actionableRules.map((rule) => ({
+      reasonCode: rule.reasonCode || rule.ruleCode,
+      severity: rule.sourceType === "REGULATORY" || rule.riskLevel === "RED" ? "high" : "medium",
+      title: titleForRule(rule),
+      details: {
+        ...rule,
+        businessStatus: result.businessStatus,
+        regulatoryCoverage: result.regulatoryCoverage.status,
+        executionProfile: result.executionProfile,
+        engineVersion: result.engineVersion,
+      },
+      sourceType: rule.ruleCode === "TRAINING_PROGRESS_CREDIT_DEFICIT"
+        ? "training_progress_completion_run"
+        : rule.sourceType,
       sourceId: null,
-    });
-    result.reasonCount += 1;
-    result.maxSeverity = "medium";
+    })),
   };
+}
 
-  if (source?.pendingResults) addReason("SUMMER_RESULT_PENDING", "Kết quả học phần hè đang chờ", source.pendingResults);
-  if (source?.failedCourses) addReason("SUMMER_COURSE_NOT_PASSED", "Học phần hè chưa đạt", source.failedCourses);
-  return result;
+export async function findLatestOfficialWarningResult(studentId: string) {
+  const [candidates, mainTerms] = await Promise.all([
+    prisma.academicWarningStudentResult.findMany({
+      where: { studentId },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.academicTerm.findMany({
+      where: { deletedAt: null, sIsSummer: false },
+      select: { id: true },
+    }),
+  ]);
+  if (!candidates.length || !mainTerms.length) return null;
+  const officialRuns = await prisma.academicWarningRun.findMany({
+    where: {
+      id: { in: [...new Set(candidates.map((result) => result.runId))] },
+      status: "completed",
+      runMode: "OFFICIAL",
+      assessmentAcademicTermId: { in: mainTerms.map((term) => term.id) },
+    },
+    select: { id: true },
+  });
+  const officialRunIds = new Set(officialRuns.map((run) => run.id));
+  return candidates.find((result) => officialRunIds.has(result.runId)) || null;
+}
+
+async function loadAssessmentTermCourseAttempts(
+  studentIds: string[],
+  programCode: string,
+  assessmentTermId: string,
+) {
+  const attempts = new Map<string, AssessmentTermCourseAttempt[]>();
+  if (!studentIds.length) return attempts;
+
+  const rows: Array<{
+    student_id: string;
+    offering_id: string;
+    academic_term_id: string;
+    credits: number;
+    score_status: string | null;
+    has_final_grade: boolean;
+    is_pass: boolean | null;
+    special_code: string | null;
+  }> = await prisma.$queryRaw`
+    SELECT o.student_id::text, o.id::text AS offering_id, o.academic_term_id::text,
+           o.s_credits AS credits, g.score_status, g.special_code,
+           (g.offering_id IS NOT NULL AND (
+             (g.score_status = 'graded' AND
+               (g.score_10 IS NOT NULL OR g.score_4 IS NOT NULL OR NULLIF(BTRIM(g.letter_code), '') IS NOT NULL))
+             OR (g.score_status = 'special' AND UPPER(BTRIM(COALESCE(g.special_code, ''))) = 'VT' AND NOT g.not_score)
+           )) AS has_final_grade,
+           g.is_pass
+    FROM student_course_offerings o
+    LEFT JOIN student_course_grades g ON g.offering_id = o.id
+    WHERE o.academic_term_id = ${assessmentTermId}::uuid
+      AND o.s_program_code = ${programCode}
+      AND o.student_id = ANY(${studentIds}::uuid[])
+    ORDER BY o.student_id, o.id
+  `;
+  for (const row of rows) {
+    const studentAttempts = attempts.get(row.student_id) || [];
+    studentAttempts.push({
+      offeringId: row.offering_id,
+      academicTermId: row.academic_term_id,
+      credits: Number(row.credits),
+      scoreStatus: row.score_status,
+      hasFinalGrade: row.has_final_grade,
+      isPass: row.is_pass,
+      specialCode: row.special_code,
+    });
+    attempts.set(row.student_id, studentAttempts);
+  }
+  return attempts;
 }
 
 // ============================================================================
@@ -227,12 +287,15 @@ async function loadWarningContext(
   cohortId: string,
   trainingProgramId: string,
   assessmentTermId: string,
+  policyId?: string,
+  requireLegacyProgressSnapshots = true,
 ) {
-  // Get active policy
-  const policy = await prisma.academicWarningPolicy.findFirst({
-    where: { status: "active" },
-    orderBy: { version: "desc" },
-  });
+  const policy = policyId
+    ? await prisma.academicWarningPolicy.findUnique({ where: { id: policyId } })
+    : await prisma.academicWarningPolicy.findFirst({
+        where: { status: "active" },
+        orderBy: { version: "desc" },
+      });
   if (!policy) throw new Error("No active academic warning policy found");
 
   // Get program code
@@ -246,8 +309,10 @@ async function loadWarningContext(
       AND r.assessment_academic_term_id = ${assessmentTermId}::uuid AND r.status = 'completed'
     ORDER BY r.completed_at DESC NULLS LAST, r.id DESC LIMIT 1
   `;
-  if (completionRun.length === 0) throw new Error("No completed completion run found. Run a completion evaluation first.");
-  const completionRunId = completionRun[0].id;
+  if (completionRun.length === 0 && requireLegacyProgressSnapshots) {
+    throw new Error("No completed completion run found. Run a completion evaluation first.");
+  }
+  const completionRunId = completionRun[0]?.id || null;
 
   // Find latest completed progress run
   const progressRun: any[] = await prisma.$queryRaw`
@@ -258,8 +323,10 @@ async function loadWarningContext(
       AND r.status = 'completed'
     ORDER BY r.completed_at DESC NULLS LAST, r.id DESC LIMIT 1
   `;
-  if (progressRun.length === 0) throw new Error("No completed progress calculation run found. Run a calculation first.");
-  const progressRunId = progressRun[0].id;
+  if (progressRun.length === 0 && requireLegacyProgressSnapshots) {
+    throw new Error("No completed progress calculation run found. Run a calculation first.");
+  }
+  const progressRunId = progressRun[0]?.id || null;
 
   // Load students
   const studentRows: any[] = await prisma.$queryRaw`
@@ -270,6 +337,13 @@ async function loadWarningContext(
     LEFT JOIN classes c ON c.class_id = s.s_class_student_id AND c.deleted_at IS NULL
     WHERE s.s_study_program_id = ${program.sProgramCode} AND s.deleted_at IS NULL
       AND c.cohort_id = ${cohortId}::uuid
+      AND EXISTS (
+        SELECT 1
+        FROM student_term_summaries sts
+        WHERE sts.student_id = s.id
+          AND sts.academic_term_id = ${assessmentTermId}::uuid
+          AND sts.s_program_code = ${program.sProgramCode}
+      )
     ORDER BY s.s_student_id
   `;
 
@@ -288,7 +362,7 @@ async function loadWarningContext(
 
   // Load progress results
   const progress = new Map<string, ProgressSource>();
-  if (studentIds.length > 0) {
+  if (studentIds.length > 0 && progressRunId) {
     const progRows: any[] = await prisma.$queryRaw`
       SELECT student_id::text, status FROM training_progress_student_results
       WHERE run_id = ${progressRunId}::uuid AND student_id = ANY(${studentIds}::uuid[])
@@ -300,21 +374,58 @@ async function loadWarningContext(
 
   // Load completion results
   const completion = new Map<string, CompletionSource>();
-  if (studentIds.length > 0) {
-    const compRows: any[] = await prisma.$queryRaw`
-      SELECT student_id::text, schedule_status FROM training_progress_completion_student_results
-      WHERE run_id = ${completionRunId}::uuid AND student_id = ANY(${studentIds}::uuid[])
+  if (studentIds.length > 0 && completionRunId) {
+    const compRows: Array<{
+      student_id: string;
+      schedule_status: string;
+      data_error_reason: string | null;
+      pending_result_courses: number;
+      credit_deficit: number | null;
+    }> = await prisma.$queryRaw`
+      SELECT sr.student_id::text, sr.schedule_status, sr.data_error_reason, sr.pending_result_courses,
+             CASE
+               WHEN sr.data_error_reason IS NOT NULL OR sr.schedule_status = 'data_error' THEN NULL
+               WHEN sr.pending_result_courses > 0 OR sr.schedule_status = 'pending_result' THEN NULL
+               ELSE
+                 COALESCE((
+                   SELECT SUM(cr.s_credits)
+                   FROM training_progress_completion_plan_results pr
+                   JOIN training_progress_completion_course_results cr ON cr.plan_result_id = pr.id
+                   WHERE pr.student_result_id = sr.id AND pr.is_due
+                     AND cr.requirement_type = 'mandatory' AND NOT cr.passed AND NOT cr.pending_result
+                 ), 0)
+                 + COALESCE((
+                   SELECT SUM(pr.missing_elective_credits)
+                   FROM training_progress_completion_plan_results pr
+                   WHERE pr.student_result_id = sr.id AND pr.is_due
+                 ), 0)
+             END AS credit_deficit
+      FROM training_progress_completion_student_results sr
+      WHERE sr.run_id = ${completionRunId}::uuid AND sr.student_id = ANY(${studentIds}::uuid[])
     `;
     for (const r of compRows) {
-      completion.set(r.student_id, { scheduleStatus: r.schedule_status, runId: completionRunId });
+      const hasDataError = Boolean(r.data_error_reason) || r.schedule_status === "data_error";
+      const hasPendingResult = Number(r.pending_result_courses) > 0 || r.schedule_status === "pending_result";
+      completion.set(r.student_id, {
+        scheduleStatus: r.schedule_status,
+        runId: completionRunId,
+        creditDeficit: r.credit_deficit == null ? null : Number(r.credit_deficit),
+        dataStatus: hasDataError ? "INSUFFICIENT" : hasPendingResult ? "PARTIAL" : "COMPLETE",
+        reasonCode: hasDataError
+          ? r.data_error_reason || "TRAINING_PROGRESS_DATA_ERROR"
+          : hasPendingResult ? "TRAINING_PROGRESS_PENDING_RESULTS" : null,
+      });
     }
   }
 
   // Load term summaries
   const summaries = new Map<string, SummarySource>();
+  const cumulativeCredits = new Map<string, number | null>();
+  const firstMainTermIds = new Map<string, string>();
   if (studentIds.length > 0) {
     const sumRows: any[] = await prisma.$queryRaw`
       SELECT s.id::text, s.student_id::text, s.registered_credits, s.gpa_4, s.gpa_10,
+             COALESCE(c.cumulative_credits, s.cumulative_credits) AS cumulative_credits,
              COALESCE(c.cumulative_gpa_4, s.cumulative_gpa_4) AS cumulative_gpa_4,
              COALESCE(c.cumulative_gpa_10, s.cumulative_gpa_10) AS cumulative_gpa_10,
              c.id::text AS cumulative_summary_id
@@ -327,6 +438,7 @@ async function loadWarningContext(
         AND s.student_id = ANY(${studentIds}::uuid[])
     `;
     for (const r of sumRows) {
+      cumulativeCredits.set(r.student_id, r.cumulative_credits != null ? Number(r.cumulative_credits) : null);
       summaries.set(r.student_id, {
         termSummaryId: r.id,
         cumulativeSummaryId: r.cumulative_summary_id || null,
@@ -337,7 +449,29 @@ async function loadWarningContext(
         cumulativeGPA10: r.cumulative_gpa_10 != null ? Number(r.cumulative_gpa_10) : null,
       });
     }
+    const firstTermRows: Array<{ student_id: string; academic_term_id: string }> = await prisma.$queryRaw`
+      SELECT DISTINCT ON (s.student_id) s.student_id::text, s.academic_term_id::text
+      FROM student_term_summaries s
+      JOIN academic_terms t ON t.id = s.academic_term_id AND t.deleted_at IS NULL AND NOT t.s_is_summer
+      JOIN academic_years y ON y.id = t.academic_year_id AND y.deleted_at IS NULL
+      WHERE s.s_program_code = ${program.sProgramCode}
+        AND s.student_id = ANY(${studentIds}::uuid[])
+      ORDER BY s.student_id, y.s_year_code, t.s_term_order, t.id
+    `;
+    for (const row of firstTermRows) firstMainTermIds.set(row.student_id, row.academic_term_id);
   }
+  const assessmentTermCourseAttempts = await loadAssessmentTermCourseAttempts(
+    studentIds,
+    program.sProgramCode,
+    assessmentTermId,
+  );
+  const trainingProgressSignals = await calculateAcademicWarningProgressSignals({
+    students,
+    cohortId,
+    trainingProgramId,
+    assessmentTermId,
+    programCode: program.sProgramCode,
+  });
 
   // Load academic warning decisions
   const decisions = new Map<string, DecisionSource[]>();
@@ -376,20 +510,24 @@ async function loadWarningContext(
   }
 
   const [progressRunSource, completionRunSource] = await Promise.all([
-    prisma.trainingProgressCalculationRun.findUnique({
-      where: { id: progressRunId },
-      select: { sourceSnapshotHash: true, sourceCapturedAt: true, completedAt: true },
-    }),
-    prisma.trainingProgressCompletionRun.findUnique({
-      where: { id: completionRunId },
-      select: {
-        sourceSnapshotHash: true,
-        sourceCapturedAt: true,
-        completedAt: true,
-        evaluationMode: true,
-        evaluation_scope: true,
-      },
-    }),
+    progressRunId
+      ? prisma.trainingProgressCalculationRun.findUnique({
+          where: { id: progressRunId },
+          select: { sourceSnapshotHash: true, sourceCapturedAt: true, completedAt: true },
+        })
+      : null,
+    completionRunId
+      ? prisma.trainingProgressCompletionRun.findUnique({
+          where: { id: completionRunId },
+          select: {
+            sourceSnapshotHash: true,
+            sourceCapturedAt: true,
+            completedAt: true,
+            evaluationMode: true,
+            evaluation_scope: true,
+          },
+        })
+      : null,
   ]);
 
   return {
@@ -406,6 +544,10 @@ async function loadWarningContext(
     decisions,
     conduct,
     summerMonitoring: new Map<string, SummerMonitoringSource>(),
+    cumulativeCredits,
+    firstMainTermIds,
+    assessmentTermCourseAttempts,
+    trainingProgressSignals,
   };
 }
 
@@ -415,7 +557,10 @@ async function loadSummerMonitoringContext(
   assessmentTermId: string,
 ) {
   const [policy, program] = await Promise.all([
-    prisma.academicWarningPolicy.findFirst({ where: { status: "active" }, orderBy: { version: "desc" } }),
+    prisma.academicWarningPolicy.findFirst({
+      where: { status: "active" },
+      orderBy: { version: "desc" },
+    }),
     prisma.trainingProgram.findUnique({ where: { id: trainingProgramId } }),
   ]);
   if (!policy) throw new ApiError("No active academic warning policy found", "WARNING_POLICY_REQUIRED", 422);
@@ -447,15 +592,17 @@ async function loadSummerMonitoringContext(
   const studentIds = students.map((student) => student.id);
   const summaries = new Map<string, SummarySource>();
   const summerMonitoring = new Map<string, SummerMonitoringSource>();
+  const cumulativeCredits = new Map<string, number | null>();
+  const firstMainTermIds = new Map<string, string>();
 
   if (studentIds.length) {
     const [summaryRows, monitoringRows] = await Promise.all([
       prisma.$queryRaw<Array<{
         id: string; student_id: string; registered_credits: unknown; gpa_4: unknown; gpa_10: unknown;
-        cumulative_gpa_4: unknown; cumulative_gpa_10: unknown;
+        cumulative_credits: unknown; cumulative_gpa_4: unknown; cumulative_gpa_10: unknown;
       }>>`
         SELECT id::text, student_id::text, registered_credits, gpa_4, gpa_10,
-               cumulative_gpa_4, cumulative_gpa_10
+               cumulative_credits, cumulative_gpa_4, cumulative_gpa_10
         FROM student_term_summaries
         WHERE academic_term_id = ${assessmentTermId}::uuid
           AND s_program_code = ${program.sProgramCode}
@@ -478,6 +625,7 @@ async function loadSummerMonitoringContext(
       `,
     ]);
     for (const row of summaryRows) {
+      cumulativeCredits.set(row.student_id, row.cumulative_credits == null ? null : Number(row.cumulative_credits));
       summaries.set(row.student_id, {
         termSummaryId: row.id,
         cumulativeSummaryId: null,
@@ -497,6 +645,11 @@ async function loadSummerMonitoringContext(
       });
     }
   }
+  const assessmentTermCourseAttempts = await loadAssessmentTermCourseAttempts(
+    studentIds,
+    program.sProgramCode,
+    assessmentTermId,
+  );
 
   return {
     policy,
@@ -512,6 +665,44 @@ async function loadSummerMonitoringContext(
     decisions: new Map<string, DecisionSource[]>(),
     conduct: new Map<string, ConductSource>(),
     summerMonitoring,
+    cumulativeCredits,
+    firstMainTermIds,
+    assessmentTermCourseAttempts,
+    trainingProgressSignals: new Map(),
+  };
+}
+
+function parsePolicyDefinitionOrThrow(value: unknown) {
+  try {
+    return parseAcademicWarningPolicyDefinition(value);
+  } catch (error) {
+    if (error instanceof PolicyDefinitionError) {
+      throw new ApiError(error.message, error.code, 422);
+    }
+    throw error;
+  }
+}
+
+function warningPolicyView(policy: Prisma.AcademicWarningPolicyGetPayload<Record<string, never>>) {
+  const definition = parsePolicyDefinitionOrThrow(policy.policyDefinition);
+  return {
+    id: policy.id,
+    name: policy.name,
+    schemaVersion: policy.schemaVersion,
+    engineVersion: policy.engineVersion,
+    evaluationProfile: definition.evaluationProfile,
+    executionMode: definition.executionMode,
+    policyDefinition: policy.policyDefinition,
+    definitionHash: policy.definitionHash,
+    termGpaThreshold: Number(policy.termGpaThreshold),
+    cumulativeGpaThreshold: Number(policy.cumulativeGpaThreshold),
+    conductScoreThreshold: Number(policy.conductScoreThreshold),
+    policyVersion: policy.version,
+    version: policy.version,
+    status: policy.status,
+    createdBy: policy.createdBy,
+    createdAt: policy.createdAt,
+    updatedAt: policy.updatedAt,
   };
 }
 
@@ -555,22 +746,13 @@ export class AcademicWarningsService {
     const policies = await prisma.academicWarningPolicy.findMany({
       orderBy: [{ version: "desc" }, { createdAt: "desc" }],
     });
-    return policies.map((p) => ({
-      id: p.id,
-      name: p.name,
-      termGpaThreshold: Number(p.termGpaThreshold),
-      cumulativeGpaThreshold: Number(p.cumulativeGpaThreshold),
-      conductScoreThreshold: Number(p.conductScoreThreshold),
-      version: p.version,
-      status: p.status,
-      createdBy: p.createdBy,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-    }));
+    return policies.map(warningPolicyView);
   }
 
   static async createPolicy(data: {
     name: string;
+    policyDefinition?: unknown;
+    definition?: unknown;
     termGpaThreshold?: number;
     cumulativeGpaThreshold?: number;
     conductScoreThreshold?: number;
@@ -578,38 +760,51 @@ export class AcademicWarningsService {
   }, actorId?: string | null) {
     const name = (data.name || "").trim();
     if (!name) throw new ApiError("Policy name is required", "INVALID_REQUEST", 400);
-
-    const tGpa = data.termGpaThreshold ?? 2.0;
-    const cGpa = data.cumulativeGpaThreshold ?? 2.0;
-    const conductScore = data.conductScoreThreshold ?? 50;
-    if (tGpa < 0 || tGpa > 4 || cGpa < 0 || cGpa > 4) {
-      throw new ApiError("GPA thresholds must be between 0 and 4", "INVALID_THRESHOLD", 400);
+    let normalized: ReturnType<typeof normalizeAcademicWarningPolicyInput>;
+    try {
+      normalized = normalizeAcademicWarningPolicyInput(data);
+    } catch (error) {
+      if (error instanceof PolicyDefinitionError) throw new ApiError(error.message, error.code, 422);
+      throw error;
     }
-    if (conductScore < 0 || conductScore > 100) {
-      throw new ApiError("Conduct score threshold must be between 0 and 100", "INVALID_THRESHOLD", 400);
+    const { definition, termGpaThreshold, cumulativeGpaThreshold, conductScoreThreshold } = normalized;
+    const status = data.status || (definition.evaluationProfile === "LEGACY_ADVISORY" ? "active" : "draft");
+    if (!["draft", "active"].includes(status)) {
+      throw new ApiError("Unsupported policy status", "INVALID_STATUS", 400);
     }
-
-    const status = data.status || "active";
-    if (status !== "draft" && status !== "active") {
-      throw new ApiError("Status must be 'draft' or 'active'", "INVALID_STATUS", 400);
+    if (status === "active") {
+      try {
+        assertPolicyExecutable(definition);
+      } catch (error) {
+        if (error instanceof PolicyDefinitionError) throw new ApiError(error.message, error.code, 422);
+        throw error;
+      }
     }
+    const executionThresholds = definition.evaluationProfile === "LEGACY_ADVISORY"
+      ? definition.thresholds
+      : null;
 
     return prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('academic_warning_policy_version'))`;
+      const latest = await tx.academicWarningPolicy.findFirst({ orderBy: { version: "desc" } });
+      const nextVersion = (latest?.version || 0) + 1;
       if (status === "active") {
         await tx.academicWarningPolicy.updateMany({
           where: { status: "active" },
           data: { status: "archived", updatedAt: new Date() },
         });
       }
-      const latest = await tx.academicWarningPolicy.findFirst({ orderBy: { version: "desc" } });
       const created = await tx.academicWarningPolicy.create({
         data: {
           name,
-          termGpaThreshold: tGpa,
-          cumulativeGpaThreshold: cGpa,
-          conductScoreThreshold: conductScore,
-          version: (latest?.version || 0) + 1,
+          schemaVersion: definition.schemaVersion,
+          engineVersion: definition.engineVersion,
+          policyDefinition: definition as unknown as Prisma.InputJsonValue,
+          definitionHash: academicWarningPolicyDefinitionHash(definition),
+          termGpaThreshold: executionThresholds?.termGpa4Below ?? termGpaThreshold,
+          cumulativeGpaThreshold: executionThresholds?.cumulativeGpa4Below ?? cumulativeGpaThreshold,
+          conductScoreThreshold: executionThresholds?.conductScoreBelow ?? conductScoreThreshold,
+          version: nextVersion,
           status,
           createdBy: actorId || null,
         },
@@ -621,16 +816,112 @@ export class AcademicWarningsService {
           resourceType: "AcademicWarningPolicy",
           resourceId: created.id,
           details: {
-            version: created.version,
+            policyVersion: created.version,
+            evaluationProfile: definition.evaluationProfile,
+            executionMode: definition.executionMode,
+            schemaVersion: definition.schemaVersion,
+            engineVersion: definition.engineVersion,
+            definitionHash: created.definitionHash,
             status,
-            termGpaThreshold: tGpa,
-            cumulativeGpaThreshold: cGpa,
-            conductScoreThreshold: conductScore,
           },
         },
       });
-      return created;
+      return warningPolicyView(created);
     });
+  }
+
+  static async updatePolicy(
+    policyId: string,
+    data: {
+      name?: string;
+      policyDefinition?: unknown;
+      definition?: unknown;
+      termGpaThreshold?: number;
+      cumulativeGpaThreshold?: number;
+      conductScoreThreshold?: number;
+      status?: string;
+    },
+    actorId?: string | null,
+  ) {
+    const current = await prisma.academicWarningPolicy.findUnique({ where: { id: policyId } });
+    if (!current) throw new ApiError("Policy not found", "NOT_FOUND", 404);
+    const completedOfficialRunCount = await prisma.academicWarningRun.count({
+      where: { policyId, status: "completed", runMode: "OFFICIAL" },
+    });
+    try {
+      assertPolicyDefinitionMutable({ completedOfficialRunCount });
+    } catch (error) {
+      if (error instanceof PolicyDefinitionError) throw new ApiError(error.message, error.code, 422);
+      throw error;
+    }
+    const currentDefinition = parsePolicyDefinitionOrThrow(current.policyDefinition);
+    const suppliedDefinition = data.policyDefinition ?? data.definition;
+    const definition = suppliedDefinition === undefined && currentDefinition.evaluationProfile === "LEGACY_ADVISORY"
+      ? createLegacyAdvisoryPolicyDefinition({
+          label: data.name?.trim() || currentDefinition.advisory.label,
+          description: currentDefinition.advisory.description,
+          engineVersion: currentDefinition.engineVersion,
+          termGpaThreshold: data.termGpaThreshold ?? Number(current.termGpaThreshold),
+          cumulativeGpaThreshold: data.cumulativeGpaThreshold ?? Number(current.cumulativeGpaThreshold),
+          conductScoreThreshold: data.conductScoreThreshold ?? Number(current.conductScoreThreshold),
+        })
+      : suppliedDefinition === undefined
+        ? currentDefinition
+        : parsePolicyDefinitionOrThrow(suppliedDefinition);
+    const status = data.status || current.status;
+    if (!["draft", "active", "archived"].includes(status)) {
+      throw new ApiError("Unsupported policy status", "INVALID_STATUS", 400);
+    }
+    if (status === "active") {
+      try {
+        assertPolicyExecutable(definition);
+      } catch (error) {
+        if (error instanceof PolicyDefinitionError) throw new ApiError(error.message, error.code, 422);
+        throw error;
+      }
+    }
+    const executionThresholds = definition.evaluationProfile === "LEGACY_ADVISORY"
+      ? definition.thresholds
+      : null;
+    const updated = await prisma.$transaction(async (tx) => {
+      if (status === "active") {
+        await tx.academicWarningPolicy.updateMany({
+          where: { status: "active", id: { not: current.id } },
+          data: { status: "archived", updatedAt: new Date() },
+        });
+      }
+      const result = await tx.academicWarningPolicy.update({
+        where: { id: current.id },
+        data: {
+          name: data.name?.trim() || current.name,
+          schemaVersion: definition.schemaVersion,
+          engineVersion: definition.engineVersion,
+          policyDefinition: definition as unknown as Prisma.InputJsonValue,
+          definitionHash: academicWarningPolicyDefinitionHash(definition),
+          termGpaThreshold: executionThresholds?.termGpa4Below ?? data.termGpaThreshold ?? current.termGpaThreshold,
+          cumulativeGpaThreshold: executionThresholds?.cumulativeGpa4Below ?? data.cumulativeGpaThreshold ?? current.cumulativeGpaThreshold,
+          conductScoreThreshold: executionThresholds?.conductScoreBelow ?? data.conductScoreThreshold ?? current.conductScoreThreshold,
+          status,
+          updatedAt: new Date(),
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          actorId: actorId || null,
+          action: "warning_policy.update",
+          resourceType: "AcademicWarningPolicy",
+          resourceId: result.id,
+          details: {
+            policyVersion: result.version,
+            evaluationProfile: definition.evaluationProfile,
+            executionMode: definition.executionMode,
+            definitionHash: result.definitionHash,
+          },
+        },
+      });
+      return result;
+    });
+    return warningPolicyView(updated);
   }
 
   // ===================== REAL Warning Run Engine =====================
@@ -699,6 +990,7 @@ export class AcademicWarningsService {
         assessmentAcademicYear: yearMap[termMap[r.assessmentAcademicTermId]?.academicYearId]?.sYearCode || null,
         isSummer: Boolean(termMap[r.assessmentAcademicTermId]?.sIsSummer),
         runMode: r.runMode,
+        executionProfile: r.executionProfile,
         isOfficial: r.runMode === "OFFICIAL" && !termMap[r.assessmentAcademicTermId]?.sIsSummer,
         policyId: r.policyId,
         policyVersion: r.policyVersion,
@@ -721,56 +1013,246 @@ export class AcademicWarningsService {
     };
   }
 
+  static async resolveRunAssessmentTerm(data: {
+    assessmentAcademicTermId?: string;
+    runMode?: AcademicWarningRunMode;
+  }) {
+    const runMode: AcademicWarningRunMode = data.runMode === "SUMMER_MONITORING" ? "SUMMER_MONITORING" : "OFFICIAL";
+    if (data.assessmentAcademicTermId) {
+      const assessmentTerm = await prisma.academicTerm.findFirst({
+        where: { id: data.assessmentAcademicTermId, deletedAt: null },
+      });
+      if (!assessmentTerm) throw new ApiError("Academic term not found", "NOT_FOUND", 404);
+      try {
+        assertAcademicWarningAssessmentTermAllowed({
+          isCurrent: assessmentTerm.isCurrent,
+          isSummer: assessmentTerm.sIsSummer,
+          gradesFinalizedAt: assessmentTerm.gradesFinalizedAt,
+        }, runMode);
+      } catch (error) {
+        asAcademicTermApiError(error);
+      }
+      const year = await prisma.academicYear.findFirst({
+        where: { id: assessmentTerm.academicYearId, deletedAt: null },
+        select: { sYearCode: true },
+      });
+      return { runMode, selectionMode: "EXPLICIT" as const, assessmentTerm, currentMainTerm: null, academicYearCode: year?.sYearCode || null };
+    }
+
+    if (runMode === "SUMMER_MONITORING") {
+      throw new ApiError(
+        "assessmentAcademicTermId is required for summer monitoring",
+        "INVALID_REQUEST",
+        400,
+      );
+    }
+
+    const [terms, years] = await Promise.all([
+      prisma.academicTerm.findMany({ where: { deletedAt: null } }),
+      prisma.academicYear.findMany({ where: { deletedAt: null }, select: { id: true, sYearCode: true } }),
+    ]);
+    const yearCodes = new Map(years.map((year) => [year.id, year.sYearCode]));
+    try {
+      const resolved = resolvePreviousMainAssessmentTerm(terms.map((term) => ({
+        id: term.id,
+        academicYearId: term.academicYearId,
+        academicYearCode: yearCodes.get(term.academicYearId) || "",
+        termOrder: term.sTermOrder,
+        isSummer: term.sIsSummer,
+        isCurrent: term.isCurrent,
+        gradesFinalizedAt: term.gradesFinalizedAt,
+        startDate: term.startDate,
+        endDate: term.endDate,
+        source: term,
+      })));
+      assertAcademicWarningAssessmentTermAllowed({
+        isCurrent: resolved.assessmentTerm.source.isCurrent,
+        isSummer: resolved.assessmentTerm.source.sIsSummer,
+        gradesFinalizedAt: resolved.assessmentTerm.source.gradesFinalizedAt,
+      }, runMode);
+      return {
+        runMode,
+        selectionMode: "AUTO_PREVIOUS_MAIN" as const,
+        assessmentTerm: resolved.assessmentTerm.source,
+        currentMainTerm: resolved.currentMainTerm.source,
+        academicYearCode: resolved.assessmentTerm.academicYearCode,
+        currentAcademicYearCode: resolved.currentMainTerm.academicYearCode,
+      };
+    } catch (error) {
+      asAcademicTermApiError(error);
+    }
+  }
+
   static async createRun(data: {
     cohortId: string;
     trainingProgramId: string;
-    assessmentAcademicTermId: string;
+    assessmentAcademicTermId?: string;
+    expectedAssessmentAcademicTermId?: string;
     createdBy?: string | null;
-    runMode?: "OFFICIAL" | "SUMMER_MONITORING";
+    runMode?: AcademicWarningRunMode;
+    executionProfile?: AcademicWarningExecutionProfile;
+    policyId?: string;
+    syncInterventions?: boolean;
   }) {
-    if (!data.cohortId || !data.trainingProgramId || !data.assessmentAcademicTermId) {
-      throw new Error("cohortId, trainingProgramId, and assessmentAcademicTermId are required");
+    if (!data.cohortId || !data.trainingProgramId) {
+      throw new Error("cohortId and trainingProgramId are required");
     }
 
-    const assessmentTerm = await prisma.academicTerm.findFirst({
-      where: { id: data.assessmentAcademicTermId, deletedAt: null },
+    await assertCohortTrainingProgramPair({
+      cohortId: data.cohortId,
+      trainingProgramId: data.trainingProgramId,
     });
-    if (!assessmentTerm) throw new ApiError("Academic term not found", "NOT_FOUND", 404);
-    const runMode = data.runMode === "SUMMER_MONITORING" ? "SUMMER_MONITORING" : "OFFICIAL";
-    if (assessmentTerm.sIsSummer && runMode !== "SUMMER_MONITORING") {
+
+    const executionProfile = resolveAcademicWarningExecutionProfile(data.executionProfile);
+    if (executionProfile === QD600_EXECUTION_PROFILE && !data.policyId) {
+      throw new ApiError("policyId is required for a controlled QĐ600 run", "QD600_POLICY_REQUIRED", 422);
+    }
+    const requestedPolicy = data.policyId
+      ? await prisma.academicWarningPolicy.findUnique({ where: { id: data.policyId } })
+      : null;
+    validateAcademicWarningRunPolicyContract({
+      executionProfile: data.executionProfile,
+      runMode: data.runMode,
+      policyId: data.policyId,
+      cohortId: data.cohortId,
+      policy: requestedPolicy,
+    });
+    const resolvedTerm = await this.resolveRunAssessmentTerm(data);
+    const assessmentTerm = resolvedTerm.assessmentTerm;
+    const assessmentAcademicTermId = assessmentTerm.id;
+    if (data.expectedAssessmentAcademicTermId && data.expectedAssessmentAcademicTermId !== assessmentAcademicTermId) {
       throw new ApiError(
-        "Không thể ban hành cảnh báo chính thức từ kỳ hè. Hãy chọn kỳ chính ngay trước hoặc dùng chế độ giám sát hè.",
-        "SUMMER_OFFICIAL_WARNING_NOT_ALLOWED",
-        422,
+        "Academic term configuration changed while the warning run was being authorized. Please retry.",
+        "ACADEMIC_TERM_CONFIGURATION_CHANGED",
+        409,
       );
     }
-    if (!assessmentTerm.sIsSummer && runMode === "SUMMER_MONITORING") {
-      throw new ApiError("Chế độ giám sát hè chỉ áp dụng cho kỳ được cấu hình là kỳ hè.", "INVALID_WARNING_RUN_MODE", 422);
-    }
-
+    const runMode = resolvedTerm.runMode;
     // Official runs require locked progress snapshots. Summer monitoring reads
     // registrations and grade outcomes directly because summer has no plan or
     // minimum-credit requirement of its own.
     const ctx = runMode === "SUMMER_MONITORING"
-      ? await loadSummerMonitoringContext(data.cohortId, data.trainingProgramId, data.assessmentAcademicTermId)
-      : await loadWarningContext(data.cohortId, data.trainingProgramId, data.assessmentAcademicTermId);
+      ? await loadSummerMonitoringContext(data.cohortId, data.trainingProgramId, assessmentAcademicTermId)
+      : await loadWarningContext(
+          data.cohortId,
+          data.trainingProgramId,
+          assessmentAcademicTermId,
+          data.policyId,
+          executionProfile === "LEGACY_SCALAR_RULES",
+        );
 
-    const sourceCapturedAt = new Date();
-    const sourceSnapshot = {
-      schemaVersion: 2,
-      runMode,
-      scope: {
+    const storedDefinition = parsePolicyDefinitionOrThrow(ctx.policy.policyDefinition);
+    let definition: ReturnType<typeof parseAcademicWarningPolicyDefinition>;
+    if (executionProfile === QD600_EXECUTION_PROFILE) {
+      const validatedContract = validateAcademicWarningRunPolicyContract({
+        executionProfile: data.executionProfile,
+        runMode: data.runMode,
+        policyId: data.policyId,
         cohortId: data.cohortId,
-        trainingProgramId: data.trainingProgramId,
-        assessmentAcademicTermId: data.assessmentAcademicTermId,
-      },
-      policy: {
-        id: ctx.policy.id,
-        version: ctx.policy.version,
-        name: ctx.policy.name,
+        policy: {
+          id: ctx.policy.id,
+          status: ctx.policy.status,
+          policyDefinition: ctx.policy.policyDefinition,
+        },
+      });
+      if (!validatedContract.definition || validatedContract.definition.evaluationProfile !== "QD600_ARTICLE_18") {
+        throw new ApiError("Validated QĐ600 policy definition is unavailable", "QD600_POLICY_TYPE_REQUIRED", 422);
+      }
+      definition = validatedContract.definition;
+    } else {
+      try {
+        assertPolicyExecutable(storedDefinition);
+      } catch (error) {
+        if (error instanceof PolicyDefinitionError) throw new ApiError(error.message, error.code, 422);
+        throw error;
+      }
+      definition = createLegacyAdvisoryPolicyDefinition({
+        label: storedDefinition.advisory.label,
+        description: storedDefinition.advisory.description,
+        engineVersion: ctx.policy.engineVersion,
         termGpaThreshold: Number(ctx.policy.termGpaThreshold),
         cumulativeGpaThreshold: Number(ctx.policy.cumulativeGpaThreshold),
         conductScoreThreshold: Number(ctx.policy.conductScoreThreshold),
+      });
+    }
+    const policySnapshot = createAcademicWarningPolicySnapshot({
+      id: ctx.policy.id,
+      name: ctx.policy.name,
+      policyVersion: ctx.policy.version,
+      definition,
+    });
+
+    const capabilitySnapshot = createAcademicWarningCapabilitySnapshot();
+    const capabilityDataByStudent = new Map(ctx.students.map((student) => [
+      student.id,
+      createQd600StudentCapabilityData({
+        cumulativeCredits: ctx.cumulativeCredits.get(student.id) ?? null,
+        assessmentTermId: assessmentAcademicTermId,
+        attempts: ctx.assessmentTermCourseAttempts.get(student.id) || [],
+        isFirstMainSemester: ctx.firstMainTermIds.get(student.id) === assessmentAcademicTermId
+          ? true
+          : ctx.firstMainTermIds.has(student.id) ? false : null,
+      }),
+    ]));
+    const qd600Evaluations = new Map<string, {
+      applicability: Qd600PolicyApplicability;
+      result: Qd600EvaluationResult | null;
+    }>();
+    if (executionProfile === QD600_EXECUTION_PROFILE && definition.evaluationProfile === "QD600_ARTICLE_18") {
+      for (const student of ctx.students) {
+        qd600Evaluations.set(student.id, evaluateQd600ForCohort({
+          cohortId: student.cohortId,
+          policyDefinition: definition,
+          capabilities: capabilitySnapshot,
+          capabilityData: capabilityDataByStudent.get(student.id)!,
+          termGpa4: ctx.summaries.get(student.id)?.termGPA4 ?? null,
+          cumulativeGpa4: ctx.summaries.get(student.id)?.cumulativeGPA4 ?? null,
+          termKind: assessmentTerm.sIsSummer ? "SUMMER" : "MAIN",
+          trainingProgress: ctx.trainingProgressSignals.has(student.id)
+            ? {
+                creditDeficit: ctx.trainingProgressSignals.get(student.id)?.creditDeficit ?? null,
+                dataStatus: ctx.trainingProgressSignals.get(student.id)?.dataStatus || "INSUFFICIENT",
+                reasonCode: ctx.trainingProgressSignals.get(student.id)?.reasonCode || null,
+                runId: ctx.trainingProgressSignals.get(student.id)!.sourceId,
+                expectedCreditsToDate: ctx.trainingProgressSignals.get(student.id)?.expectedCreditsToDate ?? null,
+                earnedCreditsToDate: ctx.trainingProgressSignals.get(student.id)?.earnedCreditsToDate ?? null,
+              }
+            : null,
+        }));
+      }
+    }
+    const qd600CoverageCounts = executionProfile === QD600_EXECUTION_PROFILE
+      ? Object.fromEntries(["FULL", "PARTIAL", "INSUFFICIENT"].map((status) => [
+          status,
+          [...qd600Evaluations.values()].filter((evaluation) => status === "INSUFFICIENT"
+            ? !evaluation.result || evaluation.result.regulatoryCoverage.status === status
+            : evaluation.result?.regulatoryCoverage.status === status).length,
+        ]))
+      : null;
+
+    const sourceCapturedAt = new Date();
+    const sourceSnapshot = {
+      schemaVersion: 5,
+      runMode,
+      executionProfile,
+      engineVersion: executionProfile === QD600_EXECUTION_PROFILE
+        ? QD600_RULE_ENGINE_VERSION
+        : definition.engineVersion,
+      scope: {
+        cohortId: data.cohortId,
+        trainingProgramId: data.trainingProgramId,
+        assessmentAcademicTermId,
+      },
+      policy: policySnapshot,
+      capabilities: capabilitySnapshot,
+      regulatoryCoverage: qd600CoverageCounts == null ? null : {
+        status: qd600CoverageCounts.INSUFFICIENT > 0
+          ? "INSUFFICIENT"
+          : qd600CoverageCounts.PARTIAL > 0
+            ? "PARTIAL"
+            : "FULL",
+        studentCounts: qd600CoverageCounts,
+        fullEvaluationClaimed: qd600CoverageCounts.PARTIAL === 0 && qd600CoverageCounts.INSUFFICIENT === 0,
       },
       progressRun: {
         id: ctx.progressRunId,
@@ -803,29 +1285,71 @@ export class AcademicWarningsService {
         })),
         conduct: ctx.conduct.get(student.id) || null,
         summerMonitoring: ctx.summerMonitoring.get(student.id) || null,
+        qd600CapabilityData: {
+          ...capabilityDataByStudent.get(student.id)!,
+          trainingProgress: ctx.trainingProgressSignals.get(student.id) || null,
+          usedForEvaluation: executionProfile === QD600_EXECUTION_PROFILE,
+        },
+        qd600Applicability: qd600Evaluations.get(student.id)?.applicability || null,
       })),
     };
     const sourceSnapshotHash = sha256Hex(JSON.stringify(sourceSnapshot));
 
-    // Create the run
-    const run = await prisma.academicWarningRun.create({
-      data: {
-        cohortId: data.cohortId,
-        trainingProgramId: data.trainingProgramId,
-        assessmentAcademicTermId: data.assessmentAcademicTermId,
-        policyId: ctx.policy.id,
-        policyVersion: ctx.policy.version,
-        completionRunId: ctx.completionRunId,
-        progressRunId: ctx.progressRunId,
-        runMode,
-        sourceSnapshot: sourceSnapshot as Prisma.InputJsonValue,
-        sourceSnapshotHash,
-        sourceCapturedAt,
-        createdBy: data.createdBy || null,
-        status: "running",
-        startedAt: new Date(),
-      },
-    });
+    const runData: Prisma.AcademicWarningRunCreateInput = {
+      cohortId: data.cohortId,
+      trainingProgramId: data.trainingProgramId,
+      assessmentAcademicTermId,
+      policyId: ctx.policy.id,
+      policyVersion: ctx.policy.version,
+      completionRunId: ctx.completionRunId,
+      progressRunId: ctx.progressRunId,
+      runMode,
+      executionProfile,
+      sourceSnapshot: sourceSnapshot as Prisma.InputJsonValue,
+      sourceSnapshotHash,
+      sourceCapturedAt,
+      createdBy: data.createdBy || null,
+      status: "running",
+      startedAt: new Date(),
+    };
+
+    // An OFFICIAL evaluation is immutable once completed. Serialize the small
+    // claim step per assessment term + internal scope so repeated finalization,
+    // retry clicks, or concurrent requests reuse the existing run. Failed runs
+    // are deliberately excluded so a later retry can create a new attempt.
+    const claimed = runMode === "OFFICIAL"
+      ? await prisma.$transaction(async (tx) => {
+          const claimKey = `academic-warning:${assessmentAcademicTermId}:${data.cohortId}:${data.trainingProgramId}`;
+          await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${claimKey}))`;
+          const existingRuns = await tx.academicWarningRun.findMany({
+            where: {
+              cohortId: data.cohortId,
+              trainingProgramId: data.trainingProgramId,
+              assessmentAcademicTermId,
+              runMode: "OFFICIAL",
+              executionProfile,
+              status: { in: ["running", "completed"] },
+            },
+            orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
+          });
+          const existing = existingRuns.find((candidate) => {
+            if (candidate.status === "running" || executionProfile !== QD600_EXECUTION_PROFILE) return true;
+            const snapshot = candidate.sourceSnapshot;
+            return snapshot !== null && !Array.isArray(snapshot) && typeof snapshot === "object" &&
+              snapshot.engineVersion === QD600_RULE_ENGINE_VERSION;
+          });
+          if (existing) return { run: existing, shouldEvaluate: false as const };
+          return {
+            run: await tx.academicWarningRun.create({ data: runData }),
+            shouldEvaluate: true as const,
+          };
+        })
+      : {
+          run: await prisma.academicWarningRun.create({ data: runData }),
+          shouldEvaluate: true as const,
+        };
+    if (!claimed.shouldEvaluate) return claimed.run;
+    const run = claimed.run;
 
     let totalWarning = 0, totalMedium = 0, totalHigh = 0;
     const groups = new Map<string, { code: string; name: string; total: number; warnings: number; medium: number; high: number }>();
@@ -833,18 +1357,50 @@ export class AcademicWarningsService {
     const reasonRows: Prisma.AcademicWarningReasonCreateManyInput[] = [];
 
     for (const student of ctx.students) {
-      const evalResult = runMode === "SUMMER_MONITORING"
-        ? evaluateSummerMonitoring(student, ctx.summaries, ctx.summerMonitoring)
-        : evaluate(
-            student, ctx.progress, ctx.completion, ctx.summaries, ctx.decisions,
-            {
-              termGpaThreshold: Number(ctx.policy.termGpaThreshold),
-              cumulativeGpaThreshold: Number(ctx.policy.cumulativeGpaThreshold),
-              conductScoreThreshold: Number(ctx.policy.conductScoreThreshold),
-            },
-            ctx.conduct,
-          );
-
+      const summary = ctx.summaries.get(student.id);
+      const qd600Evaluation = qd600Evaluations.get(student.id);
+      const legacyEvaluation = executionProfile === "LEGACY_SCALAR_RULES"
+        ? runMode === "SUMMER_MONITORING"
+          ? evaluateSummerMonitoring({
+              student,
+              summary,
+              monitoring: ctx.summerMonitoring.get(student.id),
+            })
+          : evaluateAcademicWarning({
+              student,
+              progress: ctx.progress.get(student.id),
+              completion: ctx.completion.get(student.id),
+              summary,
+              decisions: ctx.decisions.get(student.id),
+              policy: {
+                termGpaThreshold: Number(ctx.policy.termGpaThreshold),
+                cumulativeGpaThreshold: Number(ctx.policy.cumulativeGpaThreshold),
+                conductScoreThreshold: Number(ctx.policy.conductScoreThreshold),
+              },
+              conduct: ctx.conduct.get(student.id),
+            })
+        : null;
+      const qd600Projection = qd600Evaluation?.result
+        ? projectQd600EvaluationForPersistence(qd600Evaluation.result)
+        : executionProfile === QD600_EXECUTION_PROFILE
+          ? {
+              businessStatus: "INSUFFICIENT_DATA" as const,
+              regulatoryCoverage: "INSUFFICIENT" as const,
+              maxSeverity: "none",
+              reasonCount: 0,
+              dataError: qd600Evaluation?.applicability.reasonCode || "REGULATORY_POLICY_COHORT_UNRESOLVED",
+              ruleResults: [] as Qd600RuleEvaluation[],
+              reasons: [],
+            }
+          : null;
+      const businessStatus = qd600Projection?.businessStatus || warningPresentationState({
+        maxSeverity: legacyEvaluation!.maxSeverity,
+        reasonCount: legacyEvaluation!.reasonCount,
+        dataStatus: legacyEvaluation!.dataStatus,
+      });
+      const maxSeverity = qd600Projection?.maxSeverity || legacyEvaluation!.maxSeverity;
+      const reasonCount = qd600Projection?.reasonCount ?? legacyEvaluation!.reasonCount;
+      const persistedReasons = qd600Projection?.reasons || legacyEvaluation!.reasons;
       const studentResultId = crypto.randomUUID();
       studentRows.push({
         id: studentResultId,
@@ -856,20 +1412,31 @@ export class AcademicWarningsService {
         sStudentName: student.name,
         sClassName: student.className || null,
         sProgramCode: student.programCode || null,
-        termRegisteredCredits: evalResult.termRegisteredCredits,
-        termGpa4: evalResult.termGPA4,
-        termGpa10: evalResult.termGPA10,
-        cumulativeGpa4: evalResult.cumulativeGPA4,
-        cumulativeGpa10: evalResult.cumulativeGPA10,
-        registrationStatus: evalResult.registrationStatus,
-        scheduleStatus: evalResult.scheduleStatus,
-        academicWarningDecisions: evalResult.academicWarningDecisions,
-        maxSeverity: evalResult.maxSeverity,
-        reasonCount: evalResult.reasonCount,
-        dataError: evalResult.dataError,
+        termRegisteredCredits: qd600Projection
+          ? capabilityDataByStudent.get(student.id)!.failedCreditCalculation.registeredCredits
+          : legacyEvaluation!.termRegisteredCredits,
+        termGpa4: summary?.termGPA4 ?? legacyEvaluation?.termGPA4 ?? null,
+        termGpa10: summary?.termGPA10 ?? legacyEvaluation?.termGPA10 ?? null,
+        cumulativeGpa4: summary?.cumulativeGPA4 ?? legacyEvaluation?.cumulativeGPA4 ?? null,
+        cumulativeGpa10: summary?.cumulativeGPA10 ?? legacyEvaluation?.cumulativeGPA10 ?? null,
+        registrationStatus: qd600Projection
+          ? ctx.progress.get(student.id)?.status || "unavailable"
+          : legacyEvaluation!.registrationStatus,
+        scheduleStatus: qd600Projection
+          ? ctx.completion.get(student.id)?.scheduleStatus || "unavailable"
+          : legacyEvaluation!.scheduleStatus,
+        academicWarningDecisions: qd600Projection
+          ? (ctx.decisions.get(student.id) || []).length
+          : legacyEvaluation!.academicWarningDecisions,
+        maxSeverity,
+        reasonCount,
+        dataError: qd600Projection ? qd600Projection.dataError : legacyEvaluation!.dataError,
+        businessStatus,
+        regulatoryCoverage: qd600Projection?.regulatoryCoverage || null,
+        ruleResults: (qd600Projection?.ruleResults || []) as unknown as Prisma.InputJsonValue,
       });
 
-      for (const reason of evalResult.reasons) {
+      for (const reason of persistedReasons) {
         reasonRows.push({
           id: crypto.randomUUID(),
           studentResultId,
@@ -883,9 +1450,9 @@ export class AcademicWarningsService {
       }
 
       // Accumulate counts
-      if (evalResult.reasonCount > 0) totalWarning++;
-      if (evalResult.maxSeverity === "medium") totalMedium++;
-      if (evalResult.maxSeverity === "high") totalHigh++;
+      if (reasonCount > 0) totalWarning++;
+      if (maxSeverity === "medium") totalMedium++;
+      if (maxSeverity === "high") totalHigh++;
 
       // Accumulate class groups
       if (student.classId) {
@@ -895,9 +1462,9 @@ export class AcademicWarningsService {
           groups.set(student.classId, group);
         }
         group.total++;
-        if (evalResult.reasonCount > 0) group.warnings++;
-        if (evalResult.maxSeverity === "medium") group.medium++;
-        if (evalResult.maxSeverity === "high") group.high++;
+        if (reasonCount > 0) group.warnings++;
+        if (maxSeverity === "medium") group.medium++;
+        if (maxSeverity === "high") group.high++;
       }
     }
 
@@ -917,8 +1484,9 @@ export class AcademicWarningsService {
       });
     }
 
+    let completedRun;
     try {
-      return await prisma.$transaction(async (tx) => {
+      completedRun = await prisma.$transaction(async (tx) => {
         if (studentRows.length) await tx.academicWarningStudentResult.createMany({ data: studentRows });
         if (reasonRows.length) await tx.academicWarningReason.createMany({ data: reasonRows });
         if (groupRows.length) await tx.academicWarningGroupResult.createMany({ data: groupRows });
@@ -945,6 +1513,10 @@ export class AcademicWarningsService {
       });
       throw error;
     }
+    if (runMode === "OFFICIAL" && data.syncInterventions !== false) {
+      await InterventionCasesService.syncInterventionCasesForRun(run.id);
+    }
+    return completedRun;
   }
 
   // ===================== Run Detail =====================
@@ -953,15 +1525,12 @@ export class AcademicWarningsService {
     const run = await prisma.academicWarningRun.findUnique({ where: { id: runId } });
     if (!run) return null;
 
-    const policy = run.policyId
-      ? await prisma.academicWarningPolicy.findUnique({ where: { id: run.policyId } })
-      : null;
-
     // Enrich with names
-    const [cohort, program, term] = await Promise.all([
+    const [cohort, program, term, policy] = await Promise.all([
       prisma.cohort.findUnique({ where: { id: run.cohortId } }),
       prisma.trainingProgram.findUnique({ where: { id: run.trainingProgramId } }),
       prisma.academicTerm.findUnique({ where: { id: run.assessmentAcademicTermId } }),
+      run.policyId ? prisma.academicWarningPolicy.findUnique({ where: { id: run.policyId } }) : null,
     ]);
 
     const scopedResults = allowedClassIds !== undefined && allowedClassIds !== null
@@ -980,15 +1549,9 @@ export class AcademicWarningsService {
       termCode: term?.sTermCode,
       isSummer: Boolean(term?.sIsSummer),
       runMode: run.runMode,
+      executionProfile: run.executionProfile,
       isOfficial: run.runMode === "OFFICIAL" && !term?.sIsSummer,
-      policy: policy ? {
-        id: policy.id,
-        name: policy.name,
-        version: policy.version,
-        termGpaThreshold: Number(policy.termGpaThreshold),
-        cumulativeGpaThreshold: Number(policy.cumulativeGpaThreshold),
-        conductScoreThreshold: Number(policy.conductScoreThreshold),
-      } : null,
+      policy: policy ? warningPolicyView(policy) : null,
       completionRunId: run.completionRunId,
       progressRunId: run.progressRunId,
       status: run.status,
@@ -999,7 +1562,7 @@ export class AcademicWarningsService {
       errorMessage: run.errorMessage,
       startedAt: run.startedAt,
       completedAt: run.completedAt,
-      sourceSnapshot: run.sourceSnapshot,
+      sourceSnapshot: sanitizeWarningSourceSnapshot(run.sourceSnapshot, allowedClassIds),
       sourceSnapshotHash: run.sourceSnapshotHash,
       sourceCapturedAt: run.sourceCapturedAt,
     };
@@ -1061,6 +1624,11 @@ export class AcademicWarningsService {
         maxSeverity: r.maxSeverity,
         reasonCount: r.reasonCount,
         dataError: r.dataError,
+        businessStatus: r.businessStatus,
+        regulatoryCoverage: r.regulatoryCoverage,
+        ruleResults: r.ruleResults,
+        dataStatus: warningDataStatusFromStored(r.dataError),
+        presentationState: r.businessStatus,
       })),
       total,
       page,
@@ -1099,6 +1667,11 @@ export class AcademicWarningsService {
       maxSeverity: result.maxSeverity,
       reasonCount: result.reasonCount,
       dataError: result.dataError,
+      businessStatus: result.businessStatus,
+      regulatoryCoverage: result.regulatoryCoverage,
+      ruleResults: result.ruleResults,
+      dataStatus: warningDataStatusFromStored(result.dataError),
+      presentationState: result.businessStatus,
       reasons: reasons.map((r) => ({
         id: r.id,
         reasonCode: r.reasonCode,
@@ -1108,6 +1681,145 @@ export class AcademicWarningsService {
         sourceType: r.sourceType,
         sourceId: r.sourceId,
       })),
+    };
+  }
+
+  static async getStudentOverview(studentIdentifier: string) {
+    const student = await prisma.student.findFirst({
+      where: { ...studentIdWhere(studentIdentifier), deletedAt: null },
+      select: { id: true },
+    });
+    if (!student) return null;
+
+    const [warningResults, warningActions, latestWarning] = await Promise.all([
+      prisma.academicWarningStudentResult.findMany({
+        where: { studentId: student.id },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.warningAction.findMany({
+        where: {
+          studentId: student.id,
+          OR: [{ caseType: null }, { caseType: { not: EARLY_WARNING_CASE_TYPE } }],
+        },
+        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+      }),
+      findLatestOfficialWarningResult(student.id),
+    ]);
+    const runIds = [...new Set([
+      ...warningResults.map((result) => result.runId),
+      ...(latestWarning ? [latestWarning.runId] : []),
+    ])];
+    const runs = runIds.length
+      ? await prisma.academicWarningRun.findMany({ where: { id: { in: runIds } } })
+      : [];
+    const runMap = new Map(runs.map((run) => [run.id, run]));
+    const termIds = [...new Set(runs.map((run) => run.assessmentAcademicTermId))];
+    const terms = termIds.length
+      ? await prisma.academicTerm.findMany({ where: { id: { in: termIds } } })
+      : [];
+    const termMap = new Map(terms.map((term) => [term.id, term]));
+    const academicYearIds = [...new Set(terms.map((term) => term.academicYearId))];
+    const academicYears = academicYearIds.length
+      ? await prisma.academicYear.findMany({
+          where: { id: { in: academicYearIds } },
+          select: { id: true, sYearCode: true },
+        })
+      : [];
+    const academicYearCodeById = new Map(academicYears.map((year) => [year.id, year.sYearCode]));
+    const reasons = latestWarning
+      ? await prisma.academicWarningReason.findMany({
+          where: { studentResultId: latestWarning.id },
+          orderBy: [{ severity: "asc" }, { reasonCode: "asc" }],
+        })
+      : [];
+    const dataStatus = latestWarning
+      ? warningDataStatusFromStored(latestWarning.dataError)
+      : "INSUFFICIENT";
+    const presentationState = latestWarning?.businessStatus || "INSUFFICIENT_DATA";
+    const visibleWarningResults = warningResults.filter((result, index, rows) => {
+      const run = runMap.get(result.runId);
+      if (!run) return true;
+      const key = `${run.runMode}:${run.assessmentAcademicTermId}`;
+      return rows.findIndex((candidate) => {
+        const candidateRun = runMap.get(candidate.runId);
+        return candidateRun
+          ? `${candidateRun.runMode}:${candidateRun.assessmentAcademicTermId}` === key
+          : false;
+      }) === index;
+    });
+
+    return {
+      studentId: student.id,
+      warningLevel: presentationState === "HIGH_RISK" || presentationState === "VERIFY_REQUIRED"
+        ? "red"
+        : presentationState === "MONITORING"
+          ? "yellow"
+          : presentationState === "PARTIAL_NO_RISK"
+            ? "partial"
+          : presentationState === "INSUFFICIENT_DATA"
+            ? "insufficient"
+            : "green",
+      dataStatus,
+      presentationState,
+      warningInfo: latestWarning ? {
+        id: latestWarning.id,
+        runId: latestWarning.runId,
+        maxSeverity: latestWarning.maxSeverity,
+        termGpa4: latestWarning.termGpa4 != null ? Number(latestWarning.termGpa4) : null,
+        cumulativeGpa4: latestWarning.cumulativeGpa4 != null ? Number(latestWarning.cumulativeGpa4) : null,
+        reasonCount: latestWarning.reasonCount,
+        dataError: latestWarning.dataError,
+        businessStatus: latestWarning.businessStatus,
+        regulatoryCoverage: latestWarning.regulatoryCoverage,
+        ruleResults: latestWarning.ruleResults,
+        dataStatus,
+        presentationState,
+      } : null,
+      warningHistory: visibleWarningResults.map((result) => {
+        const run = runMap.get(result.runId);
+        const term = run ? termMap.get(run.assessmentAcademicTermId) : null;
+        const itemDataStatus = warningDataStatusFromStored(result.dataError);
+        return {
+          id: result.id,
+          runId: result.runId,
+          maxSeverity: result.maxSeverity,
+          termGpa4: result.termGpa4 != null ? Number(result.termGpa4) : null,
+          cumulativeGpa4: result.cumulativeGpa4 != null ? Number(result.cumulativeGpa4) : null,
+          registrationStatus: result.registrationStatus,
+          scheduleStatus: result.scheduleStatus,
+          academicWarningDecisions: result.academicWarningDecisions,
+          reasonCount: result.reasonCount,
+          dataError: result.dataError,
+          businessStatus: result.businessStatus,
+          regulatoryCoverage: result.regulatoryCoverage,
+          ruleResults: result.ruleResults,
+          dataStatus: itemDataStatus,
+          presentationState: result.businessStatus,
+          createdAt: result.createdAt,
+          academicTermId: term?.id || null,
+          termCode: term?.sTermCode || null,
+          termName: term?.sTermName || null,
+          academicYear: term ? academicYearCodeById.get(term.academicYearId) || null : null,
+          runMode: run?.runMode || "OFFICIAL",
+          executionProfile: run?.executionProfile || "LEGACY_SCALAR_RULES",
+          isSummer: Boolean(term?.sIsSummer),
+          evaluationLabel: run?.runMode === "SUMMER_MONITORING"
+            ? "Giám sát kỳ hè, tham khảo"
+            : term?.sIsSummer
+              ? "Đánh giá kỳ phụ, tham khảo"
+              : "Kết quả kỳ chính thức",
+        };
+      }),
+      warningReasons: reasons.map((reason) => ({
+        id: reason.id,
+        reasonCode: reason.reasonCode,
+        severity: reason.severity,
+        title: reason.title,
+        details: reason.details,
+        sourceType: reason.sourceType,
+        sourceId: reason.sourceId,
+      })),
+      warningActions,
     };
   }
 

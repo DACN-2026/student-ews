@@ -91,7 +91,20 @@ export function requiredPermission(pathname: string, method: string): string | s
   }
   if (pathname.startsWith("/api/v1/academic-warnings")) {
     if (pathname.includes("/policies") && method !== "GET") return "academic_warning.policy.manage";
+    if (pathname.endsWith("/reconcile") && method === "POST") return "academic_warning.calculate";
+    if (pathname.includes("/terms/") && pathname.endsWith("/retry") && method === "POST") {
+      return "academic_warning.calculate";
+    }
     if (pathname.includes("/runs") && method === "POST") return "academic_warning.calculate";
+    if (pathname.includes("/interventions/")) {
+      if (pathname.includes("/assignment") && (method === "PATCH" || method === "PUT")) {
+        return "academic_warning.case.assign";
+      }
+      if (pathname.includes("/activities") && method === "POST") return "academic_warning.action.create";
+      if ((pathname.includes("/status") || pathname.includes("/follow-up")) && (method === "PATCH" || method === "PUT")) {
+        return "academic_warning.action.update";
+      }
+    }
     if (pathname.includes("/actions") && method === "POST") return "academic_warning.action.create";
     if (pathname.includes("/actions") && (method === "PATCH" || method === "PUT")) {
       return "academic_warning.action.update";
@@ -119,7 +132,9 @@ export function hasInvalidUuidSegment(pathname: string): boolean {
     /^\/api\/v1\/training-progress\/completion\/runs\/([^/]+)/,
     /^\/api\/v1\/training-progress\/completion-runs\/([^/]+)/,
     /^\/api\/v1\/academic-warnings\/runs\/([^/]+)/,
+    /^\/api\/v1\/academic-warnings\/terms\/([^/]+)/,
     /^\/api\/v1\/academic-warnings\/actions\/([^/]+)/,
+    /^\/api\/v1\/academic-warnings\/interventions\/(?!summary(?:\/|$))([^/]+)/,
     /^\/api\/v1\/graduation-evaluations\/([^/]+)/,
     /^\/api\/v1\/rbac\/(?:users|roles|advisors|advisor-assignments)\/([^/]+)/,
   ];

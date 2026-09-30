@@ -4,6 +4,7 @@ import { jsonResponse, errorResponse, parsePagination } from "@/lib/utils/api-re
 import { requirePermission } from "@/lib/auth/authorize";
 import { inaccessibleStudentTargetIndexes, studentScopeWhere } from "@/lib/auth/data-scope";
 import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { hasPermission } from "@/lib/auth/types";
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,6 +21,11 @@ export async function GET(req: NextRequest) {
       return errorResponse("is_in_class must be true or false", "INVALID_REQUEST", 400);
     }
 
+    const canReadWarnings = hasPermission(auth.actor, "academic_warning.read");
+    const warningLevel = searchParams.get("warningLevel") || undefined;
+    if (warningLevel && !canReadWarnings) {
+      return errorResponse("academic_warning.read is required for warning filters", "FORBIDDEN", 403);
+    }
     const filter = {
       search: searchParams.get("q") || searchParams.get("search") || undefined,
       cohortId: searchParams.get("cohortId") || searchParams.get("cohort_id") || undefined,
@@ -28,10 +34,16 @@ export async function GET(req: NextRequest) {
       studyProgramId: searchParams.get("studyProgramId") || undefined,
       classRoleId: classRoleValue === null ? undefined : Number(classRoleValue),
       isInClass: inClassValue === null ? undefined : inClassValue === "true",
-      warningLevel: searchParams.get("warningLevel") || undefined,
+      warningLevel,
     };
 
-    const result = await StudentsService.list(filter, page, pageSize, await studentScopeWhere(auth.actor));
+    const result = await StudentsService.list(
+      filter,
+      page,
+      pageSize,
+      await studentScopeWhere(auth.actor),
+      canReadWarnings,
+    );
     return jsonResponse(result);
   } catch (err) {
     console.error("List students error:", err);

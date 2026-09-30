@@ -34,6 +34,7 @@ interface StudentItem {
 export default function StudentsPage() {
   const router = useRouter();
   const { user, can, status } = useAuthStore();
+  const canReadWarnings = can("academic_warning.read");
 
   const isClassAdvisor = user?.role === "CLASS_ADVISOR";
   const isFacultyBoard = user?.role === "FACULTY_BOARD";
@@ -138,7 +139,7 @@ export default function StudentsPage() {
       if (filterClass !== "all") params.set("classStudentId", filterClass);
       if (filterGender !== "all") params.set("gender", filterGender);
       if (filterInClass !== "all") params.set("isInClass", filterInClass === "true" ? "true" : "false");
-      if (filterWarning !== "all") params.set("warningLevel", filterWarning);
+      if (canReadWarnings && filterWarning !== "all") params.set("warningLevel", filterWarning);
 
       const res = await apiFetch(`/api/v1/students?${params.toString()}`);
       if (res.ok) {
@@ -161,7 +162,7 @@ export default function StudentsPage() {
           isInClass: s.bIsInClass !== undefined ? s.bIsInClass : s.isInClass !== undefined ? s.isInClass : true,
           birthPlace: s.birthPlace || s.sBirthPlace || "",
           permanentResidence: s.permanentResidence || s.sPermanentResidence || "",
-          warningLevel: (s.warningLevel || "green") as WarningLevel,
+          warningLevel: (s.warningLevel || "insufficient") as WarningLevel,
         }));
         setStudents(items);
         setTotal(json.total || items.length);
@@ -171,7 +172,7 @@ export default function StudentsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, search, filterClass, filterGender, filterInClass, filterWarning]);
+  }, [page, pageSize, search, filterClass, filterGender, filterInClass, filterWarning, canReadWarnings]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void fetchStudents(), 0);
@@ -410,12 +411,12 @@ export default function StudentsPage() {
         </span>
       ),
     },
-    {
+    ...(canReadWarnings ? [{
       key: "warningLevel",
       title: "Mức cảnh báo",
       width: 140,
-      render: (v) => <WarningBadge level={v || "green"} />,
-    },
+      render: (v: WarningLevel) => <WarningBadge level={v || "insufficient"} />,
+    } as Column<StudentItem>] : []),
     {
       key: "actions",
       title: "Thao tác",
@@ -645,7 +646,7 @@ export default function StudentsPage() {
         </select>
 
         {/* Warning Level Filter */}
-        <select
+        {canReadWarnings && <select
           value={filterWarning}
           onChange={(e) => {
             setFilterWarning(e.target.value);
@@ -657,7 +658,9 @@ export default function StudentsPage() {
           <option value="red">🔴 Nguy cơ cao (Đỏ)</option>
           <option value="yellow">🟡 Cần lưu ý (Vàng)</option>
           <option value="green">🟢 Bình thường</option>
-        </select>
+          <option value="partial">🔵 Đã đánh giá một phần</option>
+          <option value="insufficient">⚪ Chưa đủ dữ liệu</option>
+        </select>}
       </FilterBar>
 
       {/* Students Data Table */}

@@ -23,6 +23,10 @@ export async function GET(req: NextRequest) {
     } catch (error) {
       throw new ApiError(error instanceof Error ? error.message : "Invalid export parameter", "INVALID_EXPORT_PARAMETER", 400);
     }
+    if (["warnings", "support", "student-profile"].includes(type)) {
+      const warningAuth = await requirePermission("academic_warning.read", req);
+      if (!warningAuth.authorized) return warningAuth.response;
+    }
     if (format === "pdf" && !["warnings", "student-profile"].includes(type)) {
       throw new ApiError("PDF is supported for warnings and student-profile", "UNSUPPORTED_EXPORT_COMBINATION", 400);
     }

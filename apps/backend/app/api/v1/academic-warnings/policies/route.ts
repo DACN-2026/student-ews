@@ -23,6 +23,8 @@ export async function POST(req: NextRequest) {
     const body = await readJsonBody<{
       name?: string;
       policyName?: string;
+      policyDefinition?: unknown;
+      definition?: unknown;
       termGpaThreshold?: number;
       cumulativeGpaThreshold?: number;
       conductScoreThreshold?: number;
@@ -36,5 +38,27 @@ export async function POST(req: NextRequest) {
     return jsonResponse(created, 201);
   } catch (err) {
     return apiErrorResponse(err, "Failed to create warning policy");
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const auth = await requirePermission("academic_warning.policy.manage", req);
+    if (!auth.authorized) return auth.response;
+    const body = await readJsonBody<{
+      id?: string;
+      name?: string;
+      policyDefinition?: unknown;
+      definition?: unknown;
+      termGpaThreshold?: number;
+      cumulativeGpaThreshold?: number;
+      conductScoreThreshold?: number;
+      status?: string;
+    }>(req);
+    if (!body.id) return errorResponse("id is required", "INVALID_REQUEST", 400);
+    const updated = await AcademicWarningsService.updatePolicy(body.id, body, auth.actor.userId);
+    return jsonResponse(updated);
+  } catch (err) {
+    return apiErrorResponse(err, "Failed to update warning policy");
   }
 }

@@ -31,6 +31,7 @@ export default function AcademicsPage() {
   const [years, setYears] = useState<ApiData[]>([]);
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const [terms, setTerms] = useState<ApiData[]>([]);
+  const [finalizingTermId, setFinalizingTermId] = useState<string | null>(null);
   const [programs, setPrograms] = useState<ApiData[]>([]);
   const [courses, setCourses] = useState<ApiData[]>([]);
   const [classes, setClasses] = useState<ApiData[]>([]);
@@ -203,6 +204,33 @@ export default function AcademicsPage() {
       }
     } catch {
       alert("Lỗi khi thêm học kỳ");
+    }
+  };
+
+  const handleFinalizeTermGrades = async (term: ApiData) => {
+    if (!selectedYearId || !term.id || term.isSummer || term.bIsSummer) return;
+    const label = `${term.sTermCode || term.termCode} - ${term.sTermName || term.termName}`;
+    if (!window.confirm(`Xác nhận đã chốt điểm ${label}? Hệ thống sẽ tự động chạy cảnh báo học tập cho toàn bộ phạm vi áp dụng.`)) return;
+    try {
+      setFinalizingTermId(String(term.id));
+      const response = await apiFetch(`/api/v1/academic-years/${selectedYearId}/terms/${term.id}/finalize-grades`, {
+        method: "POST",
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.error?.message || "Không thể xác nhận chốt điểm học kỳ");
+      const termsResponse = await apiFetch(`/api/v1/academic-years/${selectedYearId}/terms`);
+      if (termsResponse.ok) {
+        const json = await termsResponse.json();
+        setTerms(json.items || json || []);
+      }
+      const evaluation = data?.evaluation;
+      alert(evaluation?.failed
+        ? `Đã chốt điểm. Đánh giá tự động còn ${evaluation.failed} phạm vi chưa thành công; có thể chạy lại an toàn tại trang Cảnh báo học tập.`
+        : `Đã chốt điểm và hoàn tất đánh giá tự động cho ${evaluation?.scopeCount || 0} phạm vi nội bộ.`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Không thể xác nhận chốt điểm học kỳ");
+    } finally {
+      setFinalizingTermId(null);
     }
   };
 
@@ -705,12 +733,14 @@ export default function AcademicsPage() {
                         <th className="py-3 px-4">Kỳ hè</th>
                         <th className="py-3 px-4">Hiện tại</th>
                         <th className="py-3 px-4">Trạng thái</th>
+                        <th className="py-3 px-4">Chốt điểm</th>
+                        <th className="py-3 px-4 text-right">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {terms.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="py-8 text-center text-slate-400">
+                          <td colSpan={8} className="py-8 text-center text-slate-400">
                             Năm học này chưa có học kỳ nào được thiết lập.
                           </td>
                         </tr>
@@ -719,7 +749,7 @@ export default function AcademicsPage() {
                           <Fragment key={t.id}>
                             {(index === 0 || Boolean(terms[index - 1]?.isSummer) !== Boolean(t.isSummer)) && (
                               <tr className={t.isSummer ? "bg-amber-50/70" : "bg-slate-50/70"}>
-                                <td colSpan={6} className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider ${t.isSummer ? "text-amber-800" : "text-slate-500"}`}>
+                                <td colSpan={8} className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider ${t.isSummer ? "text-amber-800" : "text-slate-500"}`}>
                                   {t.isSummer ? "Kỳ phụ" : "Học kỳ chính"}
                                 </td>
                               </tr>
@@ -750,6 +780,32 @@ export default function AcademicsPage() {
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
                                   {t.status || "Đang mở"}
                                 </span>
+                              </td>
+                              <td className="py-3.5 px-4">
+                                {t.isSummer || t.bIsSummer ? (
+                                  <span className="text-[11px] text-slate-400">Không áp dụng</span>
+                                ) : t.gradesFinalizedAt ? (
+                                  <span className="inline-flex flex-col text-[11px] font-semibold text-emerald-700">
+                                    <span>Đã chốt điểm</span>
+                                    <span className="font-normal text-slate-400">{new Date(t.gradesFinalizedAt).toLocaleString("vi-VN")}</span>
+                                  </span>
+                                ) : (
+                                  <span className="text-[11px] text-amber-700">Chưa chốt</span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                {can("academic_term.manage") && !(t.isSummer || t.bIsSummer) && (
+                                  <button
+                                    type="button"
+                                    disabled={finalizingTermId === t.id}
+                                    onClick={() => void handleFinalizeTermGrades(t)}
+                                    className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    {finalizingTermId === t.id
+                                      ? "Đang xử lý..."
+                                      : t.gradesFinalizedAt ? "Chạy lại an toàn" : "Xác nhận đã chốt điểm"}
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           </Fragment>

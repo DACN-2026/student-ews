@@ -46,21 +46,30 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await readJsonBody<Record<string, any>>(req, 256 * 1024);
-    if (!body.cohortId || !body.trainingProgramId || !body.assessmentAcademicTermId) {
-      return errorResponse("cohortId, trainingProgramId, and assessmentAcademicTermId are required", "INVALID_REQUEST", 400);
+    if (!body.cohortId || !body.trainingProgramId) {
+      return errorResponse("cohortId and trainingProgramId are required", "INVALID_REQUEST", 400);
     }
+    const permission = await requirePermission("academic_warning.calculate", req);
+    if (!permission.authorized) return permission.response;
+    const resolvedTerm = await AcademicWarningsService.resolveRunAssessmentTerm({
+      assessmentAcademicTermId: body.assessmentAcademicTermId,
+      runMode: body.runMode,
+    });
     const auth = await requireProgressScopePermission(req, {
       cohortId: body.cohortId,
       trainingProgramId: body.trainingProgramId,
-      academicTermId: body.assessmentAcademicTermId,
+      academicTermId: resolvedTerm.assessmentTerm.id,
     }, "academic_warning.calculate");
     if (!auth.authorized) return auth.response;
     const run = await AcademicWarningsService.createRun({
       cohortId: body.cohortId,
       trainingProgramId: body.trainingProgramId,
       assessmentAcademicTermId: body.assessmentAcademicTermId,
+      expectedAssessmentAcademicTermId: resolvedTerm.assessmentTerm.id,
       createdBy: auth.actor.userId,
       runMode: body.runMode,
+      executionProfile: body.executionProfile,
+      policyId: body.policyId,
     });
     return jsonResponse(run, 201);
   } catch (err) {

@@ -1,7 +1,7 @@
 # Kiến trúc hệ thống theo dõi và cảnh báo sớm sinh viên
 
 **Dự án:** SEWS — Student Early Warning System, Khoa Công nghệ Thông tin, Trường Đại học Đà Lạt.  
-**Phiên bản:** 4.4 - 20/09/2026.
+**Phiên bản:** 4.5 - 29/09/2026.
 
 SEWS tập trung dữ liệu sinh viên để hỗ trợ cán bộ quản lý và cố vấn học tập phát hiện trường hợp cần theo dõi, tìm hiểu nguyên nhân và ghi nhận hỗ trợ. Kiến trúc gồm nền tảng học vụ, phần rèn luyện và hướng nghiên cứu dự báo nguy cơ học vụ bằng học máy. Chức năng tham gia hoạt động không nằm trong phạm vi sản phẩm vì chưa có nguồn dữ liệu chính thức.
 
@@ -49,7 +49,7 @@ Quyết định cảnh báo cũ có thể là dấu hiệu cần theo dõi, như
 | Hoạt động | Không có nguồn dữ liệu chính thức; không triển khai giao diện/API | Ngoài phạm vi phiên bản hiện tại |
 | Hỗ trợ | Có `WarningAction`, API đọc/tạo | Hồ sơ, người phụ trách, chuyển trạng thái có kiểm soát |
 | Học máy | Chưa có pipeline, mô hình, kho dự báo | Nghiên cứu và tích hợp theo S2 |
-| Báo cáo, nhập/xuất | Báo cáo cảnh báo live chọn kỳ đủ độ phủ; giao diện xuất CSV; một số API `export` trả JSON | Báo cáo đa nguồn và file XLSX/PDF đúng định dạng theo S1 |
+| Báo cáo, nhập/xuất | Báo cáo cảnh báo đọc kết quả `AcademicWarningRun` đã lưu; xuất XLSX/PDF có kiểm soát quyền | Tiếp tục chuẩn hóa báo cáo đa nguồn theo S1 |
 | Đồng bộ, thông báo tự động | Có API/script nhập; chưa có scheduler/dịch vụ gửi vận hành | Bổ sung khi nguồn và quy trình được xác nhận |
 
 Sinh viên, phụ huynh chưa có cổng đăng nhập riêng. Việc lấy dữ liệu đào tạo, CTSV, Đoàn–Hội cần nguồn được đơn vị quản lý cung cấp; không giả định đã có API tích hợp trực tiếp.
@@ -263,45 +263,33 @@ Các trị số 150/104/46, nhóm A6/A7/B2/B3 và mã 20CT4201/20CT4202 chỉ đ
 
 ## 7. Bộ máy cảnh báo hiện tại
 
-### 7.1 Cảnh báo theo đợt chạy
+Đây là bộ máy quy tắc nghiệp vụ, không phải mô hình AI hay dự báo xác suất.
 
-[academic-warnings.ts](../apps/backend/lib/services/academic-warnings.ts) lấy chính sách active phiên bản mới nhất, CTĐT, khóa, kỳ xét. Cần có đợt đối chiếu đăng ký hoàn tất của kế hoạch hiện hành đã khóa và đợt hoàn thành cùng phạm vi. GPA lấy đúng kỳ/chương trình; quyết định nguồn lấy đến kỳ xét.
+### 7.1 Tín hiệu chốt điểm và điều kiện kích hoạt
 
-`AcademicWarningPolicy` chứa `termGpaThreshold`, `cumulativeGpaThreshold` trong thang 0–4, có phiên bản/trạng thái. Tạo active mới sẽ lưu trữ active cũ. Chưa có bảng quy tắc cấu hình tổng quát mọi toán tử, nguồn và mức độ.
+`AcademicTerm.gradesFinalizedAt` là tín hiệu có thẩm quyền cho biết điểm của một học kỳ đã được chốt. Kỳ chính chỉ đủ điều kiện đánh giá tự động khi trường này có giá trị; GPA hoặc độ phủ dữ liệu không được dùng để suy đoán trạng thái chốt điểm. Kỳ hè (`sIsSummer = true`) luôn nằm ngoài luồng cảnh báo sớm học vụ bình thường.
 
-| Mã nguyên nhân | Điều kiện trong `evaluate()` | Mức |
-| --- | --- | --- |
-| `REGISTRATION_BEHIND` | Đối chiếu đăng ký là `fail` | `medium` |
-| `PROGRAM_PROGRESS_BEHIND` | Tiến độ `behind_schedule` | `high` |
-| `LOW_TERM_GPA` | GPA kỳ hệ 4 nhỏ hơn ngưỡng chính sách | `medium` |
-| `LOW_CUMULATIVE_GPA` | GPA tích lũy hệ 4 nhỏ hơn ngưỡng | `high` |
-| `ACADEMIC_WARNING_DECISION` | Có quyết định cảnh báo nguồn đến kỳ xét | `high` |
+Người có quyền `academic_term.manage` có thể dùng thao tác **Xác nhận đã chốt điểm học kỳ** tại quản lý đào tạo. Ngoài ra, khi báo cáo chưa có kết quả, `faculty_manager` có quyền `academic_warning.calculate` được chọn một kỳ chính và phải xác nhận rõ điểm đã chốt trước khi khởi tạo đánh giá trong phạm vi khoa. API dùng cùng `AcademicWarningAutomationService`, ghi thời điểm chốt và audit `academic_term.grades_finalize`; không tự chọn hoặc suy đoán kỳ đã chốt. Gọi lại cùng thao tác không đổi thời điểm đã lưu và chỉ thử lại những phạm vi chưa hoàn tất hoặc đã thất bại.
 
-Mức chung là cao nhất: `none` → Xanh, `medium` → Vàng, `high` → Đỏ. Không tính ARI và không có Cam. Ngưỡng GPA là chính sách theo dõi nội bộ, không tự gán là ngưỡng chính thức của trường.
+Khi có tích hợp với hệ thống đào tạo nguồn, tích hợp đó phải thiết lập cùng tín hiệu `gradesFinalizedAt` và gọi cùng `AcademicWarningAutomationService`; không xây thêm một điều kiện kích hoạt dựa trên GPA hay một bộ máy đánh giá song song.
 
-Reason lưu mã, tiêu đề, mức, `details`, `sourceType`, `sourceId`; reason GPA liên kết trực tiếp tới `StudentTermSummary` hoặc `StudentCumulativeSummary`. Run lưu snapshot đầu vào, hash SHA-256 và thời điểm chụp, bao gồm policy, nguồn tiến độ/hoàn thành, GPA và quyết định để tái hiện lịch sử.
+### 7.2 Điều phối QĐ600 và đợt đánh giá
 
-Thiếu tổng hợp kỳ được ghi vào `dataError`; GPA `null` không kích hoạt so sánh. `maxSeverity=none` có thể đi cùng thiếu dữ liệu: UI/báo cáo phải thể hiện riêng, tránh coi Xanh là đã xác nhận an toàn.
+[academic-warning-automation.ts](../apps/backend/lib/services/academic-warning-automation.ts) là lớp điều phối mỏng. Lớp này tìm chính sách QĐ600 Điều 18, lấy danh sách UUID khóa học từ `regulatory.applicableCohortIds`, rồi tự suy ra các cặp khóa–CTĐT có sinh viên thực tế. Cặp khóa–CTĐT còn phải tồn tại trong `TrainingProgressPlan`, là quan hệ CTĐT đã cấu hình cho khóa; cặp không phù hợp bị từ chối trước khi tạo run. Mã khóa như K46–K49 không được phân tích hoặc suy luận tại thời điểm chạy, và người dùng không phải chọn khóa hay CTĐT.
 
-### 7.2 Báo cáo cảnh báo live và kỳ thống kê
+Mỗi cặp phạm vi được chuyển cho [academic-warnings.ts](../apps/backend/lib/services/academic-warnings.ts) để dùng lại `AcademicWarningRun`, bộ đánh giá QĐ600 hiện có, snapshot đầu vào và hash SHA-256. Phiên bản hiện tại là **đánh giá một phần Điều 18**: giữ nguyên các tiêu chí, ngưỡng, bằng chứng và các khả năng chưa hỗ trợ đã khai báo trong chính sách; không diễn giải thành đánh giá đầy đủ toàn bộ QĐ600.
 
-Trang báo cáo hiện không đọc `AcademicWarningStudentResult` để dựng toàn bộ thống kê. [reports.ts](../apps/backend/lib/services/reports.ts) tính trực tiếp từ `StudentTermSummary` và quyết định cảnh báo của đúng kỳ báo cáo. Báo cáo live hiện có ba nguyên nhân: `LOW_TERM_GPA`, `LOW_CUMULATIVE_GPA` và `ACADEMIC_WARNING_DECISION`; chưa bao gồm hai nguyên nhân tiến độ của bộ máy theo run.
+Đợt `OFFICIAL` đã `completed` không bị ghi đè và đợt đang `running` không được tạo trùng. Đợt `failed` hoặc phạm vi chưa có kết quả có thể chạy lại an toàn. Khóa giao dịch theo kỳ–khóa–CTĐT bảo vệ thao tác đồng thời khỏi tạo hai đợt chính thức.
 
-Kỳ báo cáo tự động trước hết loại mọi kỳ có `sIsSummer = true`, sau đó chọn theo độ phủ GPA học kỳ. Hệ thống ưu tiên kỳ chính gần nhất có GPA học kỳ của ít nhất 80% sinh viên trong phạm vi (`MIN_REPORTING_TERM_GPA_COVERAGE = 0.8`). Nếu chưa kỳ chính nào đạt 80%, hệ thống dùng kỳ chính gần nhất có ít nhất một bản ghi GPA học kỳ; kỳ hoàn toàn chưa có GPA không được chọn. Người dùng vẫn có thể chọn kỳ hè thủ công, nhưng response và giao diện bắt buộc gắn nhãn số liệu mô tả, tỷ lệ tham gia và cảnh báo rằng đây không phải kết quả xếp hạng độc lập.
+Kết quả từng sinh viên có đúng một trạng thái nghiệp vụ: `NORMAL`, `MONITORING`, `HIGH_RISK`, `VERIFY_REQUIRED` hoặc `INSUFFICIENT_DATA`. Các trạng thái này cùng lý do và nguồn bằng chứng được lưu trong `AcademicWarningStudentResult`; báo cáo không tính lại quy tắc từ GPA. Mục tiêu vận hành là phát hiện sớm trường hợp đang tiến gần hoặc cần xác minh đã chạm các ngưỡng tại khoản 1 Điều 18 để Khoa và Cố vấn học tập can thiệp trước khi phát sinh cảnh báo chính thức; hệ thống không tự ban hành quyết định cảnh báo hoặc buộc thôi học.
 
-Báo cáo bắt buộc dùng `AcademicWarningPolicy` active có phiên bản. Không còn ngưỡng dự phòng viết trong mã; nếu chưa có policy, API trả lỗi cấu hình `WARNING_POLICY_REQUIRED`. Seed tạo policy demo phiên bản 1 cùng người kích hoạt và audit. Nếu một sinh viên thỏa nhiều điều kiện, Đỏ ưu tiên hơn Vàng.
+### 7.3 Báo cáo, phạm vi dữ liệu và can thiệp
 
-`dashboard.ts` dùng cùng `ReportsService` cho số lượng và danh sách cảnh báo live, nhưng dùng kết quả run gần nhất cho trạng thái đăng ký/tiến độ. Khi có bộ lọc kỳ, cả hai nguồn dùng đúng kỳ được chọn; khi không lọc, dashboard neo vào kỳ báo cáo gần nhất đủ độ phủ. Response `dataContext` và giao diện ghi rõ mode, policy, kỳ, run ID và cutoff nên không xem các nguồn là một snapshot duy nhất.
+[reports.ts](../apps/backend/lib/services/reports.ts) chỉ tổng hợp kết quả đã lưu của đợt `OFFICIAL` hoàn tất. Bộ lọc báo cáo không cung cấp học kỳ hè. Nếu chưa có đợt hoàn tất, giao diện giữ trạng thái rõ ràng “Chưa có đợt đánh giá cảnh báo học tập nào được hoàn tất”, không tạo kết quả giả từ danh sách sinh viên.
 
-Các việc cần chuẩn hóa:
+Cán bộ khoa xem kết quả toàn khoa theo các CTĐT thuộc khoa. Cố vấn học tập chỉ xem sinh viên trong các lớp đang được phân công và không có quyền chạy đánh giá. Khi chưa có run, thao tác **Khởi tạo đánh giá** yêu cầu chọn kỳ chính và xác nhận chốt điểm; sau khi đã có run, thao tác đổi thành **Chạy lại đánh giá**. Cả hai chỉ dành cho người có quyền `academic_warning.calculate`, và hệ thống tự xác định phạm vi nội bộ.
 
-- Gắn cutoff, kỳ, khóa, CTĐT, chế độ tính; không lấy forecast để khẳng định hoàn thành thực tế.
-- Hoàn thiện cách chọn đợt phụ thuộc, snapshot và nguồn lý do.
-- Xử lý riêng thiếu tiến độ, hoàn thành, GPA và quyết định chưa gắn kỳ.
-- Giữ rõ nhãn kỳ thống kê và độ phủ dữ liệu; không tự chuyển sang kỳ hiện tại chỉ vì kỳ đó được đánh dấu `isCurrent`.
-- Thay ngưỡng dự phòng 2,0 viết trong mã bằng chính sách được kích hoạt, hoặc cấu hình fallback có phiên bản và audit rõ ràng.
-- Ghi rõ báo cáo live và cảnh báo theo run là hai chế độ khác nhau; nếu hợp nhất thì phải dùng cùng kỳ, scope, policy và cutoff.
-- Khi dashboard cho phép lọc kỳ, truyền kỳ đó vào nguồn cảnh báo hoặc hiển thị riêng kỳ thực tế của từng khối số liệu.
+Sau khi một đợt chính thức hoàn tất, quy trình can thiệp hiện có chỉ tạo hoặc cập nhật hồ sơ cho `HIGH_RISK` và `VERIFY_REQUIRED`. Trạng thái hồ sơ hỗ trợ vẫn độc lập với trạng thái cảnh báo học vụ; hoàn tất hỗ trợ không tự xóa kết quả cảnh báo đã lưu.
 
 ## 8. Rèn luyện và dữ liệu hoạt động ngoài phạm vi
 
@@ -326,15 +314,15 @@ Kỳ hè là kỳ phụ có dữ liệu vận hành riêng. Hệ thống xác đ
 | R1 | Dữ liệu kỳ hè lưu riêng và giữ `sIsSummer = true`; không trộn hoặc xóa bản ghi nguồn. |
 | R2 | Kết quả học tập hè thuộc kỳ chính ngay trước khi xếp hạng. Hệ thống chỉ hiển thị quan hệ và trạng thái nguồn; chưa tự cộng GPA khi chưa xác nhận Portal đã gộp hay chưa. |
 | R3 | Nội dung rèn luyện hè hướng tới kỳ chính tiếp theo. Điểm nguồn hè không được phân loại thành kết quả chính thức riêng. |
-| R4 | Run `OFFICIAL` từ kỳ hè bị từ chối. `SUMMER_MONITORING` chỉ tạo tín hiệu hỗ trợ từ kết quả chờ hoặc học phần chưa đạt. |
+| R4 | Kỳ hè hoàn toàn nằm ngoài luồng Cảnh báo sớm học vụ bình thường; không thể tạo run `OFFICIAL`, không được kích hoạt khi chốt điểm và không có thao tác chạy từ giao diện. |
 | R5 | Không tạo `TrainingProgressPlan` cho kỳ hè. Completion reconciliation có thể chạy tại cutoff hè và dùng học phần đạt trong hè làm bằng chứng cho milestone gốc. |
-| R6 | Chọn kỳ báo cáo tự động luôn loại kỳ hè trước khi xét độ phủ. |
-| R7 | Bộ lọc cho phép chọn kỳ hè thủ công nhưng phải hiển thị nhãn kỳ phụ, số người tham gia và độ phủ. |
+| R6 | Báo cáo cảnh báo chỉ đọc kết quả đã lưu của kỳ chính có run `OFFICIAL` hoàn tất. |
+| R7 | Bộ lọc Cảnh báo sớm học vụ không hiển thị hoặc chấp nhận kỳ hè. |
 | R8 | GPA hè thô là điểm mô tả tách biệt; đường xu hướng chính chỉ nối các kỳ chính. |
 | R9 | Kỳ hè có thể là `isCurrent` cho vận hành, nhưng `getCurrentAcademicContext()` trả thêm `defaultReportingTerm` là kỳ chính. |
 | R10 | Liên kết kỳ dựa trên ID và thời gian cấu hình, không dựa riêng vào mã kỳ. |
 
-`SUMMER_MONITORING` không áp dụng tiêu chí thiếu tín chỉ đăng ký tối thiểu, GPA hè độc lập, quyết định cảnh báo cũ hoặc phân loại rèn luyện. Migration `20260920090000_summer_term_semantics` thêm `AcademicWarningRun.runMode` và đánh dấu run lịch sử trên kỳ hè là `LEGACY_SUMMER` để giao diện hiển thị là tham khảo.
+`SUMMER_MONITORING` và `LEGACY_SUMMER` chỉ được giữ trong mô hình dữ liệu để tương thích lịch sử; chúng không thuộc luồng vận hành Cảnh báo sớm học vụ hiện tại và không được giao diện mới tạo hoặc báo cáo như kết quả chính thức.
 
 ## 9. Kiến trúc học máy đề xuất — hoãn sau báo cáo đồ án
 

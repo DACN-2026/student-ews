@@ -49,6 +49,7 @@ const permissions = [
   ["academic_warning.policy.manage", "Quản lý chính sách cảnh báo", "academic_warning_policy", "manage"],
   ["academic_warning.action.create", "Tạo hồ sơ hỗ trợ", "academic_warning_action", "create"],
   ["academic_warning.action.update", "Cập nhật hồ sơ hỗ trợ", "academic_warning_action", "update"],
+  ["academic_warning.case.assign", "Phân công hồ sơ can thiệp", "academic_warning_case", "assign"],
   ["report.export", "Xuất báo cáo", "report", "export"],
   ["user.manage", "Quản lý tài khoản", "user", "manage"],
   ["role.manage", "Quản lý vai trò và quyền", "role", "manage"],
@@ -99,6 +100,7 @@ async function seedRbac() {
     "academic_warning.calculate",
     "academic_warning.action.create",
     "academic_warning.action.update",
+    "academic_warning.case.assign",
     "report.export",
   ]);
 

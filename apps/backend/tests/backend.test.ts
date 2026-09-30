@@ -2,8 +2,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import { createRequire } from "node:module";
 import { NextRequest } from "next/server";
-import { evaluate, evaluateSummerMonitoring } from "../lib/services/academic-warnings";
+import {
+  evaluateAcademicWarning,
+  evaluateSummerMonitoring,
+  warningPresentationState,
+} from "../lib/services/academic-warning-rules";
 import {
   applyElectiveThreshold,
   evaluateCompletionPlan,
@@ -14,14 +19,21 @@ import { checkLoginAttempt, clearLoginFailures, loginAttemptKey, recordLoginFail
 import { gradeImportRowKey, GradesService, parseCredits, parseDecimal, parseScore10, parseScore4 } from "../lib/services/grades";
 import { parsePagination } from "../lib/utils/api-response";
 import { AuthService } from "../lib/services/auth";
-import { buildWarningTrend, selectLatestReportingPeriod, summarizeWarningTrend } from "../lib/services/reports";
+import { selectLatestReportingPeriod, summarizePersistedWarningResults } from "../lib/services/reports";
 import { POST as loginRoute } from "../app/api/v1/auth/login/route";
 import { POST as refreshRoute } from "../app/api/v1/auth/refresh/route";
 import { signAccessToken } from "../lib/auth/jwt";
 import { assertWarningActionTransition, parseWarningActionStatus } from "../lib/services/warning-actions";
 import { ApiError } from "../lib/utils/api-error";
 import { classifyConductScore, conductApproval, isSummerConductTerm } from "../lib/services/conduct";
-import { buildAcademicTermLinks, isConfiguredSummerTermCode, latestMainTerm } from "../lib/academic-terms";
+import {
+  ACADEMIC_TERM_CAPABILITIES,
+  areConsecutiveMainTerms,
+  buildAcademicTermLinks,
+  isConfiguredSummerTermCode,
+  latestMainTerm,
+  normalizeAcademicTerms,
+} from "../lib/academic-terms";
 import {
   buildExportFileName,
   parseExportParameter,
@@ -41,6 +53,44 @@ import { GET as getClassesRoute } from "../app/api/v1/classes/route";
 import { GET as getClassDetailRoute } from "../app/api/v1/classes/[id]/route";
 import { ExportService } from "../lib/services/export";
 import type { Actor } from "../lib/auth/types";
+import { GET as getWarningRunRoute } from "../app/api/v1/academic-warnings/runs/[runId]/route";
+import { GET as getStudentWarningsRoute } from "../app/api/v1/academic-warnings/students/[studentId]/route";
+import { PATCH as patchWarningActionRoute } from "../app/api/v1/academic-warnings/actions/[id]/route";
+import {
+  assertPolicyDefinitionMutable,
+  assertPolicyExecutable,
+  createAcademicWarningPolicySnapshot,
+  createLegacyAdvisoryPolicyDefinition,
+  createQd600PolicyDefinition,
+  normalizeAcademicWarningPolicyInput,
+  parseAcademicWarningPolicyDefinition,
+  PolicyDefinitionError,
+} from "../lib/services/academic-warning-policy";
+import {
+  calculateAssessmentTermFailedCredits,
+  classifyQd600YearLevel,
+  createAcademicWarningCapabilitySnapshot,
+  createQd600StudentCapabilityData,
+  unavailableAccumulatedDebtCreditCalculation,
+  type AssessmentTermCourseAttempt,
+} from "../lib/services/academic-warning-capabilities";
+import {
+  createQd600EvaluationSnapshot,
+  evaluateQd600Article18,
+  evaluateQd600ForCohort,
+  LEGACY_SIGNAL_SOURCE_TYPES,
+  QD600_EXECUTION_PROFILE,
+  QD600_RULE_ENGINE_VERSION,
+  type Qd600EvaluationResult,
+  type Qd600RuleCode,
+} from "../lib/services/academic-warning-qd600-rules";
+import {
+  AcademicWarningsService,
+  projectQd600EvaluationForPersistence,
+  resolveAcademicWarningExecutionProfile,
+} from "../lib/services/academic-warnings";
+
+const require = createRequire(import.meta.url);
 
 const IDS = {
   student: "11111111-1111-4111-8111-111111111111",
@@ -49,6 +99,875 @@ const IDS = {
   plan: "44444444-4444-4444-8444-444444444444",
   term: "55555555-5555-4555-8555-555555555555",
 };
+
+function qd600Rule(result: Qd600EvaluationResult, ruleCode: Qd600RuleCode) {
+  const rule = result.rules.find((item) => item.ruleCode === ruleCode);
+  assert.ok(rule, `Missing ${ruleCode}`);
+  return rule;
+}
+
+function evaluateQd600Fixture(input: {
+  registeredCredits?: number;
+  failedCredits?: number;
+  cumulativeCredits?: number | null;
+  cumulativeGpa4?: number | null;
+  termGpa4?: number | null;
+  isFirstMainSemester?: boolean | null;
+  unresolvedGrade?: boolean;
+  termKind?: "MAIN" | "SUMMER";
+  creditDeficit?: number | null;
+  progressDataStatus?: "COMPLETE" | "PARTIAL" | "INSUFFICIENT";
+  legacySignalCodes?: Array<keyof typeof LEGACY_SIGNAL_SOURCE_TYPES>;
+} = {}) {
+  const registeredCredits = input.registeredCredits ?? 10;
+  const failedCredits = input.failedCredits ?? 0;
+  const attempts: AssessmentTermCourseAttempt[] = [];
+  if (registeredCredits > 0) {
+    if (failedCredits > 0) {
+      attempts.push({
+        offeringId: "failed",
+        academicTermId: IDS.term,
+        credits: failedCredits,
+        scoreStatus: "graded",
+        hasFinalGrade: true,
+        isPass: false,
+      });
+    }
+    if (registeredCredits - failedCredits > 0) {
+      attempts.push({
+        offeringId: "passed",
+        academicTermId: IDS.term,
+        credits: registeredCredits - failedCredits,
+        scoreStatus: input.unresolvedGrade ? "pending" : "graded",
+        hasFinalGrade: !input.unresolvedGrade,
+        isPass: input.unresolvedGrade ? null : true,
+      });
+    }
+  }
+  return evaluateQd600Article18({
+    policyDefinition: createQd600PolicyDefinition(),
+    capabilities: createAcademicWarningCapabilitySnapshot(),
+    capabilityData: createQd600StudentCapabilityData({
+      cumulativeCredits: input.cumulativeCredits === undefined ? 70 : input.cumulativeCredits,
+      assessmentTermId: IDS.term,
+      attempts,
+      isFirstMainSemester: input.isFirstMainSemester === undefined ? false : input.isFirstMainSemester,
+    }),
+    termGpa4: input.termGpa4 === undefined ? 2 : input.termGpa4,
+    cumulativeGpa4: input.cumulativeGpa4 === undefined ? 2 : input.cumulativeGpa4,
+    termKind: input.termKind || "MAIN",
+    trainingProgress: {
+      creditDeficit: input.creditDeficit === undefined ? 0 : input.creditDeficit,
+      dataStatus: input.progressDataStatus || "COMPLETE",
+      reasonCode: input.progressDataStatus && input.progressDataStatus !== "COMPLETE"
+        ? "TRAINING_PROGRESS_DATA_INCOMPLETE"
+        : null,
+      runId: IDS.plan,
+    },
+    legacySignalCodes: input.legacySignalCodes,
+  });
+}
+
+test("QD600 Rule Engine uses policy failed-credit threshold with an exclusive boundary", () => {
+  const boundary = evaluateQd600Fixture({ registeredCredits: 10, failedCredits: 5 });
+  const boundaryRule = qd600Rule(boundary, "QD600_FAILED_CREDIT_RATIO");
+  assert.equal(boundaryRule.evaluationStatus, "EVALUATED");
+  assert.equal(boundaryRule.observedValue, 0.5);
+  assert.equal(boundaryRule.thresholdValue, 0.5);
+  assert.equal(boundaryRule.isThresholdBreached, false);
+
+  const breached = evaluateQd600Fixture({ registeredCredits: 10, failedCredits: 6 });
+  const breachedRule = qd600Rule(breached, "QD600_FAILED_CREDIT_RATIO");
+  assert.equal(breachedRule.observedValue, 0.6);
+  assert.equal(breachedRule.isThresholdBreached, true);
+  assert.equal(breached.businessStatus, "HIGH_RISK");
+});
+
+test("QD600 Rule Engine never converts partial or zero-denominator failed-credit data into normal", () => {
+  const partial = evaluateQd600Fixture({ registeredCredits: 10, failedCredits: 5, unresolvedGrade: true });
+  const partialRule = qd600Rule(partial, "QD600_FAILED_CREDIT_RATIO");
+  assert.equal(partialRule.evaluationStatus, "NOT_EVALUATED");
+  assert.equal(partialRule.dataStatus, "PARTIAL");
+  assert.equal(partialRule.observedValue, null);
+
+  const zero = evaluateQd600Fixture({ registeredCredits: 0, failedCredits: 0 });
+  const zeroRule = qd600Rule(zero, "QD600_FAILED_CREDIT_RATIO");
+  assert.equal(zeroRule.evaluationStatus, "NOT_EVALUATED");
+  assert.equal(zeroRule.dataStatus, "INSUFFICIENT");
+  assert.equal(zeroRule.reasonCode, "NO_REGISTERED_CREDITS");
+});
+
+test("QD600 Rule Engine applies cumulative GPA thresholds from policy for all year levels", () => {
+  const cases = [
+    { credits: 0, threshold: 1.2 },
+    { credits: 35, threshold: 1.4 },
+    { credits: 70, threshold: 1.6 },
+    { credits: 105, threshold: 1.8 },
+  ];
+  for (const item of cases) {
+    const boundary = qd600Rule(
+      evaluateQd600Fixture({ cumulativeCredits: item.credits, cumulativeGpa4: item.threshold }),
+      "QD600_CUMULATIVE_GPA_BY_YEAR",
+    );
+    assert.equal(boundary.thresholdValue, item.threshold);
+    assert.equal(boundary.isThresholdBreached, false);
+
+    const breached = qd600Rule(
+      evaluateQd600Fixture({ cumulativeCredits: item.credits, cumulativeGpa4: item.threshold - 0.01 }),
+      "QD600_CUMULATIVE_GPA_BY_YEAR",
+    );
+    assert.equal(breached.isThresholdBreached, true);
+  }
+});
+
+test("QD600 advisory margin is separate from the regulatory cumulative GPA rule", () => {
+  const atUpperBoundary = evaluateQd600Fixture({ cumulativeCredits: 70, cumulativeGpa4: 1.8 });
+  assert.equal(qd600Rule(atUpperBoundary, "QD600_CUMULATIVE_GPA_NEAR_THRESHOLD").isNearThreshold, false);
+
+  const near = evaluateQd600Fixture({ cumulativeCredits: 70, cumulativeGpa4: 1.79 });
+  const nearRule = qd600Rule(near, "QD600_CUMULATIVE_GPA_NEAR_THRESHOLD");
+  assert.equal(nearRule.sourceType, "ADVISORY");
+  assert.equal(nearRule.margin, 0.2);
+  assert.equal(nearRule.isNearThreshold, true);
+  assert.equal(near.businessStatus, "MONITORING");
+
+  const atThreshold = evaluateQd600Fixture({ cumulativeCredits: 70, cumulativeGpa4: 1.6 });
+  assert.equal(qd600Rule(atThreshold, "QD600_CUMULATIVE_GPA_BY_YEAR").isThresholdBreached, false);
+  assert.equal(qd600Rule(atThreshold, "QD600_CUMULATIVE_GPA_NEAR_THRESHOLD").isNearThreshold, true);
+
+  const breached = evaluateQd600Fixture({ cumulativeCredits: 70, cumulativeGpa4: 1.59 });
+  assert.equal(qd600Rule(breached, "QD600_CUMULATIVE_GPA_BY_YEAR").isThresholdBreached, true);
+  assert.equal(qd600Rule(breached, "QD600_CUMULATIVE_GPA_NEAR_THRESHOLD").evaluationStatus, "NOT_APPLICABLE");
+});
+
+test("QD600 evaluates term GPA from the first-main-semester classification and keeps debt explicit", () => {
+  const result = evaluateQd600Fixture();
+  const term = qd600Rule(result, "QD600_TERM_GPA");
+  const debt = qd600Rule(result, "QD600_ACCUMULATED_DEBT_CREDITS");
+  assert.equal(term.evaluationStatus, "EVALUATED");
+  assert.equal(term.thresholdValue, 1);
+  const firstSemester = qd600Rule(
+    evaluateQd600Fixture({ isFirstMainSemester: true, termGpa4: 0.79 }),
+    "QD600_TERM_GPA",
+  );
+  assert.equal(firstSemester.thresholdValue, 0.8);
+  assert.equal(firstSemester.isThresholdBreached, true);
+  const unresolvedFirstTerm = qd600Rule(
+    evaluateQd600Fixture({ isFirstMainSemester: null }),
+    "QD600_TERM_GPA",
+  );
+  assert.equal(unresolvedFirstTerm.evaluationStatus, "NOT_EVALUATED");
+  assert.equal(unresolvedFirstTerm.reasonCode, "FIRST_MAIN_SEMESTER_UNRESOLVED");
+  assert.equal(debt.evaluationStatus, "NOT_EVALUATED");
+  assert.equal(debt.reasonCode, "ACCUMULATED_DEBT_SEMANTICS_UNVERIFIED");
+  assert.equal(debt.observedValue, null);
+
+  const missingCredits = qd600Rule(
+    evaluateQd600Fixture({ cumulativeCredits: null }),
+    "QD600_CUMULATIVE_GPA_BY_YEAR",
+  );
+  assert.equal(missingCredits.evaluationStatus, "NOT_EVALUATED");
+  assert.equal(missingCredits.reasonCode, "CUMULATIVE_CREDITS_MISSING_OR_INVALID");
+
+  const missingGpa = qd600Rule(
+    evaluateQd600Fixture({ cumulativeGpa4: null }),
+    "QD600_CUMULATIVE_GPA_BY_YEAR",
+  );
+  assert.equal(missingGpa.evaluationStatus, "NOT_EVALUATED");
+  assert.equal(missingGpa.reasonCode, "CUMULATIVE_GPA_MISSING");
+});
+
+test("QD600 summer evaluation does not merge or treat summer as a main term", () => {
+  const result = evaluateQd600Fixture({ termKind: "SUMMER", failedCredits: 6, cumulativeGpa4: 1 });
+  for (const ruleCode of ["QD600_FAILED_CREDIT_RATIO", "QD600_CUMULATIVE_GPA_BY_YEAR"] as const) {
+    const rule = qd600Rule(result, ruleCode);
+    assert.equal(rule.evaluationStatus, "NOT_EVALUATED");
+    assert.equal(rule.reasonCode, "SUMMER_MAIN_TERM_MERGE_UNVERIFIED");
+    assert.equal(rule.observedValue, null);
+  }
+});
+
+test("QD600 aggregation preserves partial coverage while prioritizing actionable states", () => {
+  const noTrigger = evaluateQd600Fixture({ cumulativeGpa4: 2 });
+  assert.equal(noTrigger.businessStatus, "PARTIAL_NO_RISK");
+  assert.deepEqual(noTrigger.regulatoryCoverage, {
+    status: "PARTIAL",
+    evaluatedRules: 3,
+    totalRules: 4,
+    notEvaluatedRuleCodes: ["QD600_ACCUMULATED_DEBT_CREDITS"],
+  });
+
+  const breach = evaluateQd600Fixture({ failedCredits: 6 });
+  assert.equal(breach.businessStatus, "HIGH_RISK");
+  assert.equal(breach.regulatoryCoverage.status, "PARTIAL");
+
+  const contextual = evaluateQd600Fixture({ legacySignalCodes: ["REGISTRATION_BEHIND"] });
+  assert.equal(contextual.businessStatus, "PARTIAL_NO_RISK");
+  assert.deepEqual(contextual.legacySignalContext, [{
+    reasonCode: "REGISTRATION_BEHIND",
+    sourceType: "OPERATIONAL_SIGNAL",
+  }]);
+});
+
+test("early warning classifies the CTĐT credit deficit at the 0-3, 4-11, and 12+ boundaries", () => {
+  for (const creditDeficit of [0, 3]) {
+    const result = evaluateQd600Fixture({ creditDeficit });
+    assert.equal(result.businessStatus, "PARTIAL_NO_RISK");
+    assert.equal(qd600Rule(result, "TRAINING_PROGRESS_CREDIT_DEFICIT").riskLevel, "GREEN");
+  }
+  for (const creditDeficit of [4, 11]) {
+    const result = evaluateQd600Fixture({ creditDeficit });
+    assert.equal(result.businessStatus, "MONITORING");
+    assert.equal(qd600Rule(result, "TRAINING_PROGRESS_CREDIT_DEFICIT").riskLevel, "YELLOW");
+  }
+  const red = evaluateQd600Fixture({ creditDeficit: 12 });
+  assert.equal(red.businessStatus, "HIGH_RISK");
+  assert.equal(qd600Rule(red, "TRAINING_PROGRESS_CREDIT_DEFICIT").riskLevel, "RED");
+
+  const incomplete = evaluateQd600Fixture({ creditDeficit: null, progressDataStatus: "PARTIAL" });
+  const progressRule = qd600Rule(incomplete, "TRAINING_PROGRESS_CREDIT_DEFICIT");
+  assert.equal(progressRule.evaluationStatus, "NOT_EVALUATED");
+  assert.notEqual(incomplete.businessStatus, "NORMAL");
+
+  const partialRed = evaluateQd600Fixture({ creditDeficit: 12, progressDataStatus: "PARTIAL" });
+  const partialRedRule = qd600Rule(partialRed, "TRAINING_PROGRESS_CREDIT_DEFICIT");
+  assert.equal(partialRedRule.evaluationStatus, "EVALUATED");
+  assert.equal(partialRedRule.dataStatus, "PARTIAL");
+  assert.equal(partialRed.businessStatus, "HIGH_RISK");
+
+  const partialGreen = evaluateQd600Fixture({ creditDeficit: 3, progressDataStatus: "PARTIAL" });
+  assert.equal(partialGreen.businessStatus, "PARTIAL_NO_RISK");
+});
+
+test("legacy evaluator signals carry semantic source metadata without becoming QD600 rules", () => {
+  const result = evaluateAcademicWarning({
+    student: {
+      id: IDS.student,
+      classId: null,
+      cohortId: null,
+      code: "SV001",
+      name: "Sinh viên",
+      classCode: "",
+      className: "",
+      programCode: "CNTT",
+    },
+    progress: { status: "fail", runId: IDS.plan },
+    completion: { scheduleStatus: "behind_schedule", runId: IDS.courseA },
+    summary: {
+      termSummaryId: IDS.term,
+      cumulativeSummaryId: IDS.courseB,
+      registered: 15,
+      termGPA4: 1,
+      termGPA10: 2.5,
+      cumulativeGPA4: 1,
+      cumulativeGPA10: 2.5,
+    },
+    decisions: [{
+      id: IDS.student,
+      number: "QD-1",
+      name: "Quyết định",
+      fullText: "",
+      signDate: null,
+    }],
+    conduct: { id: IDS.plan, score: 40, statusId: "1" },
+    policy: { termGpaThreshold: 2, cumulativeGpaThreshold: 2, conductScoreThreshold: 50 },
+  });
+  assert.deepEqual(
+    Object.fromEntries(result.reasons.map((reason) => [reason.reasonCode, reason.details.semanticSourceType])),
+    {
+      REGISTRATION_BEHIND: "OPERATIONAL_SIGNAL",
+      PROGRAM_PROGRESS_BEHIND: "OPERATIONAL_SIGNAL",
+      LOW_TERM_GPA: "ADVISORY",
+      LOW_CUMULATIVE_GPA: "ADVISORY",
+      LOW_CONDUCT_SCORE: "ADVISORY",
+      ACADEMIC_WARNING_DECISION: "OFFICIAL_CONTEXT",
+    },
+  );
+  assert.equal(result.reasonCount, 6);
+});
+
+test("QD600 evaluation snapshot records exact partial profile and regulatory provenance", () => {
+  const policyDefinition = createQd600PolicyDefinition();
+  const capabilities = createAcademicWarningCapabilitySnapshot();
+  const result = evaluateQd600Fixture({ failedCredits: 6 });
+  const snapshot = createQd600EvaluationSnapshot({
+    policyId: IDS.plan,
+    policyName: "QĐ600 Điều 18",
+    policyVersion: 2,
+    policyDefinition,
+    capabilities,
+    result,
+  });
+  assert.equal(snapshot.engineVersion, QD600_RULE_ENGINE_VERSION);
+  assert.equal(snapshot.executionProfile, QD600_EXECUTION_PROFILE);
+  assert.equal(snapshot.globalActivation, false);
+  assert.equal(snapshot.policy.evaluationProfile, "QD600_ARTICLE_18");
+  assert.equal(snapshot.policy.executionMode, "NOT_YET_ACTIVE_FOR_EVALUATION");
+  assert.equal(snapshot.policy.policyVersion, 2);
+  assert.deepEqual(snapshot.policy.policyDefinition, policyDefinition);
+  assert.equal(snapshot.regulatoryCoverage.status, "PARTIAL");
+  assert.equal(snapshot.capabilities.FIRST_TERM_DETECTION.status, "AVAILABLE");
+  assert.deepEqual(JSON.parse(JSON.stringify(snapshot)), snapshot);
+});
+
+test("QD600 persisted integration evaluates only explicitly configured cohort UUIDs", () => {
+  assert.equal(resolveAcademicWarningExecutionProfile(), "LEGACY_SCALAR_RULES");
+  assert.equal(resolveAcademicWarningExecutionProfile("LEGACY_SCALAR_RULES"), "LEGACY_SCALAR_RULES");
+  assert.equal(resolveAcademicWarningExecutionProfile("QD600_PARTIAL_REGULATORY"), "QD600_PARTIAL_REGULATORY");
+
+  const policyDefinition = createQd600PolicyDefinition({ applicableCohortIds: [IDS.courseB] });
+  const baseInput = {
+    policyDefinition,
+    capabilities: createAcademicWarningCapabilitySnapshot(),
+    capabilityData: createQd600StudentCapabilityData({
+      cumulativeCredits: 70,
+      assessmentTermId: IDS.term,
+      attempts: [{
+        offeringId: "passed",
+        academicTermId: IDS.term,
+        credits: 10,
+        scoreStatus: "graded",
+        hasFinalGrade: true,
+        isPass: true,
+      }],
+      isFirstMainSemester: false,
+    }),
+    termGpa4: 2,
+    cumulativeGpa4: 2,
+    termKind: "MAIN" as const,
+  };
+
+  const applicable = evaluateQd600ForCohort({ ...baseInput, cohortId: IDS.courseB });
+  assert.equal(applicable.applicability.status, "APPLICABLE");
+  assert.ok(applicable.result);
+
+  const outside = evaluateQd600ForCohort({ ...baseInput, cohortId: IDS.courseA });
+  assert.deepEqual(outside, {
+    applicability: { status: "NOT_APPLICABLE", reasonCode: "REGULATORY_POLICY_NOT_APPLICABLE" },
+    result: null,
+  });
+
+  const unknown = evaluateQd600ForCohort({ ...baseInput, cohortId: null });
+  assert.deepEqual(unknown, {
+    applicability: { status: "UNRESOLVED", reasonCode: "REGULATORY_POLICY_COHORT_UNRESOLVED" },
+    result: null,
+  });
+});
+
+test("QD600 persistence projection stores business status, coverage, rules, and explanatory reasons", () => {
+  const breached = projectQd600EvaluationForPersistence(evaluateQd600Fixture({
+    registeredCredits: 10,
+    failedCredits: 6,
+  }));
+  assert.equal(breached.businessStatus, "HIGH_RISK");
+  assert.equal(breached.regulatoryCoverage, "PARTIAL");
+  assert.equal(breached.maxSeverity, "high");
+  assert.equal(breached.ruleResults.length, 6);
+  assert.ok(breached.ruleResults.some((rule) =>
+    rule.ruleCode === "QD600_TERM_GPA" && rule.evaluationStatus === "EVALUATED"));
+  const failedReason = breached.reasons.find((reason) => reason.reasonCode === "FAILED_CREDIT_RATIO_THRESHOLD_BREACHED");
+  assert.ok(failedReason);
+  assert.equal(failedReason.sourceType, "REGULATORY");
+  assert.equal(failedReason.details.observedValue, 0.6);
+  assert.equal(failedReason.details.thresholdValue, 0.5);
+  assert.equal(failedReason.details.articleRef, "Điều 18");
+
+  const near = projectQd600EvaluationForPersistence(evaluateQd600Fixture({
+    cumulativeCredits: 70,
+    cumulativeGpa4: 1.79,
+  }));
+  assert.equal(near.businessStatus, "MONITORING");
+  assert.equal(near.reasons[0].sourceType, "ADVISORY");
+
+  const incomplete = projectQd600EvaluationForPersistence(evaluateQd600Fixture({ registeredCredits: 0 }));
+  assert.equal(incomplete.regulatoryCoverage, "PARTIAL");
+  assert.ok(incomplete.ruleResults.some((rule) =>
+    rule.ruleCode === "QD600_FAILED_CREDIT_RATIO" && rule.evaluationStatus === "NOT_EVALUATED"));
+});
+
+test("reports honor persisted QD600 business status instead of recomputing classification", () => {
+  const summary = summarizePersistedWarningResults([{
+    studentId: IDS.student,
+    maxSeverity: "none",
+    reasonCount: 0,
+    dataError: "qd600_regulatory_coverage_partial",
+    businessStatus: "VERIFY_REQUIRED",
+    termGpa4: 4,
+    cumulativeGpa4: 4,
+  }]);
+  assert.equal(summary.high, 1);
+  assert.equal(summary.medium, 0);
+  assert.equal(summary.evaluated, 1);
+});
+
+test("AcademicWarningRun persists QD600 profile, student rules, coverage, and reason evidence", async () => {
+  const cleanups: Array<() => void> = [];
+  const policyDefinition = createQd600PolicyDefinition({ applicableCohortIds: [IDS.courseB] });
+  const queryResults: unknown[][] = [
+    [{ id: IDS.plan }],
+    [{ id: IDS.courseA }],
+    [{
+      id: IDS.student,
+      class_uuid: IDS.courseA,
+      cohort_uuid: IDS.courseB,
+      s_student_id: "SV001",
+      s_full_name: "Sinh viên QĐ600",
+      class_code: "CLASS-A",
+      class_name: "Lớp A",
+      program_code: "CNTT",
+    }],
+    [{ student_id: IDS.student, status: "pass" }],
+    [{
+      student_id: IDS.student,
+      schedule_status: "on_track",
+      data_error_reason: null,
+      pending_result_courses: 0,
+      credit_deficit: 0,
+    }],
+    [{
+      id: IDS.term,
+      student_id: IDS.student,
+      registered_credits: 10,
+      gpa_4: 2,
+      gpa_10: 5,
+      cumulative_credits: 70,
+      cumulative_gpa_4: 2,
+      cumulative_gpa_10: 5,
+      cumulative_summary_id: IDS.courseA,
+    }],
+    [{ student_id: IDS.student, academic_term_id: IDS.term }],
+    [
+      {
+        student_id: IDS.student,
+        offering_id: IDS.courseA,
+        academic_term_id: IDS.term,
+        credits: 6,
+        score_status: "graded",
+        has_final_grade: true,
+        is_pass: false,
+        special_code: null,
+      },
+      {
+        student_id: IDS.student,
+        offering_id: IDS.courseB,
+        academic_term_id: IDS.term,
+        credits: 4,
+        score_status: "graded",
+        has_final_grade: true,
+        is_pass: true,
+        special_code: null,
+      },
+    ],
+    [],
+    [],
+  ];
+  let queryIndex = 0;
+  let runCreateData: any;
+  let persistedStudents: any[] = [];
+  let persistedReasons: any[] = [];
+  let interventionCase: any = null;
+  const interventionEvents: any[] = [];
+  try {
+    cleanups.push(mockDelegateMethod(prisma.academicTerm, "findFirst", async () => ({
+      id: IDS.term,
+      sIsSummer: false,
+      isCurrent: false,
+      gradesFinalizedAt: new Date("2026-01-01"),
+    })));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningPolicy, "findUnique", async () => ({
+      id: IDS.student,
+      name: "QĐ600 Điều 18",
+      schemaVersion: 1,
+      engineVersion: "academic-warning-qd600-article18-pending-v1",
+      policyDefinition,
+      definitionHash: null,
+      termGpaThreshold: 2,
+      cumulativeGpaThreshold: 2,
+      conductScoreThreshold: 50,
+      version: 2,
+      status: "draft",
+      createdBy: null,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+    })));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgram, "findUnique", async () => ({ id: IDS.student, sProgramCode: "CNTT" })));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgressPlan, "findFirst", async () => ({ id: IDS.plan })));
+    cleanups.push(mockDelegateMethod(prisma, "$queryRaw", async () => queryResults[queryIndex++] || []));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgressCalculationRun, "findUnique", async () => ({
+      sourceSnapshotHash: "progress-hash",
+      sourceCapturedAt: new Date("2026-01-01"),
+      completedAt: new Date("2026-01-01"),
+    })));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgressCompletionRun, "findUnique", async () => ({
+      sourceSnapshotHash: "completion-hash",
+      sourceCapturedAt: new Date("2026-01-01"),
+      completedAt: new Date("2026-01-01"),
+      evaluationMode: "OFFICIAL",
+      evaluation_scope: {},
+    })));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningRun, "create", async (args: any) => {
+      runCreateData = args.data;
+      return { id: IDS.term, ...args.data };
+    }));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningRun, "findUnique", async () => ({
+      id: IDS.term,
+      status: "completed",
+      runMode: "OFFICIAL",
+      assessmentAcademicTermId: IDS.term,
+      completedAt: new Date("2026-01-02"),
+    })));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningStudentResult, "findMany", async () => persistedStudents));
+    cleanups.push(mockDelegateMethod(prisma.warningAction, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma, "$transaction", async (callback: any) => callback({
+      $executeRaw: async () => 1,
+      academicWarningStudentResult: {
+        createMany: async ({ data }: any) => { persistedStudents = data; },
+      },
+      academicWarningReason: {
+        createMany: async ({ data }: any) => { persistedReasons = data; },
+      },
+      academicWarningGroupResult: { createMany: async () => undefined },
+      academicWarningRun: {
+        findMany: async () => [],
+        create: async (args: any) => {
+          runCreateData = args.data;
+          return { id: IDS.term, ...args.data };
+        },
+        update: async ({ data }: any) => ({ id: IDS.term, executionProfile: runCreateData.executionProfile, ...data }),
+      },
+      warningAction: {
+        findFirst: async () => interventionCase,
+        findUnique: async () => null,
+        create: async ({ data }: any) => {
+          interventionCase = { id: IDS.plan, ...data };
+          return interventionCase;
+        },
+      },
+      classAdvisorAssignment: { findFirst: async () => null },
+      warningActionEvent: {
+        createMany: async ({ data }: any) => { interventionEvents.push(...data); },
+      },
+    })));
+
+    const completed = await AcademicWarningsService.createRun({
+      cohortId: IDS.courseB,
+      trainingProgramId: IDS.student,
+      assessmentAcademicTermId: IDS.term,
+      runMode: "OFFICIAL",
+      executionProfile: "QD600_PARTIAL_REGULATORY",
+      policyId: IDS.student,
+    });
+
+    assert.equal(completed.executionProfile, "QD600_PARTIAL_REGULATORY");
+    assert.equal(runCreateData.executionProfile, "QD600_PARTIAL_REGULATORY");
+    assert.equal(runCreateData.sourceSnapshot.policy.evaluationProfile, "QD600_ARTICLE_18");
+    assert.equal(runCreateData.sourceSnapshot.regulatoryCoverage.status, "PARTIAL");
+    assert.equal(persistedStudents[0].businessStatus, "HIGH_RISK");
+    assert.equal(persistedStudents[0].regulatoryCoverage, "PARTIAL");
+    assert.equal(persistedStudents[0].ruleResults.length, 6);
+    assert.equal(persistedReasons[0].sourceType, "REGULATORY");
+    assert.equal(persistedReasons[0].details.observedValue, 0.6);
+    assert.equal(persistedReasons[0].details.thresholdValue, 0.5);
+    assert.equal(persistedReasons[0].details.articleRef, "Điều 18");
+    assert.equal(interventionCase.caseType, "EARLY_WARNING_CASE");
+    assert.equal(interventionEvents.filter((event) => event.eventType === "WARNING_DETECTED").length, 1);
+  } finally {
+    cleanups.reverse().forEach((cleanup) => cleanup());
+  }
+});
+
+test("QD600 capability classifies year level from cumulative earned credits at every boundary", () => {
+  const cases = [
+    [0, 1],
+    [34, 1],
+    [35, 2],
+    [69, 2],
+    [70, 3],
+    [104, 3],
+    [105, 4],
+  ] as const;
+  for (const [credits, expectedYear] of cases) {
+    assert.deepEqual(classifyQd600YearLevel(credits), {
+      cumulativeCredits: credits,
+      yearLevel: expectedYear,
+      dataStatus: "COMPLETE",
+      reasonCode: null,
+    });
+  }
+  assert.deepEqual(classifyQd600YearLevel(null), {
+    cumulativeCredits: null,
+    yearLevel: null,
+    dataStatus: "INSUFFICIENT",
+    reasonCode: "CUMULATIVE_CREDITS_MISSING_OR_INVALID",
+  });
+});
+
+test("QD600 capability calculates failed credits only from final outcomes in the assessment term", () => {
+  const attempt = (
+    offeringId: string,
+    credits: number,
+    isPass: boolean | null,
+    scoreStatus: string | null = "graded",
+    academicTermId = IDS.term,
+    hasFinalGrade = scoreStatus === "graded" && isPass != null,
+  ): AssessmentTermCourseAttempt => ({ offeringId, academicTermId, credits, scoreStatus, hasFinalGrade, isPass });
+
+  const sixOfFifteen = calculateAssessmentTermFailedCredits(IDS.term, [
+    attempt("failed-6", 6, false),
+    attempt("passed-9", 9, true),
+    attempt("other-term-failure", 20, false, "graded", "other-term"),
+  ]);
+  assert.equal(sixOfFifteen.registeredCredits, 15);
+  assert.equal(sixOfFifteen.failedCredits, 6);
+  assert.equal(sixOfFifteen.failedCreditRatio, 0.4);
+  assert.equal(sixOfFifteen.dataStatus, "COMPLETE");
+
+  const eightOfFifteen = calculateAssessmentTermFailedCredits(IDS.term, [
+    attempt("failed-8", 8, false),
+    attempt("passed-7", 7, true),
+  ]);
+  assert.equal(eightOfFifteen.registeredCredits, 15);
+  assert.equal(eightOfFifteen.failedCredits, 8);
+  assert.equal(eightOfFifteen.failedCreditRatio, 8 / 15);
+
+  const unresolved = calculateAssessmentTermFailedCredits(IDS.term, [
+    attempt("missing-grade", 3, null, null),
+    attempt("graded-but-null-grade", 3, false, "graded", IDS.term, false),
+    attempt("special-i", 3, false, "special"),
+    attempt("special-x", 3, false, "special"),
+    attempt("completed-pass", 3, true),
+  ]);
+  assert.equal(unresolved.registeredCredits, 15);
+  assert.equal(unresolved.failedCredits, 0);
+  assert.equal(unresolved.failedCreditRatio, null);
+  assert.equal(unresolved.dataStatus, "PARTIAL");
+  assert.deepEqual(unresolved.reasonCodes, ["UNRESOLVED_GRADE_OUTCOMES"]);
+});
+
+test("QD600 capability does not divide by zero or count duplicate offering rows twice", () => {
+  const duplicate: AssessmentTermCourseAttempt = {
+    offeringId: "failed-6",
+    academicTermId: IDS.term,
+    credits: 6,
+    scoreStatus: "graded",
+    hasFinalGrade: true,
+    isPass: false,
+  };
+  const result = calculateAssessmentTermFailedCredits(IDS.term, [
+    duplicate,
+    { ...duplicate },
+    { offeringId: "passed-9", academicTermId: IDS.term, credits: 9, scoreStatus: "graded", hasFinalGrade: true, isPass: true },
+  ]);
+  assert.equal(result.registeredCredits, 15);
+  assert.equal(result.failedCredits, 6);
+  assert.equal(result.distinctOfferingCount, 2);
+  assert.equal(result.duplicateRowsDiscarded, 1);
+  assert.equal(result.dataStatus, "COMPLETE");
+
+  assert.deepEqual(calculateAssessmentTermFailedCredits(IDS.term, []), {
+    registeredCredits: 0,
+    failedCredits: 0,
+    failedCreditRatio: null,
+    dataStatus: "INSUFFICIENT",
+    reasonCodes: ["NO_REGISTERED_CREDITS"],
+    distinctOfferingCount: 0,
+    duplicateRowsDiscarded: 0,
+  });
+});
+
+test("QD600 failed-credit ratio uses each student's actual registration and treats VT as a final failure", () => {
+  const result = calculateAssessmentTermFailedCredits(IDS.term, [
+    {
+      offeringId: "absent-exam",
+      academicTermId: IDS.term,
+      credits: 4,
+      scoreStatus: "special",
+      specialCode: "VT",
+      hasFinalGrade: true,
+      isPass: false,
+    },
+    {
+      offeringId: "passed-course",
+      academicTermId: IDS.term,
+      credits: 3,
+      scoreStatus: "graded",
+      hasFinalGrade: true,
+      isPass: true,
+    },
+  ]);
+  assert.equal(result.registeredCredits, 7);
+  assert.equal(result.failedCredits, 4);
+  assert.equal(result.failedCreditRatio, 4 / 7);
+  assert.equal(result.dataStatus, "COMPLETE");
+});
+
+test("QD600 capability keeps debt unverified and serializes fixed run capability states", () => {
+  assert.deepEqual(unavailableAccumulatedDebtCreditCalculation(), {
+    accumulatedDebtCredits: null,
+    dataStatus: "UNVERIFIED",
+    reasonCode: "DEBT_RESOLUTION_SEMANTICS_UNVERIFIED",
+  });
+
+  const capabilities = createAcademicWarningCapabilitySnapshot();
+  assert.equal(capabilities.FIRST_TERM_DETECTION.status, "AVAILABLE");
+  assert.equal(capabilities.SUMMER_MAIN_TERM_MERGE_VERIFIED.status, "UNVERIFIED");
+  assert.equal(capabilities.YEAR_LEVEL_CLASSIFICATION.status, "AVAILABLE");
+  assert.equal(capabilities.FAILED_CREDIT_CALCULATION.status, "AVAILABLE");
+  assert.equal(capabilities.ACCUMULATED_DEBT_CREDIT_CALCULATION.status, "UNVERIFIED");
+  assert.deepEqual(JSON.parse(JSON.stringify(capabilities)), capabilities);
+
+  const studentData = createQd600StudentCapabilityData({
+    cumulativeCredits: 70,
+    assessmentTermId: IDS.term,
+    attempts: [],
+    isFirstMainSemester: false,
+  });
+  assert.equal(studentData.usedForEvaluation, false);
+  assert.equal(studentData.accumulatedDebtCreditCalculation.accumulatedDebtCredits, null);
+});
+
+test("QD600 academic warning policy definition is valid and keeps Article 18 semantics", () => {
+  const definition = parseAcademicWarningPolicyDefinition(createQd600PolicyDefinition());
+  assert.equal(definition.evaluationProfile, "QD600_ARTICLE_18");
+  assert.equal(definition.executionMode, "NOT_YET_ACTIVE_FOR_EVALUATION");
+  if (definition.evaluationProfile !== "QD600_ARTICLE_18") assert.fail("Expected QD600 definition");
+  assert.equal(definition.regulatory.sourceCode, "QD600-DHDL-2021");
+  assert.deepEqual(definition.regulatory.articleRefs, ["Điều 18"]);
+  assert.deepEqual(definition.regulatory.applicableCohortIds, []);
+  assert.deepEqual(definition.thresholds.failedCreditRatio, { operator: ">", value: 0.5 });
+  assert.deepEqual(definition.thresholds.accumulatedDebtCredits, { operator: ">", value: 24 });
+  assert.deepEqual(definition.thresholds.termGpa, { firstSemesterBelow: 0.8, subsequentSemesterBelow: 1 });
+  assert.deepEqual(definition.thresholds.cumulativeGpaByYear.map((item) => item.gpa4Below), [1.2, 1.4, 1.6, 1.8]);
+});
+
+test("QD600 policy definition rejects missing sourceCode and Article 18", () => {
+  const missingSourceCode: any = structuredClone(createQd600PolicyDefinition());
+  delete missingSourceCode.regulatory.sourceCode;
+  assert.throws(() => parseAcademicWarningPolicyDefinition(missingSourceCode), PolicyDefinitionError);
+
+  const missingArticle: any = structuredClone(createQd600PolicyDefinition());
+  missingArticle.regulatory.articleRefs = [];
+  assert.throws(() => parseAcademicWarningPolicyDefinition(missingArticle), PolicyDefinitionError);
+});
+
+test("QD600 policy definition rejects thresholds outside supported ranges", () => {
+  const invalidRatio: any = structuredClone(createQd600PolicyDefinition());
+  invalidRatio.thresholds.failedCreditRatio.value = 1.01;
+  assert.throws(() => parseAcademicWarningPolicyDefinition(invalidRatio), PolicyDefinitionError);
+
+  const invalidGpa: any = structuredClone(createQd600PolicyDefinition());
+  invalidGpa.thresholds.termGpa.firstSemesterBelow = 4.01;
+  assert.throws(() => parseAcademicWarningPolicyDefinition(invalidGpa), PolicyDefinitionError);
+});
+
+test("QD600 early-warning margin is explicitly advisory-only", () => {
+  const definition = createQd600PolicyDefinition({ earlyWarningMarginGpa4: 0.2 });
+  assert.deepEqual(definition.advisory, { earlyWarningMarginGpa4: 0.2, advisoryOnly: true });
+  const invalid: any = structuredClone(definition);
+  invalid.advisory.advisoryOnly = false;
+  assert.throws(() => parseAcademicWarningPolicyDefinition(invalid), PolicyDefinitionError);
+});
+
+test("legacy academic warning policy payload remains normalized without changing scalar thresholds", () => {
+  const normalized = normalizeAcademicWarningPolicyInput({
+    termGpaThreshold: 1.75,
+    cumulativeGpaThreshold: 1.9,
+    conductScoreThreshold: 45,
+  });
+  assert.equal(normalized.definition.evaluationProfile, "LEGACY_ADVISORY");
+  assert.equal(normalized.definition.executionMode, "LEGACY_SCALAR_RULES");
+  assert.equal("regulatory" in normalized.definition, false);
+  assert.equal(normalized.termGpaThreshold, 1.75);
+  assert.equal(normalized.cumulativeGpaThreshold, 1.9);
+  assert.equal(normalized.conductScoreThreshold, 45);
+});
+
+test("academic warning policy used by a completed official run is immutable", () => {
+  assert.throws(
+    () => assertPolicyDefinitionMutable({ completedOfficialRunCount: 1 }),
+    (error: unknown) => error instanceof PolicyDefinitionError && error.code === "POLICY_VERSION_IMMUTABLE",
+  );
+  assert.doesNotThrow(() => assertPolicyDefinitionMutable({ completedOfficialRunCount: 0 }));
+});
+
+test("HOTFIX historical legacy run snapshot is unchanged when QD600 definition is created", () => {
+  const original = createLegacyAdvisoryPolicyDefinition({
+    label: "Legacy execution policy",
+    termGpaThreshold: 2,
+    cumulativeGpaThreshold: 2,
+    conductScoreThreshold: 50,
+  });
+  const snapshot = createAcademicWarningPolicySnapshot({
+    id: IDS.plan,
+    name: "Legacy execution policy",
+    policyVersion: 1,
+    definition: original,
+  });
+  const qd600Definition = createQd600PolicyDefinition();
+  assert.equal(snapshot.policyVersion, 1);
+  assert.equal(snapshot.evaluationProfile, "LEGACY_ADVISORY");
+  assert.equal(snapshot.executionMode, "LEGACY_SCALAR_RULES");
+  assert.equal("regulatory" in snapshot.policyDefinition, false);
+  assert.equal(qd600Definition.evaluationProfile, "QD600_ARTICLE_18");
+});
+
+test("QĐ600 importer seed keeps legacy active and QD600 non-executable", () => {
+  const { legacyAcademicWarningPolicyDefinition, qd600AcademicWarningPolicyDefinition } = require("../scripts/import-apidog-data.cjs") as {
+    legacyAcademicWarningPolicyDefinition: () => unknown;
+    qd600AcademicWarningPolicyDefinition: () => unknown;
+  };
+  const legacy = parseAcademicWarningPolicyDefinition(legacyAcademicWarningPolicyDefinition());
+  const qd600 = parseAcademicWarningPolicyDefinition(qd600AcademicWarningPolicyDefinition());
+  assert.doesNotThrow(() => assertPolicyExecutable(legacy));
+  assert.throws(
+    () => assertPolicyExecutable(qd600),
+    (error: unknown) => error instanceof PolicyDefinitionError && error.code === "POLICY_NOT_ACTIVE_FOR_EVALUATION",
+  );
+});
+
+test("HOTFIX legacy evaluator snapshot and behavior use the same scalar semantics", () => {
+  const definition = createLegacyAdvisoryPolicyDefinition({
+    label: "Legacy execution policy",
+    termGpaThreshold: 2,
+    cumulativeGpaThreshold: 2,
+    conductScoreThreshold: 50,
+  });
+  const snapshot = createAcademicWarningPolicySnapshot({
+    id: IDS.plan,
+    name: "Legacy execution policy",
+    policyVersion: 4,
+    definition,
+  });
+  const result = evaluateAcademicWarning({
+    student: {
+      id: IDS.student,
+      classId: null,
+      cohortId: null,
+      code: "SV001",
+      name: "Student",
+      classCode: "",
+      className: "",
+      programCode: "CNTT",
+    },
+    summary: {
+      termSummaryId: IDS.term,
+      cumulativeSummaryId: null,
+      registered: 15,
+      termGPA4: 1.5,
+      termGPA10: null,
+      cumulativeGPA4: 2.5,
+      cumulativeGPA10: null,
+    },
+    policy: {
+      termGpaThreshold: definition.thresholds.termGpa4Below,
+      cumulativeGpaThreshold: definition.thresholds.cumulativeGpa4Below,
+      conductScoreThreshold: definition.thresholds.conductScoreBelow,
+    },
+  });
+  assert.equal(snapshot.evaluationProfile, "LEGACY_ADVISORY");
+  assert.equal("regulatory" in snapshot.policyDefinition, false);
+  assert.deepEqual(result.reasons.map((reason) => reason.reasonCode), ["LOW_TERM_GPA"]);
+});
 
 test("API permission policy follows the Phase 2 contract", () => {
   assert.equal(requiredPermission("/api/v1/students", "GET"), "student.read");
@@ -61,6 +980,7 @@ test("API permission policy follows the Phase 2 contract", () => {
   assert.equal(requiredPermission("/api/v1/training-progress/completion-runs/preview", "POST"), "progress.calculate");
   assert.equal(requiredPermission("/api/v1/academic-warnings/actions", "POST"), "academic_warning.action.create");
   assert.equal(requiredPermission(`/api/v1/academic-warnings/actions/${IDS.plan}`, "PATCH"), "academic_warning.action.update");
+  assert.equal(requiredPermission(`/api/v1/academic-warnings/interventions/${IDS.plan}/assignment`, "PATCH"), "academic_warning.case.assign");
   assert.equal(requiredPermission("/api/v1/reports/export", "GET"), "report.export");
   assert.equal(requiredPermission("/api/v1/graduation-evaluations", "GET"), "graduation.read");
   assert.equal(requiredPermission("/api/v1/graduation-evaluations", "POST"), "graduation.evaluate");
@@ -643,9 +1563,11 @@ test("warning evaluation promotes high-severity cumulative GPA and decision reas
     fullText: "",
     signDate: null,
   }]]]);
-  const result = evaluate(student, new Map(), new Map(), summaries, decisions, {
-    termGpaThreshold: 2,
-    cumulativeGpaThreshold: 2,
+  const result = evaluateAcademicWarning({
+    student,
+    summary: summaries.get(IDS.student),
+    decisions: decisions.get(IDS.student),
+    policy: { termGpaThreshold: 2, cumulativeGpaThreshold: 2 },
   });
   assert.equal(result.maxSeverity, "high");
   assert.deepEqual(result.reasons.map((reason) => reason.reasonCode), [
@@ -672,18 +1594,39 @@ test("warning thresholds are exclusive and missing GPA is never treated as safe 
     cumulativeGPA4: 2,
     cumulativeGPA10: null,
   }]]);
-  const boundary = evaluate(student, new Map(), new Map(), exactBoundary, new Map(), {
-    termGpaThreshold: 2, cumulativeGpaThreshold: 2,
+  const boundary = evaluateAcademicWarning({
+    student,
+    summary: exactBoundary.get(IDS.student),
+    policy: { termGpaThreshold: 2, cumulativeGpaThreshold: 2 },
   });
   assert.equal(boundary.reasonCount, 0);
   assert.equal(boundary.dataError, null);
 
-  const missing = evaluate(student, new Map(), new Map(), new Map(), new Map(), {
-    termGpaThreshold: 2, cumulativeGpaThreshold: 2,
+  const missing = evaluateAcademicWarning({
+    student,
+    policy: { termGpaThreshold: 2, cumulativeGpaThreshold: 2 },
   });
   assert.equal(missing.reasonCount, 0);
   assert.equal(missing.maxSeverity, "none");
-  assert.equal(missing.dataError, "missing student term summary");
+  assert.equal(missing.dataError, "missing_student_term_summary");
+  assert.equal(missing.dataStatus, "INSUFFICIENT");
+  assert.equal(warningPresentationState(missing), "INSUFFICIENT_DATA");
+
+  const emptySummary = evaluateAcademicWarning({
+    student,
+    summary: {
+      termSummaryId: IDS.term,
+      cumulativeSummaryId: null,
+      registered: 0,
+      termGPA4: null,
+      termGPA10: null,
+      cumulativeGPA4: null,
+      cumulativeGPA10: null,
+    },
+    policy: { termGpaThreshold: 2, cumulativeGpaThreshold: 2 },
+  });
+  assert.equal(emptySummary.dataStatus, "INSUFFICIENT");
+  assert.equal(warningPresentationState(emptySummary), "INSUFFICIENT_DATA");
 });
 
 test("conduct scores use S5 classification boundaries and explicit approval mapping", () => {
@@ -714,40 +1657,44 @@ test("warning evaluation adds LOW_CONDUCT_SCORE only for approved recognized sco
     classCode: "", className: "", programCode: "CNTT",
   };
   const approved = new Map([[IDS.student, { id: IDS.plan, score: 49, statusId: "1" }]]);
-  const result = evaluate(student, new Map(), new Map(), new Map(), new Map(), {
-    termGpaThreshold: 2,
-    cumulativeGpaThreshold: 2,
-    conductScoreThreshold: 50,
-  }, approved);
+  const result = evaluateAcademicWarning({
+    student,
+    policy: { termGpaThreshold: 2, cumulativeGpaThreshold: 2, conductScoreThreshold: 50 },
+    conduct: approved.get(IDS.student),
+  });
   assert.equal(result.reasons[0].reasonCode, "LOW_CONDUCT_SCORE");
   assert.equal(result.reasons[0].sourceType, "student_conduct_record");
   assert.equal(result.reasons[0].sourceId, IDS.plan);
 
   approved.set(IDS.student, { id: IDS.plan, score: 49, statusId: "0" });
-  assert.equal(evaluate(student, new Map(), new Map(), new Map(), new Map(), {
-    termGpaThreshold: 2, cumulativeGpaThreshold: 2, conductScoreThreshold: 50,
-  }, approved).reasonCount, 0);
+  assert.equal(evaluateAcademicWarning({
+    student,
+    policy: { termGpaThreshold: 2, cumulativeGpaThreshold: 2, conductScoreThreshold: 50 },
+    conduct: approved.get(IDS.student),
+  }).reasonCount, 0);
 });
 
 test("warning action state machine accepts workflow paths and rejects invalid jumps", () => {
   assert.equal(parseWarningActionStatus("OPEN"), "OPEN");
   assert.doesNotThrow(() => assertWarningActionTransition("OPEN", "IN_PROGRESS"));
   assert.doesNotThrow(() => assertWarningActionTransition("IN_PROGRESS", "ESCALATED"));
-  assert.doesNotThrow(() => assertWarningActionTransition("ESCALATED", "RESOLVED"));
+  assert.doesNotThrow(() => assertWarningActionTransition("ESCALATED", "IN_PROGRESS"));
   assert.doesNotThrow(() => assertWarningActionTransition("RESOLVED", "REOPENED"));
+  assert.doesNotThrow(() => assertWarningActionTransition("REOPENED", "RESOLVED"));
   assert.throws(
     () => assertWarningActionTransition("OPEN", "RESOLVED"),
     (error: unknown) => error instanceof ApiError && error.code === "INVALID_STATUS_TRANSITION" && error.status === 409,
   );
+  assert.throws(() => assertWarningActionTransition("ESCALATED", "RESOLVED"), /Cannot transition/);
   assert.throws(() => parseWarningActionStatus("CLOSED"), /status must be one of/);
 });
 
-test("warning trend separates conclusively evaluated and partially available data", () => {
-  const trend = summarizeWarningTrend([
-    { studentId: "a", academicTermId: "t2", gpa4: null, cumulativeGpa4: 1.2 },
-    { studentId: "b", academicTermId: "t1", gpa4: 1.7, cumulativeGpa4: 2.5 },
-    { studentId: "c", academicTermId: "t1", gpa4: 3.2, cumulativeGpa4: 3.1 },
-  ], 2, 2);
+test("warning reports aggregate persisted results without reclassifying GPA", () => {
+  const trend = summarizePersistedWarningResults([
+    { studentId: "a", maxSeverity: "high", reasonCount: 1, dataError: "missing_term_gpa", termGpa4: null, cumulativeGpa4: 1.2 },
+    { studentId: "b", maxSeverity: "medium", reasonCount: 1, dataError: null, termGpa4: 1.7, cumulativeGpa4: 2.5 },
+    { studentId: "c", maxSeverity: "none", reasonCount: 0, dataError: null, termGpa4: 3.2, cumulativeGpa4: 3.1 },
+  ]);
 
   assert.deepEqual(trend, {
     high: 1,
@@ -756,15 +1703,16 @@ test("warning trend separates conclusively evaluated and partially available dat
     available: 3,
     termGpaAvailable: 2,
     cumulativeGpaAvailable: 3,
+    insufficient: 0,
   });
 });
 
-test("reporting period selects the latest term with representative GPA coverage", () => {
+test("reporting period selects the latest main term backed by evaluated persisted results", () => {
   const selected = selectLatestReportingPeriod([
-    { label: "HK02", termGpaAvailable: 577, isSummer: false },
-    { label: "HK03", termGpaAvailable: 620, isSummer: true },
-    { label: "HK01 current", termGpaAvailable: 0 },
-  ], 625);
+    { label: "HK02", evaluated: 577, isSummer: false },
+    { label: "HK03", evaluated: 620, isSummer: true },
+    { label: "HK01 current", evaluated: 0 },
+  ]);
 
   assert.equal(selected?.label, "HK02");
 });
@@ -779,6 +1727,13 @@ test("academic term links use configured chronology instead of term codes", () =
   const links = buildAcademicTermLinks(terms);
   assert.deepEqual(links.get("summer-custom"), { previousMainTermId: "main-b", nextMainTermId: "main-c" });
   assert.equal(latestMainTerm(terms)?.id, "main-c");
+  const normalized = normalizeAcademicTerms(terms);
+  assert.equal(normalized.find((term) => term.id === "summer-custom")?.mainSequence, null);
+  assert.equal(normalized.find((term) => term.id === "summer-custom")?.assessmentMainTermId, "main-b");
+  assert.equal(areConsecutiveMainTerms("main-b", "summer-custom", normalized), false);
+  assert.equal(areConsecutiveMainTerms("main-b", "main-c", normalized), true);
+  assert.equal(ACADEMIC_TERM_CAPABILITIES.firstTermDetection, "FIRST_TERM_DETECTION_UNAVAILABLE");
+  assert.equal(ACADEMIC_TERM_CAPABILITIES.summerResultMerge, "SOURCE_MERGE_UNVERIFIED");
 });
 
 test("summer monitoring never applies minimum-credit or GPA warning rules", () => {
@@ -786,9 +1741,9 @@ test("summer monitoring never applies minimum-credit or GPA warning rules", () =
     id: IDS.student, classId: null, cohortId: null, code: "SV001", name: "Sinh viên",
     classCode: "", className: "", programCode: "CNTT",
   };
-  const result = evaluateSummerMonitoring(
+  const result = evaluateSummerMonitoring({
     student,
-    new Map([[IDS.student, {
+    summary: {
       termSummaryId: IDS.term,
       cumulativeSummaryId: null,
       registered: 2,
@@ -796,29 +1751,36 @@ test("summer monitoring never applies minimum-credit or GPA warning rules", () =
       termGPA10: 1,
       cumulativeGPA4: 1.5,
       cumulativeGPA10: 4,
-    }]]),
-    new Map([[IDS.student, { offeringCount: 1, registeredCredits: 2, pendingResults: 0, failedCourses: 1 }]]),
-  );
+    },
+    monitoring: { offeringCount: 1, registeredCredits: 2, pendingResults: 0, failedCourses: 1 },
+  });
   assert.equal(result.registrationStatus, "participating");
   assert.deepEqual(result.reasons.map((reason) => reason.reasonCode), ["SUMMER_COURSE_NOT_PASSED"]);
   assert.equal(result.maxSeverity, "medium");
 });
 
-test("warning trend uses only data from each exact term and omits empty future terms", () => {
-  const trend = buildWarningTrend([
-    { id: "t1", academicYear: "2025-2026", termCode: "HK01", termOrder: 1, label: "HK01 (2025-2026)" },
-    { id: "t2", academicYear: "2025-2026", termCode: "HK02", termOrder: 2, label: "HK02 (2025-2026)" },
-    { id: "t3", academicYear: "2025-2026", termCode: "HK03", termOrder: 3, label: "HK03 (2025-2026)" },
-  ], [
-    { studentId: "a", academicTermId: "t1", gpa4: 1.8, cumulativeGpa4: 1.9 },
-    { studentId: "b", academicTermId: "t1", gpa4: 1.7, cumulativeGpa4: 2.5 },
-    { studentId: "a", academicTermId: "t2", gpa4: null, cumulativeGpa4: 1.8 },
-  ], [], 2, 2);
-
-  assert.deepEqual(trend.map(({ label, high, medium, evaluated }) => ({ label, high, medium, evaluated })), [
-    { label: "HK01 (2025-2026)", high: 1, medium: 1, evaluated: 2 },
-    { label: "HK02 (2025-2026)", high: 1, medium: 0, evaluated: 1 },
+test("a persisted zero GPA remains available data", () => {
+  const summary = summarizePersistedWarningResults([
+    { studentId: "a", maxSeverity: "medium", reasonCount: 1, dataError: null, termGpa4: 0, cumulativeGpa4: 0 },
   ]);
+  assert.equal(summary.termGpaAvailable, 1);
+  assert.equal(summary.cumulativeGpaAvailable, 1);
+  assert.equal(summary.medium, 1);
+});
+
+test("warning consumers share the persisted evaluator result instead of rebuilding GPA thresholds", () => {
+  const reportsSource = fs.readFileSync(path.join(process.cwd(), "lib/services/reports.ts"), "utf8");
+  const dashboardSource = fs.readFileSync(path.join(process.cwd(), "lib/services/dashboard.ts"), "utf8");
+  const exportSource = fs.readFileSync(path.join(process.cwd(), "lib/services/export.ts"), "utf8");
+  const warningServiceSource = fs.readFileSync(path.join(process.cwd(), "lib/services/academic-warnings.ts"), "utf8");
+
+  assert.match(reportsSource, /academicWarningStudentResult\.findMany/);
+  assert.doesNotMatch(reportsSource, /termGpa4\s*[<>=]/);
+  assert.match(dashboardSource, /ReportsService\.academicWarningStudents/);
+  assert.doesNotMatch(dashboardSource, /LOW_TERM_GPA|LOW_CUMULATIVE_GPA/);
+  assert.match(exportSource, /ReportsService\.academicWarningStudents/);
+  assert.match(warningServiceSource, /evaluateAcademicWarning/);
+  assert.match(warningServiceSource, /evaluateSummerMonitoring/);
 });
 
 test("curriculum import deduplicates redundant courses by prioritizing real student grades and semesters", () => {
@@ -1498,6 +2460,7 @@ test("Proxy RBAC: class_advisor has GET catalog access but cannot mutate catalog
       { path: "/rbac/users", method: "GET" },
       { path: `/rbac/roles/${IDS.plan}/permissions`, method: "PUT" },
       { path: "/rbac/advisor-assignments", method: "POST" },
+      { path: `/academic-warnings/interventions/${IDS.plan}/assignment`, method: "PATCH" },
     ];
     for (const ep of forbiddenEndpoints) {
       const res = await proxy(new NextRequest(`http://backend:3001/api/v1${ep.path}`, {
@@ -1535,6 +2498,7 @@ test("Proxy RBAC: faculty_manager can evaluate/calculate but lacks user/role/ass
         { role: "faculty_manager", scope: "faculty", permission: "academic_warning.calculate" },
         { role: "faculty_manager", scope: "faculty", permission: "academic_warning.action.create" },
         { role: "faculty_manager", scope: "faculty", permission: "academic_warning.action.update" },
+        { role: "faculty_manager", scope: "faculty", permission: "academic_warning.case.assign" },
         { role: "faculty_manager", scope: "faculty", permission: "report.export" },
       ],
     };
@@ -1566,6 +2530,12 @@ test("Proxy RBAC: faculty_manager can evaluate/calculate but lacks user/role/ass
     }));
     assert.equal(calcRes.headers.get("x-middleware-next"), "1", "Dean can calculate progress");
 
+    const interventionAssignRes = await proxy(new NextRequest(`http://backend:3001/api/v1/academic-warnings/interventions/${IDS.plan}/assignment`, {
+      method: "PATCH",
+      headers: { cookie: deanCookie },
+    }));
+    assert.equal(interventionAssignRes.headers.get("x-middleware-next"), "1", "Dean can assign intervention cases");
+
     // 2. faculty_manager CANNOT manage system configuration / users / roles / advisor assignments
     for (const route of ["/rbac/users", "/rbac/roles"]) {
       const res = await proxy(new NextRequest(`http://backend:3001/api/v1${route}`, {
@@ -1593,6 +2563,7 @@ test("Proxy RBAC: faculty_manager can evaluate/calculate but lacks user/role/ass
       { path: `/rbac/roles/${IDS.plan}/permissions`, method: "PUT" },
       { path: "/rbac/advisor-assignments", method: "POST" },
       { path: "/graduation-evaluations", method: "POST" },
+      { path: `/academic-warnings/interventions/${IDS.plan}/assignment`, method: "PATCH" },
     ]) {
       const res = await proxy(new NextRequest(`http://backend:3001/api/v1${ep.path}`, {
         method: ep.method,
@@ -1619,6 +2590,256 @@ function mockDelegateMethod<T extends object>(
     targetRecord[key] = original;
   };
 }
+
+test("Warning run API filters sourceSnapshot to assigned classes", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "test-only-secret-for-warning-snapshot";
+  const cleanups: Array<() => void> = [];
+  const actor: Actor = {
+    userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    username: "advisor.snapshot",
+    fullName: "Advisor Snapshot",
+    grants: [{ role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.read" }],
+  };
+  try {
+    const signed = await signAccessToken(actor.userId, actor.username, actor);
+    cleanups.push(mockDelegateMethod(prisma, "$queryRaw", async () => actor.grants.map((grant) => ({
+      id: actor.userId,
+      username: actor.username,
+      full_name: actor.fullName,
+      role_code: grant.role,
+      data_scope: grant.scope,
+      permission_code: grant.permission,
+    }))));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningRun, "findFirst", async () => ({ id: IDS.plan })));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningRun, "findUnique", async (args: { select?: unknown }) => args.select
+      ? { assessmentAcademicTermId: IDS.term, cohortId: IDS.courseB, trainingProgramId: IDS.student }
+      : {
+          id: IDS.plan,
+          cohortId: IDS.courseB,
+          trainingProgramId: IDS.student,
+          assessmentAcademicTermId: IDS.term,
+          policyId: null,
+          policyVersion: 1,
+          completionRunId: null,
+          progressRunId: null,
+          runMode: "OFFICIAL",
+          status: "completed",
+          totalStudents: 2,
+          warningStudents: 2,
+          mediumStudents: 1,
+          highStudents: 1,
+          errorMessage: null,
+          startedAt: new Date("2026-01-01"),
+          completedAt: new Date("2026-01-01"),
+          sourceSnapshot: {
+            students: [
+              { id: "inside", classId: IDS.courseA, name: "Inside" },
+              { id: "outside", classId: "99999999-9999-4999-8999-999999999999", name: "Outside" },
+            ],
+          },
+          sourceSnapshotHash: "hash",
+          sourceCapturedAt: new Date("2026-01-01"),
+        }));
+    cleanups.push(mockDelegateMethod(prisma.classAdvisorAssignment, "findMany", async () => [{ classId: IDS.courseA, academicTermId: IDS.term }]));
+    cleanups.push(mockDelegateMethod(prisma.class, "findMany", async () => [{ id: IDS.courseA, cohortId: IDS.courseB }]));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningStudentResult, "findMany", async () => [
+      { maxSeverity: "medium", reasonCount: 1 },
+    ]));
+    cleanups.push(mockDelegateMethod(prisma.cohort, "findUnique", async () => ({ sCohortCode: "K50" })));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgram, "findUnique", async () => ({ sProgramCode: "CNTT" })));
+    cleanups.push(mockDelegateMethod(prisma.academicTerm, "findUnique", async () => ({ sTermCode: "HK01", sIsSummer: false })));
+
+    const response = await getWarningRunRoute(new NextRequest(`http://backend:3001/api/v1/academic-warnings/runs/${IDS.plan}`, {
+      headers: { cookie: `sms_access_token=${signed.token}` },
+    }), { params: Promise.resolve({ runId: IDS.plan }) });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.deepEqual(payload.sourceSnapshot.students.map((student: { id: string }) => student.id), ["inside"]);
+    assert.deepEqual(payload.sourceSnapshot.scopeRestriction.classIds, [IDS.courseA]);
+    assert.equal(payload.totalStudents, 1);
+  } finally {
+    cleanups.reverse().forEach((cleanup) => cleanup());
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
+
+test("admin warning run API keeps the complete source snapshot", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "test-only-secret-for-warning-admin";
+  const cleanups: Array<() => void> = [];
+  const actor: Actor = {
+    userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    username: "admin.warning",
+    fullName: "Admin Warning",
+    grants: [{ role: "admin", scope: "system", permission: "academic_warning.read" }],
+  };
+  try {
+    const signed = await signAccessToken(actor.userId, actor.username, actor);
+    cleanups.push(mockDelegateMethod(prisma, "$queryRaw", async () => actor.grants.map((grant) => ({
+      id: actor.userId, username: actor.username, full_name: actor.fullName,
+      role_code: grant.role, data_scope: grant.scope, permission_code: grant.permission,
+    }))));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningRun, "findFirst", async () => ({ id: IDS.plan })));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningRun, "findUnique", async (args: { select?: unknown }) => args.select
+      ? { assessmentAcademicTermId: IDS.term, cohortId: IDS.courseB, trainingProgramId: IDS.student }
+      : {
+          id: IDS.plan,
+          cohortId: IDS.courseB,
+          trainingProgramId: IDS.student,
+          assessmentAcademicTermId: IDS.term,
+          policyId: null,
+          policyVersion: 1,
+          completionRunId: null,
+          progressRunId: null,
+          runMode: "OFFICIAL",
+          status: "completed",
+          totalStudents: 2,
+          warningStudents: 1,
+          mediumStudents: 1,
+          highStudents: 0,
+          errorMessage: null,
+          startedAt: new Date("2026-01-01"),
+          completedAt: new Date("2026-01-01"),
+          sourceSnapshot: {
+            students: [
+              { id: "inside", classId: IDS.courseA },
+              { id: "outside", classId: "99999999-9999-4999-8999-999999999999" },
+            ],
+          },
+          sourceSnapshotHash: "hash",
+          sourceCapturedAt: new Date("2026-01-01"),
+        }));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningStudentResult, "findMany", async () => [
+      { maxSeverity: "medium", reasonCount: 1 },
+      { maxSeverity: "none", reasonCount: 0 },
+    ]));
+    cleanups.push(mockDelegateMethod(prisma.cohort, "findUnique", async () => ({ sCohortCode: "K50" })));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgram, "findUnique", async () => ({ sProgramCode: "CNTT" })));
+    cleanups.push(mockDelegateMethod(prisma.academicTerm, "findUnique", async () => ({ sTermCode: "HK01", sIsSummer: false })));
+
+    const response = await getWarningRunRoute(new NextRequest(`http://backend:3001/api/v1/academic-warnings/runs/${IDS.plan}`, {
+      headers: { cookie: `sms_access_token=${signed.token}` },
+    }), { params: Promise.resolve({ runId: IDS.plan }) });
+    assert.equal(response.status, 200);
+    const payload = await response.json();
+    assert.deepEqual(payload.sourceSnapshot.students.map((student: { id: string }) => student.id), ["inside", "outside"]);
+    assert.equal(payload.totalStudents, 2);
+  } finally {
+    cleanups.reverse().forEach((cleanup) => cleanup());
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
+
+test("student.read alone cannot access intervention notes through warning API", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "test-only-secret-for-warning-notes";
+  const cleanups: Array<() => void> = [];
+  const actor: Actor = {
+    userId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    username: "student.reader",
+    fullName: "Student Reader",
+    grants: [{ role: "communications", scope: "faculty", permission: "student.read" }],
+  };
+  try {
+    const signed = await signAccessToken(actor.userId, actor.username, actor);
+    cleanups.push(mockDelegateMethod(prisma, "$queryRaw", async () => actor.grants.map((grant) => ({
+      id: actor.userId, username: actor.username, full_name: actor.fullName,
+      role_code: grant.role, data_scope: grant.scope, permission_code: grant.permission,
+    }))));
+    const response = await getStudentWarningsRoute(new NextRequest(`http://backend:3001/api/v1/academic-warnings/students/${IDS.student}`, {
+      headers: { cookie: `sms_access_token=${signed.token}` },
+    }), { params: Promise.resolve({ studentId: IDS.student }) });
+    assert.equal(response.status, 403);
+  } finally {
+    cleanups.reverse().forEach((cleanup) => cleanup());
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
+
+test("academic warning read and action update still enforce assigned-student scope", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "test-only-secret-for-warning-scope";
+  const cleanups: Array<() => void> = [];
+  const actor: Actor = {
+    userId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    username: "advisor.scope.warning",
+    fullName: "Advisor Scope Warning",
+    grants: [
+      { role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.read" },
+      { role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.action.update" },
+    ],
+  };
+  try {
+    const signed = await signAccessToken(actor.userId, actor.username, actor);
+    cleanups.push(mockDelegateMethod(prisma, "$queryRaw", async () => actor.grants.map((grant) => ({
+      id: actor.userId, username: actor.username, full_name: actor.fullName,
+      role_code: grant.role, data_scope: grant.scope, permission_code: grant.permission,
+    }))));
+    cleanups.push(mockDelegateMethod(prisma.classAdvisorAssignment, "findMany", async () => [{ classId: IDS.courseA }]));
+    cleanups.push(mockDelegateMethod(prisma.class, "findMany", async () => [{ classId: "ASSIGNED_CLASS" }]));
+    cleanups.push(mockDelegateMethod(prisma.student, "findFirst", async () => null));
+    cleanups.push(mockDelegateMethod(prisma.warningAction, "findUnique", async () => ({ studentId: IDS.student, runId: null })));
+
+    const warningResponse = await getStudentWarningsRoute(new NextRequest(`http://backend:3001/api/v1/academic-warnings/students/${IDS.student}`, {
+      headers: { cookie: `sms_access_token=${signed.token}` },
+    }), { params: Promise.resolve({ studentId: IDS.student }) });
+    assert.equal(warningResponse.status, 404);
+
+    const actionResponse = await patchWarningActionRoute(new NextRequest(`http://backend:3001/api/v1/academic-warnings/actions/${IDS.plan}`, {
+      method: "PATCH",
+      headers: { cookie: `sms_access_token=${signed.token}`, "content-type": "application/json" },
+      body: JSON.stringify({ note: "out of scope" }),
+    }), { params: Promise.resolve({ id: IDS.plan }) });
+    assert.equal(actionResponse.status, 404);
+  } finally {
+    cleanups.reverse().forEach((cleanup) => cleanup());
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
+
+test("faculty warning run API cannot read a run outside its training programs", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "test-only-secret-for-warning-faculty-scope";
+  const cleanups: Array<() => void> = [];
+  const actor: Actor = {
+    userId: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    username: "faculty.scope.warning",
+    fullName: "Faculty Scope Warning",
+    grants: [{ role: "faculty_manager", scope: "faculty", permission: "academic_warning.read" }],
+  };
+  try {
+    const signed = await signAccessToken(actor.userId, actor.username, actor);
+    cleanups.push(mockDelegateMethod(prisma, "$queryRaw", async () => actor.grants.map((grant) => ({
+      id: actor.userId, username: actor.username, full_name: actor.fullName,
+      role_code: grant.role, data_scope: grant.scope, permission_code: grant.permission,
+    }))));
+    cleanups.push(mockDelegateMethod(prisma.lecturerProfile, "findUnique", async () => ({ facultyCode: "CNTT" })));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgram, "findMany", async () => [{ id: IDS.courseA }]));
+    cleanups.push(mockDelegateMethod(prisma.academicWarningRun, "findFirst", async (args: {
+      where?: { AND?: Array<{ id?: string; OR?: Array<{ trainingProgramId?: { in?: string[] } }> }> };
+    }) => {
+      const programIds = args.where?.AND?.flatMap((part) =>
+        part.OR?.flatMap((alternative) => alternative.trainingProgramId?.in ?? []) ?? [],
+      ) ?? [];
+      assert.deepEqual(programIds, [IDS.courseA]);
+      return null;
+    }));
+
+    const response = await getWarningRunRoute(new NextRequest(`http://backend:3001/api/v1/academic-warnings/runs/${IDS.plan}`, {
+      headers: { cookie: `sms_access_token=${signed.token}` },
+    }), { params: Promise.resolve({ runId: IDS.plan }) });
+    assert.equal(response.status, 404);
+  } finally {
+    cleanups.reverse().forEach((cleanup) => cleanup());
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
 
 test("Data Scope: studentScopeWhere filters correctly for faculty_manager, class_advisor, and admin", async () => {
   const cleanups: Array<() => void> = [];
@@ -1962,6 +3183,3 @@ test("Data Scope: ClassesService and GET /classes enforce scope and query param 
     else process.env.JWT_SECRET = previousSecret;
   }
 });
-
-
-

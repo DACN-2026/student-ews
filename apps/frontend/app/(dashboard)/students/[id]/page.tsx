@@ -87,7 +87,7 @@ const conductApprovalStyle = (code: ConductRecord["approval"]["code"]) => {
 };
 
 export default function StudentDetailPage() {
-  const { can, status } = useAuthStore();
+  const { can, status, user } = useAuthStore();
   const params = useParams();
   const studentId = params?.id as string;
   const router = useRouter();
@@ -96,6 +96,8 @@ export default function StudentDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [student, setStudent] = useState<ApiData>(null);
+  const [warningData, setWarningData] = useState<ApiData>(null);
+  const [activeInterventionCase, setActiveInterventionCase] = useState<ApiData>(null);
   const [gradesData, setGradesData] = useState<ApiData[]>([]);
   const [summariesData, setSummariesData] = useState<ApiData>(null);
   const [decisionsData, setDecisionsData] = useState<ApiData[]>([]);
@@ -166,21 +168,7 @@ export default function StudentDetailPage() {
     });
   }, [gradesData, transcriptTermFilter, transcriptStatusFilter, transcriptSearch, failedGrades, pendingGrades]);
 
-  // Warning Action interactive state
-  const [showActionModal, setShowActionModal] = useState(false);
-  const [actionForm, setActionForm] = useState({
-    actionType: "COUNSELING",
-    note: "",
-    status: "IN_PROGRESS",
-  });
-  const [actionSubmitting, setActionSubmitting] = useState(false);
-
-  const reloadStudent = async () => {
-    const sRes = await apiFetch(`/api/v1/students/${studentId}`);
-    if (sRes.ok) {
-      setStudent(await sRes.json());
-    }
-  };
+  const canReadWarnings = can("academic_warning.read");
 
   const exportProfilePdf = async () => {
     try {
@@ -232,8 +220,32 @@ export default function StudentDetailPage() {
         if (!sRes.ok) throw new Error("Không thể tải hồ sơ sinh viên");
         const sJson = await sRes.json();
         setStudent(sJson);
-
         const issues: string[] = [];
+
+        if (canReadWarnings) {
+          const studentCode = String(sJson.studentCode || sJson.studentId || "").trim();
+          const [warningResponse, interventionsResponse] = await Promise.all([
+            apiFetch(`/api/v1/academic-warnings/students/${studentId}`),
+            studentCode
+              ? apiFetch(`/api/v1/academic-warnings/interventions?search=${encodeURIComponent(studentCode)}&pageSize=100`)
+              : Promise.resolve(null),
+          ]);
+          if (warningResponse.ok) setWarningData(await warningResponse.json());
+          else issues.push("cảnh báo học vụ");
+          if (interventionsResponse?.ok) {
+            const interventionData = await interventionsResponse.json();
+            setActiveInterventionCase((interventionData.items || []).find((item: ApiData) =>
+              item.student?.id === sJson.id &&
+              ["OPEN", "IN_PROGRESS", "ESCALATED", "REOPENED"].includes(item.interventionStatus),
+            ) || null);
+          } else if (interventionsResponse) {
+            issues.push("hồ sơ can thiệp hiện tại");
+          }
+        } else {
+          setWarningData(null);
+          setActiveInterventionCase(null);
+        }
+
         if (sJson.program?.id) {
           const planRes = await apiFetch(`/api/v1/training-programs/${sJson.program.id}/courses`);
           if (planRes.ok) {
@@ -317,7 +329,7 @@ export default function StudentDetailPage() {
     }
 
     loadStudentInfo();
-  }, [studentId]);
+  }, [studentId, canReadWarnings]);
 
   if (status !== "loading" && status !== "idle" && !can("student.read")) {
     return <ForbiddenState requiredPermission="student.read" />;
@@ -392,12 +404,12 @@ export default function StudentDetailPage() {
     }));
 
   const unifiedTimeline = [
-    ...(student?.warningHistory || []).map((item: ApiData) => ({
+    ...(warningData?.warningHistory || []).map((item: ApiData) => ({
       id: `warning-${item.id}`,
       date: item.createdAt,
       kind: "Cảnh báo",
       title: item.maxSeverity === "high" ? "Ghi nhận cảnh báo mức Đỏ" : "Ghi nhận cảnh báo mức Vàng",
-      detail: `${item.reasonCount || 0} nguyên nhân · GPA kỳ ${item.termGpa4 ?? "—"} · GPA tích lũy ${item.cumulativeGpa4 ?? "—"}`,
+      detail: `${item.termCode || "Học kỳ"}${item.academicYear ? ` ${item.academicYear}` : ""} · ${item.reasonCount || 0} nguyên nhân · GPA kỳ ${item.termGpa4 ?? "—"} · GPA tích lũy ${item.cumulativeGpa4 ?? "—"}`,
       color: item.maxSeverity === "high" ? "bg-red-500" : "bg-amber-500",
     })),
     ...decisionsData.map((item: ApiData) => ({
@@ -408,7 +420,7 @@ export default function StudentDetailPage() {
       detail: `Số ${item.decisionNumber || "chưa cập nhật"}${item.termId ? ` · ${item.termId} ${item.yearStudy || ""}` : ""}`,
       color: item.isAcademicWarning ? "bg-purple-500" : "bg-blue-500",
     })),
-    ...(student?.warningActions || []).map((item: ApiData) => ({
+    ...(warningData?.warningActions || []).map((item: ApiData) => ({
       id: `action-${item.id}`,
       date: item.createdAt,
       kind: "Hỗ trợ",
@@ -417,6 +429,30 @@ export default function StudentDetailPage() {
       color: item.status === "RESOLVED" ? "bg-emerald-500" : item.status === "ESCALATED" ? "bg-red-500" : "bg-sky-500",
     })),
   ].filter((item) => item.date).sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
+  const interventionStatusLabels: Record<string, string> = {
+    OPEN: "Chưa xử lý",
+    IN_PROGRESS: "Đang xử lý",
+    ESCALATED: "Đã chuyển cấp",
+    REOPENED: "Đang xử lý lại",
+  };
+  const canUpdateCurrentIntervention = Boolean(
+    activeInterventionCase &&
+    (user?.role === "SYSTEM_ADMIN" || (
+      user?.role === "CLASS_ADVISOR"
+    )) &&
+    can(["academic_warning.action.create", "academic_warning.action.update"]),
+  );
+  const warningPresentationLabel = warningData?.presentationState === "VERIFY_REQUIRED"
+    ? "Chạm ngưỡng cần xác minh"
+    : warningData?.presentationState === "HIGH_RISK"
+      ? "Nguy cơ cao"
+      : warningData?.presentationState === "MONITORING"
+        ? "Cần theo dõi"
+        : warningData?.presentationState === "PARTIAL_NO_RISK"
+          ? "Đã đánh giá một phần"
+        : warningData?.presentationState === "INSUFFICIENT_DATA"
+          ? "Chưa đủ dữ liệu"
+          : "Bình thường";
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -458,7 +494,7 @@ export default function StudentDetailPage() {
               <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 {sName}
               </h1>
-              <WarningBadge level={student?.warningLevel || dashboardData?.warningLevel || "green"} />
+              {canReadWarnings && <WarningBadge level={warningData?.warningLevel || "insufficient"} label={warningPresentationLabel} />}
             </div>
             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 font-medium">
               <span>Lớp: <strong className="text-slate-800">{sClass}</strong></span>
@@ -529,12 +565,11 @@ export default function StudentDetailPage() {
           { id: "fee_policies", label: "5. Chính sách học phí" },
           { id: "registrations", label: "6. Đăng ký học phần" },
           { id: "training_plan", label: "7. Kế hoạch đào tạo" },
-          {
+          ...(canReadWarnings ? [{
             id: "warnings",
             label: "8. Cảnh báo học vụ",
-            
-            badge: (student?.warningHistory?.length || (student?.warningLevel && student.warningLevel !== "green")) ? "!" : undefined,
-          },
+            badge: (warningData?.warningHistory?.length || (warningData?.warningLevel && warningData.warningLevel !== "green")) ? "!" : undefined,
+          }] : []),
         ].map((t) => (
           <button
             key={t.id}
@@ -614,10 +649,10 @@ export default function StudentDetailPage() {
                   <span className="text-slate-500">Cố vấn học tập (GVCN):</span>
                   <span className="font-semibold text-slate-800 text-right">{student?.advisor?.fullName || "Chưa phân công"}</span>
                 </div>
-                <div className="flex justify-between py-2 border-b border-slate-100">
+                {canReadWarnings && <div className="flex justify-between py-2 border-b border-slate-100">
                   <span className="text-slate-500">Mức độ cảnh báo:</span>
-                  <WarningBadge level={dashboardData?.warningLevel || "green"} />
-                </div>
+                  <WarningBadge level={warningData?.warningLevel || "insufficient"} label={warningPresentationLabel} />
+                </div>}
                 <div className="flex justify-between py-2 border-b border-slate-100">
                   <span className="text-slate-500">Tiến độ đào tạo:</span>
                   <span className="font-semibold text-slate-800 text-right">{progressStatus}</span>
@@ -1307,50 +1342,79 @@ export default function StudentDetailPage() {
       )}
 
       {/* 7. TAB CẢNH BÁO HỌC VỤ & CAN THIỆP */}
-      {activeTab === "warnings" && (
+      {activeTab === "warnings" && canReadWarnings && (
         <div className="space-y-6">
           {/* Top Banner & Quick Status */}
           <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-            student?.warningLevel === "red"
+            warningData?.warningLevel === "red"
               ? "bg-red-50/80 border-red-200"
-              : student?.warningLevel === "yellow"
+              : warningData?.warningLevel === "yellow"
               ? "bg-amber-50/80 border-amber-200"
+              : warningData?.warningLevel === "partial"
+              ? "bg-blue-50/80 border-blue-200"
+              : warningData?.warningLevel === "insufficient"
+              ? "bg-slate-50/80 border-slate-200"
               : "bg-emerald-50/80 border-emerald-200"
           }`}>
             <div className="flex items-start gap-3.5">
               <div className="mt-0.5">
-                <WarningBadge level={student?.warningLevel || "green"} />
+                <WarningBadge level={warningData?.warningLevel || "insufficient"} label={warningPresentationLabel} />
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                  {student?.warningLevel === "red"
-                    ? "Sinh viên thuộc diện Nguy cơ cao (Cảnh báo Đỏ)"
-                    : student?.warningLevel === "yellow"
-                    ? "Sinh viên thuộc diện Cần lưu ý theo dõi (Cảnh báo Vàng)"
-                    : "Chưa ghi nhận tín hiệu cảnh báo theo tiêu chí hiện tại (Mức Xanh)"}
+                  {warningData?.presentationState === "VERIFY_REQUIRED"
+                    ? "Chạm ngưỡng cần xác minh"
+                    : warningData?.presentationState === "HIGH_RISK"
+                    ? "Sinh viên có mức nguy cơ cao"
+                    : warningData?.presentationState === "MONITORING"
+                    ? "Sinh viên cần được theo dõi"
+                    : warningData?.presentationState === "PARTIAL_NO_RISK"
+                    ? "Chưa ghi nhận nguy cơ trong các tiêu chí đã đánh giá"
+                    : warningData?.presentationState === "INSUFFICIENT_DATA"
+                    ? "Chưa đủ dữ liệu để kết luận trạng thái cảnh báo"
+                    : "Chưa ghi nhận tín hiệu cảnh báo theo tiêu chí hiện tại"}
                 </h3>
                 <p className="text-xs text-slate-600 mt-0.5">
-                  {student?.warningLevel === "red"
+                  {warningData?.presentationState === "VERIFY_REQUIRED"
+                    ? "Dữ liệu SEWS cho thấy sinh viên đã chạm một tiêu chí định lượng trong chính sách đang đánh giá; cần cán bộ kiểm tra trước khi có kết luận học vụ."
+                    : warningData?.presentationState === "HIGH_RISK"
                     ? "Cần khẩn trương liên hệ, tư vấn lộ trình học tập và ghi nhận hành động hỗ trợ."
-                    : student?.warningLevel === "yellow"
-                    ? "Có dấu hiệu nợ học phần hoặc GPA giảm, cố vấn học tập cần theo dõi và đôn đốc sinh viên."
-                    : "Tiến độ đào tạo và kết quả tích lũy đảm bảo theo khung chương trình đào tạo."}
+                    : warningData?.presentationState === "MONITORING"
+                    ? "Sinh viên thiếu 4–11 tín chỉ so với tiến độ CTĐT hoặc đang tiến gần ngưỡng Điều 18; cố vấn học tập cần theo dõi và hỗ trợ."
+                    : warningData?.presentationState === "PARTIAL_NO_RISK"
+                    ? "Các tiêu chí có đủ dữ liệu chưa ghi nhận nguy cơ; tiêu chí còn thiếu dữ liệu không được suy diễn là bình thường."
+                    : warningData?.presentationState === "INSUFFICIENT_DATA"
+                    ? "Chưa đủ dữ liệu điểm hoặc cấu hình CTĐT để kết luận; trạng thái này không được xem là bình thường."
+                    : "Sinh viên thiếu không quá 3 tín chỉ so với tiến độ CTĐT và chưa chạm ngưỡng Điều 18 theo dữ liệu hiện có."}
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowActionModal(true)}
-              className="px-4 py-2 rounded-xl bg-[var(--color-primary)] hover:opacity-90 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-              <span>Ghi nhận can thiệp mới</span>
-            </button>
           </div>
+
+          {activeInterventionCase && (
+            <section className="rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary-light)]/40 p-5" aria-labelledby="current-intervention-title">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">Can thiệp hiện tại</p>
+                  <h3 id="current-intervention-title" className="mt-1 text-sm font-bold text-slate-900">
+                    {interventionStatusLabels[activeInterventionCase.interventionStatus] || "Đang theo dõi"}
+                  </h3>
+                  <dl className="mt-2 grid gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-2">
+                    <div><dt className="inline text-slate-500">Phụ trách can thiệp: </dt><dd className="inline font-semibold text-slate-800">GVCN/CVHT lớp {sClass}</dd></div>
+                    <div><dt className="inline text-slate-500">Theo dõi tiếp: </dt><dd className="inline font-semibold text-slate-800">{activeInterventionCase.nextFollowUpAt ? new Date(activeInterventionCase.nextFollowUpAt).toLocaleString("vi-VN") : "Chưa đặt lịch"}</dd></div>
+                  </dl>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/reports?tab=queue&caseId=${encodeURIComponent(String(activeInterventionCase.caseId))}`)}
+                  className="shrink-0 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2"
+                >
+                  {canUpdateCurrentIntervention ? "Xem / cập nhật can thiệp" : "Xem can thiệp"}
+                </button>
+              </div>
+            </section>
+          )}
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs" aria-labelledby="student-unified-timeline">
             <div className="flex items-center justify-between gap-3">
@@ -1389,7 +1453,7 @@ export default function StudentDetailPage() {
             <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Số lần bị cảnh báo</span>
               <span className="text-2xl font-bold font-mono text-slate-900 mt-1 block">
-                {student?.warningHistory?.length || 0}
+                {warningData?.warningHistory?.length || 0}
               </span>
               <span className="text-[11px] text-slate-500">Đợt quét hệ thống</span>
             </div>
@@ -1397,7 +1461,7 @@ export default function StudentDetailPage() {
             <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Quyết định cảnh báo</span>
               <span className="text-2xl font-bold font-mono text-purple-700 mt-1 block">
-                {student?.warningInfo?.academicWarningDecisions || 0}
+                {warningData?.warningInfo?.academicWarningDecisions || 0}
               </span>
               <span className="text-[11px] text-slate-500">Văn bản ban hành</span>
             </div>
@@ -1405,7 +1469,9 @@ export default function StudentDetailPage() {
             <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">GPA kỳ gần nhất</span>
               <span className="text-2xl font-bold font-mono text-red-600 mt-1 block">
-                {student?.warningInfo?.termGpa4 ? student.warningInfo.termGpa4.toFixed(2) : "—"}
+                {warningData?.warningInfo?.termGpa4 !== null && warningData?.warningInfo?.termGpa4 !== undefined
+                  ? Number(warningData.warningInfo.termGpa4).toFixed(2)
+                  : "—"}
               </span>
               <span className="text-[11px] text-slate-500">Thang điểm 4.0</span>
             </div>
@@ -1413,7 +1479,7 @@ export default function StudentDetailPage() {
             <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
               <span className="text-[10px] uppercase font-bold text-slate-400 block">Lượt đã can thiệp</span>
               <span className="text-2xl font-bold font-mono text-emerald-600 mt-1 block">
-                {student?.warningActions?.length || 0}
+                {warningData?.warningActions?.length || 0}
               </span>
               <span className="text-[11px] text-slate-500">Buổi tư vấn / Gặp gỡ</span>
             </div>
@@ -1426,17 +1492,17 @@ export default function StudentDetailPage() {
                 Các nguyên nhân kích hoạt cảnh báo gần nhất
               </h3>
               <span className="text-xs text-slate-400">
-                {student?.warningReasons?.length || 0} tiêu chí vi phạm
+                {warningData?.warningReasons?.length || 0} tiêu chí vi phạm
               </span>
             </div>
 
-            {(!student?.warningReasons || student.warningReasons.length === 0) ? (
+            {(!warningData?.warningReasons || warningData.warningReasons.length === 0) ? (
               <div className="py-8 text-center text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
                 Sinh viên không có nguyên nhân cảnh báo vi phạm học vụ nào trong đợt quét gần nhất.
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {student.warningReasons.map((r: ApiData, idx: number) => (
+                {warningData.warningReasons.map((r: ApiData, idx: number) => (
                   <div key={idx} className="p-3.5 rounded-xl border border-red-200 bg-red-50/50 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-red-900 flex items-center gap-1.5">
@@ -1449,13 +1515,21 @@ export default function StudentDetailPage() {
                     </div>
                     <p className="text-xs text-slate-600 leading-relaxed">
                       {r.reasonCode === "LOW_TERM_GPA"
-                        ? `Điểm GPA học kỳ của sinh viên chưa đạt chuẩn tối thiểu (đạt ${r.details?.gpa4 ?? student?.warningInfo?.termGpa4 ?? "—"}).`
+                        ? `Điểm GPA học kỳ của sinh viên chưa đạt chuẩn tối thiểu (đạt ${r.details?.gpa4 ?? warningData?.warningInfo?.termGpa4 ?? "—"}).`
                         : r.reasonCode === "LOW_CUMULATIVE_GPA"
-                        ? `Điểm GPA tích lũy toàn khóa chưa đạt chuẩn (đạt ${r.details?.gpa4 ?? student?.warningInfo?.cumulativeGpa4 ?? "—"}).`
+                        ? `Điểm GPA tích lũy toàn khóa chưa đạt chuẩn (đạt ${r.details?.gpa4 ?? warningData?.warningInfo?.cumulativeGpa4 ?? "—"}).`
                         : r.reasonCode === "REGISTRATION_BEHIND"
                         ? "Sinh viên không đăng ký đủ số tín chỉ tối thiểu theo kế hoạch học kỳ."
                         : r.reasonCode === "PROGRAM_PROGRESS_BEHIND"
                         ? "Sinh viên bị chậm hoặc nợ các học phần tiên quyết theo tiến độ CTĐT."
+                        : r.reasonCode === "TRAINING_PROGRESS_DEFICIT_YELLOW" || r.reasonCode === "TRAINING_PROGRESS_DEFICIT_RED"
+                        ? `Sinh viên đang thiếu ${r.details?.observedValue ?? "—"} tín chỉ so với tiến độ CTĐT của khóa.`
+                        : r.reasonCode === "FAILED_CREDIT_RATIO_THRESHOLD_BREACHED"
+                        ? "Tỷ lệ tín chỉ không đạt trong học kỳ vượt quá 50% tổng tín chỉ sinh viên thực tế đã đăng ký."
+                        : r.reasonCode === "TERM_GPA_THRESHOLD_BREACHED"
+                        ? `GPA học kỳ (${r.details?.observedValue ?? "—"}) thấp hơn ngưỡng Điều 18.`
+                        : r.reasonCode === "CUMULATIVE_GPA_THRESHOLD_BREACHED"
+                        ? `GPA tích lũy (${r.details?.observedValue ?? "—"}) thấp hơn ngưỡng theo trình độ năm học.`
                         : "Phát hiện tín hiệu bất thường trong hồ sơ học vụ."}
                     </p>
                   </div>
@@ -1471,14 +1545,14 @@ export default function StudentDetailPage() {
                 Lịch sử các đợt quét cảnh báo của sinh viên
               </h3>
               <span className="text-xs text-slate-500 font-medium">
-                {student?.warningHistory?.length || 0} đợt ghi nhận
+                {warningData?.warningHistory?.length || 0} đợt ghi nhận
               </span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-[11px] uppercase">
-                    <th className="py-3 px-4">Thời điểm quét</th>
+                    <th className="py-3 px-4">Học kỳ / Năm học</th>
                     <th className="py-3 px-4">Mức độ rủi ro</th>
                     <th className="py-3 px-4">GPA Kỳ</th>
                     <th className="py-3 px-4">GPA Tích lũy</th>
@@ -1488,17 +1562,22 @@ export default function StudentDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {(!student?.warningHistory || student.warningHistory.length === 0) ? (
+                  {(!warningData?.warningHistory || warningData.warningHistory.length === 0) ? (
                     <tr>
                       <td colSpan={7} className="py-8 text-center text-slate-400">
                         Chưa có lịch sử cảnh báo học vụ cho sinh viên này.
                       </td>
                     </tr>
                   ) : (
-                    student.warningHistory.map((w: ApiData) => (
+                    warningData.warningHistory.map((w: ApiData) => (
                       <tr key={w.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-3 px-4 font-mono text-slate-600">
-                          {w.createdAt ? new Date(w.createdAt).toLocaleString("vi-VN") : "—"}
+                          <span className="block font-sans font-semibold text-slate-800">
+                            {w.termCode || w.termName || "Học kỳ"}{w.academicYear ? ` · ${w.academicYear}` : ""}
+                          </span>
+                          <span className="mt-0.5 block text-[10px] text-slate-400">
+                            Quét lúc {w.createdAt ? new Date(w.createdAt).toLocaleString("vi-VN") : "—"}
+                          </span>
                           <span className={`mt-1 block font-sans text-[10px] font-semibold ${w.isSummer ? "text-amber-700" : "text-slate-400"}`}>
                             {w.evaluationLabel || "Kết quả kỳ chính thức"}
                           </span>
@@ -1509,18 +1588,20 @@ export default function StudentDetailPage() {
                               ? "bg-red-100 text-red-700 border border-red-200"
                               : w.maxSeverity === "medium"
                               ? "bg-amber-100 text-amber-800 border border-amber-200"
+                              : w.dataStatus !== "COMPLETE"
+                              ? "bg-slate-100 text-slate-700 border border-slate-200"
                               : "bg-emerald-100 text-emerald-800 border border-emerald-200"
                           }`}>
                             {w.runMode === "SUMMER_MONITORING"
                               ? (w.maxSeverity === "medium" ? "Tín hiệu cần hỗ trợ" : "Không có tín hiệu")
-                              : w.maxSeverity === "high" ? "Nguy cơ cao (Đỏ)" : w.maxSeverity === "medium" ? "Cần lưu ý (Vàng)" : "Bình thường"}
+                              : w.maxSeverity === "high" ? "Nguy cơ cao (Đỏ)" : w.maxSeverity === "medium" ? "Cần lưu ý (Vàng)" : w.dataStatus !== "COMPLETE" ? "Chưa đủ dữ liệu" : "Bình thường"}
                           </span>
                         </td>
                         <td className="py-3 px-4 font-mono font-bold text-red-600">
-                          {w.termGpa4 ? w.termGpa4.toFixed(2) : "—"}
+                          {w.termGpa4 !== null && w.termGpa4 !== undefined ? Number(w.termGpa4).toFixed(2) : "—"}
                         </td>
                         <td className="py-3 px-4 font-mono font-bold text-slate-800">
-                          {w.cumulativeGpa4 ? w.cumulativeGpa4.toFixed(2) : "—"}
+                          {w.cumulativeGpa4 !== null && w.cumulativeGpa4 !== undefined ? Number(w.cumulativeGpa4).toFixed(2) : "—"}
                         </td>
                         <td className="py-3 px-4 text-slate-600 capitalize">
                           {w.registrationStatus || "—"}
@@ -1544,29 +1625,20 @@ export default function StudentDetailPage() {
             <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                  Nhật ký Can thiệp & Hỗ trợ (Closed-loop Intervention Log)
+                  Nhật ký hỗ trợ trước đây
                 </h3>
-                <p className="text-xs text-slate-500">Ghi nhận các buổi tư vấn, gặp gỡ sinh viên và phương án theo dõi</p>
+                <p className="text-xs text-slate-500">Dữ liệu lịch sử từ workflow hỗ trợ cũ; cập nhật case hiện tại tại module Cảnh báo học tập.</p>
               </div>
-              {can("academic_warning.action.create") && (
-                <button
-                  type="button"
-                  onClick={() => setShowActionModal(true)}
-                  className="px-3.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span>+ Thêm buổi tư vấn</span>
-                </button>
-              )}
             </div>
 
             <div className="p-5">
-              {(!student?.warningActions || student.warningActions.length === 0) ? (
+              {(!warningData?.warningActions || warningData.warningActions.length === 0) ? (
                 <div className="py-8 text-center text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
                   Chưa có nhật ký can thiệp nào được ghi nhận cho sinh viên này.
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {student.warningActions.map((act: ApiData) => (
+                  {warningData.warningActions.map((act: ApiData) => (
                     <div key={act.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-start justify-between gap-3">
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -1603,6 +1675,15 @@ export default function StudentDetailPage() {
                         <p className="text-xs text-slate-700 leading-relaxed pt-1 whitespace-pre-wrap">
                           {act.note}
                         </p>
+                        {(Array.isArray(act.statusHistory) ? act.statusHistory : [])
+                          .filter((event: ApiData) => event.event === "note_added")
+                          .map((event: ApiData, index: number) => (
+                            <div key={`${act.id}-note-${index}`} className="mt-2 border-l-2 border-slate-200 pl-3 text-xs text-slate-600">
+                              <span className="font-semibold text-slate-700">{event.actorName || "Cán bộ phụ trách"}</span>
+                              {event.changedAt ? ` · ${new Date(event.changedAt).toLocaleString("vi-VN")}` : ""}
+                              <p className="mt-1 whitespace-pre-wrap">{event.note}</p>
+                            </div>
+                          ))}
                       </div>
                     </div>
                   ))}
@@ -1769,113 +1850,6 @@ export default function StudentDetailPage() {
         </form>
       </Modal>
 
-      {/* Modal: Ghi nhận Hành động Can thiệp Cảnh báo Sớm */}
-      <Modal
-        isOpen={showActionModal}
-        onClose={() => setShowActionModal(false)}
-        title="Ghi nhận Hành động Can thiệp & Hỗ trợ Sinh viên"
-        description="Lưu vết trao đổi, tư vấn kế hoạch học tập hoặc chuyển cấp quản lý theo dõi"
-        maxWidth="md"
-      >
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            if (!actionForm.note.trim()) {
-              alert("Vui lòng nhập nội dung ghi chú can thiệp!");
-              return;
-            }
-            try {
-              setActionSubmitting(true);
-              const res = await apiFetch("/api/v1/academic-warnings/actions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  studentId: student?.id || studentId,
-                  actionType: actionForm.actionType,
-                  note: actionForm.note.trim(),
-                  status: actionForm.status,
-                }),
-              });
-
-              if (res.ok) {
-                setShowActionModal(false);
-                setActionForm({
-                  actionType: "COUNSELING",
-                  note: "",
-                  status: "IN_PROGRESS",
-                });
-                alert("Đã lưu nhật ký can thiệp học vụ thành công!");
-                await reloadStudent();
-              } else {
-                alert("Lỗi khi lưu can thiệp");
-              }
-            } catch (err) {
-              console.error(err);
-              alert("Lỗi kết nối");
-            } finally {
-              setActionSubmitting(false);
-            }
-          }}
-          className="space-y-4"
-        >
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Loại can thiệp</label>
-            <select
-              value={actionForm.actionType}
-              onChange={(e) => setActionForm({ ...actionForm, actionType: e.target.value })}
-              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800"
-            >
-              <option value="COUNSELING">Tư vấn học vụ / Kế hoạch đăng ký</option>
-              <option value="MEETING">Ghi nhận buổi gặp trực tiếp</option>
-              <option value="NOTIFY_EMAIL">Ghi nhận email đã gửi</option>
-              <option value="SCHEDULE_MEETING">Ghi nhận lịch hẹn đã thống nhất</option>
-              <option value="OTHER">Hành động hỗ trợ khác</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Trạng thái theo dõi</label>
-            <select
-              value={actionForm.status}
-              onChange={(e) => setActionForm({ ...actionForm, status: e.target.value })}
-              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800"
-            >
-              <option value="IN_PROGRESS">Đang theo dõi (Chưa cải thiện nhiều)</option>
-              <option value="RESOLVED">Đã hoàn tất hành động hỗ trợ</option>
-              <option value="ESCALATED">Đã chuyển cấp theo dõi</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Nội dung chi tiết buổi gặp / Phương án hỗ trợ</label>
-            <textarea
-              rows={4}
-              required
-              placeholder="VD: Đã trao đổi cùng sinh viên, hướng dẫn đăng ký trả nợ 2 môn Toán rời rạc và Lập trình nâng cao, giảm tải môn mới còn 14 tín chỉ..."
-              value={actionForm.note}
-              onChange={(e) => setActionForm({ ...actionForm, note: e.target.value })}
-              className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={() => setShowActionModal(false)}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={actionSubmitting}
-              className="px-5 py-2 bg-[var(--color-primary)] hover:opacity-90 text-white text-xs font-semibold rounded-xl disabled:opacity-50"
-            >
-              {actionSubmitting ? "Đang lưu..." : "Lưu nhật ký can thiệp"}
-            </button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }

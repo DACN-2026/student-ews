@@ -3,6 +3,8 @@ import { TrainingProgramsService } from "@/lib/services/training-programs";
 import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
 import { errorResponse, jsonResponse } from "@/lib/utils/api-response";
 import { recordAudit } from "@/lib/services/audit";
+import { requirePermission } from "@/lib/auth/authorize";
+import { AcademicWarningAutomationService } from "@/lib/services/academic-warning-automation";
 
 interface Params { params: Promise<{ id: string; termId: string }> }
 
@@ -19,6 +21,8 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
+    const auth = await requirePermission("academic_term.manage", request);
+    if (!auth.authorized) return auth.response;
     const { id, termId } = await params;
     const body = await readJsonBody<{
       termCode?: string;
@@ -39,7 +43,18 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (body.termOrder !== undefined && (!Number.isInteger(body.termOrder) || body.termOrder < 1)) {
       return errorResponse("termOrder must be a positive integer", "INVALID_REQUEST", 400);
     }
-    return jsonResponse(await TrainingProgramsService.updateTerm(id, termId, body));
+    const updated = await TrainingProgramsService.updateTerm(id, termId, body);
+    if (body.isCurrent && !updated.isSummer) {
+      try {
+        await AcademicWarningAutomationService.reconcilePastTermsWithGrades({
+          actorId: auth.actor.userId,
+          facultyCode: null,
+        });
+      } catch (error) {
+        console.error("Automatic warning reconciliation after term transition failed:", error);
+      }
+    }
+    return jsonResponse(updated);
   } catch (error) {
     return apiErrorResponse(error, "Failed to update academic term");
   }

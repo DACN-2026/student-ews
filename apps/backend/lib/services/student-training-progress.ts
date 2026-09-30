@@ -311,6 +311,8 @@ export function evaluateStudentTrainingProgress(input: {
     choiceGroups?: Array<{ code: string; requiredCredits: number }>;
   };
   semesterPlans?: Map<number, number>;
+  /** Keep a historical/finalized assessment boundary fixed. */
+  lockTimeline?: boolean;
 }): StudentTrainingProgressOutput {
   const warnings: string[] = [];
 
@@ -587,7 +589,7 @@ export function evaluateStudentTrainingProgress(input: {
   let effectiveYear = input.timeline.expectedYear;
   let effectiveSemester = input.timeline.expectedSemester;
 
-  if (semNoScoreCounts.size > 0) {
+  if (!input.lockTimeline && semNoScoreCounts.size > 0) {
     let maxCount = 0;
     let bestSem = effectiveSemesterNo;
     for (const [sNo, count] of semNoScoreCounts.entries()) {
@@ -719,12 +721,12 @@ export function evaluateStudentTrainingProgress(input: {
   }
 
   // Overdue credits: total credits deficient from past semesters
-  const pastDueCredits = pastDueCourses.reduce((sum, c) => sum + c.credits, 0);
+  // Reflects genuine deficient credits: missing mandatory courses + elective shortfall,
+  // or net credit difference behind the expected milestone (excluding redundant elective retakes).
   const overdueCredits = progressStatus === "BEHIND"
     ? Math.max(
         missingRequiredCredits + Math.max(0, expectedElectiveCredits - earnedElectiveCredits),
         Math.max(0, -creditDifference),
-        pastDueCredits,
       )
     : 0;
 

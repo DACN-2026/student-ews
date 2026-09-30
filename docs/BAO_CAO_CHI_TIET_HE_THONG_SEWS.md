@@ -64,25 +64,21 @@ Chức năng đánh giá xem sinh viên đã hội đủ các điều kiện đ�
 4. **Báo cáo và Log:** Hệ thống cung cấp bảng tổng hợp chi tiết mức độ đáp ứng từng tiêu chí và cho phép xuất file XLSX/PDF kèm lưu vết (`AuditLog`).
 
 ### 4.3. Chức năng Cảnh báo Học vụ và Nhật ký Hỗ trợ
-Hệ thống tự động phát hiện sinh viên rơi vào các rủi ro học tập để Cố vấn học tập (CVHT) có thể can thiệp kịp thời.
+Hệ thống dùng quy tắc nghiệp vụ QĐ600 Điều 18 để nhận diện sinh viên cần theo dõi; đây không phải chức năng AI hay dự báo xác suất. Phiên bản hiện tại được ghi rõ là **đánh giá một phần** vì vẫn giữ nguyên các khả năng chưa hỗ trợ trong bộ quy tắc.
 **Luồng hoạt động (Operational Flow):**
-1. **Lấy chính sách hiện hành:** Hệ thống áp dụng `AcademicWarningPolicy` (Chính sách cảnh báo) phiên bản mới nhất đang được active, chứa các ngưỡng GPA quy định.
-2. **Chạy đợt cảnh báo (Warning Run):**
-   - Hệ thống thu thập kết quả tiến độ đăng ký, kết quả hoàn thành CTĐT, GPA học kỳ, GPA tích lũy và các quyết định cảnh báo cũ của sinh viên trong học kỳ xét.
-   - So khớp và gán mã nguyên nhân lỗi nhịp học:
-     - Chậm đăng ký so với lộ trình (`REGISTRATION_BEHIND` - mức Vàng).
-     - Chậm tiến độ hoàn thành chương trình (`PROGRAM_PROGRESS_BEHIND` - mức Đỏ).
-     - Điểm GPA học kỳ thấp hơn ngưỡng quy định (`LOW_TERM_GPA` - mức Vàng).
-     - Điểm GPA tích lũy thấp hơn ngưỡng quy định (`LOW_CUMULATIVE_GPA` - mức Đỏ).
-     - Đã có quyết định cảnh báo học vụ trước đó (`ACADEMIC_WARNING_DECISION` - mức Đỏ).
-3. **Phân loại Mức độ Cảnh báo:** Hệ thống tổng hợp các mã nguyên nhân. Mức độ cảnh báo chung của sinh viên được quyết định theo nguyên nhân có mức nghiêm trọng cao nhất: Không có lỗi (Xanh) -> Lỗi mức trung bình (Vàng) -> Lỗi mức cao (Đỏ). Snapshot của đợt tính sẽ được băm mã hóa (hash) và lưu lại vĩnh viễn.
+1. **Xác nhận chốt điểm:** Người có quyền xác nhận một học kỳ chính đã chốt điểm. Hệ thống lưu `AcademicTerm.gradesFinalizedAt`; không suy đoán việc chốt điểm từ GPA. Học kỳ hè không tham gia luồng này.
+2. **Tự xác định phạm vi:** Hệ thống đọc các UUID khóa học được cấu hình trong chính sách QĐ600 và tự suy ra các cặp khóa–CTĐT có sinh viên thực tế. Người dùng không chọn khóa hoặc CTĐT và hệ thống không phân tích mã K46–K49 khi chạy.
+3. **Chạy và lưu đợt cảnh báo:** Lớp điều phối gọi lại `AcademicWarningRun` và bộ đánh giá QĐ600 hiện có. Mỗi sinh viên nhận một trạng thái `NORMAL`, `MONITORING`, `HIGH_RISK`, `VERIFY_REQUIRED` hoặc `INSUFFICIENT_DATA`; kết quả, lý do, snapshot và hash được lưu để báo cáo đọc lại. Đợt hoàn tất được bỏ qua, đợt thất bại có thể thử lại và thao tác đồng thời không tạo run trùng.
 4. **Xử lý Nhật ký Hỗ trợ (Warning Action):**
+   - Hệ thống tạo hoặc cập nhật hồ sơ can thiệp cho `HIGH_RISK` và `VERIFY_REQUIRED` sau khi run chính thức hoàn tất.
    - Cố vấn học tập nhận báo cáo sinh viên cảnh báo, tiến hành trao đổi và tư vấn.
    - CVHT lập hồ sơ hành động hỗ trợ (`WarningAction`), ghi lại nguyên nhân thực tế và biện pháp giải quyết. 
    - Trạng thái hồ sơ được cập nhật chặt chẽ: `OPEN` (Mới tạo) -> `IN_PROGRESS` (Đang xử lý) -> `RESOLVED` (Hoàn tất hỗ trợ). Quá trình chuyển đổi trạng thái và ai là người thực hiện đều được lưu vào Audit Log để đảm bảo trách nhiệm. Lưu ý, trạng thái `RESOLVED` chỉ có nghĩa là hoàn tất quy trình hỗ trợ, không đồng nghĩa sinh viên tự động hết cảnh báo nếu số liệu học tập chưa cải thiện ở kỳ sau.
 
+Nguồn tích hợp đào tạo trong tương lai phải thiết lập cùng tín hiệu `gradesFinalizedAt` và gọi cùng dịch vụ điều phối, không tạo một logic kích hoạt song song.
+
 ### 4.4. Báo cáo, Thống kê và Xuất dữ liệu
-- **Dashboard Thời gian thực**: Thống kê số lượng sinh viên cảnh báo dựa trên kỳ báo cáo tự động (loại bỏ kỳ hè và ưu tiên kỳ có độ phủ điểm số trên 80%).
+- **Dashboard và báo cáo cảnh báo**: Chỉ tổng hợp kết quả đã lưu của run chính thức đã hoàn tất; không tính lại từ GPA. Kỳ hè không xuất hiện trong bộ lọc. Khi chưa có run, giao diện hiển thị rõ trạng thái chưa có kết quả thay vì suy diễn sinh viên là an toàn hoặc thiếu dữ liệu.
 - **Xuất file báo cáo**: Hỗ trợ xuất file Excel (.xlsx) thông qua `ExcelJS` (cho danh sách cảnh báo, tiến độ, rèn luyện) và định dạng PDF thông qua `PDFKit` (cho báo cáo hồ sơ sinh viên tổng hợp với font tiếng Việt Noto Sans). Cán bộ xuất file phải có quyền `report.export` và tác vụ này đều được theo dõi bằng cơ chế Audit Log của hệ thống.
 
 ## 5. Hướng Phát Triển Tương Lai (Kiến trúc Machine Learning)
@@ -98,4 +94,4 @@ Giai đoạn nghiên cứu khoa học sắp tới sẽ tích hợp Pipeline họ
 - **Thiết lập nhanh**: Lệnh khởi tạo (`npm run db:seed`) giúp tạo tự động các tài khoản, role, permission và policy cảnh báo ban đầu để vận hành demo hoặc chuẩn bị cho triển khai thực tế. Mật khẩu môi trường thực tế cần được ghi đè qua cấu hình biến môi trường (`.env`).
 
 ---
-*Báo cáo được tổng hợp dựa trên tài liệu kiến trúc và thực trạng hệ thống SEWS (phiên bản 4.4 - Cập nhật tháng 09/2026).*
+*Báo cáo được tổng hợp dựa trên tài liệu kiến trúc và thực trạng hệ thống SEWS (phiên bản 4.5 - Cập nhật tháng 09/2026).*

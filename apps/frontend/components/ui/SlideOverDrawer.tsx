@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useId, useRef } from "react";
 
 interface SlideOverDrawerProps {
   isOpen: boolean;
@@ -34,21 +34,32 @@ export default function SlideOverDrawer({
   extra,
   footer,
 }: SlideOverDrawerProps) {
+  const titleId = useId();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+
   useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
-        onClose();
+        onCloseRef.current();
       }
     };
     if (isOpen) {
       document.body.style.overflow = "hidden";
       window.addEventListener("keydown", handleKeyDown);
+      window.requestAnimationFrame(() => closeButtonRef.current?.focus());
     }
     return () => {
       document.body.style.overflow = "unset";
       window.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -56,19 +67,24 @@ export default function SlideOverDrawer({
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-300"
+        className="fixed inset-0 bg-slate-900/40 transition-opacity animate-in fade-in duration-300"
         onClick={onClose}
+        aria-hidden="true"
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
         <div
           className={`w-screen ${widthClasses[width]} bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform animate-in slide-in-from-right duration-300 ease-out`}
           onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
             <div>
               <h2
+                id={titleId}
                 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight"
                 style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
               >
@@ -82,10 +98,11 @@ export default function SlideOverDrawer({
             <div className="flex items-center gap-2">
               {extra}
               <button
+                ref={closeButtonRef}
                 type="button"
                 onClick={onClose}
                 className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer"
-                aria-label="Đóng Drawer"
+                aria-label="Đóng bảng chi tiết can thiệp"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -96,7 +113,7 @@ export default function SlideOverDrawer({
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
             {children}
           </div>
 

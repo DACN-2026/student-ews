@@ -29,6 +29,77 @@ const AUTH_TABLES = new Set([
   "academic_warning_policies",
 ]);
 
+function qd600AcademicWarningPolicyDefinition() {
+  return {
+    schemaVersion: 1,
+    engineVersion: "academic-warning-qd600-article18-pending-v1",
+    evaluationProfile: "QD600_ARTICLE_18",
+    executionMode: "NOT_YET_ACTIVE_FOR_EVALUATION",
+    regulatory: {
+      sourceCode: "QD600-DHDL-2021",
+      sourceName: "Quyết định 600/QĐ-ĐHĐL ban hành Quy chế đào tạo trình độ đại học của Trường Đại học Đà Lạt",
+      sourceVersion: "600/QĐ-ĐHĐL@2021-08-31",
+      issuedDate: "2021-08-31",
+      effectiveFromAcademicYear: "2021-2022",
+      applicableFromCohort: "K45",
+      applicableCohortIds: [],
+      articleRefs: ["Điều 18"],
+      documentChecksum: "6e1932e7a8463e7f64785894f97a27c6783d50d0833f7b1632e343e2906bd3d3",
+    },
+    thresholds: {
+      failedCreditRatio: { operator: ">", value: 0.5 },
+      accumulatedDebtCredits: { operator: ">", value: 24 },
+      termGpa: { firstSemesterBelow: 0.8, subsequentSemesterBelow: 1.0 },
+      cumulativeGpaByYear: [
+        { yearLevel: 1, gpa4Below: 1.2 },
+        { yearLevel: 2, gpa4Below: 1.4 },
+        { yearLevel: 3, gpa4Below: 1.6 },
+        { yearLevel: 4, gpa4Below: 1.8 },
+      ],
+    },
+    advisory: { earlyWarningMarginGpa4: 0.2, advisoryOnly: true },
+    requiredCapabilities: [
+      "FIRST_TERM_DETECTION",
+      "YEAR_LEVEL_CLASSIFICATION",
+      "FAILED_CREDIT_CALCULATION",
+      "ACCUMULATED_DEBT_CREDIT_CALCULATION",
+      "SUMMER_MAIN_TERM_MERGE_VERIFIED",
+    ],
+  };
+}
+
+function legacyAcademicWarningPolicyDefinition({
+  label = "Chính sách cảnh báo nội bộ legacy",
+  termGpaThreshold = 2,
+  cumulativeGpaThreshold = 2,
+  conductScoreThreshold = 50,
+} = {}) {
+  return {
+    schemaVersion: 1,
+    engineVersion: "academic-warning-legacy-v1",
+    evaluationProfile: "LEGACY_ADVISORY",
+    executionMode: "LEGACY_SCALAR_RULES",
+    advisory: {
+      label,
+      description: "Chính sách cảnh báo nội bộ dùng các scalar và signal legacy của SEWS.",
+    },
+    thresholds: {
+      termGpa4Below: termGpaThreshold,
+      cumulativeGpa4Below: cumulativeGpaThreshold,
+      conductScoreBelow: conductScoreThreshold,
+    },
+    enabledSignals: [
+      "REGISTRATION_BEHIND",
+      "PROGRAM_PROGRESS_BEHIND",
+      "LOW_TERM_GPA",
+      "LOW_CUMULATIVE_GPA",
+      "LOW_CONDUCT_SCORE",
+      "ACADEMIC_WARNING_DECISION",
+    ],
+    requiredCapabilities: [],
+  };
+}
+
 function loadDatabaseUrl() {
   for (const name of [".env", ".env.local"]) {
     const file = path.resolve(__dirname, "..", name);
@@ -481,16 +552,43 @@ async function replaceBusinessData(prisma, source) {
     await tx.class.createMany({ data: classRows });
     const classByCode = new Map(classRows.map((row) => [row.classId, row]));
 
-    const existingPolicy = await tx.academicWarningPolicy.findFirst({ where: { status: "active" } });
-    if (!existingPolicy) {
+    const existingPolicies = await tx.academicWarningPolicy.findMany({ orderBy: { version: "desc" } });
+    let nextPolicyVersion = (existingPolicies[0]?.version || 0) + 1;
+    if (!existingPolicies.some((policy) => policy.status === "active")) {
+      const policyDefinition = legacyAcademicWarningPolicyDefinition();
       await tx.academicWarningPolicy.create({
         data: {
-          name: "Chính sách cảnh báo học vụ chuẩn (Quy chế đào tạo)",
+          name: "Chính sách cảnh báo nội bộ legacy",
+          schemaVersion: policyDefinition.schemaVersion,
+          engineVersion: policyDefinition.engineVersion,
+          policyDefinition,
+          definitionHash: crypto.createHash("sha256").update(JSON.stringify(policyDefinition)).digest("hex"),
           termGpaThreshold: 2.00,
           cumulativeGpaThreshold: 2.00,
           conductScoreThreshold: 50,
-          version: 1,
+          version: nextPolicyVersion,
           status: "active",
+        },
+      });
+      nextPolicyVersion += 1;
+    }
+    const hasQd600Definition = existingPolicies.some(
+      (policy) => policy.policyDefinition?.evaluationProfile === "QD600_ARTICLE_18",
+    );
+    if (!hasQd600Definition) {
+      const policyDefinition = qd600AcademicWarningPolicyDefinition();
+      await tx.academicWarningPolicy.create({
+        data: {
+          name: "QĐ600/QĐ-ĐHĐL - Điều 18 (chưa kích hoạt đánh giá)",
+          schemaVersion: policyDefinition.schemaVersion,
+          engineVersion: policyDefinition.engineVersion,
+          policyDefinition,
+          definitionHash: crypto.createHash("sha256").update(JSON.stringify(policyDefinition)).digest("hex"),
+          termGpaThreshold: 2.00,
+          cumulativeGpaThreshold: 2.00,
+          conductScoreThreshold: 50,
+          version: nextPolicyVersion,
+          status: "draft",
         },
       });
     }
@@ -1207,4 +1305,8 @@ if (require.main === module) {
   });
 }
 
-module.exports = { deduplicateCurricula };
+module.exports = {
+  deduplicateCurricula,
+  legacyAcademicWarningPolicyDefinition,
+  qd600AcademicWarningPolicyDefinition,
+};

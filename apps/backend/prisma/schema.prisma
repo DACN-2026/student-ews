@@ -136,19 +136,20 @@ model AcademicYear {
 }
 
 model AcademicTerm {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  academicYearId String    @map("academic_year_id") @db.Uuid
-  sTermCode      String    @map("s_term_code") @db.VarChar(8)
-  sTermName      String    @map("s_term_name") @db.VarChar(64)
-  sTermOrder     Int       @map("s_term_order") @db.SmallInt
-  sIsSummer      Boolean   @default(false) @map("s_is_summer")
-  startDate      DateTime? @map("start_date") @db.Date
-  endDate        DateTime? @map("end_date") @db.Date
-  status         String    @default("draft") @db.VarChar(16)
-  isCurrent      Boolean   @default(false) @map("is_current")
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt      DateTime? @map("deleted_at") @db.Timestamptz(6)
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  academicYearId    String    @map("academic_year_id") @db.Uuid
+  sTermCode         String    @map("s_term_code") @db.VarChar(8)
+  sTermName         String    @map("s_term_name") @db.VarChar(64)
+  sTermOrder        Int       @map("s_term_order") @db.SmallInt
+  sIsSummer         Boolean   @default(false) @map("s_is_summer")
+  startDate         DateTime? @map("start_date") @db.Date
+  endDate           DateTime? @map("end_date") @db.Date
+  status            String    @default("draft") @db.VarChar(16)
+  isCurrent         Boolean   @default(false) @map("is_current")
+  gradesFinalizedAt DateTime? @map("grades_finalized_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
 
   @@unique([academicYearId, sTermCode])
   @@unique([academicYearId, sTermOrder])
@@ -260,23 +261,23 @@ model StudentTermSummary {
 }
 
 model StudentConductRecord {
-  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  studentId           String   @map("student_id") @db.Uuid
-  academicYearId      String   @map("academic_year_id") @db.Uuid
-  academicTermId      String   @map("academic_term_id") @db.Uuid
-  sStudentId          String   @map("s_student_id") @db.VarChar(32)
-  sClassStudentId     String?  @map("s_class_student_id") @db.VarChar(64)
-  orders              Int?     @db.SmallInt
-  studentScore        Decimal? @map("student_score") @db.Decimal(5, 2)
-  classScore          Decimal? @map("class_score") @db.Decimal(5, 2)
-  departmentScore     Decimal? @map("department_score") @db.Decimal(5, 2)
-  statusId            String?  @map("status_id") @db.VarChar(32)
-  lastScore           Decimal? @map("last_score") @db.Decimal(5, 2)
-  sourceUpdateDay     String?  @map("source_update_day") @db.VarChar(64)
-  sourceUpdateStaff   String?  @map("source_update_staff") @db.VarChar(128)
-  sourcePayload       Json     @default("{}") @map("source_payload")
-  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId         String   @map("student_id") @db.Uuid
+  academicYearId    String   @map("academic_year_id") @db.Uuid
+  academicTermId    String   @map("academic_term_id") @db.Uuid
+  sStudentId        String   @map("s_student_id") @db.VarChar(32)
+  sClassStudentId   String?  @map("s_class_student_id") @db.VarChar(64)
+  orders            Int?     @db.SmallInt
+  studentScore      Decimal? @map("student_score") @db.Decimal(5, 2)
+  classScore        Decimal? @map("class_score") @db.Decimal(5, 2)
+  departmentScore   Decimal? @map("department_score") @db.Decimal(5, 2)
+  statusId          String?  @map("status_id") @db.VarChar(32)
+  lastScore         Decimal? @map("last_score") @db.Decimal(5, 2)
+  sourceUpdateDay   String?  @map("source_update_day") @db.VarChar(64)
+  sourceUpdateStaff String?  @map("source_update_staff") @db.VarChar(128)
+  sourcePayload     Json     @default("{}") @map("source_payload")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@unique([studentId, academicTermId], map: "student_conduct_records_student_term_key")
   @@index([academicYearId, academicTermId, sClassStudentId], map: "student_conduct_records_period_class_idx")
@@ -284,20 +285,20 @@ model StudentConductRecord {
 }
 
 model Activity {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sourceCode       String   @unique @map("source_code") @db.VarChar(64)
-  name             String   @db.VarChar(500)
-  type             String   @db.VarChar(128)
-  organizingUnit   String?  @map("organizing_unit") @db.VarChar(255)
-  academicTermId   String?  @map("academic_term_id") @db.Uuid
-  conductTermId    String?  @map("conduct_term_id") @db.Uuid
-  startDate        DateTime? @map("start_date") @db.Date
-  endDate          DateTime? @map("end_date") @db.Date
-  targetAudience   String?  @map("target_audience") @db.VarChar(255)
-  description      String?
-  sourcePayload    Json     @default("{}") @map("source_payload")
-  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceCode     String    @unique @map("source_code") @db.VarChar(64)
+  name           String    @db.VarChar(500)
+  type           String    @db.VarChar(128)
+  organizingUnit String?   @map("organizing_unit") @db.VarChar(255)
+  academicTermId String?   @map("academic_term_id") @db.Uuid
+  conductTermId  String?   @map("conduct_term_id") @db.Uuid
+  startDate      DateTime? @map("start_date") @db.Date
+  endDate        DateTime? @map("end_date") @db.Date
+  targetAudience String?   @map("target_audience") @db.VarChar(255)
+  description    String?
+  sourcePayload  Json      @default("{}") @map("source_payload")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   participations ActivityParticipation[]
 
@@ -307,17 +308,17 @@ model Activity {
 }
 
 model ActivityParticipation {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  studentId     String   @map("student_id") @db.Uuid
-  activityId    String   @map("activity_id") @db.Uuid
-  status        String   @default("registered") @db.VarChar(32)
-  evidence      String?  @db.VarChar(500)
-  verifiedBy    String?  @map("verified_by") @db.Uuid
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId     String    @map("student_id") @db.Uuid
+  activityId    String    @map("activity_id") @db.Uuid
+  status        String    @default("registered") @db.VarChar(32)
+  evidence      String?   @db.VarChar(500)
+  verifiedBy    String?   @map("verified_by") @db.Uuid
   verifiedAt    DateTime? @map("verified_at") @db.Timestamptz(6)
   notes         String?
-  sourcePayload Json     @default("{}") @map("source_payload")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  sourcePayload Json      @default("{}") @map("source_payload")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   activity Activity @relation(fields: [activityId], references: [id], onDelete: Restrict)
 
@@ -793,49 +794,49 @@ model GraduationRule {
 }
 
 model StudentGraduationRequirement {
-  id                       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  studentId                String   @unique @map("student_id") @db.Uuid
-  physicalEducationStatus  String   @default("NOT_AVAILABLE") @map("physical_education_status") @db.VarChar(24)
-  nationalDefenseStatus    String   @default("NOT_AVAILABLE") @map("national_defense_status") @db.VarChar(24)
-  foreignLanguageStatus    String   @default("NOT_AVAILABLE") @map("foreign_language_status") @db.VarChar(24)
-  disciplineStatus         String   @default("NOT_AVAILABLE") @map("discipline_status") @db.VarChar(32)
-  legalStatus              String   @default("NOT_AVAILABLE") @map("legal_status") @db.VarChar(32)
-  wholeCourseTrainingScore Decimal? @map("whole_course_training_score") @db.Decimal(5, 2)
-  trainingClassification   String?  @map("training_classification") @db.VarChar(64)
-  sourceSystem             String?  @map("source_system") @db.VarChar(128)
-  sourcePayload            Json     @default("{}") @map("source_payload")
+  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId                String    @unique @map("student_id") @db.Uuid
+  physicalEducationStatus  String    @default("NOT_AVAILABLE") @map("physical_education_status") @db.VarChar(24)
+  nationalDefenseStatus    String    @default("NOT_AVAILABLE") @map("national_defense_status") @db.VarChar(24)
+  foreignLanguageStatus    String    @default("NOT_AVAILABLE") @map("foreign_language_status") @db.VarChar(24)
+  disciplineStatus         String    @default("NOT_AVAILABLE") @map("discipline_status") @db.VarChar(32)
+  legalStatus              String    @default("NOT_AVAILABLE") @map("legal_status") @db.VarChar(32)
+  wholeCourseTrainingScore Decimal?  @map("whole_course_training_score") @db.Decimal(5, 2)
+  trainingClassification   String?   @map("training_classification") @db.VarChar(64)
+  sourceSystem             String?   @map("source_system") @db.VarChar(128)
+  sourcePayload            Json      @default("{}") @map("source_payload")
   verifiedAt               DateTime? @map("verified_at") @db.Timestamptz(6)
-  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  updatedAt                DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([updatedAt(sort: Desc)], map: "student_graduation_requirements_updated_idx")
   @@map("student_graduation_requirements")
 }
 
 model GraduationEvaluation {
-  id                       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  evaluationCode           String    @unique @map("evaluation_code") @db.VarChar(64)
-  evaluationName           String    @map("evaluation_name") @db.VarChar(255)
-  assessmentAcademicTermId String    @map("assessment_academic_term_id") @db.Uuid
-  cohortId                 String    @map("cohort_id") @db.Uuid
-  trainingProgramId        String    @map("training_program_id") @db.Uuid
-  specialization           String?   @db.VarChar(255)
-  targetType               String    @default("all_students") @map("target_type") @db.VarChar(32)
-  completionRunId          String?   @map("completion_run_id") @db.Uuid
-  evaluatedBy              String?   @map("evaluated_by") @db.Uuid
-  ruleVersion              String    @map("rule_version") @db.VarChar(64)
-  status                   String    @db.VarChar(16)
-  totalStudents            Int       @default(0) @map("total_students")
-  expectedEligibleStudents Int       @default(0) @map("expected_eligible_students")
-  pendingGradeStudents     Int       @default(0) @map("pending_grade_students")
-  pendingRequirementStudents Int     @default(0) @map("pending_requirement_students")
-  notEligibleStudents      Int       @default(0) @map("not_eligible_students")
-  manualReviewStudents     Int       @default(0) @map("manual_review_students")
-  sourceSnapshot           Json      @default("{}") @map("source_snapshot")
-  sourceSnapshotHash       String?   @map("source_snapshot_hash") @db.VarChar(64)
-  sourceCapturedAt         DateTime  @default(now()) @map("source_captured_at") @db.Timestamptz(6)
-  errorMessage             String?   @map("error_message")
-  evaluatedAt              DateTime? @map("evaluated_at") @db.Timestamptz(6)
-  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evaluationCode             String    @unique @map("evaluation_code") @db.VarChar(64)
+  evaluationName             String    @map("evaluation_name") @db.VarChar(255)
+  assessmentAcademicTermId   String    @map("assessment_academic_term_id") @db.Uuid
+  cohortId                   String    @map("cohort_id") @db.Uuid
+  trainingProgramId          String    @map("training_program_id") @db.Uuid
+  specialization             String?   @db.VarChar(255)
+  targetType                 String    @default("all_students") @map("target_type") @db.VarChar(32)
+  completionRunId            String?   @map("completion_run_id") @db.Uuid
+  evaluatedBy                String?   @map("evaluated_by") @db.Uuid
+  ruleVersion                String    @map("rule_version") @db.VarChar(64)
+  status                     String    @db.VarChar(16)
+  totalStudents              Int       @default(0) @map("total_students")
+  expectedEligibleStudents   Int       @default(0) @map("expected_eligible_students")
+  pendingGradeStudents       Int       @default(0) @map("pending_grade_students")
+  pendingRequirementStudents Int       @default(0) @map("pending_requirement_students")
+  notEligibleStudents        Int       @default(0) @map("not_eligible_students")
+  manualReviewStudents       Int       @default(0) @map("manual_review_students")
+  sourceSnapshot             Json      @default("{}") @map("source_snapshot")
+  sourceSnapshotHash         String?   @map("source_snapshot_hash") @db.VarChar(64)
+  sourceCapturedAt           DateTime  @default(now()) @map("source_captured_at") @db.Timestamptz(6)
+  errorMessage               String?   @map("error_message")
+  evaluatedAt                DateTime? @map("evaluated_at") @db.Timestamptz(6)
+  createdAt                  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([cohortId, trainingProgramId, assessmentAcademicTermId, createdAt(sort: Desc)], map: "graduation_evaluations_scope_idx")
   @@index([status, createdAt(sort: Desc)], map: "graduation_evaluations_status_idx")
@@ -900,6 +901,10 @@ model GraduationEvaluationDetail {
 model AcademicWarningPolicy {
   id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                   String   @db.VarChar(160)
+  schemaVersion          Int      @default(1) @map("schema_version")
+  engineVersion          String   @default("academic-warning-legacy-v1") @map("engine_version") @db.VarChar(96)
+  policyDefinition       Json     @default("{}") @map("policy_definition")
+  definitionHash         String?  @map("definition_hash") @db.VarChar(64)
   termGpaThreshold       Decimal  @map("term_gpa_threshold") @db.Decimal(4, 2)
   cumulativeGpaThreshold Decimal  @map("cumulative_gpa_threshold") @db.Decimal(4, 2)
   conductScoreThreshold  Decimal  @default(50) @map("conduct_score_threshold") @db.Decimal(5, 2)
@@ -934,6 +939,7 @@ model AcademicWarningRun {
   sourceSnapshotHash       String?   @map("source_snapshot_hash") @db.VarChar(64)
   sourceCapturedAt         DateTime? @map("source_captured_at") @db.Timestamptz(6)
   runMode                  String    @default("OFFICIAL") @map("run_mode") @db.VarChar(32)
+  executionProfile         String    @default("LEGACY_SCALAR_RULES") @map("execution_profile") @db.VarChar(48)
 
   @@index([cohortId, trainingProgramId, assessmentAcademicTermId, startedAt(sort: Desc)], map: "academic_warning_runs_scope_idx")
   @@index([sourceCapturedAt(sort: Desc)], map: "academic_warning_runs_source_captured_idx")
@@ -962,6 +968,9 @@ model AcademicWarningStudentResult {
   maxSeverity              String   @map("max_severity") @db.VarChar(16)
   reasonCount              Int      @default(0) @map("reason_count")
   dataError                String?  @map("data_error")
+  businessStatus           String   @default("NORMAL") @map("business_status") @db.VarChar(32)
+  regulatoryCoverage       String?  @map("regulatory_coverage") @db.VarChar(16)
+  ruleResults              Json     @default("[]") @map("rule_results")
   createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@unique([runId, studentId])
@@ -1026,22 +1035,49 @@ model training_progress_completion_course_results {
 }
 
 model WarningAction {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  studentId      String    @map("student_id") @db.Uuid
-  runId          String?   @map("run_id") @db.Uuid
-  actionType     String    @map("action_type") @db.VarChar(64)
-  note           String    @db.Text
-  actorId        String?   @map("actor_id") @db.Uuid
-  actorName      String?   @map("actor_name") @db.VarChar(255)
-  assignedUserId String?   @map("assigned_user_id") @db.Uuid
-  dueDate        DateTime? @map("due_date") @db.Date
-  resolvedAt     DateTime? @map("resolved_at") @db.Timestamptz(6)
-  status         String    @default("OPEN") @db.VarChar(32)
-  statusHistory  Json      @default("[]") @map("status_history")
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId             String    @map("student_id") @db.Uuid
+  runId                 String?   @map("run_id") @db.Uuid
+  actionType            String    @map("action_type") @db.VarChar(64)
+  note                  String    @db.Text
+  actorId               String?   @map("actor_id") @db.Uuid
+  actorName             String?   @map("actor_name") @db.VarChar(255)
+  assignedUserId        String?   @map("assigned_user_id") @db.Uuid
+  dueDate               DateTime? @map("due_date") @db.Date
+  resolvedAt            DateTime? @map("resolved_at") @db.Timestamptz(6)
+  status                String    @default("OPEN") @db.VarChar(32)
+  statusHistory         Json      @default("[]") @map("status_history")
+  caseType              String?   @map("case_type") @db.VarChar(48)
+  episodeKey            String?   @unique(map: "warning_actions_episode_key_key") @map("episode_key") @db.VarChar(160)
+  sourceWarningRunId    String?   @map("source_warning_run_id") @db.Uuid
+  sourceWarningResultId String?   @map("source_warning_result_id") @db.Uuid
+  latestWarningRunId    String?   @map("latest_warning_run_id") @db.Uuid
+  latestWarningResultId String?   @map("latest_warning_result_id") @db.Uuid
+  latestBusinessStatus  String?   @map("latest_business_status") @db.VarChar(32)
+  lastDetectedAt        DateTime? @map("last_detected_at") @db.Timestamptz(6)
+  nextFollowUpAt        DateTime? @map("next_follow_up_at") @db.Timestamptz(6)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([studentId, createdAt(sort: Desc)], map: "warning_actions_student_idx")
   @@index([assignedUserId, status, dueDate], map: "warning_actions_assignee_status_due_idx")
+  @@index([caseType, status, latestBusinessStatus], map: "warning_actions_case_status_risk_idx")
   @@map("warning_actions")
+}
+
+/// Append-only business history for EARLY_WARNING_CASE rows. Application services do not expose update/delete operations.
+model WarningActionEvent {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  warningActionId String   @map("warning_action_id") @db.Uuid
+  eventType       String   @map("event_type") @db.VarChar(48)
+  actorUserId     String?  @map("actor_user_id") @db.Uuid
+  systemGenerated Boolean  @default(false) @map("system_generated")
+  sourceRunId     String?  @map("source_run_id") @db.Uuid
+  idempotencyKey  String?  @unique(map: "warning_action_events_idempotency_key_key") @map("idempotency_key") @db.VarChar(220)
+  details         Json     @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([warningActionId, createdAt], map: "warning_action_events_case_created_idx")
+  @@index([sourceRunId, eventType], map: "warning_action_events_source_run_idx")
+  @@map("warning_action_events")
 }

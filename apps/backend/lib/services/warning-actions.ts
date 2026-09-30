@@ -16,9 +16,9 @@ export type WarningActionStatus = (typeof WARNING_ACTION_STATUSES)[number];
 const ALLOWED_TRANSITIONS: Record<WarningActionStatus, readonly WarningActionStatus[]> = {
   OPEN: ["IN_PROGRESS", "ESCALATED"],
   IN_PROGRESS: ["RESOLVED", "ESCALATED"],
-  ESCALATED: ["IN_PROGRESS", "RESOLVED"],
+  ESCALATED: ["IN_PROGRESS"],
   RESOLVED: ["REOPENED"],
-  REOPENED: ["IN_PROGRESS", "ESCALATED"],
+  REOPENED: ["IN_PROGRESS", "RESOLVED", "ESCALATED"],
 };
 
 export function parseWarningActionStatus(value: unknown, fallback?: WarningActionStatus): WarningActionStatus {
@@ -80,8 +80,8 @@ export class WarningActionsService {
     const note = data.note.trim();
     if (!actionType || !note) throw new ApiError("actionType and note are required", "INVALID_REQUEST", 400);
     const status = parseWarningActionStatus(data.status, "OPEN");
-    if (status === "REOPENED") {
-      throw new ApiError("A new warning action cannot start as REOPENED", "INVALID_STATUS", 400);
+    if (status !== "OPEN") {
+      throw new ApiError("A new warning action must start as OPEN and continue through lifecycle updates", "INVALID_STATUS", 400);
     }
     const dueDate = parseDueDate(data.dueDate);
     await assertActiveAssignee(data.assignedUserId);
@@ -98,7 +98,7 @@ export class WarningActionsService {
           actorName: actor.fullName,
           assignedUserId: data.assignedUserId || null,
           dueDate: dueDate ?? null,
-          resolvedAt: status === "RESOLVED" ? now : null,
+          resolvedAt: null,
           status,
           statusHistory: [{
             event: "created",
@@ -140,6 +140,13 @@ export class WarningActionsService {
     }
     const current = await prisma.warningAction.findUnique({ where: { id } });
     if (!current) throw new ApiError("Warning action not found", "NOT_FOUND", 404);
+    if (current.caseType === "EARLY_WARNING_CASE") {
+      throw new ApiError(
+        "Early-warning intervention cases must use the intervention workflow API",
+        "INTERVENTION_CASE_API_REQUIRED",
+        409,
+      );
+    }
 
     const currentStatus = parseWarningActionStatus(current.status);
     const status = data.status === undefined ? currentStatus : parseWarningActionStatus(data.status);
@@ -152,21 +159,51 @@ export class WarningActionsService {
     const now = new Date();
     const changedFields = [
       ...(status !== currentStatus ? ["status"] : []),
-      ...(data.assignedUserId !== undefined ? ["assignedUserId"] : []),
-      ...(data.dueDate !== undefined ? ["dueDate"] : []),
+      ...(data.assignedUserId !== undefined && data.assignedUserId !== current.assignedUserId ? ["assignedUserId"] : []),
+      ...(data.dueDate !== undefined && dueDate?.getTime() !== current.dueDate?.getTime() ? ["dueDate"] : []),
       ...(data.note !== undefined ? ["note"] : []),
     ];
     if (!changedFields.length) return current;
-    const statusHistory = status === currentStatus
-      ? historyArray(current.statusHistory)
-      : [...historyArray(current.statusHistory), {
-          event: "status_changed",
-          from: currentStatus,
-          to: status,
-          changedAt: now.toISOString(),
-          actorId: actor.userId,
-          actorName: actor.fullName,
-        }];
+    const statusHistory: Prisma.JsonArray = [...historyArray(current.statusHistory)];
+    if (status !== currentStatus) {
+      statusHistory.push({
+        event: "status_changed",
+        from: currentStatus,
+        to: status,
+        changedAt: now.toISOString(),
+        actorId: actor.userId,
+        actorName: actor.fullName,
+      });
+    }
+    if (data.note !== undefined) {
+      statusHistory.push({
+        event: "note_added",
+        note,
+        changedAt: now.toISOString(),
+        actorId: actor.userId,
+        actorName: actor.fullName,
+      });
+    }
+    if (data.assignedUserId !== undefined && data.assignedUserId !== current.assignedUserId) {
+      statusHistory.push({
+        event: "assignee_changed",
+        from: current.assignedUserId,
+        to: data.assignedUserId,
+        changedAt: now.toISOString(),
+        actorId: actor.userId,
+        actorName: actor.fullName,
+      });
+    }
+    if (data.dueDate !== undefined && dueDate?.getTime() !== current.dueDate?.getTime()) {
+      statusHistory.push({
+        event: "due_date_changed",
+        from: current.dueDate?.toISOString() || null,
+        to: dueDate?.toISOString() || null,
+        changedAt: now.toISOString(),
+        actorId: actor.userId,
+        actorName: actor.fullName,
+      });
+    }
 
     return prisma.$transaction(async (tx) => {
       const updated = await tx.warningAction.updateMany({
@@ -175,8 +212,7 @@ export class WarningActionsService {
           ...(data.status !== undefined ? { status } : {}),
           ...(data.assignedUserId !== undefined ? { assignedUserId: data.assignedUserId } : {}),
           ...(data.dueDate !== undefined ? { dueDate } : {}),
-          ...(data.note !== undefined ? { note } : {}),
-          ...(status !== currentStatus ? { statusHistory } : {}),
+          statusHistory,
           ...(status === "RESOLVED" && currentStatus !== "RESOLVED" ? { resolvedAt: now } : {}),
           ...(currentStatus === "RESOLVED" && status !== "RESOLVED" ? { resolvedAt: null } : {}),
           updatedAt: now,

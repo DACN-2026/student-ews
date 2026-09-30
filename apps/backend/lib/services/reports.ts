@@ -1,8 +1,26 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/utils/api-error";
+import {
+  warningDataStatusFromStored,
+  warningPresentationState,
+  type WarningDataStatus,
+} from "@/lib/services/academic-warning-rules";
+import { compareAcademicTerms } from "@/lib/academic-terms";
 
 type WarningLevel = "high" | "medium" | "none";
+
+type PersistedWarningRow = {
+  studentId: string;
+  maxSeverity: string;
+  reasonCount: number;
+  dataError: string | null;
+  termGpa4?: unknown;
+  cumulativeGpa4?: unknown;
+  businessStatus?: string | null;
+};
+
+type PersistedBusinessStatus = "NORMAL" | "PARTIAL_NO_RISK" | "MONITORING" | "HIGH_RISK" | "VERIFY_REQUIRED" | "INSUFFICIENT_DATA";
 
 type WarningStudent = {
   studentId: string;
@@ -20,148 +38,90 @@ type WarningStudent = {
   academicYear: string | null;
   termCode: string | null;
   assessed: boolean;
+  dataStatus: WarningDataStatus;
+  presentationState: PersistedBusinessStatus;
+  hasPersistedResult: boolean;
 };
 
 const numberOrNull = (value: unknown) => value == null ? null : Number(value);
 
-type WarningTrendTerm = {
-  id: string;
-  academicYear: string;
-  termCode: string;
-  termOrder: number;
-  label: string;
-  isSummer?: boolean;
-};
+function persistedBusinessStatus(row: PersistedWarningRow, dataStatus: WarningDataStatus): PersistedBusinessStatus {
+  if (["NORMAL", "PARTIAL_NO_RISK", "MONITORING", "HIGH_RISK", "VERIFY_REQUIRED", "INSUFFICIENT_DATA"].includes(row.businessStatus || "")) {
+    return row.businessStatus as PersistedBusinessStatus;
+  }
+  return warningPresentationState({ maxSeverity: row.maxSeverity, reasonCount: row.reasonCount, dataStatus });
+}
 
-type WarningTrendSummary = {
-  studentId: string;
-  academicTermId: string;
-  gpa4: unknown;
-  cumulativeGpa4: unknown;
-};
-
-type WarningTrendDecision = {
-  studentId: string;
-  academicTermId: string;
-};
-
-const MIN_REPORTING_TERM_GPA_COVERAGE = 0.8;
-
-export function summarizeWarningTrend(
-  rows: WarningTrendSummary[],
-  termGpaThreshold: number,
-  cumulativeGpaThreshold: number,
-  decisionStudentIds: ReadonlySet<string> = new Set(),
-) {
+export function summarizePersistedWarningResults(rows: PersistedWarningRow[]) {
   let high = 0;
   let medium = 0;
   let evaluated = 0;
   let available = 0;
   let termGpaAvailable = 0;
   let cumulativeGpaAvailable = 0;
-  const summarizedStudentIds = new Set<string>();
-  const summaryByStudent = new Map(rows.map((summary) => [summary.studentId, summary]));
-
-  for (const summary of summaryByStudent.values()) {
-    summarizedStudentIds.add(summary.studentId);
-    const termGpa = numberOrNull(summary.gpa4);
-    const cumulative = numberOrNull(summary.cumulativeGpa4);
-    if (termGpa != null || cumulative != null) available += 1;
-    if (termGpa != null) termGpaAvailable += 1;
-    if (cumulative != null) cumulativeGpaAvailable += 1;
-
-    if (decisionStudentIds.has(summary.studentId)) {
-      high += 1;
-      evaluated += 1;
-    } else if (cumulative != null && cumulative < cumulativeGpaThreshold) {
-      high += 1;
-      evaluated += 1;
-    } else if (termGpa != null && termGpa < termGpaThreshold) {
-      medium += 1;
-      evaluated += 1;
-    } else if (termGpa != null && cumulative != null) {
-      evaluated += 1;
-    }
+  let insufficient = 0;
+  for (const row of rows) {
+    const dataStatus = warningDataStatusFromStored(row.dataError);
+    const state = persistedBusinessStatus(row, dataStatus);
+    if (row.termGpa4 != null) termGpaAvailable += 1;
+    if (row.cumulativeGpa4 != null) cumulativeGpaAvailable += 1;
+    if (dataStatus !== "INSUFFICIENT") available += 1;
+    if (state === "HIGH_RISK" || state === "VERIFY_REQUIRED") high += 1;
+    if (state === "MONITORING") medium += 1;
+    if (state === "INSUFFICIENT_DATA") insufficient += 1;
+    else evaluated += 1;
   }
-
-  // A source decision is itself a high-severity warning even when that
-  // student does not yet have a GPA summary.
-  for (const studentId of decisionStudentIds) {
-    if (!summarizedStudentIds.has(studentId)) {
-      high += 1;
-      evaluated += 1;
-      available += 1;
-    }
-  }
-
-  return { high, medium, evaluated, available, termGpaAvailable, cumulativeGpaAvailable };
+  return { high, medium, evaluated, available, termGpaAvailable, cumulativeGpaAvailable, insufficient };
 }
 
-export function selectLatestReportingPeriod<TrendPoint extends { termGpaAvailable: number; isSummer?: boolean }>(
-  trend: TrendPoint[],
+export function summarizeWarningBusinessStatuses(rows: PersistedWarningRow[]) {
+  const counts = {
+    NORMAL: 0,
+    PARTIAL_NO_RISK: 0,
+    MONITORING: 0,
+    HIGH_RISK: 0,
+    VERIFY_REQUIRED: 0,
+    INSUFFICIENT_DATA: 0,
+  };
+  for (const row of rows) {
+    const dataStatus = warningDataStatusFromStored(row.dataError);
+    counts[persistedBusinessStatus(row, dataStatus)] += 1;
+  }
+  return counts;
+}
+
+export function selectLatestReportingPeriod<TrendPoint extends { evaluated: number; insufficient?: number; isSummer?: boolean }>(trend: TrendPoint[]) {
+  return trend
+    .filter((point) => !point.isSummer && (point.evaluated > 0 || (point.insufficient || 0) > 0))
+    .at(-1) || null;
+}
+
+export function describeAcademicWarningReportEvaluationState(
   studentCount: number,
-  minimumCoverage = MIN_REPORTING_TERM_GPA_COVERAGE,
+  rows: PersistedWarningRow[],
+  hasCompletedOfficialRun: boolean,
 ) {
-  if (!trend.length || studentCount <= 0) return null;
-  const mainTerms = trend.filter((point) => !point.isSummer);
-  const sufficientlyCovered = mainTerms.filter(
-    (point) => point.termGpaAvailable / studentCount >= minimumCoverage,
-  );
-  // Automated reporting always excludes configured summer terms. Coverage is
-  // still used to avoid selecting an incomplete current main term.
-  return sufficientlyCovered.at(-1)
-    || mainTerms.filter((point) => point.termGpaAvailable > 0).at(-1)
-    || null;
+  const persistedStudentIds = new Set(rows.map((row) => row.studentId));
+  const persistedCounts = summarizePersistedWarningResults(rows);
+  return {
+    hasCompletedOfficialRun,
+    persistedResultCount: persistedStudentIds.size,
+    persistedInsufficientDataCount: persistedCounts.insufficient,
+    noPersistedResultCount: Math.max(0, studentCount - persistedStudentIds.size),
+  };
 }
 
-export function buildWarningTrend(
-  terms: WarningTrendTerm[],
-  summaries: WarningTrendSummary[],
-  decisions: WarningTrendDecision[],
-  termGpaThreshold: number,
-  cumulativeGpaThreshold: number,
-) {
-  const sortedTerms = [...terms].sort((left, right) =>
-    `${left.academicYear}|${String(left.termOrder).padStart(2, "0")}`.localeCompare(
-      `${right.academicYear}|${String(right.termOrder).padStart(2, "0")}`,
-    ),
-  );
-  const summariesByTerm = new Map<string, WarningTrendSummary[]>();
-  const decisionsByTerm = new Map<string, WarningTrendDecision[]>();
-
-  for (const summary of summaries) {
-    const rows = summariesByTerm.get(summary.academicTermId) || [];
-    rows.push(summary);
-    summariesByTerm.set(summary.academicTermId, rows);
+function latestRunsPerScope<TRun extends {
+  cohortId: string;
+  trainingProgramId: string;
+  assessmentAcademicTermId: string;
+}>(runs: TRun[]) {
+  const latest = new Map<string, TRun>();
+  for (const run of runs) {
+    const key = `${run.cohortId}:${run.trainingProgramId}:${run.assessmentAcademicTermId}`;
+    if (!latest.has(key)) latest.set(key, run);
   }
-  for (const decision of decisions) {
-    const rows = decisionsByTerm.get(decision.academicTermId) || [];
-    rows.push(decision);
-    decisionsByTerm.set(decision.academicTermId, rows);
-  }
-
-  return sortedTerms.flatMap((term) => {
-    const periodSummaries = summariesByTerm.get(term.id) || [];
-    const periodDecisions = decisionsByTerm.get(term.id) || [];
-
-    // Every bar represents that exact term. Prior-term warnings are not
-    // carried forward and configured future terms without data are omitted.
-    if (!periodSummaries.length && !periodDecisions.length) return [];
-    return [{
-      academicTermId: term.id,
-      academicYear: term.academicYear,
-      termCode: term.termCode,
-      termOrder: term.termOrder,
-      label: term.label,
-      isSummer: Boolean(term.isSummer),
-      ...summarizeWarningTrend(
-        periodSummaries,
-        termGpaThreshold,
-        cumulativeGpaThreshold,
-        new Set(periodDecisions.map((decision) => decision.studentId)),
-      ),
-    }];
-  });
+  return [...latest.values()];
 }
 
 export class ReportsService {
@@ -174,20 +134,20 @@ export class ReportsService {
       academicYearId?: string;
       cohortId?: string;
       programCode?: string;
+      presentationState?: WarningStudent["presentationState"];
+      includeAllStates?: boolean;
       page?: number;
       pageSize?: number;
     } = {},
     studentScope: Prisma.StudentWhereInput = {},
   ) {
     const page = Math.max(1, filters.page || 1);
-    // API routes still cap public pagination at 100. Internal consumers such as
-    // the student list may request the complete warning set for accurate filters.
     const pageSize = Math.min(1000, Math.max(1, filters.pageSize || 20));
     const cohortClassCodes = filters.cohortId
       ? (await prisma.class.findMany({ where: { cohortId: filters.cohortId, deletedAt: null }, select: { classId: true } }))
           .map((item) => item.classId)
       : undefined;
-    const [students, policy, terms, years, classes] = await Promise.all([
+    const [students, terms, years, classes, policies, programs] = await Promise.all([
       prisma.student.findMany({
         where: { AND: [
           { deletedAt: null },
@@ -195,92 +155,24 @@ export class ReportsService {
           filters.programCode ? { sStudyProgramId: filters.programCode } : {},
           cohortClassCodes ? { sClassStudentId: { in: cohortClassCodes } } : {},
         ] },
-        select: {
-          id: true,
-          sStudentId: true,
-          sFullName: true,
-          sClassStudentId: true,
-          sStudyProgramId: true,
-        },
-      }),
-      prisma.academicWarningPolicy.findFirst({
-        where: { status: "active" },
-        orderBy: { version: "desc" },
+        select: { id: true, sStudentId: true, sFullName: true, sClassStudentId: true, sStudyProgramId: true },
       }),
       prisma.academicTerm.findMany({ where: { deletedAt: null } }),
       prisma.academicYear.findMany({ where: { deletedAt: null } }),
       prisma.class.findMany({ where: { deletedAt: null, isActive: true }, orderBy: { classId: "asc" } }),
+      prisma.academicWarningPolicy.findMany({ orderBy: [{ version: "desc" }, { createdAt: "desc" }] }),
+      filters.programCode
+        ? prisma.trainingProgram.findMany({ where: { sProgramCode: filters.programCode, deletedAt: null }, select: { id: true } })
+        : Promise.resolve([]),
     ]);
-
-    const studentIds = students.map((student) => student.id);
-    if (!policy) {
-      throw new ApiError(
-        "No active academic warning policy is configured. Activate a versioned policy before viewing reports.",
-        "WARNING_POLICY_REQUIRED",
-        503,
-      );
-    }
-    const reportTerms = filters.academicYearId
-      ? terms.filter((term) => term.academicYearId === filters.academicYearId)
-      : terms;
-    const reportTermIds = reportTerms.map((term) => term.id);
-    const [termSummaries, warningDecisions, actions] = studentIds.length
-      ? await Promise.all([
-          prisma.studentTermSummary.findMany({
-            where: {
-              studentId: { in: studentIds },
-              ...(filters.academicYearId ? { academicTermId: { in: reportTermIds } } : {}),
-            },
-          }),
-          prisma.studentDecision.findMany({
-            where: {
-              studentId: { in: studentIds },
-              deletedAt: null,
-              isAcademicWarning: true,
-              ...(filters.academicYearId ? { academicTermId: { in: reportTermIds } } : {}),
-            },
-            select: { studentId: true, academicTermId: true },
-          }),
-          prisma.warningAction.findMany({
-            where: { studentId: { in: studentIds }, status: "RESOLVED" },
-            select: { studentId: true },
-          }),
-        ])
-      : [[], [], []];
-
     const termMap = new Map(terms.map((term) => [term.id, term]));
     const yearMap = new Map(years.map((year) => [year.id, year]));
-    const studentMap = new Map(students.map((student) => [student.id, student]));
-    const scopedTermSummaries: typeof termSummaries = [];
-    for (const summary of termSummaries) {
-      const student = studentMap.get(summary.studentId);
-      if (student?.sStudyProgramId && summary.sProgramCode !== student.sStudyProgramId) continue;
-      scopedTermSummaries.push(summary);
-    }
-    const resolvedCounts = new Map<string, number>();
-    for (const action of actions) {
-      resolvedCounts.set(action.studentId, (resolvedCounts.get(action.studentId) || 0) + 1);
-    }
-
-    const termGpaThreshold = Number(policy.termGpaThreshold);
-    const cumulativeGpaThreshold = Number(policy.cumulativeGpaThreshold);
-    const completeTrend = buildWarningTrend(
-      reportTerms.map((term) => {
-        const academicYear = yearMap.get(term.academicYearId)?.sYearCode || "";
-        return {
-          id: term.id,
-          academicYear,
-          termCode: term.sTermCode,
-          termOrder: term.sTermOrder,
-          label: `${term.sTermCode} (${academicYear})`,
-          isSummer: term.sIsSummer,
-        };
-      }),
-      scopedTermSummaries,
-      warningDecisions,
-      termGpaThreshold,
-      cumulativeGpaThreshold,
-    );
+    const activePolicy = policies.find((policy) => policy.status === "active") || null;
+    const qd600Policy = policies.find((policy) => {
+      const definition = policy.policyDefinition;
+      return definition !== null && !Array.isArray(definition) && typeof definition === "object" &&
+        definition.evaluationProfile === "QD600_ARTICLE_18";
+    }) || null;
     const requestedTerm = filters.academicTermId ? termMap.get(filters.academicTermId) : null;
     if (filters.academicTermId && !requestedTerm) {
       throw new ApiError("Academic term not found", "INVALID_ACADEMIC_TERM", 400);
@@ -288,130 +180,203 @@ export class ReportsService {
     if (requestedTerm && filters.academicYearId && requestedTerm.academicYearId !== filters.academicYearId) {
       throw new ApiError("Academic term does not belong to the selected academic year", "INVALID_ACADEMIC_TERM", 400);
     }
-    const summerParticipants = requestedTerm?.sIsSummer && studentIds.length
-      ? await prisma.studentCourseOffering.findMany({
-          where: { academicTermId: requestedTerm.id, studentId: { in: studentIds } },
-          distinct: ["studentId"],
-          select: { studentId: true },
+    if (requestedTerm?.sIsSummer) {
+      throw new ApiError(
+        "Summer terms are outside the Early Academic Warning workflow",
+        "SUMMER_EARLY_WARNING_OUT_OF_SCOPE",
+        422,
+      );
+    }
+
+    const mainTerms = terms.filter((term) => !term.sIsSummer);
+    const reportTerms = filters.academicYearId ? mainTerms.filter((term) => term.academicYearId === filters.academicYearId) : mainTerms;
+    const reportTermIds = reportTerms.map((term) => term.id);
+    const runs = await prisma.academicWarningRun.findMany({
+      where: {
+        status: "completed",
+        runMode: "OFFICIAL",
+        ...(filters.academicTermId
+          ? { assessmentAcademicTermId: filters.academicTermId }
+          : filters.academicYearId ? { assessmentAcademicTermId: { in: reportTermIds } } : {}),
+        ...(filters.cohortId ? { cohortId: filters.cohortId } : {}),
+        ...(filters.programCode ? { trainingProgramId: { in: programs.map((program) => program.id) } } : {}),
+      },
+      orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }, { id: "desc" }],
+    });
+    const latestRuns = latestRunsPerScope(runs);
+    const studentIds = students.map((student) => student.id);
+    const allResults = latestRuns.length && studentIds.length
+      ? await prisma.academicWarningStudentResult.findMany({
+          where: { runId: { in: latestRuns.map((run) => run.id) }, studentId: { in: studentIds } },
         })
       : [];
+    const resultRunIds = new Set(allResults.map((result) => result.runId));
+    const availableRuns = latestRuns.filter((run) => resultRunIds.has(run.id));
+    const asComparable = (term: (typeof terms)[number]) => ({
+      id: term.id,
+      academicYearId: term.academicYearId,
+      academicYearCode: yearMap.get(term.academicYearId)?.sYearCode || "",
+      termOrder: term.sTermOrder,
+      isSummer: term.sIsSummer,
+      startDate: term.startDate,
+      endDate: term.endDate,
+    });
+    const orderedTerms = reportTerms.slice().sort((left, right) => compareAcademicTerms(asComparable(left), asComparable(right)));
+    const trend = orderedTerms.flatMap((term) => {
+      const periodRunIds = new Set(availableRuns.filter((run) => run.assessmentAcademicTermId === term.id).map((run) => run.id));
+      const rows = allResults.filter((result) => periodRunIds.has(result.runId));
+      if (!rows.length) return [];
+      return [{
+        academicTermId: term.id,
+        academicYear: yearMap.get(term.academicYearId)?.sYearCode || "",
+        termCode: term.sTermCode,
+        termOrder: term.sTermOrder,
+        label: `${term.sTermCode} (${yearMap.get(term.academicYearId)?.sYearCode || ""})`,
+        isSummer: term.sIsSummer,
+        ...summarizePersistedWarningResults(rows),
+      }];
+    });
     const latestPeriod = requestedTerm
-      ? completeTrend.find((point) => point.academicTermId === requestedTerm.id) || {
+      ? trend.find((point) => point.academicTermId === requestedTerm.id) || {
           academicTermId: requestedTerm.id,
           academicYear: yearMap.get(requestedTerm.academicYearId)?.sYearCode || "",
           termCode: requestedTerm.sTermCode,
           termOrder: requestedTerm.sTermOrder,
           label: `${requestedTerm.sTermCode} (${yearMap.get(requestedTerm.academicYearId)?.sYearCode || ""})`,
           isSummer: requestedTerm.sIsSummer,
-          high: 0,
-          medium: 0,
-          evaluated: 0,
-          available: 0,
-          termGpaAvailable: 0,
-          cumulativeGpaAvailable: 0,
+          high: 0, medium: 0, evaluated: 0, available: 0,
+          termGpaAvailable: 0, cumulativeGpaAvailable: 0, insufficient: 0,
         }
-      : selectLatestReportingPeriod(completeTrend, students.length);
-    const reportingPeriodIndex = latestPeriod
-      ? completeTrend.findIndex((point) => point.academicTermId === latestPeriod.academicTermId)
-      : -1;
-    const trend = (reportingPeriodIndex >= 0 ? completeTrend.slice(0, reportingPeriodIndex + 1) : [])
-      .filter((point) => point.termGpaAvailable > 0)
-      .filter((point) => requestedTerm?.sIsSummer ? true : !point.isSummer)
-      .slice(-5);
-    const latestTerm = latestPeriod ? termMap.get(latestPeriod.academicTermId) : null;
-    const latestYear = latestTerm ? yearMap.get(latestTerm.academicYearId) : null;
-    const periodSummaryByStudent = new Map(
-      scopedTermSummaries
-        .filter((summary) => summary.academicTermId === latestPeriod?.academicTermId)
-        .map((summary) => [summary.studentId, summary]),
-    );
-    const periodDecisionCounts = new Map<string, number>();
-    for (const decision of warningDecisions) {
-      if (decision.academicTermId !== latestPeriod?.academicTermId) continue;
-      periodDecisionCounts.set(decision.studentId, (periodDecisionCounts.get(decision.studentId) || 0) + 1);
+      : selectLatestReportingPeriod(trend);
+    const selectedTerm = latestPeriod ? termMap.get(latestPeriod.academicTermId) : null;
+    const selectedYear = selectedTerm ? yearMap.get(selectedTerm.academicYearId) : null;
+    const selectedRunIds = new Set(availableRuns
+      .filter((run) => run.assessmentAcademicTermId === selectedTerm?.id)
+      .map((run) => run.id));
+    const runOrder = new Map(availableRuns.map((run, index) => [run.id, index]));
+    const selectedResults = allResults
+      .filter((result) => selectedRunIds.has(result.runId))
+      .sort((left, right) => (runOrder.get(left.runId) ?? 9999) - (runOrder.get(right.runId) ?? 9999));
+    const resultByStudent = new Map<string, (typeof selectedResults)[number]>();
+    for (const result of selectedResults) if (!resultByStudent.has(result.studentId)) resultByStudent.set(result.studentId, result);
+    const selectedResultIds = [...resultByStudent.values()].map((result) => result.id);
+    const [reasons, actions] = await Promise.all([
+      selectedResultIds.length
+        ? prisma.academicWarningReason.findMany({
+            where: { studentResultId: { in: selectedResultIds } },
+          select: { studentResultId: true, reasonCode: true },
+          })
+        : [],
+      studentIds.length
+        ? prisma.warningAction.findMany({
+            where: { studentId: { in: studentIds }, status: "RESOLVED" },
+            select: { studentId: true },
+          })
+        : [],
+    ]);
+    const reasonCodesByResult = new Map<string, string[]>();
+    for (const reason of reasons) {
+      const values = reasonCodesByResult.get(reason.studentResultId) || [];
+      values.push(reason.reasonCode);
+      reasonCodesByResult.set(reason.studentResultId, values);
     }
+    const resolvedCounts = new Map<string, number>();
+    for (const action of actions) resolvedCounts.set(action.studentId, (resolvedCounts.get(action.studentId) || 0) + 1);
 
     const evaluatedStudents: WarningStudent[] = students.map((student) => {
-      const summary = periodSummaryByStudent.get(student.id);
-      const termGpa4 = numberOrNull(summary?.gpa4);
-      const cumulativeGpa4 = numberOrNull(summary?.cumulativeGpa4);
-      const decisionCount = periodDecisionCounts.get(student.id) || 0;
-      const reasonCodes: string[] = [];
-      let severity: WarningLevel = "none";
-      if (termGpa4 != null && termGpa4 < termGpaThreshold) {
-        reasonCodes.push("LOW_TERM_GPA");
-        severity = "medium";
-      }
-      if (cumulativeGpa4 != null && cumulativeGpa4 < cumulativeGpaThreshold) {
-        reasonCodes.push("LOW_CUMULATIVE_GPA");
-        severity = "high";
-      }
-      if (decisionCount > 0) {
-        reasonCodes.push("ACADEMIC_WARNING_DECISION");
-        severity = "high";
-      }
-      const assessed = severity !== "none" || (termGpa4 != null && cumulativeGpa4 != null);
+      const result = resultByStudent.get(student.id);
+      const dataStatus = result ? warningDataStatusFromStored(result.dataError) : "INSUFFICIENT";
+      const presentationState = result
+        ? persistedBusinessStatus(result, dataStatus)
+        : "INSUFFICIENT_DATA";
+      const severity: WarningLevel = presentationState === "HIGH_RISK" || presentationState === "VERIFY_REQUIRED"
+        ? "high"
+        : presentationState === "MONITORING" ? "medium" : "none";
       return {
         studentId: student.id,
-        studentCode: student.sStudentId,
-        studentName: student.sFullName,
+        studentCode: result?.sStudentId || student.sStudentId,
+        studentName: result?.sStudentName || student.sFullName,
         classCode: student.sClassStudentId || "Chưa phân lớp",
         programCode: student.sStudyProgramId || "",
-        termGpa4,
-        cumulativeGpa4,
+        termGpa4: numberOrNull(result?.termGpa4),
+        cumulativeGpa4: numberOrNull(result?.cumulativeGpa4),
         severity,
-        reasonCodes,
-        reasonCount: reasonCodes.length,
-        academicWarningDecisions: decisionCount,
+        reasonCodes: result ? reasonCodesByResult.get(result.id) || [] : [],
+        reasonCount: result?.reasonCount || 0,
+        academicWarningDecisions: result?.academicWarningDecisions || 0,
         resolvedActions: resolvedCounts.get(student.id) || 0,
-        academicYear: latestYear?.sYearCode || null,
-        termCode: latestTerm?.sTermCode || null,
-        assessed,
+        academicYear: selectedYear?.sYearCode || null,
+        termCode: selectedTerm?.sTermCode || null,
+        assessed: presentationState !== "INSUFFICIENT_DATA",
+        dataStatus,
+        presentationState,
+        hasPersistedResult: Boolean(result),
       };
     });
-
     const warningStudents = evaluatedStudents.filter((student) => student.severity !== "none");
-    const classBreakdown = classes
-      .map((studentClass) => {
-        const classStudents = students.filter((student) => student.sClassStudentId === studentClass.classId);
-        const classWarnings = warningStudents.filter((student) => student.classCode === studentClass.classId);
-        const high = classWarnings.filter((student) => student.severity === "high").length;
-        const medium = classWarnings.filter((student) => student.severity === "medium").length;
-        return {
-          classCode: studentClass.classId,
-          className: studentClass.className,
-          totalStudents: classStudents.length,
-          high,
-          medium,
-          warningStudents: high + medium,
-          warningRate: classStudents.length ? Math.round(((high + medium) / classStudents.length) * 100) : 0,
-        };
-      })
-      .filter((item) => item.totalStudents > 0);
-
+    const classBreakdown = classes.map((studentClass) => {
+      const classStudents = students.filter((student) => student.sClassStudentId === studentClass.classId);
+      const classEvaluations = evaluatedStudents.filter((student) =>
+        student.classCode === studentClass.classId && student.hasPersistedResult,
+      );
+      const classWarnings = warningStudents.filter((student) => student.classCode === studentClass.classId);
+      const high = classWarnings.filter((student) => student.severity === "high").length;
+      const medium = classWarnings.filter((student) => student.severity === "medium").length;
+      return {
+        classCode: studentClass.classId,
+        className: studentClass.className,
+        totalStudents: classStudents.length,
+        high,
+        medium,
+        warningStudents: high + medium,
+        warningRate: classStudents.length ? Math.round(((high + medium) / classStudents.length) * 100) : 0,
+        evaluated: classEvaluations.length,
+        normal: classEvaluations.filter((student) => student.presentationState === "NORMAL").length,
+        partialNoRisk: classEvaluations.filter((student) => student.presentationState === "PARTIAL_NO_RISK").length,
+        monitoring: classEvaluations.filter((student) => student.presentationState === "MONITORING").length,
+        highRisk: classEvaluations.filter((student) => student.presentationState === "HIGH_RISK").length,
+        verifyRequired: classEvaluations.filter((student) => student.presentationState === "VERIFY_REQUIRED").length,
+        insufficientData: classEvaluations.filter((student) => student.presentationState === "INSUFFICIENT_DATA").length,
+      };
+    }).filter((item) => item.totalStudents > 0);
     const search = filters.search?.trim().toLocaleLowerCase("vi-VN") || "";
-    const filtered = warningStudents
+    const severityOrder: Record<WarningLevel, number> = { high: 0, medium: 1, none: 2 };
+    const reportStudents = filters.includeAllStates
+      ? evaluatedStudents.filter((student) => student.hasPersistedResult)
+      : warningStudents;
+    const filtered = reportStudents
       .filter((student) => !filters.severity || student.severity === filters.severity)
+      .filter((student) => !filters.presentationState || student.presentationState === filters.presentationState)
       .filter((student) => !filters.classCode || student.classCode === filters.classCode)
       .filter((student) => !search || `${student.studentCode} ${student.studentName}`.toLocaleLowerCase("vi-VN").includes(search))
-      .sort((left, right) => {
-        const severityOrder = { high: 0, medium: 1, none: 2 };
-        return severityOrder[left.severity] - severityOrder[right.severity]
-          || left.classCode.localeCompare(right.classCode)
-          || left.studentCode.localeCompare(right.studentCode);
-      });
+      .sort((left, right) => severityOrder[left.severity] - severityOrder[right.severity]
+        || left.classCode.localeCompare(right.classCode)
+        || left.studentCode.localeCompare(right.studentCode));
     const offset = (page - 1) * pageSize;
-    const evaluated = evaluatedStudents.filter((student) => student.assessed).length;
-    const available = evaluatedStudents.filter((student) =>
-      student.termGpa4 != null || student.cumulativeGpa4 != null || student.academicWarningDecisions > 0,
-    ).length;
-    const termGpaAvailable = evaluatedStudents.filter((student) => student.termGpa4 != null).length;
-    const cumulativeGpaAvailable = evaluatedStudents.filter((student) => student.cumulativeGpa4 != null).length;
-    const high = warningStudents.filter((student) => student.severity === "high").length;
-    const medium = warningStudents.filter((student) => student.severity === "medium").length;
-    const safe = evaluatedStudents.filter((student) => student.assessed && student.severity === "none").length;
+    const counts = summarizePersistedWarningResults([...resultByStudent.values()]);
+    const businessStatusCounts = summarizeWarningBusinessStatuses([...resultByStudent.values()]);
+    const safe = evaluatedStudents.filter((student) => student.presentationState === "NORMAL").length;
+    const sourceRun = availableRuns.find((run) => run.assessmentAcademicTermId === selectedTerm?.id) || null;
+    const evaluationState = describeAcademicWarningReportEvaluationState(
+      students.length,
+      [...resultByStudent.values()],
+      Boolean(sourceRun),
+    );
+    const sourcePolicy = sourceRun?.policyId
+      ? await prisma.academicWarningPolicy.findUnique({ where: { id: sourceRun.policyId } })
+      : null;
+    const policy = sourcePolicy || qd600Policy || activePolicy;
+    if (!policy) {
+      throw new ApiError(
+        "No persisted or active academic warning policy is available for this report.",
+        "WARNING_POLICY_REQUIRED",
+        503,
+      );
+    }
 
     return {
+      hasCompletedOfficialRun: evaluationState.hasCompletedOfficialRun,
+      evaluationState,
       items: filtered.slice(offset, offset + pageSize),
       total: filtered.length,
       page,
@@ -419,65 +384,63 @@ export class ReportsService {
       totalPages: Math.ceil(filtered.length / pageSize),
       counts: {
         students: students.length,
-        evaluated,
-        available,
-        termGpaAvailable,
-        cumulativeGpaAvailable,
-        unassessed: students.length - evaluated,
-        high,
-        medium,
+        evaluated: counts.evaluated,
+        available: counts.available,
+        termGpaAvailable: counts.termGpaAvailable,
+        cumulativeGpaAvailable: counts.cumulativeGpaAvailable,
+        unassessed: students.length - counts.evaluated,
+        high: counts.high,
+        medium: counts.medium,
         safe,
+        businessStatus: businessStatusCounts,
       },
       policy: {
-        id: policy.id,
-        name: policy.name,
-        version: policy.version,
-        status: policy.status,
-        activatedBy: policy.createdBy,
-        termGpaThreshold,
-        cumulativeGpaThreshold,
-        configured: true,
+          id: sourceRun?.policyId || policy.id,
+          name: policy.name,
+          version: sourceRun?.policyVersion || policy.version,
+          status: sourceRun ? "snapshotted" : policy.status,
+          activatedBy: policy.createdBy,
+          termGpaThreshold: Number(policy.termGpaThreshold),
+          cumulativeGpaThreshold: Number(policy.cumulativeGpaThreshold),
+          configured: true,
+          displayName: sourceRun?.executionProfile === "QD600_PARTIAL_REGULATORY" || policy.id === qd600Policy?.id
+            ? "QĐ 600/QĐ-ĐHĐL — Điều 18"
+            : policy.name,
+          evaluationScope: sourceRun?.executionProfile === "QD600_PARTIAL_REGULATORY" || policy.id === qd600Policy?.id
+            ? "Đánh giá một phần"
+            : "Legacy",
       },
       mode: {
-        code: requestedTerm?.sIsSummer ? "summer_descriptive_monitoring" : "live_gpa_decision",
-        label: requestedTerm?.sIsSummer
-          ? "Số liệu mô tả kỳ phụ, không phải kết luận cảnh báo chính thức"
-          : "Cảnh báo live theo GPA và quyết định",
-        reasonCodes: ["LOW_TERM_GPA", "LOW_CUMULATIVE_GPA", "ACADEMIC_WARNING_DECISION"],
-        excludes: ["REGISTRATION_BEHIND", "PROGRAM_PROGRESS_BEHIND"],
-        periodSelection: requestedTerm ? "explicit_filter" : "latest_non_summer_term_with_80_percent_term_gpa_coverage",
+        code: "official_warning_run",
+        label: "OFFICIAL từ kết quả AcademicWarningRun đã lưu",
+        source: "OFFICIAL",
+        runIds: availableRuns.filter((run) => run.assessmentAcademicTermId === selectedTerm?.id).map((run) => run.id),
+        evaluator: sourceRun?.executionProfile || "QD600_PARTIAL_REGULATORY",
+        periodSelection: requestedTerm ? "explicit_filter" : "latest_main_term_with_completed_official_run",
         generatedAt: new Date().toISOString(),
       },
       latestPeriod,
-      trend,
+      trend: trend.filter((point) => !point.isSummer).slice(-5),
       classBreakdown,
       reportContext: {
-        isSummer: Boolean(requestedTerm?.sIsSummer),
-        classification: requestedTerm?.sIsSummer ? "descriptive" : "official_main_term",
-        participantStudents: requestedTerm?.sIsSummer ? summerParticipants.length : latestPeriod?.available || 0,
+        hasCompletedOfficialRun: evaluationState.hasCompletedOfficialRun,
+        persistedResultCount: evaluationState.persistedResultCount,
+        persistedInsufficientDataCount: evaluationState.persistedInsufficientDataCount,
+        noPersistedResultCount: evaluationState.noPersistedResultCount,
+        isSummer: false,
+        classification: "official",
+        participantStudents: resultByStudent.size,
         scopedStudents: students.length,
-        coverage: students.length
-          ? (requestedTerm?.sIsSummer ? summerParticipants.length : latestPeriod?.available || 0) / students.length
-          : 0,
-        note: requestedTerm?.sIsSummer
-          ? "Số liệu mô tả, không phải kết quả xếp hạng học lực độc lập."
-          : null,
+        coverage: students.length ? resultByStudent.size / students.length : 0,
+        note: sourceRun ? null : "Chưa có AcademicWarningRun chính thức hoàn tất cho phạm vi đã chọn.",
       },
       filterOptions: {
-        terms: reportTerms
-          .slice()
-          .sort((left, right) => {
-            const leftYear = yearMap.get(left.academicYearId)?.sYearCode || "";
-            const rightYear = yearMap.get(right.academicYearId)?.sYearCode || "";
-            return `${rightYear}|${String(right.sTermOrder).padStart(2, "0")}`.localeCompare(
-              `${leftYear}|${String(left.sTermOrder).padStart(2, "0")}`,
-            );
-          })
-          .map((term) => ({
-            value: term.id,
-            label: `${term.sTermCode} (${yearMap.get(term.academicYearId)?.sYearCode || ""})`,
-            isSummer: term.sIsSummer,
-          })),
+        terms: orderedTerms.slice().reverse().map((term) => ({
+          value: term.id,
+          label: `${term.sTermCode} (${yearMap.get(term.academicYearId)?.sYearCode || ""})`,
+          isSummer: term.sIsSummer,
+          gradesFinalizedAt: term.gradesFinalizedAt,
+        })),
       },
     };
   }

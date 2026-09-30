@@ -101,6 +101,7 @@ export class DashboardService {
     filters: DashboardFilters = {},
     studentScope: Prisma.StudentWhereInput = {},
     warningScope: Prisma.AcademicWarningRunWhereInput = {},
+    includeAcademicWarnings = true,
   ) {
     const page = filters.page && filters.page > 0 ? filters.page : 1;
     const pageSize = filters.pageSize && filters.pageSize > 0 ? Math.min(filters.pageSize, 100) : 10;
@@ -196,16 +197,28 @@ export class DashboardService {
     }
 
     const hasExplicitTermFilter = Boolean(filters.academicTermId || filters.termCode);
-    const liveWarningReport = await ReportsService.academicWarningStudents(
-      {
-        page,
-        pageSize,
-        academicTermId: hasExplicitTermFilter ? selectedTerm?.id || "__invalid_term__" : undefined,
-        academicYearId: selectedYear?.id,
-        severity: filters.warningLevel,
-      },
-      studentWhere,
-    );
+    const liveWarningReport = includeAcademicWarnings
+      ? await ReportsService.academicWarningStudents(
+          {
+            page,
+            pageSize,
+            academicTermId: hasExplicitTermFilter ? selectedTerm?.id || "__invalid_term__" : undefined,
+            academicYearId: selectedYear?.id,
+            severity: filters.warningLevel,
+          },
+          studentWhere,
+        )
+      : {
+          items: [], total: 0, page, pageSize, totalPages: 0,
+          counts: { students: 0, evaluated: 0, available: 0, termGpaAvailable: 0, cumulativeGpaAvailable: 0, unassessed: 0, high: 0, medium: 0, safe: 0 },
+          policy: null,
+          mode: { code: "permission_required", label: "Yêu cầu academic_warning.read", source: "UNAVAILABLE", runIds: [], evaluator: "academic-warning-rules", periodSelection: "none", generatedAt: new Date().toISOString() },
+          latestPeriod: null,
+          trend: [],
+          classBreakdown: [],
+          reportContext: { isSummer: false, classification: "unavailable", participantStudents: 0, scopedStudents: 0, coverage: 0, note: null },
+          filterOptions: { terms: [] },
+        };
     if (!hasExplicitTermFilter && liveWarningReport.latestPeriod) {
       selectedTerm = await prisma.academicTerm.findFirst({
         where: { id: liveWarningReport.latestPeriod.academicTermId, deletedAt: null },
@@ -359,6 +372,7 @@ export class DashboardService {
 
     const warningFilter: Prisma.AcademicWarningRunWhereInput = {
       status: "completed",
+      runMode: "OFFICIAL",
       ...(filters.cohortId ? { cohortId: filters.cohortId } : {}),
     };
     if (filters.trainingProgramId || filters.programCode) {
@@ -404,7 +418,7 @@ export class DashboardService {
       prisma.trainingProgram.findMany({ where: { deletedAt: null, status: "active" }, orderBy: { sProgramName: "asc" } }),
       prisma.class.findMany({ where: { deletedAt: null, isActive: true }, orderBy: { className: "asc" } }),
       prisma.cohort.findMany({ where: { deletedAt: null, isActive: true }, orderBy: { sCohortName: "asc" } }),
-      prisma.academicWarningRun.findMany({
+      includeAcademicWarnings ? prisma.academicWarningRun.findMany({
         where: {
           AND: [
             warningFilter,
@@ -413,7 +427,7 @@ export class DashboardService {
         },
         orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
         take: 500,
-      }),
+      }) : Promise.resolve([]),
       prisma.trainingProgressCompletionRun.findMany({
         where: progressFilter,
         orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
@@ -731,7 +745,9 @@ export class DashboardService {
         averageGpa: aggregateGpa === null ? unavailableMetric() : availableMetric(aggregateGpa, gpaValues.length, gpaValues.length),
         completionRate: percentage(scheduleAll.pass, scheduleAll.total),
         registrationRate: percentage(registrationAll.pass, registrationAll.total),
-        warningStudents: availableMetric(warningStudents, warningStudents, scopedStudents.length),
+        warningStudents: includeAcademicWarnings
+          ? availableMetric(warningStudents, warningStudents, scopedStudents.length)
+          : unavailableMetric(),
         graduationForecastRate,
         averageConductScore: conductValues.length
           ? availableMetric(conductValues.reduce((sum, score) => sum + score, 0) / conductValues.length, conductValues.length, scopedStudents.length)
@@ -759,7 +775,7 @@ export class DashboardService {
         cannotDetermine: gradReview,
         scopeLabel: gradScopeLabel,
       },
-      academicWarnings: {
+      academicWarnings: includeAcademicWarnings ? {
         items: liveWarningReport.items.map((row) => ({
           studentId: row.studentId,
           studentCode: row.studentCode,
@@ -776,7 +792,7 @@ export class DashboardService {
         total: liveWarningReport.total,
         page,
         pageSize,
-      },
+      } : null,
       dataContext: {
         gpa: {
           mode: gpaScope === "term" ? "term_summary" : "latest_cumulative_summary",
@@ -787,14 +803,14 @@ export class DashboardService {
           aggregation: gpaAggregation,
           availableStudents: gpaValues.length,
         },
-        warnings: {
+        warnings: includeAcademicWarnings ? {
           ...liveWarningReport.mode,
           academicTermId: liveWarningReport.latestPeriod?.academicTermId || null,
           periodLabel: liveWarningReport.latestPeriod?.label || null,
           policy: liveWarningReport.policy,
           evaluatedStudents: liveWarningReport.counts.evaluated,
           unassessedStudents: liveWarningReport.counts.unassessed,
-        },
+        } : { code: "permission_required", label: "Yêu cầu academic_warning.read" },
         progress: {
           code: completionRows.length > 0 ? "completion_run_evaluations" : "warning_run_snapshot",
           label: completionRows.length > 0
@@ -884,16 +900,18 @@ export class DashboardService {
         classification: "descriptive",
       } : null,
       counts: {
-        red,
-        yellow,
-        green: liveWarningReport.counts.safe,
-        evaluated: liveWarningReport.counts.evaluated,
-        unassessed: liveWarningReport.counts.unassessed,
+        ...(includeAcademicWarnings ? {
+          red,
+          yellow,
+          green: liveWarningReport.counts.safe,
+          evaluated: liveWarningReport.counts.evaluated,
+          unassessed: liveWarningReport.counts.unassessed,
+        } : {}),
         conductApproved: conductValues.length,
         conductPending: conductRows.filter((row) => row.statusId === "0").length,
         conductMissing: Math.max(0, scopedStudents.length - conductRows.length),
       },
-      topClasses: classes.map((item) => {
+      topClasses: includeAcademicWarnings ? classes.map((item) => {
         const total = scopedStudents.filter((student) => student.sClassStudentId === item.classId).length;
         const warning = liveWarningReport.classBreakdown.find((row) => row.classCode === item.classId)?.warningStudents || 0;
         return {
@@ -904,13 +922,13 @@ export class DashboardService {
           rate: total ? Math.round((warning / total) * 100) : 0,
           faculty: selectedProgram?.s_faculty_code || "",
         };
-      }).sort((a, b) => b.rate - a.rate).slice(0, 5),
-      warningByClass: liveWarningReport.classBreakdown.map((item) => ({
+      }).sort((a, b) => b.rate - a.rate).slice(0, 5) : [],
+      warningByClass: includeAcademicWarnings ? liveWarningReport.classBreakdown.map((item) => ({
         classId: item.classCode,
         className: item.className,
         red: item.high,
         yellow: item.medium,
-      })),
+      })) : [],
       semesterTrend: [],
       updatedAt: sweResponse.generatedAt,
     };

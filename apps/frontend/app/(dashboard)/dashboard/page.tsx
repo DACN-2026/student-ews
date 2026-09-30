@@ -57,7 +57,8 @@ const CHART_PALETTE = ["#3B82F6", "#10B981", "#F59E0B", "#F97316", "#8B5CF6", "#
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, can } = useAuthStore();
+  const canReadWarnings = can("academic_warning.read");
 
   const isClassAdvisor = user?.role === "CLASS_ADVISOR";
   const isFacultyBoard = user?.role === "FACULTY_BOARD";
@@ -256,7 +257,7 @@ export default function DashboardPage() {
             </svg>
             <span>Làm mới</span>
           </button>
-          <button
+          {canReadWarnings && <button
             type="button"
             onClick={() => router.push("/reports")}
             className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -267,7 +268,7 @@ export default function DashboardPage() {
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <span>Xử lý Cảnh báo</span>
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -471,13 +472,13 @@ export default function DashboardPage() {
           </div>
 
           {/* Card 5: Cảnh báo học tập */}
-          <div className="bg-white border border-amber-200/80 rounded-2xl p-4 shadow-xs bg-amber-50/20 hover:border-amber-400 transition-all">
+          {canReadWarnings && <div className="bg-white border border-amber-200/80 rounded-2xl p-4 shadow-xs bg-amber-50/20 hover:border-amber-400 transition-all">
             <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wider block">Cảnh báo học tập</span>
             <div className="text-2xl font-bold text-amber-600 mt-1" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
               {warningTotal}
             </div>
             <p className="text-[10px] text-amber-700/80 mt-1">{redCount} Đỏ · {yellowCount} Vàng</p>
-          </div>
+          </div>}
 
           {/* Card 6: Graduation forecast */}
           <div
@@ -693,7 +694,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Chart 4: Phân bố Cảnh báo theo Lớp - Col 6 */}
-        <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
+        {canReadWarnings && <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
@@ -726,7 +727,7 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             )}
           </div>
-        </div>
+        </div>}
 
         {/* Chart 5: Conduct distribution - Col 6 */}
         <div className="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs">

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { studentIdWhere } from "@/lib/utils/is-uuid";
 import { ApiError } from "@/lib/utils/api-error";
 import { hasPermission, type Actor } from "@/lib/auth/types";
+import { findLatestOfficialWarningResult } from "@/lib/services/academic-warnings";
 
 type DashboardTerm = {
   academicYear: string;
@@ -74,6 +75,7 @@ export class StudentDashboardService {
       grades: hasPermission(actor, "grade.read"),
       progress: hasPermission(actor, "progress.read"),
       decisions: hasPermission(actor, "decision.read"),
+      warnings: hasPermission(actor, "academic_warning.read"),
     };
     const programCode = student.sStudyProgramId || "";
     const [grades, registration, completion, decisions, latestWarning] = await Promise.all([
@@ -81,11 +83,7 @@ export class StudentDashboardService {
       access.progress ? this.registrationProgress(student.id, programCode, target) : null,
       access.progress ? this.completionProgress(student.id, programCode, target) : null,
       access.decisions ? this.decisionSummary(student.id, target) : null,
-      prisma.academicWarningStudentResult.findFirst({
-        where: { studentId: student.id },
-        orderBy: { createdAt: "desc" },
-        select: { maxSeverity: true },
-      }),
+      access.warnings ? findLatestOfficialWarningResult(student.id) : null,
     ]);
 
     return {
@@ -117,11 +115,17 @@ export class StudentDashboardService {
         semester: `${item.termCode} ${item.academicYear}`,
         gpa: item.gpa4,
       })) || [],
-      warningLevel: latestWarning?.maxSeverity === "high"
-        ? "red"
-        : latestWarning?.maxSeverity === "medium"
-          ? "yellow"
-          : "green",
+      ...(access.warnings ? {
+        warningLevel: latestWarning?.maxSeverity === "high"
+          ? "red"
+          : latestWarning?.maxSeverity === "medium"
+            ? "yellow"
+            : latestWarning?.businessStatus === "PARTIAL_NO_RISK"
+              ? "partial"
+            : latestWarning?.businessStatus === "INSUFFICIENT_DATA" || !latestWarning
+              ? "insufficient"
+              : "green",
+      } : {}),
     };
   }
 

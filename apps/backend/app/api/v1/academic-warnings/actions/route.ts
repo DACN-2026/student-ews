@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
     const actions = await prisma.warningAction.findMany({
       where: {
         studentId: { in: accessibleStudents.map((student) => student.id) },
+        OR: [{ caseType: null }, { caseType: { not: "EARLY_WARNING_CASE" } }],
         ...(studentId ? { studentId } : {}),
         ...(runId ? { runId } : {}),
       },

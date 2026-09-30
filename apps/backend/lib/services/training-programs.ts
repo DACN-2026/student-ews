@@ -58,6 +58,7 @@ function mapAcademicTerm(
     endDate: dateOnly(term.endDate),
     status: term.status,
     isCurrent: term.isCurrent,
+    gradesFinalizedAt: term.gradesFinalizedAt,
     ...links,
   };
 }

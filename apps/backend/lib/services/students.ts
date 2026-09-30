@@ -35,6 +35,7 @@ export class StudentsService {
     page = 1,
     pageSize = 20,
     scope: Prisma.StudentWhereInput = {},
+    includeAcademicWarnings = false,
   ) {
     const where: Prisma.StudentWhereInput = {
       deletedAt: null,
@@ -90,18 +91,22 @@ export class StudentsService {
     }
 
     let warningFilterReport: Awaited<ReturnType<typeof ReportsService.academicWarningStudents>> | null = null;
-    if (filter.warningLevel && filter.warningLevel !== "all") {
+    if (includeAcademicWarnings && filter.warningLevel && filter.warningLevel !== "all") {
       warningFilterReport = await ReportsService.academicWarningStudents({
         severity: filter.warningLevel === "red" ? "high" : filter.warningLevel === "yellow" ? "medium" : undefined,
+        presentationState: filter.warningLevel === "green"
+          ? "NORMAL"
+          : filter.warningLevel === "partial"
+            ? "PARTIAL_NO_RISK"
+          : filter.warningLevel === "insufficient"
+            ? "INSUFFICIENT_DATA"
+            : undefined,
+        includeAllStates: true,
         page: 1,
         pageSize: 1000,
       }, where);
       const matchingIds = warningFilterReport.items.map((warning) => warning.studentId);
-      if (filter.warningLevel === "green") {
-        where.id = { notIn: matchingIds };
-      } else {
-        where.id = { in: matchingIds };
-      }
+      where.id = { in: matchingIds };
     }
 
     const skip = (page - 1) * pageSize;
@@ -118,11 +123,13 @@ export class StudentsService {
     ]);
 
     const studentIds = items.map((s) => s.id);
-    const warningRows = warningFilterReport
+    const warningRows = !includeAcademicWarnings
+      ? []
+      : warningFilterReport
       ? warningFilterReport.items.filter((warning) => studentIds.includes(warning.studentId))
       : studentIds.length
         ? (await ReportsService.academicWarningStudents(
-            { page: 1, pageSize: 1000 },
+            { page: 1, pageSize: 1000, includeAllStates: true },
             { id: { in: studentIds } },
           )).items
         : [];
@@ -134,6 +141,8 @@ export class StudentsService {
         termGpa4: warning.termGpa4,
         cumulativeGpa4: warning.cumulativeGpa4,
         academicWarningDecisions: warning.academicWarningDecisions,
+        dataStatus: warning.dataStatus,
+        presentationState: warning.presentationState,
       });
     }
 
@@ -164,7 +173,12 @@ export class StudentsService {
     );
 
     return {
-      items: items.map((s) => mapStudent(s, warningMap.get(s.id), s.sClassStudentId ? classMap.get(s.sClassStudentId) : undefined)),
+      items: items.map((s) => mapStudent(
+        s,
+        includeAcademicWarnings ? warningMap.get(s.id) : undefined,
+        s.sClassStudentId ? classMap.get(s.sClassStudentId) : undefined,
+        includeAcademicWarnings,
+      )),
       total,
       page,
       pageSize,
@@ -182,17 +196,7 @@ export class StudentsService {
 
     if (!student) return null;
 
-    const warningActionsPromise = (prisma as any).warningAction
-      ? (prisma as any).warningAction.findMany({
-          where: { studentId: student.id },
-          orderBy: { createdAt: "desc" },
-        })
-      : prisma.$queryRawUnsafe<any[]>(
-          `SELECT id, student_id as "studentId", run_id as "runId", action_type as "actionType", note, actor_name as "actorName", status, created_at as "createdAt" FROM warning_actions WHERE student_id = $1::uuid ORDER BY created_at DESC`,
-          student.id
-        );
-
-    const [cumulative, terms, warningResults, warningActions] = await Promise.all([
+    const [cumulative, terms] = await Promise.all([
       prisma.studentCumulativeSummary.findFirst({
         where: { studentId: student.id },
       }),
@@ -200,12 +204,6 @@ export class StudentsService {
         where: { studentId: student.id },
         orderBy: { createdAt: "desc" },
       }),
-      prisma.academicWarningStudentResult.findMany({
-        where: { studentId: student.id },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
-      warningActionsPromise,
     ]);
 
     const [program, studentClass] = await Promise.all([
@@ -238,32 +236,8 @@ export class StudentsService {
         })
       : null;
 
-    const warningRunIds = [...new Set(warningResults.map((result) => result.runId))];
-    const warningRuns = warningRunIds.length
-      ? await prisma.academicWarningRun.findMany({ where: { id: { in: warningRunIds } } })
-      : [];
-    const warningRunMap = new Map(warningRuns.map((run) => [run.id, run]));
-    const warningTermIds = [...new Set(warningRuns.map((run) => run.assessmentAcademicTermId))];
-    const warningTerms = warningTermIds.length
-      ? await prisma.academicTerm.findMany({ where: { id: { in: warningTermIds } } })
-      : [];
-    const warningTermMap = new Map(warningTerms.map((term) => [term.id, term]));
-
-    // Load reasons for the latest warning result
-    let reasons: any[] = [];
-    const latestWarning = warningResults.find((result) => {
-      const run = warningRunMap.get(result.runId);
-      const term = run ? warningTermMap.get(run.assessmentAcademicTermId) : null;
-      return run?.runMode === "OFFICIAL" && !term?.sIsSummer;
-    }) || null;
-    if (latestWarning) {
-      reasons = await prisma.academicWarningReason.findMany({
-        where: { studentResultId: latestWarning.id },
-      });
-    }
-
     return {
-      ...mapStudent(student, latestWarning),
+      ...mapStudent(student),
       cumulative: cumulative ? {
         cumulativeGpa4: cumulative.cumulativeGpa4 != null ? Number(cumulative.cumulativeGpa4) : null,
         cumulativeGpa10: cumulative.cumulativeGpa10 != null ? Number(cumulative.cumulativeGpa10) : null,
@@ -278,29 +252,6 @@ export class StudentsService {
         registeredCredits: Number(t.registeredCredits),
         classificationName: t.classificationName,
       })),
-      warningHistory: warningResults.map((w) => ({
-        id: w.id,
-        runId: w.runId,
-        maxSeverity: w.maxSeverity,
-        termGpa4: w.termGpa4 != null ? Number(w.termGpa4) : null,
-        cumulativeGpa4: w.cumulativeGpa4 != null ? Number(w.cumulativeGpa4) : null,
-        registrationStatus: w.registrationStatus,
-        scheduleStatus: w.scheduleStatus,
-        academicWarningDecisions: w.academicWarningDecisions,
-        reasonCount: w.reasonCount,
-        createdAt: w.createdAt,
-        runMode: warningRunMap.get(w.runId)?.runMode || "OFFICIAL",
-        isSummer: Boolean(warningTermMap.get(warningRunMap.get(w.runId)?.assessmentAcademicTermId || "")?.sIsSummer),
-        evaluationLabel: (() => {
-          const run = warningRunMap.get(w.runId);
-          const term = run ? warningTermMap.get(run.assessmentAcademicTermId) : null;
-          if (run?.runMode === "SUMMER_MONITORING") return "Giám sát kỳ hè, tham khảo";
-          if (term?.sIsSummer) return "Đánh giá kỳ phụ, tham khảo";
-          return "Kết quả kỳ chính thức";
-        })(),
-      })),
-      warningReasons: reasons,
-      warningActions: warningActions,
       program: program ? {
         id: program.id,
         code: program.sProgramCode,
@@ -463,13 +414,18 @@ export class StudentsService {
 function mapStudent(
   s: any,
   warningResult?: any,
-  classMeta?: { className?: string | null; cohortCode?: string | null }
+  classMeta?: { className?: string | null; cohortCode?: string | null },
+  includeAcademicWarnings = false,
 ) {
-  let warningLevel: "red" | "yellow" | "green" = "green";
-  if (warningResult?.maxSeverity === "high") {
+  let warningLevel: "red" | "yellow" | "green" | "partial" | "insufficient" = "green";
+  if (warningResult?.presentationState === "HIGH_RISK" || warningResult?.presentationState === "VERIFY_REQUIRED") {
     warningLevel = "red";
-  } else if (warningResult?.maxSeverity === "medium") {
+  } else if (warningResult?.presentationState === "MONITORING") {
     warningLevel = "yellow";
+  } else if (warningResult?.presentationState === "PARTIAL_NO_RISK") {
+    warningLevel = "partial";
+  } else if (warningResult?.presentationState === "INSUFFICIENT_DATA") {
+    warningLevel = "insufficient";
   }
 
   return {
@@ -490,14 +446,18 @@ function mapStudent(
     classId: s.sClassStudentId,
     cohortCode: classMeta?.cohortCode || null,
     studyProgramId: s.sStudyProgramId,
-    warningLevel,
-    warningInfo: warningResult ? {
-      maxSeverity: warningResult.maxSeverity,
-      reasonCount: warningResult.reasonCount,
-      termGpa4: warningResult.termGpa4 != null ? Number(warningResult.termGpa4) : null,
-      cumulativeGpa4: warningResult.cumulativeGpa4 != null ? Number(warningResult.cumulativeGpa4) : null,
-      academicWarningDecisions: warningResult.academicWarningDecisions || 0,
-    } : null,
+    ...(includeAcademicWarnings ? {
+      warningLevel,
+      warningInfo: warningResult ? {
+        maxSeverity: warningResult.maxSeverity,
+        reasonCount: warningResult.reasonCount,
+        termGpa4: warningResult.termGpa4 != null ? Number(warningResult.termGpa4) : null,
+        cumulativeGpa4: warningResult.cumulativeGpa4 != null ? Number(warningResult.cumulativeGpa4) : null,
+        academicWarningDecisions: warningResult.academicWarningDecisions || 0,
+        dataStatus: warningResult.dataStatus,
+        presentationState: warningResult.presentationState,
+      } : null,
+    } : {}),
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
   };
