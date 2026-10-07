@@ -1,3 +1,4 @@
+import { monitoredStudentResultWhere } from "../student-monitoring-scope";
 import { loadProgramCurriculum } from "./program-curriculum";
 import { k44ElectiveAlternatives } from "../k44-elective-blocks";
 import { assessCertificateRequirements, isConditionalCourse, isK44StandardProgram } from "../academic-course-rules";
@@ -400,7 +401,7 @@ export class GraduationEvaluationsService {
             deletedAt: null,
             sStudyProgramId: program.sProgramCode,
             sClassStudentId: { in: classes.map((item) => item.classId) },
-            ...(targetType === "active_students" ? { sIsInClass: true } : {}),
+            sIsInClass: true,
           },
           select: { id: true },
         })
@@ -561,15 +562,9 @@ export class GraduationEvaluationsService {
         where: { runId: completionRun.id },
         orderBy: { sStudentId: "asc" },
       });
-      const activeStudentIds = normalizeTargetType(scope.targetType) === "active_students"
-        ? new Set((await prisma.student.findMany({
-            where: { id: { in: allCompletionStudents.map((item) => item.studentId) }, sIsInClass: true, deletedAt: null },
-            select: { id: true },
-          })).map((item) => item.id))
-        : null;
-      const completionStudents = activeStudentIds
-        ? allCompletionStudents.filter((item) => activeStudentIds.has(item.studentId))
-        : allCompletionStudents;
+      const monitoringScope = await monitoredStudentResultWhere();
+      const departed = new Set(monitoringScope.studentId?.notIn ?? []);
+      const completionStudents = allCompletionStudents.filter(item => !departed.has(item.studentId));
       const studentIds = completionStudents.map((item) => item.studentId);
 
       const [derivedReqs, gradeSnapshots] = await Promise.all([
@@ -1000,6 +995,14 @@ export class GraduationEvaluationsService {
         take: pageSize,
       }),
     ]);
+    const monitoringScope = await monitoredStudentResultWhere();
+    const currentCounts = monitoringScope.studentId && evaluations.length
+      ? await prisma.graduationEvaluationStudent.groupBy({
+          by: ["evaluationId", "finalStatus"],
+          where: { evaluationId: { in: evaluations.map(item => item.id) }, ...monitoringScope },
+          _count: { _all: true },
+        })
+      : null;
     const [cohorts, programs, terms] = await Promise.all([
       prisma.cohort.findMany({ where: { id: { in: evaluations.map((item) => item.cohortId) } } }),
       prisma.trainingProgram.findMany({ where: { id: { in: evaluations.map((item) => item.trainingProgramId) } } }),
@@ -1017,6 +1020,14 @@ export class GraduationEvaluationsService {
         const term = termMap.get(item.assessmentAcademicTermId);
         return {
           ...item,
+          ...(currentCounts ? {
+            totalStudents: currentCounts.filter(row => row.evaluationId === item.id).reduce((sum, row) => sum + row._count._all, 0),
+            expectedEligibleStudents: currentCounts.find(row => row.evaluationId === item.id && row.finalStatus === "EXPECTED_ELIGIBLE")?._count._all ?? 0,
+            pendingGradeStudents: currentCounts.find(row => row.evaluationId === item.id && row.finalStatus === "PENDING_GRADE")?._count._all ?? 0,
+            pendingRequirementStudents: currentCounts.find(row => row.evaluationId === item.id && row.finalStatus === "PENDING_REQUIREMENT")?._count._all ?? 0,
+            notEligibleStudents: currentCounts.find(row => row.evaluationId === item.id && row.finalStatus === "NOT_ELIGIBLE")?._count._all ?? 0,
+            manualReviewStudents: currentCounts.find(row => row.evaluationId === item.id && row.finalStatus === "MANUAL_REVIEW")?._count._all ?? 0,
+          } : {}),
           cohortCode: cohortMap.get(item.cohortId)?.sCohortCode || null,
           cohortName: cohortMap.get(item.cohortId)?.sCohortName || null,
           programCode: programMap.get(item.trainingProgramId)?.sProgramCode || null,
@@ -1044,31 +1055,48 @@ export class GraduationEvaluationsService {
     pageSize: number,
     allowedClassIds?: string[] | null,
   ) {
+    const monitoringScope = await monitoredStudentResultWhere();
     const classScope = filters.classId
       ? allowedClassIds && !allowedClassIds.includes(filters.classId) ? { in: [] as string[] } : filters.classId
       : allowedClassIds !== undefined && allowedClassIds !== null ? { in: allowedClassIds } : undefined;
     const where: Prisma.GraduationEvaluationStudentWhereInput = {
       evaluationId,
+      ...monitoringScope,
       ...(filters.status ? { finalStatus: filters.status } : {}),
       ...(filters.keyword ? {
         OR: [
           { sStudentId: { contains: filters.keyword, mode: "insensitive" } },
           { sStudentName: { contains: filters.keyword, mode: "insensitive" } },
+          { sClassName: { contains: filters.keyword, mode: "insensitive" } },
         ],
       } : {}),
       ...(classScope !== undefined ? { classId: classScope } : {}),
     };
-    const [total, items] = await Promise.all([
+    const scopeWhere: Prisma.GraduationEvaluationStudentWhereInput = {
+      evaluationId,
+      ...monitoringScope,
+      ...(classScope !== undefined ? { classId: classScope } : {}),
+    };
+    const classWhere: Prisma.GraduationEvaluationStudentWhereInput = {
+      evaluationId,
+      ...monitoringScope,
+      ...(allowedClassIds != null ? { classId: { in: allowedClassIds } } : {}),
+    };
+    const [total, items, statuses, classes] = await Promise.all([
       prisma.graduationEvaluationStudent.count({ where }),
       prisma.graduationEvaluationStudent.findMany({
         where,
         omit: { gradeSnapshot: true },
-        orderBy: { sStudentId: "asc" },
+        orderBy: [{ sStudentId: "asc" }, { id: "asc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
+      prisma.graduationEvaluationStudent.groupBy({ by: ["finalStatus"], where: scopeWhere, _count: { _all: true } }),
+      prisma.graduationEvaluationStudent.groupBy({ by: ["classId", "sClassName"], where: classWhere, _count: { _all: true }, orderBy: { sClassName: "asc" } }),
     ]);
     return {
+      statusCounts: Object.fromEntries([["all", statuses.reduce((sum, group) => sum + group._count._all, 0)], ...statuses.map((group) => [group.finalStatus, group._count._all])]),
+      classes: classes.map((group) => ({ classId: group.classId, className: group.sClassName, count: group._count._all })),
       items: items.map((item) => {
         const reasons = Array.isArray(item.reasons) ? (item.reasons as Array<Record<string, unknown>>) : [];
         const overdueMandatoryCourses = reasons.filter((r) => r.code === "OVERDUE_MANDATORY_COURSE");

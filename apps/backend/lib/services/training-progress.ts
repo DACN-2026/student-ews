@@ -1,3 +1,4 @@
+import { monitoredStudentResultWhere } from "../student-monitoring-scope";
 import { loadProgramCurriculum } from "./program-curriculum";
 import { loadEquivalentCourseIds } from "./course-equivalence";
 import { isConditionalCourse, normalizeProgramCourseCode, normalizeCourseName } from "../academic-course-rules";
@@ -414,7 +415,7 @@ async function loadCalcStudents(programCode: string, cohortId: string): Promise<
     LEFT JOIN classes c ON c.class_id = s.s_class_student_id AND c.deleted_at IS NULL
     LEFT JOIN cohorts co ON co.id = c.cohort_id AND co.deleted_at IS NULL
     WHERE s.s_study_program_id = ${programCode}
-      AND s.deleted_at IS NULL
+      AND s.deleted_at IS NULL AND s.s_is_in_class = true
       AND c.cohort_id = ${cohortId}::uuid
     ORDER BY s.s_student_id
   `;
@@ -764,17 +765,18 @@ export class TrainingProgressService {
     noDuePlanStudents: number;
     dataErrorStudents: number;
   }>(items: TRun[], classScopes: Map<string, string[] | null>) {
-    const restricted = items.filter((item) => classScopes.get(item.id) !== null);
+    const monitoringScope = await monitoredStudentResultWhere();
+    const restricted = items.filter(item => classScopes.get(item.id) !== null || monitoringScope.studentId);
     if (!restricted.length) return items;
     const results = await prisma.trainingProgressCompletionStudentResult.findMany({
-      where: { runId: { in: restricted.map((item) => item.id) } },
+      where: { runId: { in: restricted.map((item) => item.id) }, ...monitoringScope },
       select: { runId: true, classId: true, programCompletionStatus: true, scheduleStatus: true, dataErrorReason: true },
     });
     return items.map((item) => {
       const scope = classScopes.get(item.id);
-      if (scope === null) return item;
+      if (scope === null && !monitoringScope.studentId) return item;
       const allowed = new Set(scope || []);
-      const scoped = results.filter((result) => result.runId === item.id && result.classId && allowed.has(result.classId));
+      const scoped = results.filter((result) => result.runId === item.id && (scope === null || result.classId && allowed.has(result.classId)));
       return {
         ...item,
         totalStudents: scoped.length,
@@ -901,10 +903,11 @@ export class TrainingProgressService {
       prisma.trainingProgressCalculationRun.findMany({ where: { planId: plan.id }, orderBy: { startedAt: "desc" }, take: 5 }),
     ]);
 
-    const recentRunCounts = allowedClassIds !== undefined && allowedClassIds !== null
+    const monitoringScope = await monitoredStudentResultWhere();
+    const recentRunCounts = allowedClassIds != null || monitoringScope.studentId
       ? new Map((await Promise.all(recentRuns.map(async (run) => {
           const results = await prisma.trainingProgressStudentResult.findMany({
-            where: { runId: run.id, classId: { in: allowedClassIds } },
+            where: { runId: run.id, ...monitoringScope, ...(allowedClassIds != null ? { classId: { in: allowedClassIds } } : {}) },
             select: { status: true },
           });
           return [run.id, results] as const;
@@ -1493,9 +1496,10 @@ export class TrainingProgressService {
 
     const plan = await prisma.trainingProgressPlan.findUnique({ where: { id: run.planId } });
 
-    const scopedResults = allowedClassIds !== undefined && allowedClassIds !== null
+    const monitoringScope = await monitoredStudentResultWhere();
+    const scopedResults = allowedClassIds != null || monitoringScope.studentId
       ? await prisma.trainingProgressStudentResult.findMany({
-          where: { runId, classId: { in: allowedClassIds } },
+          where: { runId, ...monitoringScope, ...(allowedClassIds != null ? { classId: { in: allowedClassIds } } : {}) },
           select: { status: true },
         })
       : null;
@@ -1629,17 +1633,18 @@ export class TrainingProgressService {
     failStudents: number;
     dataErrorStudents: number;
   }>(items: TRun[], classScopes: Map<string, string[] | null>) {
-    const restricted = items.filter((item) => classScopes.get(item.id) !== null);
+    const monitoringScope = await monitoredStudentResultWhere();
+    const restricted = items.filter(item => classScopes.get(item.id) !== null || monitoringScope.studentId);
     if (!restricted.length) return items;
     const results = await prisma.trainingProgressStudentResult.findMany({
-      where: { runId: { in: restricted.map((item) => item.id) } },
+      where: { runId: { in: restricted.map((item) => item.id) }, ...monitoringScope },
       select: { runId: true, classId: true, status: true },
     });
     return items.map((item) => {
       const scope = classScopes.get(item.id);
-      if (scope === null) return item;
+      if (scope === null && !monitoringScope.studentId) return item;
       const allowed = new Set(scope || []);
-      const scoped = results.filter((result) => result.runId === item.id && result.classId && allowed.has(result.classId));
+      const scoped = results.filter((result) => result.runId === item.id && (scope === null || result.classId && allowed.has(result.classId)));
       return {
         ...item,
         totalStudents: scoped.length,
@@ -1658,7 +1663,7 @@ export class TrainingProgressService {
     pageSize = 20,
     allowedClassIds?: string[] | null,
   ) {
-    const where: any = { runId };
+    const where: any = { runId, ...await monitoredStudentResultWhere() };
     if (status) where.status = status;
     if (allowedClassIds !== undefined && allowedClassIds !== null) where.classId = { in: allowedClassIds };
     if (classId) where.classId = allowedClassIds && !allowedClassIds.includes(classId) ? { in: [] } : classId;
@@ -1719,6 +1724,13 @@ export class TrainingProgressService {
       }),
     ]);
 
+    const monitoringScope = await monitoredStudentResultWhere();
+    const currentRows = monitoringScope.studentId
+      ? await prisma.trainingProgressStudentResult.findMany({
+          where: { runId, ...monitoringScope, ...(allowedClassIds != null ? { classId: { in: allowedClassIds } } : {}) },
+          select: { classId: true, status: true, missingCredits: true },
+        })
+      : null;
     return {
       items: results.map((r) => ({
         groupType: r.groupType,
@@ -1731,6 +1743,15 @@ export class TrainingProgressService {
         dataErrorStudents: r.dataErrorStudents,
         totalMissingCredits: r.totalMissingCredits,
         calculatedAt: r.calculatedAt,
+        ...(() => {
+          if (!currentRows) return {};
+          const group = currentRows.filter(row => row.classId === r.groupId);
+          return { totalStudents: group.length, passStudents: group.filter(row => row.status === "pass").length,
+            failStudents: group.filter(row => row.status === "fail").length,
+            dataErrorStudents: group.filter(row => row.status === "data_error").length,
+            totalMissingCredits: group.reduce((sum, row) => sum + row.missingCredits, 0) };
+        })(),
+
       })),
       total,
       page,
@@ -1743,6 +1764,13 @@ export class TrainingProgressService {
       where: { runId, groupType: "cohort" },
     });
     if (!result) return null;
+    const monitoringScope = await monitoredStudentResultWhere();
+    const rows = monitoringScope.studentId
+      ? await prisma.trainingProgressStudentResult.findMany({
+          where: { runId, ...monitoringScope },
+          select: { status: true, missingCredits: true },
+        })
+      : null;
     return {
       groupType: result.groupType,
       groupId: result.groupId,
@@ -1752,6 +1780,10 @@ export class TrainingProgressService {
       failStudents: result.failStudents,
       dataErrorStudents: result.dataErrorStudents,
       totalMissingCredits: result.totalMissingCredits,
+      ...(rows ? { totalStudents: rows.length, passStudents: rows.filter(row => row.status === "pass").length,
+        failStudents: rows.filter(row => row.status === "fail").length,
+        dataErrorStudents: rows.filter(row => row.status === "data_error").length,
+        totalMissingCredits: rows.reduce((sum, row) => sum + row.missingCredits, 0) } : {}),
       calculatedAt: result.calculatedAt,
     };
   }
@@ -1993,9 +2025,10 @@ export class TrainingProgressService {
   static async getCompletionRunDetail(runId: string, allowedClassIds?: string[] | null) {
     const run = await prisma.trainingProgressCompletionRun.findUnique({ where: { id: runId } });
     if (!run) return null;
-    const scopedResults = allowedClassIds !== undefined && allowedClassIds !== null
+    const monitoringScope = await monitoredStudentResultWhere();
+    const scopedResults = allowedClassIds != null || monitoringScope.studentId
       ? await prisma.trainingProgressCompletionStudentResult.findMany({
-          where: { runId, classId: { in: allowedClassIds } },
+          where: { runId, ...monitoringScope, ...(allowedClassIds != null ? { classId: { in: allowedClassIds } } : {}) },
           select: { programCompletionStatus: true, scheduleStatus: true, dataErrorReason: true },
         })
       : null;
@@ -2485,7 +2518,7 @@ export class TrainingProgressService {
     pageSize = 20,
     allowedClassIds?: string[] | null,
   ) {
-    const where: any = { runId };
+    const where: any = { runId, ...await monitoredStudentResultWhere() };
     if (scheduleStatus) where.scheduleStatus = scheduleStatus;
     if (programStatus) where.programCompletionStatus = programStatus;
     if (allowedClassIds !== undefined && allowedClassIds !== null) where.classId = { in: allowedClassIds };
@@ -2644,6 +2677,13 @@ export class TrainingProgressService {
       }),
     ]);
 
+    const monitoringScope = await monitoredStudentResultWhere();
+    const currentRows = monitoringScope.studentId
+      ? await prisma.trainingProgressCompletionStudentResult.findMany({
+          where: { runId, ...monitoringScope, ...(allowedClassIds != null ? { classId: { in: allowedClassIds } } : {}) },
+          select: { classId: true, cohortId: true, scheduleStatus: true, programCompletionStatus: true },
+        })
+      : null;
     return {
       items: results.map((r) => ({
         groupType: r.groupType,
@@ -2658,6 +2698,18 @@ export class TrainingProgressService {
         behindScheduleStudents: r.behindScheduleStudents,
         pendingResultStudents: r.pendingResultStudents,
         calculatedAt: r.calculatedAt,
+        ...(() => {
+          if (!currentRows) return {};
+          const group = currentRows.filter(row => r.groupType === "class" ? row.classId === r.groupId : row.cohortId === r.groupId);
+          return { totalStudents: group.length,
+            completedStudents: group.filter(row => row.programCompletionStatus === "completed").length,
+            incompleteStudents: group.filter(row => row.programCompletionStatus === "incomplete").length,
+            cannotDetermineStudents: group.filter(row => row.programCompletionStatus === "cannot_determine").length,
+            onTrackStudents: group.filter(row => row.scheduleStatus === "on_track").length,
+            behindScheduleStudents: group.filter(row => row.scheduleStatus === "behind_schedule").length,
+            pendingResultStudents: group.filter(row => row.scheduleStatus === "pending_result").length };
+        })(),
+
       })),
       total,
       page,
@@ -2674,6 +2726,7 @@ export class TrainingProgressService {
     const students = await prisma.trainingProgressCompletionStudentResult.findMany({
       where: {
         runId,
+        ...await monitoredStudentResultWhere(),
         ...(allowedClassIds !== undefined && allowedClassIds !== null
           ? { classId: { in: allowedClassIds } }
           : {}),

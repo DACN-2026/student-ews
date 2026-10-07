@@ -4,7 +4,7 @@ import TextLabel from "@/components/ui/TextLabel";
 import React, { useCallback, useEffect, useState } from "react";
 import { AlertCircle, ChevronDown, ChevronRight, Layers, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
-import { semesterProgressDisplay } from "@/lib/semester-progress-display";
+import { semesterMilestoneCredits, semesterProgressDisplay } from "@/lib/semester-progress-display";
 import { semesterGradeSummary, type StudentTermGradeSummary } from "@/lib/semester-grade-summary";
 import type {
   CourseProgressStatus,
@@ -244,10 +244,8 @@ export default function StudentProgressDetail({
   const isOnTrack = progressStatus === "ON_TRACK";
   const isBehind = progressStatus === "BEHIND";
 
-  const expectedCreditsToDate = scheduleProgress.expectedCreditsToDate ?? 0;
-  const earnedCreditsToDate = scheduleProgress.earnedCreditsToDate ?? completedCredits;
-  const creditDifference = scheduleProgress.creditDifference ?? (earnedCreditsToDate - expectedCreditsToDate);
-  const creditDifferenceText = scheduleProgress.creditDifferenceText || (
+  const { expectedCreditsToDate, earnedCreditsToDate, creditDifference } = semesterMilestoneCredits(semesters, effectiveLastCompletedSem);
+  const creditDifferenceText = progressStatus === "UNKNOWN" ? "Chưa đủ dữ liệu" : (
     creditDifference < 0 ? `Chậm ${Math.abs(creditDifference)} TC` : creditDifference > 0 ? `Học vượt +${creditDifference} TC` : "Đúng kế hoạch"
   );
 

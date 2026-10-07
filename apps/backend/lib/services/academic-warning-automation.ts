@@ -172,6 +172,7 @@ export class AcademicWarningAutomationService {
       ? await prisma.student.findMany({
           where: {
             deletedAt: null,
+            sIsInClass: true,
             sClassStudentId: { in: classCodes },
             sStudyProgramId: { not: null },
           },

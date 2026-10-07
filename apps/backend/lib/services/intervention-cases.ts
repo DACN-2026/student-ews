@@ -1,3 +1,4 @@
+import { monitoredStudentResultWhere } from "../student-monitoring-scope";
 import crypto from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -122,6 +123,7 @@ async function scopedQueueRows(
   const cases = await prisma.warningAction.findMany({
     where: {
       caseType: EARLY_WARNING_CASE_TYPE,
+      ...await monitoredStudentResultWhere(),
       ...(filters.caseId ? { id: filters.caseId } : {}),
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.businessStatus ? { latestBusinessStatus: normalizeWarningBusinessStatus(filters.businessStatus) === "NORMAL"
@@ -586,13 +588,15 @@ export class InterventionCasesService {
       throw new ApiError("Only completed OFFICIAL warning runs can create intervention cases", "INVALID_WARNING_RUN", 409);
     }
 
+    const monitoringScope = await monitoredStudentResultWhere();
     const triggerResults = await prisma.academicWarningStudentResult.findMany({
-      where: { runId, businessStatus: { in: [...INTERVENTION_TRIGGER_STATUSES] } },
+      where: { runId, ...monitoringScope, businessStatus: { in: [...INTERVENTION_TRIGGER_STATUSES] } },
       select: { id: true, studentId: true, classId: true, businessStatus: true },
     });
     const activeCaseStudents = await prisma.warningAction.findMany({
       where: {
         caseType: EARLY_WARNING_CASE_TYPE,
+        ...monitoringScope,
         status: { in: [...ACTIVE_INTERVENTION_STATUSES] },
       },
       select: { studentId: true },

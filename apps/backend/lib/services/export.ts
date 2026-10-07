@@ -1,3 +1,4 @@
+import { monitoredStudentWhere } from "../student-monitoring-scope";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import fs from "node:fs";
@@ -267,7 +268,7 @@ async function scopedStudents(filters: ReportExportFilters, studentScope: Prisma
   return prisma.student.findMany({
     where: {
       AND: [
-        { deletedAt: null },
+        monitoredStudentWhere,
         studentScope,
         filters.classCode ? { sClassStudentId: filters.classCode } : {},
         filters.programCode ? { sStudyProgramId: filters.programCode } : {},

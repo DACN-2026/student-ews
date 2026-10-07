@@ -446,10 +446,12 @@ export interface DepartmentProgressStudentItem {
 }
 
 export interface DepartmentProgressOverviewResult {
+  kpiComplete?: boolean;
   kpi: {
     totalStudents: number;
     onTrackCount: number;
     behindCount: number;
+    unknownCount?: number;
     onTrackPercentage: number;
     behindPercentage: number;
     avgDeficitCredits: number;

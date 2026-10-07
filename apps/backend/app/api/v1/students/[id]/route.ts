@@ -43,6 +43,12 @@ export async function PATCH(
       return errorResponse("Target class or program is outside data scope", "NOT_FOUND", 404);
     }
     const updated = await StudentsService.update(id, body);
+    if (current.isInClass !== updated.isInClass) {
+      await recordAudit(req, {
+        action: "student.membership.update", resourceType: "Student", resourceId: current.id,
+        details: { studentCode: current.studentCode, previousIsInClass: current.isInClass, isInClass: updated.isInClass },
+      });
+    }
     return jsonResponse(updated);
   } catch (err) {
     return apiErrorResponse(err, "Failed to update student");

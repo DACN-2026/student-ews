@@ -47,7 +47,11 @@ const COURSE_ROWS: Array<[string, string, number]> = [
   ["20CT4114", "Xử lý ngôn ngữ tự nhiên", 3], ["20CT4115", "Mạng Neuron", 3], ["20CT4116", "Điện toán đám mây", 3],
   ["20CT4117", "Chuyên đề", 3], ["20CT4118", "Lập trình R cho Khoa học dữ liệu", 3], ["20CT4119", "Web ngữ nghĩa", 3],
 ];
-const COURSE_DETAILS = Object.fromEntries(COURSE_ROWS.map(([code, courseName, credits]) => [code, { courseName, credits }]));
+const COURSE_DETAILS: Record<string, { courseName: string; credits: number }> = {
+  ...Object.fromEntries(COURSE_ROWS.map(([code, courseName, credits]) => [code, { courseName, credits }])),
+  // K49's additional option is kept under its own source code.
+  "25BC0001": { courseName: "Trí tuệ nhân tạo, Blockchain và ứng dụng", credits: 3 },
+};
 
 export function k44ElectiveMembership(courseCode: string, programCode: string): {
   block: K44ElectiveBlock;
@@ -60,6 +64,9 @@ export function k44ElectiveMembership(courseCode: string, programCode: string): 
   // and duplicate-credit protection; source attempts are never rewritten.
   const code = ({ "20TN1201": "20TN1001", "20TN2102": "20TN1002", "TN1001D": "20TN1001" } as Record<string, string>)[sourceCode]
     ?? sourceCode.replace(/^(20(?:CT|TN)\d{4})D$/, "$1");
+  if (code === "25BC0001" && programCode.toUpperCase().startsWith("CQ25CT")) {
+    return { block: "A6", requiredCredits: 9, curriculumCourseCode: code };
+  }
   for (const [block, definition] of Object.entries(COMMON_BLOCKS)) {
     if ((definition.courses as readonly string[]).includes(code)) {
       return { block: block as K44ElectiveBlock, requiredCredits: definition.requiredCredits, curriculumCourseCode: code };
@@ -86,10 +93,13 @@ export function k44ElectiveAlternatives(courseCode: string, programCode: string,
   }
   const specialization = programCode.toUpperCase().split("-")[1] as keyof typeof SPECIALIZATION_BLOCKS;
   const definition = membership.block === "B2" ? SPECIALIZATION_BLOCKS[specialization] : COMMON_BLOCKS[membership.block];
+  const coursePool: readonly string[] = membership.block === "A6" && programCode.toUpperCase().startsWith("CQ25CT")
+    ? [...definition.courses, "25BC0001"]
+    : definition.courses;
   return {
     block: membership.block,
     blockName: BLOCK_NAMES[membership.block],
-    courses: definition.courses.filter(code => !studied.has(code)).map(code => ({
+    courses: coursePool.filter(code => !studied.has(code)).map(code => ({
       courseCode: code,
       ...COURSE_DETAILS[code],
     })),

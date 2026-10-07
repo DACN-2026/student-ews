@@ -1,3 +1,4 @@
+import { monitoredStudentWhere, departedStudentIds } from "../student-monitoring-scope";
 import { loadSemesterCreditPlans } from "./semester-credit-plans";
 import { courseOutcome, isConditionalCourse, normalizeProgramCourseCode, curriculumElectiveGroup, isK44StandardProgram, K44_ELECTIVE_GROUPS, normalizeCourseCode, normalizeCourseName } from "../academic-course-rules";
 import { assessTeachingSemester, teachingSemesterCredits } from "../semester-teaching-requirements";
@@ -585,14 +586,11 @@ export function evaluateStudentTrainingProgress(input: {
   // semester tables, so a passed extra option remains visible as a surplus.
   const requiredRecognizedCreditsToDate = expectedCreditsToDate;
   const recognizedCreditsToDate = completedMandatoryCredits + overallCreditedElectives;
-  const hasConfirmedSemesterPlans = completedSemestersToDate.every((semester) =>
-    input.semesterPlans?.has(semester) || assessTeachingSemester(
-      semester, input.student.programCode, assessedCourses.filter((course) => course.semesterNo === semester),
-    )?.curriculumConfirmed,
-  );
-  if (usesK44Milestones && hasConfirmedSemesterPlans) expectedCreditsToDate = semesterPlannedCreditsToDate;
+  // The visible milestone uses the sum of the same semester quotas shown in
+  // the detail rows. Elective-block caps only govern requirement assessment.
+  expectedCreditsToDate = semesterPlannedCreditsToDate;
   const earnedCreditsToDate = completedCourses
-    .filter((course) => !course.isConditional && course.requirementType !== "conditional")
+    .filter((course) => course.semesterNo < effectiveSemesterNo && !course.isConditional && course.requirementType !== "conditional")
     .reduce((sum, course) => sum + course.credits, 0);
   const earnedElectiveCredits = overallCreditedElectives;
   const electiveCreditDeficit = usesK44Milestones
@@ -1303,6 +1301,7 @@ export class StudentTrainingProgressService {
     classStudentId?: string;
     studyProgramId?: string;
     progressStatus?: "ALL" | "ON_TRACK" | "BEHIND";
+    lazy?: boolean;
     scopeWhere?: Prisma.StudentWhereInput;
   }): Promise<DepartmentProgressOverviewResult> {
     const page = Math.max(1, params.page || 1);
@@ -1313,6 +1312,9 @@ export class StudentTrainingProgressService {
     const studyProgramId = params.studyProgramId?.trim();
     const progressStatus = params.progressStatus || "ALL";
 
+    const lazyPage = params.lazy === true && progressStatus === "ALL";
+    const departed = lazyPage ? [] : await departedStudentIds();
+    // Membership changes invalidate scope statistics, including reactivation.
     // Cache key based on scope filter (not page/pageSize/progressStatus)
     const scopeCacheKey = JSON.stringify({
       search: search || "",
@@ -1320,18 +1322,21 @@ export class StudentTrainingProgressService {
       classStudentId: classStudentId || "",
       studyProgramId: studyProgramId || "",
       scopeWhere: params.scopeWhere || {},
+      departed,
     });
 
+    let scopeTotal = 0;
+    let safeLazyPage = page;
     let evaluatedList: DepartmentProgressStudentItem[] | null = null;
     const cached = overviewCache.get(scopeCacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    if (!lazyPage && cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
       evaluatedList = cached.evaluatedList;
     }
 
     if (!evaluatedList) {
       const where: Prisma.StudentWhereInput = {
         AND: [
-          { deletedAt: null },
+          monitoredStudentWhere,
           params.scopeWhere || {},
         ],
       };
@@ -1359,6 +1364,7 @@ export class StudentTrainingProgressService {
         const classIds = cohortClasses.map((c) => c.classId);
         if (classIds.length === 0) {
           return {
+            kpiComplete: true,
             kpi: {
               totalStudents: 0,
               onTrackCount: 0,
@@ -1374,6 +1380,7 @@ export class StudentTrainingProgressService {
         if (where.sClassStudentId) {
           if (!classIds.includes(where.sClassStudentId as string)) {
             return {
+              kpiComplete: true,
               kpi: {
                 totalStudents: 0,
                 onTrackCount: 0,
@@ -1391,6 +1398,10 @@ export class StudentTrainingProgressService {
         }
       }
 
+      if (lazyPage) {
+        scopeTotal = await prisma.student.count({ where });
+        safeLazyPage = Math.min(page, Math.max(1, Math.ceil(scopeTotal / pageSize)));
+      }
       const students = await prisma.student.findMany({
         where,
         select: {
@@ -1400,7 +1411,8 @@ export class StudentTrainingProgressService {
           sClassStudentId: true,
           sStudyProgramId: true,
         },
-        orderBy: { sStudentId: "asc" },
+        orderBy: [{ sStudentId: "asc" }, { id: "asc" }],
+        ...(lazyPage ? { skip: (safeLazyPage - 1) * pageSize, take: pageSize } : {}),
       });
 
       // Concurrently evaluate in batches of 25
@@ -1412,7 +1424,10 @@ export class StudentTrainingProgressService {
           batch.map(async (st) => {
             try {
               const res = await StudentTrainingProgressService.getStudentTrainingProgress(st.id);
-              if (!res) return null;
+              if (!res) {
+                if (lazyPage) throw new Error("Không thể tính tiến độ sinh viên trong trang.");
+                return null;
+              }
               const sp = res.scheduleProgress;
               const semNo = sp.latestCompletedSemester ?? Math.max(0, (sp.expectedSemesterNo || 1) - 1);
               const benchmarkLabel = semNo > 0 ? `Hết HK${semNo}` : "Chưa có kỳ kết thúc";
@@ -1445,7 +1460,8 @@ export class StudentTrainingProgressService {
                 statusReason: sp.statusReason || "",
               };
               return item;
-            } catch {
+            } catch (error) {
+              if (lazyPage) throw error;
               return null;
             }
           }),
@@ -1456,10 +1472,19 @@ export class StudentTrainingProgressService {
       }
 
       evaluatedList = allEvaluations;
-      overviewCache.set(scopeCacheKey, {
+      if (!lazyPage) overviewCache.set(scopeCacheKey, {
         timestamp: Date.now(),
         evaluatedList,
       });
+    }
+
+    if (lazyPage) {
+      return {
+        kpi: { totalStudents: scopeTotal, onTrackCount: 0, behindCount: 0, onTrackPercentage: 0, behindPercentage: 0, avgDeficitCredits: 0 },
+        kpiComplete: scopeTotal === 0,
+        items: evaluatedList,
+        pagination: { page: safeLazyPage, pageSize, total: scopeTotal, totalPages: Math.max(1, Math.ceil(scopeTotal / pageSize)) },
+      };
     }
 
     // Compute KPI on the filtered scope
@@ -1508,6 +1533,7 @@ export class StudentTrainingProgressService {
 
     return {
       kpi,
+      kpiComplete: true,
       items: paginatedItems,
       pagination: {
         page: safePage,
@@ -1543,6 +1569,7 @@ export interface DepartmentProgressStudentItem {
 }
 
 export interface DepartmentProgressOverviewResult {
+  kpiComplete?: boolean;
   kpi: {
     totalStudents: number;
     onTrackCount: number;

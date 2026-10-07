@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { assessCertificateRequirements, courseOutcome, type CertificateAttempt } from "../lib/academic-course-rules";
+import { assessCertificateRequirements, courseOutcome, curriculumElectiveGroup, type CertificateAttempt } from "../lib/academic-course-rules";
 import { buildGraduationForecast } from "../lib/services/graduation-forecast";
 import { calculateAssessmentTermFailedCredits } from "../lib/services/academic-warning-capabilities";
 import { evaluateProgress } from "../lib/services/training-progress";
@@ -132,7 +132,7 @@ test("HK4: extra electives cannot replace an unpassed compulsory course or rende
   assert.equal(display.remainingCredits,3);
 });
 
-test("K44 final-term landmark is 132 academic credits, never a hybrid 155-credit program", () => {
+test("K44 requirement assessment stays independent of the visible semester credit totals", () => {
   const curriculum = [
     {courseId:"mandatory",courseCode:"M",courseName:"Compulsory before final",credits:86,requirementType:"mandatory",semesterNo:8},
     {courseId:"final",courseCode:"FINAL",courseName:"Final",credits:18,requirementType:"mandatory",semesterNo:9},
@@ -145,7 +145,9 @@ test("K44 final-term landmark is 132 academic credits, never a hybrid 155-credit
     timeline:{currentAcademicYear:"2026-2027",currentTermCode:"HK01",expectedYear:5,expectedSemester:"HK1",expectedSemesterNo:9},
     semesterPlans:new Map([[9,18]]),
   });
-  assert.equal(result.scheduleProgress.expectedCreditsToDate,132);
+  const pastSemesters = result.semesters.filter(semester => semester.semesterNo < 9);
+  assert.equal(result.scheduleProgress.expectedCreditsToDate, pastSemesters.reduce((sum, semester) => sum + (semester.plannedCredits ?? semester.requiredCredits), 0));
+  assert.equal(result.scheduleProgress.earnedCreditsToDate, pastSemesters.reduce((sum, semester) => sum + semester.completedCredits, 0));
   assert.equal(result.scheduleProgress.expectedElectiveCredits,46);
   assert.equal(result.scheduleProgress.progressStatus,"ON_TRACK");
   assert.equal(result.scheduleProgress.currentPlanCredits,18);
@@ -286,4 +288,53 @@ test("unmatched final failures make debt partial; extra credits in one block do 
   assert.equal(debt.accumulatedDebtCredits, 3);
   const unknown = calculateAcademicDebt([{ courseCode: "OTHER", credits: 3, isPass: false, scoreStatus: "graded", letterCode: "F" }], courses, "CQ22CT-PM");
   assert.equal(unknown.dataStatus, "PARTIAL");
+});
+
+test("K49 blockchain elective is recognized in A6 without being applied to older programs", () => {
+  assert.equal(curriculumElectiveGroup("25BC0001", "CQ25CT"), "A6:9");
+  assert.equal(curriculumElectiveGroup("25BC0001", "CQ25CT-PM"), "A6:9");
+  assert.equal(curriculumElectiveGroup("25BC0001", "CQ24CT"), null);
+  assert.equal(curriculumElectiveGroup("25BC0001", "CQ26CT"), null);
+});
+
+test("K49 progress recognizes passed blockchain credits and keeps its original course code", () => {
+  const curriculum = [...semester2Pool, planCourse("25BC0001", 3), { ...planCourse("20TN2102", 3), semesterNo: 3 }];
+  const result = evaluateStudentTrainingProgress({
+    student: { id: "k49", studentCode: "k49", fullName: "K49", classCode: null, cohortCode: "K49", programCode: "CQ25CT" },
+    curriculum,
+    grades: [...semester2Pool.filter(c => c.status === "PASSED"), planCourse("25BC0001", 3)]
+      .map(c => ({ ...pass(c.courseCode, c.credits), academicYear: "2025-2026", termCode: "HK02" })),
+    rules: { requiredTotalCredits: 150, requiredElectiveCredits: 46 },
+    timeline: { currentAcademicYear: "2026-2027", currentTermCode: "HK01", expectedYear: 2, expectedSemester: "HK1", expectedSemesterNo: 3 },
+  });
+  const group = result.electiveGroups.find(g => g.code === "A6:9")!;
+  assert.equal(group.requiredCredits, 9);
+  assert.equal(group.passedCredits, 9);
+  assert.equal(group.creditedCredits, 9);
+  assert.equal(group.courses.find(c => c.courseCode === "25BC0001")?.credits, 3);
+  assert.equal(result.electiveGroups.some(g => g.code === "CHUNG"), false);
+  assert.equal(result.warnings.some(w => w.includes("UNKNOWN_REQUIREMENT")), false);
+  assert.equal(result.scheduleProgress.progressStatus, "ON_TRACK");
+  assert.equal(result.semesters.find(s => s.semesterNo === 2)?.completedCredits, 19);
+});
+
+test("failed or pending blockchain attempts do not satisfy the A6 credit minimum", () => {
+  const curriculum = [...semester2Pool, planCourse("25BC0001", 3)];
+  for (const outcome of ["failed", "pending"] as const) {
+    const result = evaluateStudentTrainingProgress({
+      student: { id: "k49", studentCode: "k49", fullName: "K49", classCode: null, cohortCode: "K49", programCode: "CQ25CT" },
+      curriculum,
+      grades: [
+        ...semester2Pool.filter(c => c.status === "PASSED").map(c => pass(c.courseCode, c.credits)),
+        { courseCode: "25BC0001", credits: 3, scoreStatus: outcome === "failed" ? "graded" : "pending", isPass: false,
+          score10: outcome === "failed" ? 3 : null, letterCode: outcome === "failed" ? "F" : null, notScore: outcome === "pending" },
+      ],
+      rules: { requiredTotalCredits: 150, requiredElectiveCredits: 46 },
+      timeline: { currentAcademicYear: "2026-2027", currentTermCode: "HK01", expectedYear: 2, expectedSemester: "HK1", expectedSemesterNo: 3 },
+    });
+    assert.equal(result.electiveGroups.find(g => g.code === "A6:9")?.passedCredits, 6);
+    assert.equal(result.electiveGroups.find(g => g.code === "A6:9")?.remainingCredits, 3);
+    assert.equal(result.scheduleProgress.progressStatus, "BEHIND");
+    assert.equal(result.semesters.find(s => s.semesterNo === 2)?.completedCredits, 16);
+  }
 });

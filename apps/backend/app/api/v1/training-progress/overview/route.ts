@@ -33,9 +33,15 @@ export async function GET(req: NextRequest) {
       studyProgramId,
       progressStatus,
       scopeWhere,
+      lazy: searchParams.get("mode") !== "summary",
     });
 
-    return jsonResponse(result);
+    // Full evaluations are used internally by exports, never sent with a page.
+    const { allEvaluations: _allEvaluations, ...response } = result;
+    void _allEvaluations;
+    return jsonResponse(searchParams.get("mode") === "summary"
+      ? { kpi: response.kpi, kpiComplete: true }
+      : response);
   } catch (err) {
     console.error("Get training progress overview error:", err);
     return errorResponse("Internal server error", "INTERNAL_ERROR", 500);

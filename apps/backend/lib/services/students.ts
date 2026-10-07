@@ -29,6 +29,36 @@ export interface StudentUpsertInput {
   studyProgramId?: string | null;
 }
 
+async function orderedStudentPage(where: Prisma.StudentWhereInput, skip = 0, take?: number) {
+  // Keep Prisma's permission/filter scope intact. Only IDs are read across the
+  // scope; PostgreSQL sorts with Vietnamese collation and selects the page.
+  const matching = await prisma.student.findMany({ where, select: { id: true } });
+  if (!matching.length) return { total: 0, items: [] };
+  const pageIds = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+    SELECT s.id::text AS id
+    FROM students s
+    LEFT JOIN classes c ON c.class_id = s.s_class_student_id AND c.deleted_at IS NULL
+    LEFT JOIN cohorts co ON co.id = c.cohort_id AND co.deleted_at IS NULL
+    WHERE s.id IN (${Prisma.join(matching.map(student => Prisma.sql`${student.id}::uuid`))})
+    ORDER BY
+      substring(COALESCE(co.s_cohort_code, s.s_class_student_id) from 'K([0-9]+)')::integer ASC NULLS LAST,
+      NULLIF(trim(s.s_class_student_id), '') COLLATE "vi-x-icu" ASC NULLS LAST,
+      NULLIF(trim(s.s_last_name), '') COLLATE "vi-x-icu" ASC NULLS LAST,
+      s.s_first_name COLLATE "vi-x-icu" ASC,
+      s.s_full_name COLLATE "vi-x-icu" ASC,
+      s.s_student_id ASC, s.id ASC
+    ${take === undefined ? Prisma.empty : Prisma.sql`LIMIT ${take}`}
+    OFFSET ${skip}
+  `);
+  if (!pageIds.length) return { total: matching.length, items: [] };
+  const rows = await prisma.student.findMany({
+    where: { AND: [where, { id: { in: pageIds.map(student => student.id) } }] },
+  });
+  const positions = new Map(pageIds.map((student, index) => [student.id, index]));
+  rows.sort((left, right) => positions.get(left.id)! - positions.get(right.id)!);
+  return { total: matching.length, items: rows };
+}
+
 export class StudentsService {
   static async list(
     filter: StudentFilter = {},
@@ -110,15 +140,7 @@ export class StudentsService {
     const skip = (page - 1) * pageSize;
     const take = pageSize;
 
-    const [total, items] = await Promise.all([
-      prisma.student.count({ where }),
-      prisma.student.findMany({
-        where,
-        skip,
-        take,
-        orderBy: { sStudentId: "asc" },
-      }),
-    ]);
+    const { total, items } = await orderedStudentPage(where, skip, take);
 
     const studentIds = items.map((s) => s.id);
     const warningRows = !includeAcademicWarnings
@@ -343,10 +365,7 @@ export class StudentsService {
   }
 
   static async exportAll(scope: Prisma.StudentWhereInput = {}) {
-    const items = await prisma.student.findMany({
-      where: { deletedAt: null, AND: [scope] },
-      orderBy: { sStudentId: "asc" },
-    });
+    const { items } = await orderedStudentPage({ deletedAt: null, AND: [scope] });
     return items.map((s) => mapStudent(s));
   }
 

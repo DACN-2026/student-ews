@@ -1,3 +1,4 @@
+import { monitoredStudentWhere } from "../student-monitoring-scope";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/utils/api-error";
@@ -151,7 +152,7 @@ export class ReportsService {
     const [students, terms, years, classes, policies, programs] = await Promise.all([
       prisma.student.findMany({
         where: { AND: [
-          { deletedAt: null },
+          monitoredStudentWhere,
           studentScope,
           filters.programCode ? { sStudyProgramId: filters.programCode } : {},
           cohortClassCodes ? { sClassStudentId: { in: cohortClassCodes } } : {},

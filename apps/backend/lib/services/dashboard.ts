@@ -1,3 +1,4 @@
+import { monitoredStudentWhere } from "../student-monitoring-scope";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { ReportsService } from "@/lib/services/reports";
@@ -146,7 +147,7 @@ export class DashboardService {
     }
     const studentWhere: Prisma.StudentWhereInput = {
       AND: [
-        { deletedAt: null },
+        monitoredStudentWhere,
         studentScope,
         ...(filters.trainingProgramId || filters.programCode
           ? [{ sStudyProgramId: selectedProgram ? selectedProgram.sProgramCode : { in: [] } }]

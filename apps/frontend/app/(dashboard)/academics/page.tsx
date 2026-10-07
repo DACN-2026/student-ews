@@ -3,7 +3,7 @@
 import TableAction from "@/components/ui/TableAction";
 import { Trash2, CheckCheck, BookOpen, Eye, LockKeyhole, CircleCheck, Archive } from "lucide-react";
 import TextLabel from "@/components/ui/TextLabel";
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState, useEffect, useRef } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import Tabs, { TabItem } from "@/components/ui/Tabs";
@@ -34,6 +34,7 @@ export default function AcademicsPage() {
   const [years, setYears] = useState<ApiData[]>([]);
   const [selectedYearId, setSelectedYearId] = useState<string>("");
   const [terms, setTerms] = useState<ApiData[]>([]);
+  const [termsLoading, setTermsLoading] = useState(false);
   const [finalizingTermId, setFinalizingTermId] = useState<string | null>(null);
   const [programs, setPrograms] = useState<ApiData[]>([]);
   const [courses, setCourses] = useState<ApiData[]>([]);
@@ -86,81 +87,73 @@ export default function AcademicsPage() {
   >({});
   const [planSubmitting, setPlanSubmitting] = useState(false);
 
-  // Load all initial academic data
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setLoading(true);
-        const [yRes, pRes, cRes, clRes, coRes, plRes] = await Promise.all([
-          apiFetch("/api/v1/academic-years"),
-          apiFetch("/api/v1/training-programs"),
-          apiFetch("/api/v1/courses"),
-          apiFetch("/api/v1/classes"),
-          apiFetch("/api/v1/cohorts"),
-          apiFetch("/api/v1/training-progress/plans"),
-        ]);
+  const loadedCatalogs = useRef(new Set<string>());
+  const [catalogError, setCatalogError] = useState("");
+  const [catalogRetry, setCatalogRetry] = useState(0);
 
-        if (yRes.ok) {
-          const yData = await yRes.json();
-          const items = Array.isArray(yData.items) ? yData.items : Array.isArray(yData) ? yData : [];
-          setYears(items);
-          if (items.length > 0) setSelectedYearId((current) => current || items[0].id);
-        }
-        if (pRes.ok) {
-          const pJson = await pRes.json();
-          setPrograms(Array.isArray(pJson.items) ? pJson.items : Array.isArray(pJson) ? pJson : []);
-        }
-        if (cRes.ok) {
-          const cJson = await cRes.json();
-          setCourses(Array.isArray(cJson.items) ? cJson.items : Array.isArray(cJson) ? cJson : []);
-        }
-        if (clRes.ok) {
-          const clJson = await clRes.json();
-          setClasses(Array.isArray(clJson.items) ? clJson.items : Array.isArray(clJson) ? clJson : []);
-        }
-        if (coRes.ok) {
-          const coJson = await coRes.json();
-          setCohorts(Array.isArray(coJson.items) ? coJson.items : Array.isArray(coJson) ? coJson : []);
-        }
-        if (plRes.ok) {
-          const plJson = await plRes.json();
-          setPlans(Array.isArray(plJson.items) ? plJson.items : Array.isArray(plJson) ? plJson : []);
-        }
-      } catch (err) {
-        console.error("Academics load error:", err);
-      } finally {
-        setLoading(false);
+  // Fetch only the active tab and options needed by an open form.
+  useEffect(() => {
+    const controller = new AbortController();
+    const needed: string[] = [activeTab === "terms" ? "years" : activeTab];
+    if (activeTab === "classes" || showClassModal) needed.push("cohorts");
+    if (activeTab === "plans") needed.push("years", "programs", "cohorts");
+    if (showPlanEditorModal) needed.push("years", "programs", "cohorts");
+    const missing = [...new Set(needed)].filter((key) => !loadedCatalogs.current.has(key));
+    if (!missing.length) { setLoading(false); return; }
+    setLoading(true);
+    setCatalogError("");
+    const endpoints: Record<string, string> = { years: "academic-years", programs: "training-programs", courses: "courses", classes: "classes", cohorts: "cohorts", plans: "training-progress/plans" };
+    const setters: Record<string, (items: ApiData[]) => void> = { years: setYears, programs: setPrograms, courses: setCourses, classes: setClasses, cohorts: setCohorts, plans: setPlans };
+    async function loadCatalog(key: string) {
+      try {
+        const response = await apiFetch(`/api/v1/${endpoints[key]}`, { signal: controller.signal });
+        if (!response.ok) throw new Error("Không thể tải danh mục. Vui lòng thử lại.");
+        const data = await response.json();
+        if (controller.signal.aborted) return;
+        const items = Array.isArray(data.items) ? data.items : Array.isArray(data) ? data : [];
+        setters[key](items);
+        if (key === "years" && items.length) setSelectedYearId((current) => current || items[0].id);
+        loadedCatalogs.current.add(key);
+      } catch (error) {
+        if (!controller.signal.aborted) setCatalogError(error instanceof Error ? error.message : "Không thể tải danh mục.");
       }
     }
-    void loadData();
-  }, []);
+    void Promise.all(missing.map(loadCatalog)).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
+    });
+    return () => controller.abort();
+  }, [activeTab, showClassModal, showPlanEditorModal, catalogRetry]);
 
-  // When selectedYearId changes, load terms for that year
+  // Load terms only while their tab or the plan editor needs them.
   useEffect(() => {
-    if (!selectedYearId) return;
+    if (!selectedYearId || activeTab !== "terms" && !showPlanEditorModal) return;
+    const controller = new AbortController();
     async function loadTerms() {
+      setTermsLoading(true);
       try {
-        const res = await apiFetch(`/api/v1/academic-years/${selectedYearId}/terms`);
-        if (res.ok) {
-          const json = await res.json();
-          setTerms(json.items || json || []);
-        }
-      } catch (err) {
-        console.error("Error loading terms:", err);
+        const res = await apiFetch(`/api/v1/academic-years/${selectedYearId}/terms`, { signal: controller.signal });
+        if (!res.ok) throw new Error("Không thể tải học kỳ.");
+        const json = await res.json();
+        if (!controller.signal.aborted) setTerms(json.items || json || []);
+      } catch (error) {
+        if (!controller.signal.aborted) setCatalogError(error instanceof Error ? error.message : "Không thể tải học kỳ.");
+      } finally {
+        if (!controller.signal.aborted) setTermsLoading(false);
       }
     }
-    loadTerms();
-  }, [selectedYearId]);
+    void loadTerms();
+    return () => controller.abort();
+  }, [selectedYearId, activeTab, showPlanEditorModal, catalogRetry]);
 
   // Tab definitions
   const tabs: TabItem[] = [
-    { id: "years", label: "Năm học", badge: years.length },
-    { id: "terms", label: "Học kỳ", badge: terms.length },
-    { id: "courses", label: "Danh mục Học phần", badge: courses.length },
-    { id: "programs", label: "Chương trình đào tạo", badge: programs.length },
-    { id: "cohorts", label: "Khóa sinh viên", badge: cohorts.length },
-    { id: "classes", label: "Lớp học", badge: classes.length },
-    { id: "plans", label: "Kế hoạch đào tạo", badge: plans.length },
+    { id: "years", label: "Năm học", badge: years.length || undefined },
+    { id: "terms", label: "Học kỳ", badge: terms.length || undefined },
+    { id: "courses", label: "Danh mục Học phần", badge: courses.length || undefined },
+    { id: "programs", label: "Chương trình đào tạo", badge: programs.length || undefined },
+    { id: "cohorts", label: "Khóa sinh viên", badge: cohorts.length || undefined },
+    { id: "classes", label: "Lớp học", badge: classes.length || undefined },
+    { id: "plans", label: "Kế hoạch đào tạo", badge: plans.length || undefined },
   ];
 
   // Create Year
@@ -337,6 +330,7 @@ export default function AcademicsPage() {
 
   // Plan open editor
   const handleOpenPlanEditor = async () => {
+    if (loading) return;
     const defaultCohort = cohorts[0]?.id || "";
     const defaultProgram = programs[0]?.id || "";
     const defaultYear = years[0]?.id || "";
@@ -621,11 +615,12 @@ export default function AcademicsPage() {
         </div>
       </div>
 
+      {catalogError && <div role="alert" className="text-sm text-rose-700">{catalogError} <button type="button" onClick={() => setCatalogRetry((value) => value + 1)} className="font-semibold underline">Thử lại</button></div>}
       {/* 7 Tabs Bar */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={(id) => setActiveTab(id as AcademicsTab)} />
 
       {/* Loading state */}
-      {loading ? (
+      {loading || activeTab === "terms" && termsLoading ? (
         <div className="py-16 text-center text-slate-400 text-xs font-medium">
           <svg className="animate-spin h-6 w-6 text-[var(--color-primary)] mx-auto mb-2" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

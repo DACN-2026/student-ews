@@ -243,3 +243,13 @@ test("a pending retake retains debt; a summer D resolves it without mutating his
   assert.equal(calculateAcademicDebt([before,passed(before.courseCode)],courses,"CQ22CT-PM").accumulatedDebtCredits,0);
   assert.equal(before.letterCode,"F");
 });
+
+test("K49 blockchain membership and replacement options use the same A6 pool", () => {
+  assert.deepEqual(k44ElectiveMembership("25BC0001", "CQ25CT"), { block: "A6", requiredCredits: 9, curriculumCourseCode: "25BC0001" });
+  assert.equal(k44ElectiveMembership("25BC0001", "CQ24CT"), null);
+  const alternatives = k44ElectiveAlternatives("20CT1103", "CQ25CT")!;
+  assert.ok(alternatives.courses.some(c => c.courseCode === "25BC0001" && c.credits === 3));
+  assert.equal(k44ElectiveAlternatives("20CT1103", "CQ24CT")!.courses.some(c => c.courseCode === "25BC0001"), false);
+  assert.equal(k44ElectiveAlternatives("20CT1103", "CQ25CT", ["25BC0001"])!.courses.some(c => c.courseCode === "25BC0001"), false);
+  assert.equal(k44ElectiveAlternatives("25BC0001", "CQ25CT")!.courses.some(c => c.courseCode === "25BC0001"), false);
+});

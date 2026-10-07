@@ -3,7 +3,7 @@
 import TableAction from "@/components/ui/TableAction";
 import { FileText } from "lucide-react";
 import TextLabel from "@/components/ui/TextLabel";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Scatter,
@@ -14,7 +14,8 @@ import Modal from "@/components/ui/Modal";
 import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
 import { apiFetch } from "@/lib/api-client";
-import StudentProgressDetail from "@/components/training-progress/StudentProgressDetail";
+import dynamic from "next/dynamic";
+const StudentProgressDetail = dynamic(() => import("@/components/training-progress/StudentProgressDetail"), { loading: () => <p role="status" className="p-6 text-sm text-slate-500">Đang tải bảng điểm...</p> });
 import { buildStudentWarningTimeline, formatHistoryDate } from "@/lib/warning-history";
 
 type ActiveTab = "overview" | "conduct" | "grades" | "decisions" | "fee_policies" | "registrations" | "warnings";
@@ -151,63 +152,74 @@ export default function StudentDetailPage() {
     }
   };
 
+  const loadedResources = useRef(new Set<string>());
+  const [gradesLoaded, setGradesLoaded] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
+  const [tabRetry, setTabRetry] = useState(0);
+
   useEffect(() => {
-    async function loadStudentInfo() {
-      if (!studentId) return;
+    const controller = new AbortController();
+    loadedResources.current.clear();
+    setStudent(null);
+    setDashboardData(null);
+    setWarningData(null);
+    setActiveInterventionCase(null);
+    setGradesData([]);
+    setGradesLoaded(false);
+    setSummariesData(null);
+    setDecisionsData([]);
+    setFeePoliciesData([]);
+    setRegistrationsData([]);
+    setConductData(null);
+    setLoadIssues([]);
+    setLoadError("");
+    setLoading(true);
+    async function loadProfile() {
       try {
-        setLoading(true);
-        setLoadIssues([]);
-        const [sRes, dRes, gRes, sumRes, decRes, feeRes, regRes, conductRes] = await Promise.all([
-          apiFetch(`/api/v1/students/${studentId}`),
-          apiFetch(`/api/v1/students/${studentId}/dashboard`),
-          apiFetch(`/api/v1/students/${studentId}/grades`),
-          apiFetch(`/api/v1/students/${studentId}/grades/summary`),
-          apiFetch(`/api/v1/students/${studentId}/decisions`),
-          apiFetch(`/api/v1/students/${studentId}/fee-policies`),
-          apiFetch(`/api/v1/students/${studentId}/registrations?pageSize=100`),
-          apiFetch(`/api/v1/students/${studentId}/conduct`),
-        ]);
+        const response = await apiFetch(`/api/v1/students/${studentId}`, { signal: controller.signal });
+        if (response.status === 403) { setLoadError("403"); return; }
+        if (!response.ok) throw new Error("Không thể tải hồ sơ sinh viên");
+        const data = await response.json();
+        if (!controller.signal.aborted) setStudent(data);
+      } catch (error) {
+        if (!controller.signal.aborted) setLoadIssues([error instanceof Error ? error.message : "Không thể tải hồ sơ sinh viên"]);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }
+    if (studentId) void loadProfile();
+    return () => controller.abort();
+  }, [studentId]);
 
-        if (sRes.status === 403) {
-          setLoadError("403");
-          return;
-        }
-        if (!sRes.ok) throw new Error("Không thể tải hồ sơ sinh viên");
-        const sJson = await sRes.json();
-        setStudent(sJson);
-        const issues: string[] = [];
-
-        if (canReadWarnings) {
-          const studentCode = String(sJson.studentCode || sJson.studentId || "").trim();
-          const [warningResponse, interventionsResponse] = await Promise.all([
-            apiFetch(`/api/v1/academic-warnings/students/${studentId}`),
-            studentCode
-              ? apiFetch(`/api/v1/academic-warnings/interventions?search=${encodeURIComponent(studentCode)}&pageSize=100`)
-              : Promise.resolve(null),
-          ]);
-          if (warningResponse.ok) setWarningData(await warningResponse.json());
-          else issues.push("cảnh báo học vụ");
-          if (interventionsResponse?.ok) {
-            const interventionData = await interventionsResponse.json();
-            setActiveInterventionCase((interventionData.items || []).find((item: ApiData) =>
-              item.student?.id === sJson.id &&
-              ["OPEN", "IN_PROGRESS", "ESCALATED", "REOPENED"].includes(item.interventionStatus),
-            ) || null);
-          } else if (interventionsResponse) {
-            issues.push("hồ sơ can thiệp hiện tại");
-          }
-        } else {
-          setWarningData(null);
-          setActiveInterventionCase(null);
-        }
-
-        if (dRes.ok) {
-          const dJson = await dRes.json();
-          setDashboardData(dJson);
-        } else issues.push("tổng quan học vụ");
-
-        if (gRes.ok) {
-          const gJson = await gRes.json();
+  useEffect(() => {
+    if (!student || student.id !== studentId && student.studentId !== studentId && student.studentCode !== studentId) return;
+    const controller = new AbortController();
+    const needed = activeTab === "overview"
+      ? ["dashboard", "grades/summary", "decisions", "conduct", ...(canReadWarnings ? ["warnings"] : [])]
+      : activeTab === "grades" ? ["grades", "grades/summary"]
+      : activeTab === "warnings" ? (canReadWarnings ? ["warnings"] : [])
+      : [activeTab === "fee_policies" ? "fee-policies" : activeTab];
+    const missing = needed.filter((resource) => !loadedResources.current.has(resource));
+    if (!missing.length) { setTabLoading(false); return; }
+    setTabLoading(true);
+    setLoadIssues([]);
+    async function loadResource(resource: string) {
+      try {
+        const endpoint = resource === "warnings"
+          ? `/api/v1/academic-warnings/students/${studentId}`
+          : `/api/v1/students/${studentId}/${resource}${resource === "registrations" ? "?pageSize=100" : ""}`;
+        const response = await apiFetch(endpoint, { signal: controller.signal });
+        if (!response.ok) throw new Error(`Không thể tải ${resource}`);
+        const data = await response.json();
+        if (controller.signal.aborted) return;
+        if (resource === "dashboard") setDashboardData(data);
+        if (resource === "grades/summary") setSummariesData(data);
+        if (resource === "decisions") setDecisionsData(data.items || data || []);
+        if (resource === "fee-policies") setFeePoliciesData(data.items || data || []);
+        if (resource === "registrations") setRegistrationsData(data.items || data || []);
+        if (resource === "conduct") setConductData(data);
+        if (resource === "grades") {
+          const gJson = data;
           const rawGrades = gJson.items || gJson || [];
           const cleanGrades = (Array.isArray(rawGrades) ? rawGrades : []).filter((g: ApiData) => {
             const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
@@ -243,41 +255,32 @@ export default function StudentDetailPage() {
             if (String(g.academicYear || "") > String(existing.academicYear || "")) { byCode.set(code, g); }
           }
           setGradesData(Array.from(byCode.values()));
-        } else issues.push("bảng điểm");
+          setGradesLoaded(true);
 
-        if (sumRes.ok) {
-          const sumJson = await sumRes.json();
-          setSummariesData(sumJson);
-        } else issues.push("tổng kết điểm");
-
-        if (decRes.ok) {
-          const decJson = await decRes.json();
-          setDecisionsData(decJson.items || decJson || []);
-        } else issues.push("quyết định");
-
-        if (feeRes.ok) {
-          const feeJson = await feeRes.json();
-          setFeePoliciesData(feeJson.items || feeJson || []);
-        } else issues.push("chính sách học phí");
-
-        if (regRes.ok) {
-          const regJson = await regRes.json();
-          setRegistrationsData(regJson.items || regJson || []);
-        } else issues.push("đăng ký học phần");
-        if (conductRes.ok) {
-          setConductData(await conductRes.json());
-        } else issues.push("điểm rèn luyện");
-        setLoadIssues(issues);
-      } catch (err) {
-        console.error("Error loading student details:", err);
-        setLoadIssues([err instanceof Error ? err.message : "Không thể tải hồ sơ sinh viên"]);
-      } finally {
-        setLoading(false);
+        }
+        if (resource === "warnings") {
+          setWarningData(data);
+          const studentCode = String(student.studentCode || student.studentId || "").trim();
+          if (studentCode) {
+            const interventionResponse = await apiFetch(`/api/v1/academic-warnings/interventions?search=${encodeURIComponent(studentCode)}&pageSize=100`, { signal: controller.signal });
+            if (!interventionResponse.ok) throw new Error("Không thể tải hồ sơ can thiệp hiện tại");
+            const interventions = await interventionResponse.json();
+            if (controller.signal.aborted) return;
+            setActiveInterventionCase((interventions.items || []).find((item: ApiData) =>
+              item.student?.id === student.id && ["OPEN", "IN_PROGRESS", "ESCALATED", "REOPENED"].includes(item.interventionStatus),
+            ) || null);
+          }
+        }
+        loadedResources.current.add(resource);
+      } catch (error) {
+        if (!controller.signal.aborted) setLoadIssues((issues) => [...issues, error instanceof Error ? error.message : `Không thể tải ${resource}`]);
       }
     }
-
-    loadStudentInfo();
-  }, [studentId, canReadWarnings]);
+    void Promise.all(missing.map(loadResource)).finally(() => {
+      if (!controller.signal.aborted) setTabLoading(false);
+    });
+    return () => controller.abort();
+  }, [student, studentId, activeTab, canReadWarnings, tabRetry]);
 
   if (status !== "loading" && status !== "idle" && !can("student.read")) {
     return <ForbiddenState requiredPermission="student.read" />;
@@ -527,10 +530,12 @@ export default function StudentDetailPage() {
         ))}
       </div>
 
+      {tabLoading && <p role="status" className="text-sm text-slate-500">Đang tải dữ liệu tab...</p>}
+      {loadIssues.length > 0 && !tabLoading && <button type="button" onClick={() => setTabRetry((value) => value + 1)} className="text-sm font-semibold text-emerald-700">Thử tải lại dữ liệu</button>}
       {/* Tab Content Areas */}
 
       {/* 1. Overview Tab */}
-      {activeTab === "overview" && (
+      {activeTab === "overview" && !tabLoading && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* GPA Trend Chart (2 cols) */}
@@ -695,7 +700,7 @@ export default function StudentDetailPage() {
                   </div>
                   <div className="flex justify-between gap-4 py-2.5">
                     <dt className="text-slate-500">Số học phần có dữ liệu</dt>
-                    <dd className="font-mono font-bold text-slate-900">{gradesData.length}</dd>
+                    <dd className="font-mono font-bold text-slate-900">{gradesLoaded ? gradesData.length : "Chưa tải"}</dd>
                   </div>
                 </dl>
               </div>
@@ -704,7 +709,7 @@ export default function StudentDetailPage() {
         </div>
       )}
 
-      {activeTab === "conduct" && (
+      {activeTab === "conduct" && !tabLoading && (
         <section className="space-y-5">
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
             <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-xs sm:p-6">
@@ -848,7 +853,7 @@ export default function StudentDetailPage() {
       )}
 
       {/* 3. Decisions Tab */}
-      {activeTab === "decisions" && (
+      {activeTab === "decisions" && !tabLoading && (
         <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -923,7 +928,7 @@ export default function StudentDetailPage() {
       )}
 
       {/* 4. Fee Policies Tab */}
-      {activeTab === "fee_policies" && (
+      {activeTab === "fee_policies" && !tabLoading && (
         <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -988,7 +993,7 @@ export default function StudentDetailPage() {
       )}
 
       {/* 5. Registrations Tab */}
-      {activeTab === "registrations" && (
+      {activeTab === "registrations" && !tabLoading && (
         <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs space-y-4">
           <div>
             <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
@@ -1036,7 +1041,7 @@ export default function StudentDetailPage() {
       )}
 
       {/* Semester transcript tab */}
-      {activeTab === "grades" && (
+      {activeTab === "grades" && !tabLoading && (
         <div className="space-y-5">
           <StudentProgressDetail
             studentId={studentId}
@@ -1048,7 +1053,7 @@ export default function StudentDetailPage() {
       )}
 
       {/* 7. TAB CẢNH BÁO HỌC VỤ & CAN THIỆP */}
-      {activeTab === "warnings" && canReadWarnings && (
+      {activeTab === "warnings" && !tabLoading && canReadWarnings && (
         <div className="space-y-6">
           {/* Top Banner & Quick Status */}
           <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${

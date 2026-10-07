@@ -11,6 +11,9 @@ const cli = require.resolve("tsx/cli");
 const requestedTests = process.argv.slice(2);
 const testFiles = requestedTests.length ? requestedTests : [
   "tests/backend.test.ts",
+  "tests/lazy-loading.test.ts",
+  "tests/student-monitoring-scope.test.ts",
+  "tests/credit-milestone.test.ts",
   "tests/academic-course-rules.test.ts",
   "tests/academic-debt-blocks.test.ts",
   "tests/academic-debt-warning-levels.test.ts",

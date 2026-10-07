@@ -135,6 +135,8 @@ function installMemoryDatabase(state: MemoryState) {
   };
   const tx = { warningAction, warningActionEvent, classAdvisorAssignment };
 
+  // This fixture contains only monitored students; do not read membership from the live DB.
+  cleanups.push(mockMethod(prisma.student, "findMany", async () => []));
   cleanups.push(mockMethod(prisma.academicWarningRun, "findUnique", async ({ where }: any) => state.runs.get(where.id) ?? null));
   cleanups.push(mockMethod(prisma.academicWarningRun, "findMany", async ({ where }: any) =>
     [...state.runs.values()].filter((row) => !where.id?.in || where.id.in.includes(row.id)),

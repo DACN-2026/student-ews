@@ -2184,7 +2184,7 @@ test("Training Progress Ví dụ A: Đến hết năm 2 kế hoạch 65 TC, đ�
       expectedSemester: "HK1",
       expectedSemesterNo: 5,
     },
-    semesterPlans: new Map([[1, 25], [2, 20], [3, 20]]),
+    semesterPlans: new Map([[1, 25], [2, 20], [3, 20], [4, 0]]),
   });
 
   assert.equal(result.scheduleProgress.expectedCreditsToDate, 65);
@@ -2216,7 +2216,7 @@ test("Training Progress Ví dụ B: Kế hoạch 65 TC, đạt 59 TC -> Chậm t
       expectedSemester: "HK1",
       expectedSemesterNo: 5,
     },
-    semesterPlans: new Map([[1, 35], [2, 24], [3, 6]]),
+    semesterPlans: new Map([[1, 35], [2, 24], [3, 6], [4, 0]]),
   });
 
   assert.equal(result.scheduleProgress.expectedCreditsToDate, 65);
@@ -2228,8 +2228,9 @@ test("Training Progress Ví dụ B: Kế hoạch 65 TC, đạt 59 TC -> Chậm t
   assert.equal(result.scheduleProgress.isBehind, true);
 });
 
-test("Training Progress Ví dụ C: Kế hoạch 65 TC, đạt 68 TC nhưng thiếu 1 HP bắt buộc 3 TC -> Chậm tiến độ (BEHIND)", () => {
-  // Plan: 65 TC. Student earned 68 TC (by passing a 6-credit ahead elective in Sem 5), but missed a 3-credit mandatory course in Sem 1
+test("Training Progress Ví dụ C: Kế hoạch đến mốc 65 TC, đạt 62 TC; học trước không bù HP bắt buộc thiếu", () => {
+  // Past-semester plan: 65 TC. Earned to that milestone: 62 TC.
+  // A passed current-semester elective stays outside this comparison.
   const result = evaluateStudentTrainingProgress({
     student: defaultStudent,
     curriculum: [
@@ -2249,18 +2250,18 @@ test("Training Progress Ví dụ C: Kế hoạch 65 TC, đạt 68 TC nhưng thi�
       expectedSemester: "HK1",
       expectedSemesterNo: 5,
     },
-    semesterPlans: new Map([[1, 62], [2, 3]]),
+    semesterPlans: new Map([[1, 62], [2, 3], [3, 0], [4, 0]]),
   });
 
   // Expected to date: 62 + 3 = 65 TC
   assert.equal(result.scheduleProgress.expectedCreditsToDate, 65);
-  // Earned: 62 + 6 = 68 TC (> 65 TC!)
-  assert.equal(result.scheduleProgress.earnedCreditsToDate, 68);
-  assert.equal(result.scheduleProgress.creditDifference, 3);
+  // The current semester is outside the end-of-semester-4 milestone.
+  assert.equal(result.scheduleProgress.earnedCreditsToDate, 62);
+  assert.equal(result.scheduleProgress.creditDifference, -3);
   // But has 1 missing mandatory course:
   assert.equal(result.scheduleProgress.missingRequiredCoursesCount, 1);
   assert.equal(result.scheduleProgress.missingRequiredCredits, 3);
-  // Must NOT conclude ON_TRACK just because 68 > 65:
+  // Passing a current-semester elective does not clear missing compulsory credit:
   assert.equal(result.scheduleProgress.progressStatus, "BEHIND");
   assert.equal(result.scheduleProgress.isBehind, true);
   assert.equal(result.scheduleProgress.isOnTrack, false);

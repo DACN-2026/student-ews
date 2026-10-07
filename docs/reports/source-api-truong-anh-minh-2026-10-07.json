@@ -1,0 +1,124 @@
+{
+  "checkedAt": "2026-10-07T14:13:30.284Z",
+  "student": {
+    "code": "2347A052",
+    "name": "Trương Anh Minh",
+    "program": "CQ23CT",
+    "classCode": "ITK47A"
+  },
+  "decisions": [
+    {
+      "type": "Tiếp nhận Chuyển trường",
+      "number": "721/QÐ-ÐHÐL_25062026",
+      "date": "25/06/2026",
+      "reason": ""
+    }
+  ],
+  "newElective": [
+    {
+      "code": "25BC0001",
+      "name": "Trí tuệ nhân tạo, Blockchain và ứng dụng",
+      "credits": 3,
+      "semester": "Học kỳ 2",
+      "requirement": "Tự Chọn",
+      "program": "CQ25CT"
+    }
+  ],
+  "transcripts": [
+    {
+      "queryProgram": "CQ23CT",
+      "years": 0,
+      "courses": []
+    },
+    {
+      "queryProgram": "CQ23CT-PM",
+      "years": 1,
+      "courses": [
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "code": "20CT1101",
+          "name": "Nhập môn ngành CNTT",
+          "credits": "3",
+          "program": "CQ23CT-PM",
+          "notScore": "1",
+          "isPass": null,
+          "score10": null,
+          "score4": null,
+          "letter": null
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "code": "20CT1102",
+          "name": "Nguyên lý lập trình cấu trúc",
+          "credits": "4",
+          "program": "CQ23CT-PM",
+          "notScore": "1",
+          "isPass": null,
+          "score10": null,
+          "score4": null,
+          "letter": null
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "code": "20LH0001",
+          "name": "Pháp luật đại cương",
+          "credits": "3",
+          "program": "CQ23CT-PM",
+          "notScore": "1",
+          "isPass": null,
+          "score10": null,
+          "score4": null,
+          "letter": null
+        }
+      ]
+    },
+    {
+      "queryProgram": "CQ23CT-MMT",
+      "years": 1,
+      "courses": [
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "code": "20CT1101",
+          "name": "Nhập môn ngành CNTT",
+          "credits": "3",
+          "program": "CQ23CT-MMT",
+          "notScore": "1",
+          "isPass": null,
+          "score10": null,
+          "score4": null,
+          "letter": null
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "code": "20CT1102",
+          "name": "Nguyên lý lập trình cấu trúc",
+          "credits": "4",
+          "program": "CQ23CT-MMT",
+          "notScore": "1",
+          "isPass": null,
+          "score10": null,
+          "score4": null,
+          "letter": null
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "code": "20LH0001",
+          "name": "Pháp luật đại cương",
+          "credits": "3",
+          "program": "CQ23CT-MMT",
+          "notScore": "1",
+          "isPass": null,
+          "score10": null,
+          "score4": null,
+          "letter": null
+        }
+      ]
+    }
+  ]
+}

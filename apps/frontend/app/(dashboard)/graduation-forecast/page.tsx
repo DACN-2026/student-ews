@@ -7,7 +7,8 @@ import { AlertTriangle, Check, CircleHelp, Clock, Download, FileCheck2, Filter, 
 import { studyTimeline } from "@/lib/academic-timeline";
 import { apiFetch } from "@/lib/api-client";
 import Modal from "@/components/ui/Modal";
-import ForecastDetail from "@/components/graduation/ForecastDetail";
+import dynamic from "next/dynamic";
+const ForecastDetail = dynamic(() => import("@/components/graduation/ForecastDetail"), { loading: () => <p role="status" className="p-6 text-sm text-slate-500">Đang tải chi tiết tốt nghiệp...</p> });
 import { toast } from "@/components/ui/Toast";
 import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
@@ -158,13 +159,24 @@ export default function GraduationForecastPage() {
   const [selectedRun, setSelectedRun] = useState<ApiData | null>(null);
 
   // Student list in selected batch
-  const [allStudents, setAllStudents] = useState<ApiData[]>([]);
+  const [students, setStudents] = useState<ApiData[]>([]);
+  const [studentPage, setStudentPage] = useState(1);
+  const studentPageSize = 20;
+  const [studentTotal, setStudentTotal] = useState(0);
+  const [batchClasses, setBatchClasses] = useState<ApiData[]>([]);
+  const [statusCounts, setStatusCounts] = useState({ all: 0, EXPECTED_ELIGIBLE: 0, PENDING_GRADE: 0, NOT_ELIGIBLE: 0, PENDING_REQUIREMENT: 0, MANUAL_REVIEW: 0 });
+  const [studentsError, setStudentsError] = useState("");
+  const [statisticsError, setStatisticsError] = useState("");
+  const [statisticsScope, setStatisticsScope] = useState("");
+  const [studentsRetry, setStudentsRetry] = useState(0);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [keyword, setKeyword] = useState("");
 
   // Class filter (Lớp)
   const [classFilter, setClassFilter] = useState("all");
+
+  const statisticsReady = statisticsScope === `${selectedRun?.id}:${classFilter}`;
 
   // Filter batches by cohort
   const [cohortFilter, setCohortFilter] = useState<string>("all");
@@ -185,43 +197,50 @@ export default function GraduationForecastPage() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [runLoading, setRunLoading] = useState(false);
 
-  const loadRunStudents = useCallback(async (run: ApiData) => {
+  const changeStatusFilter = (value: string) => { setStatusFilter(value); setStudentPage(1); };
+  const changeClassFilter = (value: string) => { setClassFilter(value); setStudentPage(1); };
+  const changeKeyword = (value: string) => { setKeyword(value); setStudentPage(1); };
+
+  useEffect(() => {
+    if (!selectedRun) return;
+    const controller = new AbortController();
+    // This effect starts an API request for the selected page.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStudentsLoading(true);
-
-    setClassFilter("all");
-
-    try {
-      const params = new URLSearchParams({ pageSize: "100" });
-      const response = await apiFetch(`/api/v1/graduation-evaluations/${run.id}/students?${params}`);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error?.message || "Không thể tải danh sách sinh viên.");
-      const items = Array.isArray(data.items) ? [...data.items] : [];
-      const total = Number(data.total || items.length);
-      const totalPages = Math.ceil(total / 100);
-      if (totalPages > 1) {
-        const pagePromises = [];
-        for (let page = 2; page <= totalPages; page += 1) {
-          const pageParams = new URLSearchParams({ pageSize: "100", page: String(page) });
-          pagePromises.push(
-            apiFetch(`/api/v1/graduation-evaluations/${run.id}/students?${pageParams}`).then(async (res) => {
-              if (!res.ok) return [];
-              const json = await res.json();
-              return Array.isArray(json.items) ? json.items : [];
-            }),
-          );
+    setStudentsError("");
+    setStatisticsError("");
+    const timer = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ page: String(studentPage), pageSize: String(studentPageSize) });
+        if (statusFilter !== "all") params.set("status", statusFilter);
+        if (classFilter !== "all") params.set("classId", classFilter);
+        if (keyword.trim()) params.set("keyword", keyword.trim());
+        const response = await apiFetch(`/api/v1/graduation-evaluations/${selectedRun.id}/students?${params}`, { signal: controller.signal });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error?.message || "Không thể tải danh sách sinh viên.");
+        if (controller.signal.aborted) return;
+        setStudents(data.items || []);
+        setStudentTotal(data.total ?? 0);
+        if (typeof data.statusCounts?.all === "number") {
+          setBatchClasses(data.classes || []);
+          setStatusCounts({ all: 0, EXPECTED_ELIGIBLE: 0, PENDING_GRADE: 0, NOT_ELIGIBLE: 0, PENDING_REQUIREMENT: 0, MANUAL_REVIEW: 0, ...data.statusCounts });
+          setStatisticsScope(`${selectedRun.id}:${classFilter}`);
+        } else {
+          setStatisticsScope("");
+          setStatisticsError("Chưa nhận được thống kê từ máy chủ. Vui lòng tải lại dữ liệu.");
         }
-        const extraPages = await Promise.all(pagePromises);
-        for (const pageItems of extraPages) {
-          items.push(...pageItems);
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setStudents([]);
+          setStudentTotal(0);
+          setStudentsError(error instanceof Error ? error.message : "Không thể tải danh sách sinh viên.");
         }
+      } finally {
+        if (!controller.signal.aborted) setStudentsLoading(false);
       }
-      setAllStudents(items);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không thể tải danh sách sinh viên.");
-    } finally {
-      setStudentsLoading(false);
-    }
-  }, []);
+    }, keyword.trim() ? 300 : 0);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [selectedRun, studentPage, statusFilter, classFilter, keyword, studentsRetry]);
 
   const loadInitial = useCallback(async () => {
     setLoading(true);
@@ -250,14 +269,17 @@ export default function GraduationForecastPage() {
       if (fetchedRuns.length > 0) {
         const finalYearRun = fetchedRuns.find((r) => getCohortStudyYearInfo(r).isFinalYear) || fetchedRuns[0];
         setSelectedRun(finalYearRun);
-        void loadRunStudents(finalYearRun);
+        setStudentPage(1);
+        setStatusFilter("all");
+        setClassFilter("all");
+        setKeyword("");
       }
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Không thể tải dữ liệu.");
     } finally {
       setLoading(false);
     }
-  }, [loadRunStudents]);
+  }, []);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void loadInitial(), 0);
@@ -271,7 +293,7 @@ export default function GraduationForecastPage() {
     setClassFilter("all");
 
     setKeyword("");
-    await loadRunStudents(run);
+    setStudentPage(1);
   };
 
   const openStudent = async (student: ApiData, defaultTab: "summary" | "transcript" = "summary") => {
@@ -412,91 +434,34 @@ export default function GraduationForecastPage() {
 
   const selectedTotalCreditsThreshold = configuredThreshold(selectedRun?.sourceSnapshot, "TOTAL_CREDITS", 150) || 150;
 
-  // Unique classes in current batch
-  const uniqueClasses = useMemo(() => {
-    const set = new Set<string>();
-    for (const s of allStudents) {
-      if (s.sClassName) set.add(String(s.sClassName));
-    }
-    return Array.from(set).sort();
-  }, [allStudents]);
-
-  // Scoped students by class filter (KPIs and table dynamically update when class filter changes)
-  const scopedStudents = useMemo(() => {
-    if (classFilter === "all") return allStudents;
-    return allStudents.filter((s) => s.sClassName === classFilter);
-  }, [allStudents, classFilter]);
-
-  // ==========================================
-  // FINAL YEAR LOGIC & STATS (SCOPED BY CLASS FILTER)
-  // ==========================================
-  const statusCounts = useMemo(() => {
-    const counts = {
-      all: scopedStudents.length,
-      EXPECTED_ELIGIBLE: 0,
-      PENDING_GRADE: 0,
-      NOT_ELIGIBLE: 0,
-      PENDING_REQUIREMENT: 0,
-      MANUAL_REVIEW: 0,
-    };
-    for (const s of scopedStudents) {
-      if (s.finalStatus === "EXPECTED_ELIGIBLE") counts.EXPECTED_ELIGIBLE++;
-      else if (s.finalStatus === "PENDING_GRADE") counts.PENDING_GRADE++;
-      else if (s.finalStatus === "NOT_ELIGIBLE") counts.NOT_ELIGIBLE++;
-      else if (s.finalStatus === "PENDING_REQUIREMENT") counts.PENDING_REQUIREMENT++;
-      else if (s.finalStatus === "MANUAL_REVIEW") counts.MANUAL_REVIEW++;
-    }
-    return counts;
-  }, [scopedStudents]);
-
   // Graduation status options, counted within the selected class scope.
   const finalYearStatusOptions = useMemo(() => [
     {
       key: "all",
       label: "Tất cả",
-      count: statusCounts.all,
+      count: statisticsReady ? statusCounts.all : "…",
     },
     {
       key: "EXPECTED_ELIGIBLE",
       label: "Đủ yêu cầu",
-      count: statusCounts.EXPECTED_ELIGIBLE,
+      count: statisticsReady ? statusCounts.EXPECTED_ELIGIBLE : "…",
     },
     {
       key: "PENDING_GRADE",
       label: "Đang hoàn thiện",
-      count: statusCounts.PENDING_GRADE,
+      count: statisticsReady ? statusCounts.PENDING_GRADE : "…",
     },
     {
       key: "NOT_ELIGIBLE",
       label: "Còn thiếu",
-      count: statusCounts.NOT_ELIGIBLE,
+      count: statisticsReady ? statusCounts.NOT_ELIGIBLE : "…",
     },
-  ], [statusCounts]);
+  ], [statusCounts, statisticsReady]);
 
   // ==========================================
   // FILTERED STUDENTS LIST
   // ==========================================
-  const filteredStudents = useMemo(() => {
-    let list = scopedStudents;
-
-    // Filter by graduation status
-    if (statusFilter !== "all") {
-      list = list.filter((s) => s.finalStatus === statusFilter);
-    }
-
-    // Search query
-    const q = keyword.trim().toLowerCase();
-    if (q) {
-      list = list.filter((s) => {
-        const name = String(s.sStudentName || "").toLowerCase();
-        const id = String(s.sStudentId || "").toLowerCase();
-        const cls = String(s.sClassName || "").toLowerCase();
-        return name.includes(q) || id.includes(q) || cls.includes(q);
-      });
-    }
-
-    return list;
-  }, [scopedStudents, statusFilter, keyword]);
+  const filteredStudents = students;
 
   if (status !== "loading" && status !== "idle" && !can("graduation.read")) {
     return <ForbiddenState requiredPermission="graduation.read" />;
@@ -550,6 +515,7 @@ export default function GraduationForecastPage() {
         </div>
       </header>
 
+      {studentsError && <div role="alert" className="text-sm text-rose-700">{studentsError} <button type="button" onClick={() => setStudentsRetry((value) => value + 1)} className="font-semibold underline">Thử lại</button></div>}
       {/* 2. KHU VỰC CHỌN ĐỐI TƯỢNG VÀ ĐỢT ĐÁNH GIÁ */}
       <section aria-labelledby="batch-selector-heading" className="space-y-3.5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -730,7 +696,7 @@ export default function GraduationForecastPage() {
               </div>
               <p className="mt-0.5 text-xs text-slate-500 pl-8">
                 Đợt xét: {selectedRun.assessmentTermCode} ({selectedRun.assessmentAcademicYear}) • Tổng số:{" "}
-                <strong className="text-slate-800">{scopedStudents.length} sinh viên {classFilter !== "all" && `(Lớp ${classFilter})`}</strong>
+                <strong className="text-slate-800">{statisticsReady ? statusCounts.all : "…"} sinh viên {classFilter !== "all" && `(Lớp ${batchClasses.find((cls) => cls.classId === classFilter)?.className || classFilter})`}</strong>
                 {" • "}Chuẩn CTĐT: <strong className="text-slate-800">{selectedTotalCreditsThreshold} tín chỉ</strong>
               </p>
             </div>
@@ -762,12 +728,22 @@ export default function GraduationForecastPage() {
           {/* ĐÁNH GIÁ ĐIỀU KIỆN TỐT NGHIỆP                   */}
           {/* ========================================================= */}
             <div className="p-4 sm:p-5 space-y-5 bg-white">
+              {statisticsError ? (
+                <div role="alert" className="flex items-center justify-between gap-3 text-xs text-rose-700">
+                  <span>{statisticsError}</span>
+                  <button type="button" disabled={studentsLoading} onClick={() => setStudentsRetry((value) => value + 1)} className="rounded-lg border border-slate-200 px-3 py-2 font-semibold disabled:opacity-50">
+                    Thử lại thống kê
+                  </button>
+                </div>
+              ) : !statisticsReady && (
+                <p role="status" className="text-xs text-slate-500">Đang tải thống kê đợt đánh giá...</p>
+              )}
               {/* THẺ TỔNG QUAN 4 CHỈ SỐ: TỔNG SV, ĐỦ YÊU CẦU, ĐANG HOÀN THIỆN, CÒN THIẾU (INTERACTIVE: BẤM ĐỂ LỌC) */}
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 {/* 1. Tổng sinh viên */}
                 <div
                   onClick={() => {
-                    setStatusFilter("all");
+                    changeStatusFilter("all");
 
                   }}
                   className={`rounded-xl border p-4 transition cursor-pointer ${
@@ -780,7 +756,7 @@ export default function GraduationForecastPage() {
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tổng sinh viên</span>
                     <Users size={18} className="text-slate-400" />
                   </div>
-                  <p className="mt-2 font-mono text-3xl font-extrabold text-slate-900">{statusCounts.all}</p>
+                  <p className="mt-2 font-mono text-3xl font-extrabold text-slate-900">{statisticsReady ? statusCounts.all : "…"}</p>
                   <p className="mt-1 text-[11px] text-slate-500">
                     {classFilter === "all" ? `Khóa ${selectedRun.cohortCode}` : `Lớp ${classFilter}`} • Bấm để xem tất cả
                   </p>
@@ -789,7 +765,7 @@ export default function GraduationForecastPage() {
                 {/* 2. Đủ yêu cầu (🟢) */}
                 <div
                   onClick={() => {
-                    setStatusFilter("EXPECTED_ELIGIBLE");
+                    changeStatusFilter("EXPECTED_ELIGIBLE");
 
                   }}
                   className={`rounded-xl border p-4 transition cursor-pointer ${
@@ -805,14 +781,14 @@ export default function GraduationForecastPage() {
                     </span>
                     <Check size={18} className="text-emerald-600" />
                   </div>
-                  <p className="mt-2 font-mono text-3xl font-extrabold text-emerald-700">{statusCounts.EXPECTED_ELIGIBLE}</p>
+                  <p className="mt-2 font-mono text-3xl font-extrabold text-emerald-700">{statisticsReady ? statusCounts.EXPECTED_ELIGIBLE : "…"}</p>
                   <p className="mt-1 text-[11px] text-emerald-700">Đạt toàn bộ điều kiện • Bấm để lọc</p>
                 </div>
 
                 {/* 3. Đang hoàn thiện (🔵) */}
                 <div
                   onClick={() => {
-                    setStatusFilter("PENDING_GRADE");
+                    changeStatusFilter("PENDING_GRADE");
 
                   }}
                   className={`rounded-xl border p-4 transition cursor-pointer ${
@@ -828,14 +804,14 @@ export default function GraduationForecastPage() {
                     </span>
                     <Clock size={18} className="text-sky-600" />
                   </div>
-                  <p className="mt-2 font-mono text-3xl font-extrabold text-sky-700">{statusCounts.PENDING_GRADE}</p>
+                  <p className="mt-2 font-mono text-3xl font-extrabold text-sky-700">{statisticsReady ? statusCounts.PENDING_GRADE : "…"}</p>
                   <p className="mt-1 text-[11px] text-sky-700">Đang học / chờ điểm • Bấm để lọc</p>
                 </div>
 
                 {/* 4. Còn thiếu (🟠) */}
                 <div
                   onClick={() => {
-                    setStatusFilter("NOT_ELIGIBLE");
+                    changeStatusFilter("NOT_ELIGIBLE");
 
                   }}
                   className={`rounded-xl border p-4 transition cursor-pointer ${
@@ -851,7 +827,7 @@ export default function GraduationForecastPage() {
                     </span>
                     <AlertTriangle size={18} className="text-amber-600" />
                   </div>
-                  <p className="mt-2 font-mono text-3xl font-extrabold text-amber-700">{statusCounts.NOT_ELIGIBLE}</p>
+                  <p className="mt-2 font-mono text-3xl font-extrabold text-amber-700">{statisticsReady ? statusCounts.NOT_ELIGIBLE : "…"}</p>
                   <p className="mt-1 text-[11px] text-amber-700">Chưa đủ điều kiện • Bấm để lọc</p>
                 </div>
               </div>
@@ -865,7 +841,7 @@ export default function GraduationForecastPage() {
                   <select
                     id="graduation-status-filter"
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => changeStatusFilter(e.target.value)}
                     className="h-10 min-w-0 flex-1 sm:flex-none rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100 cursor-pointer"
                   >
                     {finalYearStatusOptions.map((option) => (
@@ -877,30 +853,30 @@ export default function GraduationForecastPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-                  {uniqueClasses.length > 1 ? (
+                  {batchClasses.length > 1 ? (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Lớp:</span>
                       <select
                         value={classFilter}
-                        onChange={(e) => setClassFilter(e.target.value)}
+                        onChange={(e) => changeClassFilter(e.target.value)}
                         className="h-10 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-lime-500 focus:bg-white focus:ring-2 focus:ring-lime-100 cursor-pointer"
                       >
-                        <option value="all">Tất cả lớp ({allStudents.length} SV)</option>
-                        {uniqueClasses.map((cls) => {
-                          const count = allStudents.filter((s) => s.sClassName === cls).length;
+                        <option value="all">Tất cả lớp ({batchClasses.reduce((sum, cls) => sum + cls.count, 0)} SV)</option>
+                        {batchClasses.map((cls) => {
+                          const count = cls.count;
                           return (
-                            <option key={cls} value={cls}>
-                              {cls} ({count} SV)
+                            <option key={cls.classId || cls.className} value={cls.classId || ""}>
+                              {cls.className} ({count} SV)
                             </option>
                           );
                         })}
                       </select>
                     </div>
-                  ) : (uniqueClasses[0] || user?.className) && (
+                  ) : (batchClasses[0]?.className || user?.className) && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Lớp:</span>
                       <TextLabel className="h-10 flex items-center text-xs font-bold text-slate-800">
-                        {uniqueClasses[0] || user?.className}
+                        {batchClasses[0]?.className || user?.className}
                       </TextLabel>
                     </div>
                   )}
@@ -909,14 +885,14 @@ export default function GraduationForecastPage() {
                     <Search size={15} className="pointer-events-none absolute left-3.5 top-3 text-slate-400" />
                     <input
                       value={keyword}
-                      onChange={(e) => setKeyword(e.target.value)}
+                      onChange={(e) => changeKeyword(e.target.value)}
                       placeholder="Tìm họ tên, MSSV..."
                       className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-8 text-xs outline-none transition focus:border-lime-500 focus:bg-white focus:ring-2 focus:ring-lime-100"
                     />
                     {keyword && (
                       <button
                         type="button"
-                        onClick={() => setKeyword("")}
+                        onClick={() => changeKeyword("")}
                         className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
                         <X size={14} />
@@ -951,14 +927,19 @@ export default function GraduationForecastPage() {
 
                     </TextLabel>
                   )}
-                  <span className="text-slate-400">({filteredStudents.length} sinh viên)</span>
+                  <span className="text-slate-400">({studentTotal} sinh viên)</span>
+                  <div className="flex items-center gap-2 text-xs">
+                    <button type="button" disabled={studentsLoading || studentPage <= 1} onClick={() => setStudentPage((value) => value - 1)} className="rounded-lg border px-2 py-1 disabled:opacity-40">Trang trước</button>
+                    <span>{studentPage} / {Math.max(1, Math.ceil(studentTotal / studentPageSize))}</span>
+                    <button type="button" disabled={studentsLoading || studentPage * studentPageSize >= studentTotal} onClick={() => setStudentPage((value) => value + 1)} className="rounded-lg border px-2 py-1 disabled:opacity-40">Trang sau</button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
-                      setClassFilter("all");
-                      setStatusFilter("all");
+                      changeClassFilter("all");
+                      changeStatusFilter("all");
 
-                      setKeyword("");
+                      changeKeyword("");
                     }}
                     className="ml-auto font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
                   >
@@ -996,10 +977,10 @@ export default function GraduationForecastPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              setClassFilter("all");
-                              setStatusFilter("all");
+                              changeClassFilter("all");
+                              changeStatusFilter("all");
 
-                              setKeyword("");
+                              changeKeyword("");
                             }}
                             className={`table-text-action text-filter ${plainTextClasses(`table-text-action ${plainTextClasses("mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs")}`)}`}
                           >

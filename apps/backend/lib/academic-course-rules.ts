@@ -102,6 +102,8 @@ export const K44_ELECTIVE_GROUPS = ["A6:9", "A7:6", "B2:25", "B3:6"] as const;
 export function curriculumElectiveGroup(code: string, programCode?: string | null): string | null {
   if (!isK44StandardProgram(programCode)) return null;
   const normalized = normalizeProgramCourseCode(code, programCode);
+  // K49's additional HK2 option belongs to the same A6 choice pool.
+  if (normalized === "25BC0001" && /^CQ25CT(?:-(?:PM|MMT|KHDL))?$/.test((programCode ?? "").toUpperCase())) return "A6:9";
   if (["20CT1103", "20CT1203", "20TN1201", "20TN2102"].includes(normalized)) return "A6:9";
   if (["20NV0002", "20SP0001", "20QT0006", "20QT0001", "20QT0004"].includes(normalized)) return "A7:6";
   if (["20CT3106", "20CT3106D", "20CT3107", "20CT3107D", "20CT3108", "20CT3108D"].includes(normalized)) return "B3:6";

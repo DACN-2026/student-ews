@@ -1,3 +1,4 @@
+import { monitoredStudentResultWhere } from "../student-monitoring-scope";
 import { academicOfferingPredicate } from "../academic-course-sql";
 import { loadAcademicDebt } from "./academic-debt";
 import { prisma } from "@/lib/prisma";
@@ -347,7 +348,7 @@ async function loadWarningContext(
            COALESCE(s.s_study_program_id,'') as program_code
     FROM students s
     LEFT JOIN classes c ON c.class_id = s.s_class_student_id AND c.deleted_at IS NULL
-    WHERE s.s_study_program_id = ${program.sProgramCode} AND s.deleted_at IS NULL
+    WHERE s.s_study_program_id = ${program.sProgramCode} AND s.deleted_at IS NULL AND s.s_is_in_class = true
       AND c.cohort_id = ${cohortId}::uuid
       AND EXISTS (
         SELECT 1
@@ -591,7 +592,7 @@ async function loadSummerMonitoringContext(
            COALESCE(s.s_study_program_id,'') as program_code
     FROM students s
     LEFT JOIN classes c ON c.class_id = s.s_class_student_id AND c.deleted_at IS NULL
-    WHERE s.s_study_program_id = ${program.sProgramCode} AND s.deleted_at IS NULL
+    WHERE s.s_study_program_id = ${program.sProgramCode} AND s.deleted_at IS NULL AND s.s_is_in_class = true
       AND c.cohort_id = ${cohortId}::uuid
     ORDER BY s.s_student_id
   `;
@@ -735,17 +736,18 @@ export class AcademicWarningsService {
     mediumStudents: number;
     highStudents: number;
   }>(items: TRun[], classScopes: Map<string, string[] | null>) {
-    const restricted = items.filter((item) => classScopes.get(item.id) !== null);
+    const monitoringScope = await monitoredStudentResultWhere();
+    const restricted = items.filter(item => classScopes.get(item.id) !== null || monitoringScope.studentId);
     if (!restricted.length) return items;
     const results = await prisma.academicWarningStudentResult.findMany({
-      where: { runId: { in: restricted.map((item) => item.id) } },
+      where: { runId: { in: restricted.map((item) => item.id) }, ...monitoringScope },
       select: { runId: true, classId: true, maxSeverity: true, reasonCount: true },
     });
     return items.map((item) => {
       const scope = classScopes.get(item.id);
-      if (scope === null) return item;
+      if (scope === null && !monitoringScope.studentId) return item;
       const allowed = new Set(scope || []);
-      const scoped = results.filter((result) => result.runId === item.id && result.classId && allowed.has(result.classId));
+      const scoped = results.filter((result) => result.runId === item.id && (scope === null || result.classId && allowed.has(result.classId)));
       return {
         ...item,
         totalStudents: scoped.length,
@@ -1551,9 +1553,10 @@ export class AcademicWarningsService {
       run.policyId ? prisma.academicWarningPolicy.findUnique({ where: { id: run.policyId } }) : null,
     ]);
 
-    const scopedResults = allowedClassIds !== undefined && allowedClassIds !== null
+    const monitoringScope = await monitoredStudentResultWhere();
+    const scopedResults = allowedClassIds != null || monitoringScope.studentId
       ? await prisma.academicWarningStudentResult.findMany({
-          where: { runId, classId: { in: allowedClassIds } },
+          where: { runId, ...monitoringScope, ...(allowedClassIds != null ? { classId: { in: allowedClassIds } } : {}) },
           select: { maxSeverity: true, reasonCount: true },
         })
       : null;
@@ -1599,7 +1602,7 @@ export class AcademicWarningsService {
     pageSize = 20,
     allowedClassIds?: string[] | null,
   ) {
-    const where: Prisma.AcademicWarningStudentResultWhereInput = { runId };
+    const where: Prisma.AcademicWarningStudentResultWhereInput = { runId, ...await monitoredStudentResultWhere() };
     if (reasonCode) {
       const reasons = await prisma.academicWarningReason.findMany({
         where: { reasonCode },
@@ -1858,6 +1861,13 @@ export class AcademicWarningsService {
       orderBy: { groupCode: "asc" },
     });
 
+    const monitoringScope = await monitoredStudentResultWhere();
+    const currentRows = monitoringScope.studentId
+      ? await prisma.academicWarningStudentResult.findMany({
+          where: { runId, ...monitoringScope, ...(allowedClassIds != null ? { classId: { in: allowedClassIds } } : {}) },
+          select: { classId: true, cohortId: true, reasonCount: true, maxSeverity: true },
+        })
+      : null;
     return results.map((r) => ({
       groupType: r.groupType,
       groupId: r.groupId,
@@ -1867,6 +1877,14 @@ export class AcademicWarningsService {
       warningStudents: r.warningStudents,
       mediumStudents: r.mediumStudents,
       highStudents: r.highStudents,
+      ...(() => {
+        if (!currentRows) return {};
+        const group = currentRows.filter(row => r.groupType === "class" ? row.classId === r.groupId : row.cohortId === r.groupId);
+        return { totalStudents: group.length, warningStudents: group.filter(row => row.reasonCount > 0).length,
+          mediumStudents: group.filter(row => row.maxSeverity === "medium").length,
+          highStudents: group.filter(row => row.maxSeverity === "high").length };
+      })(),
+
     }));
   }
 }
