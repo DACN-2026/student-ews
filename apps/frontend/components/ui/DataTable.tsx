@@ -2,6 +2,15 @@
 
 import React from "react";
 
+const identityColumns = new Set([
+  "student", "studentCode", "studentId", "studentName", "fullName", "courseCode", "courseName",
+]);
+
+function columnAlignment<T>(column: Column<T>) {
+  const alignment = identityColumns.has(column.key) ? "left" : column.align || "center";
+  return `table-cell-${alignment} text-${alignment}`;
+}
+
 export interface Column<T> {
   key: string;
   title: React.ReactNode;
@@ -41,20 +50,14 @@ export default function DataTable<T extends Record<string, ApiData>>({
   return (
     <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
       <div className="overflow-x-auto scrollbar-thin">
-        <table className="w-full text-left text-xs border-collapse">
+        <table className="w-full text-center text-xs border-collapse">
           <thead>
             <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px] tracking-wider">
               {columns.map((col) => (
                 <th
                   key={col.key}
                   style={{ width: col.width }}
-                  className={`py-3.5 px-4 font-semibold ${
-                    col.align === "right"
-                      ? "text-right"
-                      : col.align === "center"
-                      ? "text-center"
-                      : "text-left"
-                  } ${col.className || ""}`}
+                  className={`py-3.5 px-4 font-semibold ${columnAlignment(col)} ${col.className || ""}`}
                 >
                   {col.title}
                 </th>
@@ -66,7 +69,7 @@ export default function DataTable<T extends Record<string, ApiData>>({
               Array.from({ length: 5 }).map((_, rIdx) => (
                 <tr key={`skel-${rIdx}`} className="animate-pulse">
                   {columns.map((col, cIdx) => (
-                    <td key={`skel-${rIdx}-${cIdx}`} className="py-4 px-4">
+                    <td key={`skel-${rIdx}-${cIdx}`} className={`py-4 px-4 ${columnAlignment(col)}`}>
                       <div className="h-4 bg-slate-200/70 rounded-md w-3/4" />
                     </td>
                   ))}
@@ -106,13 +109,7 @@ export default function DataTable<T extends Record<string, ApiData>>({
                       return (
                         <td
                           key={`${key}-${col.key}`}
-                          className={`py-3.5 px-4 text-slate-700 align-middle ${
-                            col.align === "right"
-                              ? "text-right"
-                              : col.align === "center"
-                              ? "text-center"
-                              : "text-left"
-                          } ${col.className || ""}`}
+                          className={`py-3.5 px-4 text-slate-700 align-middle ${columnAlignment(col)} ${col.className || ""}`}
                         >
                           {rendered}
                         </td>

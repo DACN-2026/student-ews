@@ -94,10 +94,8 @@ export class StudentsService {
     if (includeAcademicWarnings && filter.warningLevel && filter.warningLevel !== "all") {
       warningFilterReport = await ReportsService.academicWarningStudents({
         severity: filter.warningLevel === "red" ? "high" : filter.warningLevel === "yellow" ? "medium" : undefined,
-        presentationState: filter.warningLevel === "green"
+        presentationState: filter.warningLevel === "green" || filter.warningLevel === "partial"
           ? "NORMAL"
-          : filter.warningLevel === "partial"
-            ? "PARTIAL_NO_RISK"
           : filter.warningLevel === "insufficient"
             ? "INSUFFICIENT_DATA"
             : undefined,
@@ -417,13 +415,11 @@ function mapStudent(
   classMeta?: { className?: string | null; cohortCode?: string | null },
   includeAcademicWarnings = false,
 ) {
-  let warningLevel: "red" | "yellow" | "green" | "partial" | "insufficient" = "green";
+  let warningLevel: "red" | "yellow" | "green" | "insufficient" = "green";
   if (warningResult?.presentationState === "HIGH_RISK" || warningResult?.presentationState === "VERIFY_REQUIRED") {
     warningLevel = "red";
   } else if (warningResult?.presentationState === "MONITORING") {
     warningLevel = "yellow";
-  } else if (warningResult?.presentationState === "PARTIAL_NO_RISK") {
-    warningLevel = "partial";
   } else if (warningResult?.presentationState === "INSUFFICIENT_DATA") {
     warningLevel = "insufficient";
   }

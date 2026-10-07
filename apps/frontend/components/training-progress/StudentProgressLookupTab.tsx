@@ -1,23 +1,9 @@
 "use client";
 
+import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  AlertCircle,
-  ArrowRight,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Filter,
-  GraduationCap,
-  RefreshCw,
-  RotateCcw,
-  Search,
-  User,
-  Users,
-  X,
-} from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Clock, Filter, RefreshCw, RotateCcw, Search, User, Users, X } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import StudentProgressDetail from "./StudentProgressDetail";
@@ -277,9 +263,9 @@ export default function StudentProgressLookupTab() {
             <span className="text-2xl font-bold font-mono text-emerald-700">
               {kpi.onTrackCount.toLocaleString("vi-VN")}
             </span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <TextLabel className="inline-flex items-center text-xs font-bold text-emerald-700">
               {kpi.onTrackPercentage}%
-            </span>
+            </TextLabel>
           </div>
           <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between">
             <span>Đạt chuẩn mốc đào tạo</span>
@@ -307,9 +293,9 @@ export default function StudentProgressLookupTab() {
             <span className="text-2xl font-bold font-mono text-rose-600">
               {kpi.behindCount.toLocaleString("vi-VN")}
             </span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+            <TextLabel className="inline-flex items-center text-xs font-bold text-rose-700">
               {kpi.behindPercentage}%
-            </span>
+            </TextLabel>
           </div>
           <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between">
             <span>Còn thiếu yêu cầu kỳ kết thúc</span>
@@ -476,7 +462,7 @@ export default function StudentProgressLookupTab() {
                     Lọc:
                   </span>
                   {searchTerm && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 font-medium text-emerald-800 border border-emerald-200">
+                    <TextLabel className="inline-flex items-center gap-1 font-medium text-emerald-800">
                       Từ khóa: &quot;{searchTerm}&quot;
                       <button
                         type="button"
@@ -487,45 +473,45 @@ export default function StudentProgressLookupTab() {
                       >
                         <X size={12} className="hover:text-emerald-950 cursor-pointer" />
                       </button>
-                    </span>
+                    </TextLabel>
                   )}
                   {selectedCohort && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 font-medium text-blue-800 border border-blue-200">
+                    <TextLabel className="inline-flex items-center gap-1 font-medium text-blue-800">
                       Khóa: {cohorts.find((c) => c.id === selectedCohort)?.cohortCode || selectedCohort}
                       <button type="button" onClick={() => handleCohortChange("")}>
                         <X size={12} className="hover:text-blue-950 cursor-pointer" />
                       </button>
-                    </span>
+                    </TextLabel>
                   )}
                   {selectedClass && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-purple-50 px-2 py-0.5 font-medium text-purple-800 border border-purple-200">
+                    <TextLabel className="inline-flex items-center gap-1 font-medium text-purple-800">
                       Lớp: {selectedClass}
                       <button type="button" onClick={() => handleClassChange("")}>
                         <X size={12} className="hover:text-purple-950 cursor-pointer" />
                       </button>
-                    </span>
+                    </TextLabel>
                   )}
                   {selectedProgram && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 font-medium text-amber-800 border border-amber-200">
+                    <TextLabel className="inline-flex items-center gap-1 font-medium text-amber-800">
                       CTĐT: {selectedProgram}
                       <button type="button" onClick={() => handleProgramChange("")}>
                         <X size={12} className="hover:text-amber-950 cursor-pointer" />
                       </button>
-                    </span>
+                    </TextLabel>
                   )}
                   {selectedStatus !== "ALL" && (
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-medium border ${
+                    <TextLabel
+                      className={`inline-flex items-center gap-1    font-medium  ${
                         selectedStatus === "ON_TRACK"
-                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                          : "bg-rose-50 text-rose-800 border-rose-200"
+                          ? "bg-emerald-50 text-emerald-800 "
+                          : "bg-rose-50 text-rose-800 "
                       }`}
                     >
                       Trạng thái: {selectedStatus === "ON_TRACK" ? "Đúng tiến độ" : "Chậm tiến độ"}
                       <button type="button" onClick={() => handleStatusChange("ALL")}>
                         <X size={12} className="hover:opacity-75 cursor-pointer" />
                       </button>
-                    </span>
+                    </TextLabel>
                   )}
                 </>
               ) : (
@@ -574,19 +560,19 @@ export default function StudentProgressLookupTab() {
                   <h3 className="text-base font-bold text-slate-900">
                     {selectedStudent.fullName}
                   </h3>
-                  <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold text-slate-800 border border-slate-200">
+                  <TextLabel className="font-mono text-xs font-bold text-slate-800">
                     {selectedStudent.studentId}
-                  </span>
+                  </TextLabel>
                   {selectedStudent.progressStatus === "ON_TRACK" ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <CheckCircle2 size={11} className="text-emerald-600" />
+                    <TextLabel className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+
                       Đúng tiến độ
-                    </span>
+                    </TextLabel>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                      <AlertCircle size={11} className="text-rose-600" />
-                      Chậm {selectedStudent.creditDifferenceText.replace("-", "")}
-                    </span>
+                    <TextLabel className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700">
+
+                      {selectedStudent.progressStatus === "UNKNOWN" ? "Cần đối soát" : selectedStudent.creditDifference < 0 ? selectedStudent.creditDifferenceText : "Chậm tiến độ"}
+                    </TextLabel>
                   )}
                 </div>
                 <p className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-x-2">
@@ -597,6 +583,7 @@ export default function StudentProgressLookupTab() {
                   <span>
                     Khóa: <strong className="text-slate-700 font-semibold">{selectedStudent.cohortCode || "—"}</strong>
                   </span>
+                  {selectedStudent.studyCohortCode && <><span>•</span><span>{selectedStudent.studyScheduleSource === "REGISTRATION_SEQUENCE" ? "Mốc học tương ứng: " : "Học theo: "}<strong className="text-slate-700 font-semibold">{selectedStudent.studyCohortCode}</strong></span></>}
                   {selectedStudent.programCode && (
                     <>
                       <span>•</span>
@@ -666,9 +653,9 @@ export default function StudentProgressLookupTab() {
                 </select>
               </div>
 
-              <span className="rounded-full bg-slate-100 px-3 py-1 font-mono text-xs font-bold text-slate-700 border border-slate-200">
+              <TextLabel className="font-mono text-xs font-bold text-slate-700">
                 {total} SV
-              </span>
+              </TextLabel>
             </div>
           </div>
 
@@ -704,16 +691,16 @@ export default function StudentProgressLookupTab() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                    <th className="py-3 px-3.5 whitespace-nowrap">MSSV</th>
-                    <th className="py-3 px-3.5 whitespace-nowrap">Họ và tên</th>
-                    <th className="py-3 px-3 whitespace-nowrap">Khóa / Lớp</th>
-                    <th className="py-3 px-3 whitespace-nowrap">Mốc đánh giá</th>
-                    <th className="py-3 px-3 text-right whitespace-nowrap">TC kế hoạch</th>
-                    <th className="py-3 px-3 text-right whitespace-nowrap">TC đã đạt</th>
-                    <th className="py-3 px-3 text-right whitespace-nowrap">Chênh lệch</th>
-                    <th className="py-3 px-3 text-center whitespace-nowrap">HP bắt buộc thiếu</th>
-                    <th className="py-3 px-3 text-center whitespace-nowrap">Trạng thái</th>
-                    <th className="py-3 px-3.5 text-center whitespace-nowrap">Thao tác</th>
+                    <th className="py-3 px-3.5 whitespace-nowrap text-left table-cell-left">MSSV</th>
+                    <th className="py-3 px-3.5 whitespace-nowrap text-left table-cell-left">Họ và tên</th>
+                    <th className="py-3 px-3 whitespace-nowrap text-center table-cell-center">Khóa / Lớp</th>
+                    <th className="py-3 px-3 whitespace-nowrap text-center table-cell-center">Mốc đánh giá</th>
+                    <th className="py-3 px-3 text-center whitespace-nowrap table-cell-center">TC kế hoạch</th>
+                    <th className="py-3 px-3 text-center whitespace-nowrap table-cell-center">TC đã đạt</th>
+                    <th className="py-3 px-3 text-center whitespace-nowrap table-cell-center">Chênh lệch</th>
+                    <th className="py-3 px-3 text-center whitespace-nowrap table-cell-center">HP bắt buộc thiếu</th>
+                    <th className="py-3 px-3 text-center whitespace-nowrap table-cell-center">Trạng thái</th>
+                    <th className="py-3 px-3.5 text-center whitespace-nowrap table-cell-center">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs">
@@ -726,26 +713,26 @@ export default function StudentProgressLookupTab() {
                         className="hover:bg-slate-50/80 transition cursor-pointer group"
                       >
                         {/* MSSV */}
-                        <td className="py-3 px-3.5 whitespace-nowrap font-mono font-bold text-slate-800">
+                        <td className="py-3 px-3.5 whitespace-nowrap font-mono font-bold text-slate-800 text-left table-cell-left">
                           {st.studentId}
                         </td>
 
                         {/* Full Name */}
-                        <td className="py-3 px-3.5 whitespace-nowrap">
+                        <td className="py-3 px-3.5 whitespace-nowrap text-left table-cell-left">
                           <span className="font-semibold text-slate-900 group-hover:text-emerald-700 transition">
                             {st.fullName}
                           </span>
                         </td>
 
                         {/* Cohort / Class */}
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-600">
+                        <td className="py-3 px-3 whitespace-nowrap text-slate-600 text-center table-cell-center">
                           <span>{st.cohortCode || "—"}</span>
                           <span className="text-slate-300 mx-1">/</span>
                           <span className="font-medium text-slate-800">{st.className || "—"}</span>
                         </td>
 
                         {/* Benchmark Label */}
-                        <td className="py-3 px-3 whitespace-nowrap text-slate-600">
+                        <td className="py-3 px-3 whitespace-nowrap text-slate-600 text-center table-cell-center">
                           <span className="inline-flex items-center gap-1">
                             <Clock size={12} className="text-slate-400" />
                             <span>{st.benchmarkLabel}</span>
@@ -753,17 +740,17 @@ export default function StudentProgressLookupTab() {
                         </td>
 
                         {/* Expected Credits */}
-                        <td className="py-3 px-3 text-right whitespace-nowrap font-mono text-slate-600">
+                        <td className="py-3 px-3 text-center whitespace-nowrap font-mono text-slate-600 table-cell-center">
                           {st.expectedCredits} TC
                         </td>
 
                         {/* Earned Credits */}
-                        <td className="py-3 px-3 text-right whitespace-nowrap font-mono font-bold text-slate-900">
+                        <td className="py-3 px-3 text-center whitespace-nowrap font-mono font-bold text-slate-900 table-cell-center">
                           {st.earnedCredits} TC
                         </td>
 
                         {/* Credit Difference */}
-                        <td className="py-3 px-3 text-right whitespace-nowrap font-mono font-bold">
+                        <td className="py-3 px-3 text-center whitespace-nowrap font-mono font-bold table-cell-center">
                           {st.creditDifference < 0 ? (
                             <span className="text-rose-600">{st.creditDifferenceText}</span>
                           ) : (
@@ -774,43 +761,43 @@ export default function StudentProgressLookupTab() {
                         </td>
 
                         {/* Missing Required Courses */}
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
+                        <td className="py-3 px-3 text-center whitespace-nowrap table-cell-center">
                           {st.missingRequiredCoursesCount > 0 ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            <TextLabel className="inline-flex items-center text-[11px] font-bold text-rose-700">
                               Thiếu {st.missingRequiredCoursesCount} HP
-                            </span>
+                            </TextLabel>
                           ) : (
                             <span className="text-slate-400 font-mono">0</span>
                           )}
                         </td>
 
                         {/* Status */}
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
+                        <td className="py-3 px-3 text-center whitespace-nowrap table-cell-center">
                           {isOnTrack ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <CheckCircle2 size={12} className="text-emerald-600" />
+                            <TextLabel className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+
                               <span>Đúng tiến độ</span>
-                            </span>
+                            </TextLabel>
                           ) : (
-                            <span
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200"
+                            <TextLabel
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700"
                               title={st.statusReason}
                             >
-                              <AlertCircle size={12} className="text-rose-600" />
-                              <span>Chậm tiến độ</span>
-                            </span>
+
+                              <span>{st.progressStatus === "UNKNOWN" ? "Cần đối soát" : "Chậm tiến độ"}</span>
+                            </TextLabel>
                           )}
                         </td>
 
                         {/* Action */}
-                        <td className="py-3 px-3.5 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                        <td className="py-3 px-3.5 text-center whitespace-nowrap table-cell-center" onClick={(e) => e.stopPropagation()}>
                           <button
                             type="button"
                             onClick={() => setSelectedStudent(st)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 transition cursor-pointer shadow-2xs"
+                            className={`table-text-action ${plainTextClasses("inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 transition cursor-pointer shadow-2xs")}`}
                           >
                             <span>Chi tiết</span>
-                            <ChevronRight size={13} />
+
                           </button>
                         </td>
                       </tr>

@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel from "@/components/ui/TextLabel";
 import React from "react";
 
 export interface TabItem {
@@ -40,22 +41,17 @@ export default function Tabs({
             }`}
             style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
-            {tab.icon && (
-              <span className={isActive ? "text-[var(--color-primary)]" : "text-slate-400"}>
-                {tab.icon}
-              </span>
-            )}
             <span>{tab.label}</span>
             {tab.badge !== undefined && (
-              <span
-                className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+              <TextLabel
+                className={`px-1.5   text-[10px] font-bold ${
                   isActive
                     ? "bg-[var(--color-primary)] text-white"
                     : "bg-slate-100 text-slate-600"
                 }`}
               >
                 {tab.badge}
-              </span>
+              </TextLabel>
             )}
           </button>
         );

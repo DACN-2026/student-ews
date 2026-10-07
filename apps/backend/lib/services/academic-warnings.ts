@@ -1,3 +1,5 @@
+import { academicOfferingPredicate } from "../academic-course-sql";
+import { loadAcademicDebt } from "./academic-debt";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import crypto from "crypto";
@@ -9,6 +11,7 @@ import {
   evaluateSummerMonitoring,
   warningDataStatusFromStored,
   warningPresentationState,
+  normalizeWarningBusinessStatus,
   type SummerMonitoringSource,
   type WarningCompletionSource as CompletionSource,
   type WarningConductSource as ConductSource,
@@ -42,6 +45,7 @@ import {
   type Qd600RuleEvaluation,
 } from "@/lib/services/academic-warning-qd600-rules";
 import { EARLY_WARNING_CASE_TYPE, InterventionCasesService } from "@/lib/services/intervention-cases";
+import { loadWarningActionHistory } from "./warning-action-history";
 import { assertCohortTrainingProgramPair } from "@/lib/services/academic-warning-scope";
 import { calculateAcademicWarningProgressSignals } from "@/lib/services/academic-warning-progress";
 import {
@@ -162,7 +166,9 @@ export function sanitizeWarningSourceSnapshot(
 }
 
 export function projectQd600EvaluationForPersistence(result: Qd600EvaluationResult) {
-  const actionableRules = result.rules.filter((rule) => rule.isThresholdBreached || rule.isNearThreshold);
+  const debtRegulatoryBreach = result.rules.some((rule) => rule.ruleCode === "QD600_ACCUMULATED_DEBT_CREDITS" && rule.isThresholdBreached);
+  const actionableRules = result.rules.filter((rule) => (rule.isThresholdBreached || rule.isNearThreshold)
+    && !(debtRegulatoryBreach && rule.ruleCode === "ACCUMULATED_DEBT_CREDIT_RISK"));
   const maxSeverity = result.businessStatus === "VERIFY_REQUIRED" || result.businessStatus === "HIGH_RISK"
     ? "high"
     : result.businessStatus === "MONITORING"
@@ -172,13 +178,14 @@ export function projectQd600EvaluationForPersistence(result: Qd600EvaluationResu
     if (rule.ruleCode === "QD600_FAILED_CREDIT_RATIO") return "Không đạt quá nhiều tín chỉ trong học kỳ";
     if (rule.ruleCode === "QD600_CUMULATIVE_GPA_BY_YEAR") return "Điểm trung bình tích lũy (GPA) dưới chuẩn năm học";
     if (rule.ruleCode === "QD600_TERM_GPA") return "Điểm trung bình học kỳ (GPA) thấp";
+    if (rule.ruleCode === "QD600_ACCUMULATED_DEBT_CREDITS" || rule.ruleCode === "ACCUMULATED_DEBT_CREDIT_RISK") return `Nợ tín chỉ tích lũy ${rule.observedValue ?? 0} tín chỉ`;
     if (rule.ruleCode === "TRAINING_PROGRESS_CREDIT_DEFICIT") {
       return `Chậm tiến độ học tập ${rule.observedValue ?? 0} tín chỉ`;
     }
     return "Điểm GPA tích lũy tiệm cận mức nguy cơ";
   };
   return {
-    businessStatus: result.businessStatus,
+    businessStatus: normalizeWarningBusinessStatus(result.businessStatus),
     regulatoryCoverage: result.regulatoryCoverage.status,
     maxSeverity,
     reasonCount: actionableRules.length,
@@ -192,7 +199,7 @@ export function projectQd600EvaluationForPersistence(result: Qd600EvaluationResu
       title: titleForRule(rule),
       details: {
         ...rule,
-        businessStatus: result.businessStatus,
+        businessStatus: normalizeWarningBusinessStatus(result.businessStatus),
         regulatoryCoverage: result.regulatoryCoverage.status,
         executionProfile: result.executionProfile,
         engineVersion: result.engineVersion,
@@ -227,7 +234,8 @@ export async function findLatestOfficialWarningResult(studentId: string) {
     select: { id: true },
   });
   const officialRunIds = new Set(officialRuns.map((run) => run.id));
-  return candidates.find((result) => officialRunIds.has(result.runId)) || null;
+  const result = candidates.find((result) => officialRunIds.has(result.runId));
+  return result ? { ...result, businessStatus: normalizeWarningBusinessStatus(result.businessStatus) } : null;
 }
 
 async function loadAssessmentTermCourseAttempts(
@@ -247,9 +255,11 @@ async function loadAssessmentTermCourseAttempts(
     has_final_grade: boolean;
     is_pass: boolean | null;
     special_code: string | null;
+    course_code: string;
+    course_name: string;
   }> = await prisma.$queryRaw`
     SELECT o.student_id::text, o.id::text AS offering_id, o.academic_term_id::text,
-           o.s_credits AS credits, g.score_status, g.special_code,
+           o.s_credits AS credits, o.s_curriculum_id AS course_code, o.s_course_name AS course_name, g.score_status, g.special_code,
            (g.offering_id IS NOT NULL AND (
              (g.score_status = 'graded' AND
                (g.score_10 IS NOT NULL OR g.score_4 IS NOT NULL OR NULLIF(BTRIM(g.letter_code), '') IS NOT NULL))
@@ -273,6 +283,8 @@ async function loadAssessmentTermCourseAttempts(
       hasFinalGrade: row.has_final_grade,
       isPass: row.is_pass,
       specialCode: row.special_code,
+      courseCode: row.course_code,
+      courseName: row.course_name,
     });
     attempts.set(row.student_id, studentAttempts);
   }
@@ -454,8 +466,11 @@ async function loadWarningContext(
       FROM student_term_summaries s
       JOIN academic_terms t ON t.id = s.academic_term_id AND t.deleted_at IS NULL AND NOT t.s_is_summer
       JOIN academic_years y ON y.id = t.academic_year_id AND y.deleted_at IS NULL
-      WHERE s.s_program_code = ${program.sProgramCode}
-        AND s.student_id = ANY(${studentIds}::uuid[])
+      JOIN cohorts co ON co.id = ${cohortId}::uuid
+      WHERE s.student_id = ANY(${studentIds}::uuid[])
+        AND co.s_cohort_code ~ '^K[0-9]+$'
+        AND LEFT(y.s_year_code, 4)::int = 1976 + SUBSTRING(co.s_cohort_code FROM 2)::int
+        AND t.s_term_order = 1
       ORDER BY s.student_id, y.s_year_code, t.s_term_order, t.id
     `;
     for (const row of firstTermRows) firstMainTermIds.set(row.student_id, row.academic_term_id);
@@ -547,6 +562,7 @@ async function loadWarningContext(
     cumulativeCredits,
     firstMainTermIds,
     assessmentTermCourseAttempts,
+    academicDebt: await loadAcademicDebt(studentIds, trainingProgramId, assessmentTermId),
     trainingProgressSignals,
   };
 }
@@ -614,7 +630,7 @@ async function loadSummerMonitoringContext(
       }>>`
         SELECT o.student_id::text,
                COUNT(*) AS offering_count,
-               COALESCE(SUM(o.s_credits), 0) AS registered_credits,
+               COALESCE(SUM(o.s_credits) FILTER (WHERE ${academicOfferingPredicate}), 0) AS registered_credits,
                COUNT(*) FILTER (WHERE g.offering_id IS NULL OR g.score_status = 'pending') AS pending_results,
                COUNT(*) FILTER (WHERE g.offering_id IS NOT NULL AND g.score_status <> 'pending' AND NOT g.is_pass) AS failed_courses
         FROM student_course_offerings o
@@ -668,6 +684,7 @@ async function loadSummerMonitoringContext(
     cumulativeCredits,
     firstMainTermIds,
     assessmentTermCourseAttempts,
+    academicDebt: await loadAcademicDebt(studentIds, trainingProgramId, assessmentTermId),
     trainingProgressSignals: new Map(),
   };
 }
@@ -1182,10 +1199,11 @@ export class AcademicWarningsService {
       definition,
     });
 
-    const capabilitySnapshot = createAcademicWarningCapabilitySnapshot();
+    const capabilitySnapshot = createAcademicWarningCapabilitySnapshot({ debtVerified: true });
     const capabilityDataByStudent = new Map(ctx.students.map((student) => [
       student.id,
       createQd600StudentCapabilityData({
+        debt: ctx.academicDebt.get(student.id),
         cumulativeCredits: ctx.cumulativeCredits.get(student.id) ?? null,
         assessmentTermId: assessmentAcademicTermId,
         attempts: ctx.assessmentTermCourseAttempts.get(student.id) || [],
@@ -1624,11 +1642,11 @@ export class AcademicWarningsService {
         maxSeverity: r.maxSeverity,
         reasonCount: r.reasonCount,
         dataError: r.dataError,
-        businessStatus: r.businessStatus,
+        businessStatus: normalizeWarningBusinessStatus(r.businessStatus),
         regulatoryCoverage: r.regulatoryCoverage,
         ruleResults: r.ruleResults,
         dataStatus: warningDataStatusFromStored(r.dataError),
-        presentationState: r.businessStatus,
+        presentationState: normalizeWarningBusinessStatus(r.businessStatus),
       })),
       total,
       page,
@@ -1667,11 +1685,11 @@ export class AcademicWarningsService {
       maxSeverity: result.maxSeverity,
       reasonCount: result.reasonCount,
       dataError: result.dataError,
-      businessStatus: result.businessStatus,
+      businessStatus: normalizeWarningBusinessStatus(result.businessStatus),
       regulatoryCoverage: result.regulatoryCoverage,
       ruleResults: result.ruleResults,
       dataStatus: warningDataStatusFromStored(result.dataError),
-      presentationState: result.businessStatus,
+      presentationState: normalizeWarningBusinessStatus(result.businessStatus),
       reasons: reasons.map((r) => ({
         id: r.id,
         reasonCode: r.reasonCode,
@@ -1691,7 +1709,7 @@ export class AcademicWarningsService {
     });
     if (!student) return null;
 
-    const [warningResults, warningActions, latestWarning] = await Promise.all([
+    const [warningResults, warningActions, latestWarning, interventionCases] = await Promise.all([
       prisma.academicWarningStudentResult.findMany({
         where: { studentId: student.id },
         orderBy: { createdAt: "desc" },
@@ -1704,7 +1722,12 @@ export class AcademicWarningsService {
         orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       }),
       findLatestOfficialWarningResult(student.id),
+      prisma.warningAction.findMany({
+        where: { studentId: student.id, caseType: EARLY_WARNING_CASE_TYPE },
+        select: { id: true },
+      }),
     ]);
+    const interventionHistory = await loadWarningActionHistory(interventionCases.map(item => item.id));
     const runIds = [...new Set([
       ...warningResults.map((result) => result.runId),
       ...(latestWarning ? [latestWarning.runId] : []),
@@ -1754,8 +1777,6 @@ export class AcademicWarningsService {
         ? "red"
         : presentationState === "MONITORING"
           ? "yellow"
-          : presentationState === "PARTIAL_NO_RISK"
-            ? "partial"
           : presentationState === "INSUFFICIENT_DATA"
             ? "insufficient"
             : "green",
@@ -1769,7 +1790,7 @@ export class AcademicWarningsService {
         cumulativeGpa4: latestWarning.cumulativeGpa4 != null ? Number(latestWarning.cumulativeGpa4) : null,
         reasonCount: latestWarning.reasonCount,
         dataError: latestWarning.dataError,
-        businessStatus: latestWarning.businessStatus,
+        businessStatus: normalizeWarningBusinessStatus(latestWarning.businessStatus),
         regulatoryCoverage: latestWarning.regulatoryCoverage,
         ruleResults: latestWarning.ruleResults,
         dataStatus,
@@ -1790,11 +1811,11 @@ export class AcademicWarningsService {
           academicWarningDecisions: result.academicWarningDecisions,
           reasonCount: result.reasonCount,
           dataError: result.dataError,
-          businessStatus: result.businessStatus,
+          businessStatus: normalizeWarningBusinessStatus(result.businessStatus),
           regulatoryCoverage: result.regulatoryCoverage,
           ruleResults: result.ruleResults,
           dataStatus: itemDataStatus,
-          presentationState: result.businessStatus,
+          presentationState: normalizeWarningBusinessStatus(result.businessStatus),
           createdAt: result.createdAt,
           academicTermId: term?.id || null,
           termCode: term?.sTermCode || null,
@@ -1820,6 +1841,7 @@ export class AcademicWarningsService {
         sourceId: reason.sourceId,
       })),
       warningActions,
+      interventionHistory,
     };
   }
 

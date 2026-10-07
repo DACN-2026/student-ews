@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel from "@/components/ui/TextLabel";
 import StudentProgressLookupTab from "@/components/training-progress/StudentProgressLookupTab";
 import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
@@ -32,15 +33,15 @@ export default function TrainingProgressPage() {
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center rounded-md bg-lime-100 px-2 py-0.5 text-xs font-bold text-lime-800">
+            <TextLabel className="inline-flex items-center text-xs font-bold text-lime-800">
               Phân hệ Học vụ & Đào tạo
-            </span>
+            </TextLabel>
             {scopeBadgeText && (
               <>
                 <span className="text-xs text-slate-400">•</span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <TextLabel className="inline-flex items-center text-xs font-medium text-emerald-700">
                   {scopeBadgeText}
-                </span>
+                </TextLabel>
               </>
             )}
           </div>

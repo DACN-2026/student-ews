@@ -22,6 +22,9 @@ model Student {
   sIsInClass          Boolean   @default(true) @map("s_is_in_class")
   sClassStudentId     String?   @map("s_class_student_id") @db.VarChar(64)
   sStudyProgramId     String?   @map("s_study_program_id") @db.VarChar(64)
+  // Optional, confirmed study schedule; administrative class/cohort stays unchanged.
+  progressCohortCode     String? @map("progress_cohort_code") @db.VarChar(64)
+  progressCohortFromYear String? @map("progress_cohort_from_year") @db.VarChar(16)
   createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt           DateTime? @map("deleted_at") @db.Timestamptz(6)
@@ -210,7 +213,7 @@ model StudentCourseOffering {
   createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  @@unique([studentId, academicTermId, sStudyUnitId, sScheduleStudyUnitId])
+  @@unique([studentId, academicTermId, sCurriculumId, sStudyUnitId, sScheduleStudyUnitId], map: "student_course_offerings_source_course_key")
   @@index([sCurriculumId, academicYearId, academicTermId], map: "student_course_offerings_course_idx")
   @@index([studentId, academicTermId], map: "student_course_offerings_student_term_idx")
   @@map("student_course_offerings")

@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "@/lib/api-client";
 import Tabs from "@/components/ui/Tabs";
@@ -1325,12 +1326,12 @@ export default function RbacPage() {
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                        <th className="py-3.5 px-4">Tên đăng nhập</th>
-                        <th className="py-3.5 px-4">Họ và tên</th>
-                        <th className="py-3.5 px-4">Vai trò</th>
-                        <th className="py-3.5 px-4">Phạm vi dữ liệu</th>
-                        <th className="py-3.5 px-4">Trạng thái</th>
-                        <th className="py-3.5 px-4 text-right">Thao tác</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Tên đăng nhập</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Họ và tên</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Vai trò</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Phạm vi dữ liệu</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Trạng thái</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1350,7 +1351,7 @@ export default function RbacPage() {
                                 <button
                                   type="button"
                                   onClick={() => setUserSearch("")}
-                                  className="text-xs text-[var(--color-primary)] hover:underline font-semibold cursor-pointer"
+                                  className={`table-text-action ${plainTextClasses("text-xs text-[var(--color-primary)] hover:underline font-semibold cursor-pointer")}`}
                                 >
                                   Xóa bộ lọc tìm kiếm
                                 </button>
@@ -1368,8 +1369,8 @@ export default function RbacPage() {
                           return (
                             <tr key={u.id} className="hover:bg-slate-50/70 transition-colors">
                               {/* Tên đăng nhập */}
-                              <td className="py-3.5 px-4">
-                                <div className="flex items-center gap-2.5">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
+                                <div className="flex items-center gap-2.5 justify-center">
                                   <div className="w-8 h-8 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] font-bold flex items-center justify-center text-xs shrink-0 border border-[var(--color-primary)]/20">
                                     {(u.fullName || u.username || "U")[0].toUpperCase()}
                                   </div>
@@ -1381,11 +1382,11 @@ export default function RbacPage() {
                               </td>
 
                               {/* Họ và tên */}
-                              <td className="py-3.5 px-4 font-semibold text-slate-900">{u.fullName}</td>
+                              <td className="py-3.5 px-4 font-semibold text-slate-900 text-center table-cell-center">{u.fullName}</td>
 
                               {/* Vai trò */}
-                              <td className="py-3.5 px-4">
-                                <div className="flex flex-col gap-1.5">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
+                                <div className="flex flex-col gap-1.5 items-center">
                                   {assignedRoleCodes.map((code: string) => {
                                     const meta = getRoleMetadata(code);
                                     return (
@@ -1399,13 +1400,13 @@ export default function RbacPage() {
                               </td>
 
                               {/* Phạm vi dữ liệu */}
-                              <td className="py-3.5 px-4">
-                                <div className="flex flex-col gap-0.5">
-                                  <span
-                                    className={`inline-flex items-center w-fit px-2.5 py-0.5 rounded-lg text-xs font-semibold border ${scope.badgeStyle}`}
+                              <td className="py-3.5 px-4 text-center table-cell-center">
+                                <div className="flex flex-col gap-0.5 items-center">
+                                  <TextLabel
+                                    className={`inline-flex items-center w-fit    text-xs font-semibold  ${scope.badgeStyle}`}
                                   >
                                     {scope.label}
-                                  </span>
+                                  </TextLabel>
                                   {scope.subLabel && (
                                     <span className="text-[10px] text-slate-400 pl-0.5">{scope.subLabel}</span>
                                   )}
@@ -1413,25 +1414,21 @@ export default function RbacPage() {
                               </td>
 
                               {/* Trạng thái */}
-                              <td className="py-3.5 px-4">
-                                <span
-                                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                              <td className="py-3.5 px-4 text-center table-cell-center">
+                                <TextLabel
+                                  className={`inline-flex items-center gap-1.5    text-[11px] font-semibold ${
                                     u.isActive !== false
-                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                      : "bg-slate-100 text-slate-500 border border-slate-200"
+                                      ? "bg-emerald-50 text-emerald-700  "
+                                      : "bg-slate-100 text-slate-500  "
                                   }`}
                                 >
-                                  <span
-                                    className={`w-1.5 h-1.5 rounded-full ${
-                                      u.isActive !== false ? "bg-emerald-500" : "bg-slate-400"
-                                    }`}
-                                  />
+
                                   {u.isActive !== false ? "Đang hoạt động" : "Tạm khóa"}
-                                </span>
+                                </TextLabel>
                               </td>
 
                               {/* Thao tác */}
-                              <td className="py-3.5 px-4 text-right">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1445,7 +1442,7 @@ export default function RbacPage() {
                                     });
                                     setShowEditUserModal(true);
                                   }}
-                                  className="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer"
+                                  className={`table-text-action ${plainTextClasses("px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer")}`}
                                 >
                                   Sửa tài khoản
                                 </button>
@@ -1528,12 +1525,12 @@ export default function RbacPage() {
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                        <th className="py-3.5 px-4">Tên vai trò</th>
-                        <th className="py-3.5 px-4">Mã hệ thống</th>
-                        <th className="py-3.5 px-4">Phạm vi dữ liệu</th>
-                        <th className="py-3.5 px-4">Số quyền truy cập</th>
-                        <th className="py-3.5 px-4">Trạng thái</th>
-                        <th className="py-3.5 px-4 text-right">Thao tác</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Tên vai trò</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Mã hệ thống</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Phạm vi dữ liệu</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Số quyền truy cập</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Trạng thái</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1545,35 +1542,35 @@ export default function RbacPage() {
 
                         return (
                           <tr key={r.id} className="hover:bg-slate-50/70 transition-colors">
-                            <td className="py-3.5 px-4">
+                            <td className="py-3.5 px-4 text-center table-cell-center">
                               <div className="font-bold text-slate-900 text-xs">{roleMeta.label || r.name}</div>
                               <div className="text-[11px] text-slate-500">{roleMeta.description}</div>
                             </td>
-                            <td className="py-3.5 px-4 font-mono font-bold text-slate-700">{r.code}</td>
-                            <td className="py-3.5 px-4">
-                              <span className={`px-2.5 py-1 rounded-lg font-semibold text-xs border ${scopeMeta.badgeStyle}`}>
+                            <td className="py-3.5 px-4 font-mono font-bold text-slate-700 text-center table-cell-center">{r.code}</td>
+                            <td className="py-3.5 px-4 text-center table-cell-center">
+                              <TextLabel className={`px-2.5   font-semibold text-xs  ${scopeMeta.badgeStyle}`}>
                                 {scopeMeta.label}
-                              </span>
+                              </TextLabel>
                             </td>
-                            <td className="py-3.5 px-4">
-                              <div className="flex items-center gap-1.5 flex-wrap">
+                            <td className="py-3.5 px-4 text-center table-cell-center">
+                              <div className="flex items-center gap-1.5 flex-wrap justify-center">
                                 <div>
                                   <span className="font-bold text-slate-900">{displayPermCount}</span>
                                   <span className="text-slate-400">/{permissions.length} quyền</span>
                                 </div>
                                 {isAdmin && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                  <TextLabel className="inline-flex items-center text-[10px] font-semibold text-purple-700">
                                     Toàn quyền
-                                  </span>
+                                  </TextLabel>
                                 )}
                               </div>
                             </td>
-                            <td className="py-3.5 px-4">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <td className="py-3.5 px-4 text-center table-cell-center">
+                              <TextLabel className="inline-flex items-center text-[11px] font-semibold text-emerald-800">
                                 Hoạt động
-                              </span>
+                              </TextLabel>
                             </td>
-                            <td className="py-3.5 px-4 text-right">
+                            <td className="py-3.5 px-4 text-center table-cell-center">
                               <button
                                 type="button"
                                 onClick={() => handleOpenRolePermissions(r)}
@@ -1622,12 +1619,12 @@ export default function RbacPage() {
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                        <th className="py-3.5 px-4">Cố vấn</th>
-                        <th className="py-3.5 px-4">Lớp phụ trách</th>
-                        <th className="py-3.5 px-4">Năm học</th>
-                        <th className="py-3.5 px-4">Học kỳ</th>
-                        <th className="py-3.5 px-4">Trạng thái</th>
-                        <th className="py-3.5 px-4 text-right">Thao tác</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Cố vấn</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Lớp phụ trách</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Năm học</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Học kỳ</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Trạng thái</th>
+                        <th className="py-3.5 px-4 text-center table-cell-center">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1651,7 +1648,7 @@ export default function RbacPage() {
                           return (
                             <tr key={adv.id} className="hover:bg-slate-50/70 transition-colors">
                               {/* Cố vấn */}
-                              <td className="py-3.5 px-4">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
                                 <div className="font-semibold text-slate-900 text-xs">
                                   {displayName}
                                 </div>
@@ -1661,7 +1658,7 @@ export default function RbacPage() {
                               </td>
 
                               {/* Lớp phụ trách */}
-                              <td className="py-3.5 px-4">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
                                 <div className="font-bold text-slate-900 text-xs">
                                   {displayClassCode}
                                 </div>
@@ -1671,43 +1668,43 @@ export default function RbacPage() {
                               </td>
 
                               {/* Năm học */}
-                              <td className="py-3.5 px-4 text-slate-700 font-medium">
+                              <td className="py-3.5 px-4 text-slate-700 font-medium text-center table-cell-center">
                                 {adv.academicYear || termInfo.yearName}
                               </td>
 
                               {/* Học kỳ */}
-                              <td className="py-3.5 px-4 text-slate-700 font-medium">
+                              <td className="py-3.5 px-4 text-slate-700 font-medium text-center table-cell-center">
                                 {adv.termCode || termInfo.termName}
                               </td>
 
                               {/* Trạng thái */}
-                              <td className="py-3.5 px-4">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
+                                <TextLabel className="inline-flex items-center text-[11px] font-semibold text-emerald-800">
                                   Đang hiệu lực
-                                </span>
+                                </TextLabel>
                               </td>
 
                               {/* Thao tác */}
-                              <td className="py-3.5 px-4 text-right">
-                                <div className="flex items-center justify-end gap-1.5">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
+                                <div className="flex items-center justify-center gap-1.5">
                                   <button
                                     type="button"
                                     onClick={() => setViewingAdvisor({ ...adv, matchedUser, matchedClass })}
-                                    className="px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                                    className={`table-text-action ${plainTextClasses("px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer")}`}
                                   >
                                     Xem chi tiết
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => handleOpenAssignModal(adv)}
-                                    className="px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors cursor-pointer"
+                                    className={`table-text-action ${plainTextClasses("px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors cursor-pointer")}`}
                                   >
                                     Thay đổi
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => setRevokeTarget({ ...adv, matchedUser, displayName, displayClassCode })}
-                                    className="px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors cursor-pointer"
+                                    className={`table-text-action ${plainTextClasses("px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors cursor-pointer")}`}
                                   >
                                     Thu hồi phân công
                                   </button>
@@ -1895,14 +1892,14 @@ export default function RbacPage() {
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-slate-900">{meta.label || r.name}</span>
                           {r.code === "class_advisor" && (
-                            <span className="text-[10px] px-2 py-0.2 rounded-full font-semibold bg-emerald-100 text-emerald-800">
+                            <TextLabel className="text-[10px] font-semibold text-emerald-800">
                               Phổ biến
-                            </span>
+                            </TextLabel>
                           )}
                           {r.code === "admin" && (
-                            <span className="text-[10px] px-2 py-0.2 rounded-full font-semibold bg-purple-100 text-purple-800">
+                            <TextLabel className="text-[10px] font-semibold text-purple-800">
                               Toàn quyền
-                            </span>
+                            </TextLabel>
                           )}
                         </div>
                         <p className="text-xs text-slate-600 mt-0.5">{meta.description || r.description}</p>
@@ -2154,10 +2151,10 @@ export default function RbacPage() {
 
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-slate-500">Trạng thái ban đầu:</span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <TextLabel className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800">
+
                     Đang hoạt động
-                  </span>
+                  </TextLabel>
                 </div>
               </div>
 
@@ -2351,9 +2348,9 @@ export default function RbacPage() {
                     <span className="text-xs font-bold text-purple-900">
                       Quản trị hệ thống luôn có toàn quyền
                     </span>
-                    <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+                    <TextLabel className="text-[10px] font-semibold text-purple-800">
                       Toàn quyền hệ thống (Superuser)
-                    </span>
+                    </TextLabel>
                   </div>
                   <p className="text-xs text-purple-700 mt-1 leading-relaxed">
                     Hệ thống SEWS luôn mặc định cấp toàn bộ quyền truy cập và dữ liệu cho vai trò Quản trị viên để bảo đảm an toàn vận hành. Phân quyền chi tiết dạng danh sách được hiển thị ở chế độ chỉ đọc để tra cứu và không áp dụng chỉnh sửa cho vai trò này.
@@ -2565,17 +2562,17 @@ export default function RbacPage() {
 
                       {/* Module Actions & Count */}
                       <div className="flex items-center gap-2 shrink-0">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
+                        <TextLabel
+                          className={`px-2.5   text-[11px] font-semibold  ${
                             selectedInGroup.length === groupCodes.length
-                              ? "bg-slate-100 text-slate-700 border-slate-200"
+                              ? "bg-slate-100 text-slate-700 "
                               : selectedInGroup.length > 0
-                              ? "bg-slate-100 text-slate-700 border-slate-200"
-                              : "bg-slate-50 text-slate-400 border-slate-200/60"
+                              ? "bg-slate-100 text-slate-700 "
+                              : "bg-slate-50 text-slate-400 "
                           }`}
                         >
                           {selectedInGroup.length}/{groupCodes.length} quyền
-                        </span>
+                        </TextLabel>
 
                         {!isEditingAdmin && (
                           <button
@@ -2641,11 +2638,11 @@ export default function RbacPage() {
                                       <span className="text-xs font-bold text-slate-900 leading-snug">
                                         {info.name}
                                       </span>
-                                      <span
-                                        className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase shrink-0 border ${info.badgeStyle}`}
+                                      <TextLabel
+                                        className={`px-1.5   text-[9px] font-mono font-bold uppercase shrink-0  ${info.badgeStyle}`}
                                       >
                                         {info.action}
-                                      </span>
+                                      </TextLabel>
                                     </div>
 
                                     {/* Secondary Details: code & technical hints */}
@@ -2654,9 +2651,9 @@ export default function RbacPage() {
                                         {info.code}
                                       </span>
                                       {permissionViewMode === "advanced" && (
-                                        <span className="text-[9px] text-slate-400 font-sans bg-slate-100 px-1 py-0.2 rounded">
+                                        <TextLabel className="text-[9px] text-slate-400 font-sans">
                                           {info.actionLabel}
-                                        </span>
+                                        </TextLabel>
                                       )}
                                     </div>
                                   </div>
@@ -2683,14 +2680,14 @@ export default function RbacPage() {
                 </span>
 
                 {isEditingAdmin ? (
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                  <TextLabel className="text-[11px] font-semibold text-purple-700">
                     Mặc định toàn quyền
-                  </span>
+                  </TextLabel>
                 ) : hasUnsavedChanges ? (
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1.5 animate-pulse">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                  <TextLabel className="text-[11px] font-semibold text-amber-700 flex items-center gap-1.5 animate-pulse">
+
                     Có thay đổi chưa lưu
-                  </span>
+                  </TextLabel>
                 ) : (
                   <span className="text-[11px] text-slate-400">
                     (Chưa có thay đổi)
@@ -2919,9 +2916,9 @@ export default function RbacPage() {
 
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500">Trạng thái:</span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                <TextLabel className="inline-flex items-center text-[11px] font-semibold text-emerald-800">
                   Đang hiệu lực
-                </span>
+                </TextLabel>
               </div>
             </div>
 

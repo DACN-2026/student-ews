@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Search } from "lucide-react";
+import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Scatter,
@@ -13,8 +13,9 @@ import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
 import { apiFetch } from "@/lib/api-client";
 import StudentProgressDetail from "@/components/training-progress/StudentProgressDetail";
+import { buildStudentWarningTimeline, formatHistoryDate } from "@/lib/warning-history";
 
-type ActiveTab = "overview" | "conduct" | "grades" | "decisions" | "fee_policies" | "registrations" | "training_plan" | "warnings";
+type ActiveTab = "overview" | "conduct" | "grades" | "decisions" | "fee_policies" | "registrations" | "warnings";
 
 type ConductClassification = "Xuất sắc" | "Tốt" | "Khá" | "Trung bình" | "Yếu" | "Kém";
 
@@ -103,7 +104,6 @@ export default function StudentDetailPage() {
   const [decisionsData, setDecisionsData] = useState<ApiData[]>([]);
   const [feePoliciesData, setFeePoliciesData] = useState<ApiData[]>([]);
   const [registrationsData, setRegistrationsData] = useState<ApiData[]>([]);
-  const [trainingPlanData, setTrainingPlanData] = useState<ApiData[]>([]);
   const [dashboardData, setDashboardData] = useState<ApiData>(null);
   const [conductData, setConductData] = useState<ConductResponse | null>(null);
   const [loadIssues, setLoadIssues] = useState<string[]>([]);
@@ -120,53 +120,6 @@ export default function StudentDetailPage() {
     decisionNumber: "",
   });
   const [feeSubmitting, setFeeSubmitting] = useState(false);
-
-  // Transcript filter and search states
-  const [transcriptSearch, setTranscriptSearch] = useState("");
-  const [transcriptTermFilter, setTranscriptTermFilter] = useState("all");
-  const [transcriptStatusFilter, setTranscriptStatusFilter] = useState<"all" | "passed" | "failed" | "pending">("all");
-
-  const passedGrades = useMemo(() => gradesData.filter((g: ApiData) => g.isPassed), [gradesData]);
-  const failedGrades = useMemo(
-    () =>
-      gradesData.filter(
-        (g: ApiData) =>
-          !g.isPassed &&
-          g.scoreStatus === "graded" &&
-          !g.notScore &&
-          (g.score10 != null || g.score4 != null || g.letterGrade),
-      ),
-    [gradesData],
-  );
-  const pendingGrades = useMemo(
-    () => gradesData.filter((g: ApiData) => !g.isPassed && !failedGrades.includes(g)),
-    [gradesData, failedGrades],
-  );
-
-  const uniqueTerms = useMemo(() => {
-    return Array.from(
-      new Set(gradesData.map((g: ApiData) => `${g.academicYear} • ${g.termCode}`)),
-    ).filter(Boolean) as string[];
-  }, [gradesData]);
-
-  const filteredGrades = useMemo(() => {
-    return gradesData.filter((g: ApiData) => {
-      if (transcriptTermFilter !== "all") {
-        const termKey = `${g.academicYear} • ${g.termCode}`;
-        if (termKey !== transcriptTermFilter) return false;
-      }
-      if (transcriptStatusFilter === "passed" && !g.isPassed) return false;
-      if (transcriptStatusFilter === "failed" && !failedGrades.includes(g)) return false;
-      if (transcriptStatusFilter === "pending" && !pendingGrades.includes(g)) return false;
-      if (transcriptSearch.trim()) {
-        const q = transcriptSearch.toLowerCase();
-        const matchCode = String(g.courseCode || "").toLowerCase().includes(q);
-        const matchName = String(g.courseName || "").toLowerCase().includes(q);
-        if (!matchCode && !matchName) return false;
-      }
-      return true;
-    });
-  }, [gradesData, transcriptTermFilter, transcriptStatusFilter, transcriptSearch, failedGrades, pendingGrades]);
 
   const canReadWarnings = can("academic_warning.read");
 
@@ -246,13 +199,6 @@ export default function StudentDetailPage() {
           setActiveInterventionCase(null);
         }
 
-        if (sJson.program?.id) {
-          const planRes = await apiFetch(`/api/v1/training-programs/${sJson.program.id}/courses`);
-          if (planRes.ok) {
-            const planJson = await planRes.json();
-            setTrainingPlanData(planJson.items || []);
-          } else issues.push("khung chương trình đào tạo");
-        }
         if (dRes.ok) {
           const dJson = await dRes.json();
           setDashboardData(dJson);
@@ -388,10 +334,6 @@ export default function StudentDetailPage() {
   const progressStatus = dashboardData?.completion?.available
     ? scheduleLabel(dashboardData.completion.scheduleStatus)
     : "Chưa có kỳ đánh giá";
-  const passedCourseCodes = new Set(
-    gradesData.filter((grade: ApiData) => grade.isPassed).map((grade: ApiData) => grade.courseCode),
-  );
-
   // GPA Trend data from summaries
   const gpaTrend = (summariesData?.terms || [])
     .filter((t: ApiData) => t.gpa4 != null || t.cumulativeGpa4 != null)
@@ -404,18 +346,12 @@ export default function StudentDetailPage() {
     }));
 
   const unifiedTimeline = [
-    ...(warningData?.warningHistory || []).map((item: ApiData) => ({
-      id: `warning-${item.id}`,
-      date: item.createdAt,
-      kind: "Cảnh báo",
-      title: item.maxSeverity === "high" ? "Ghi nhận cảnh báo mức Đỏ" : "Ghi nhận cảnh báo mức Vàng",
-      detail: `${item.termCode || "Học kỳ"}${item.academicYear ? ` ${item.academicYear}` : ""} · ${item.reasonCount || 0} nguyên nhân · GPA kỳ ${item.termGpa4 ?? "—"} · GPA tích lũy ${item.cumulativeGpa4 ?? "—"}`,
-      color: item.maxSeverity === "high" ? "bg-red-500" : "bg-amber-500",
-    })),
+    ...buildStudentWarningTimeline(warningData?.interventionHistory || [], warningData?.warningHistory || []),
     ...decisionsData.map((item: ApiData) => ({
       id: `decision-${item.id}`,
       date: item.signDate || item.createdAt,
       kind: "Quyết định",
+      actorName: "",
       title: item.decisionName || "Quyết định học vụ",
       detail: `Số ${item.decisionNumber || "chưa cập nhật"}${item.termId ? ` · ${item.termId} ${item.yearStudy || ""}` : ""}`,
       color: item.isAcademicWarning ? "bg-purple-500" : "bg-blue-500",
@@ -424,11 +360,12 @@ export default function StudentDetailPage() {
       id: `action-${item.id}`,
       date: item.createdAt,
       kind: "Hỗ trợ",
+      actorName: "",
       title: `${item.actionType} · ${item.status}`,
       detail: `${item.actorName || "Cán bộ phụ trách"}: ${item.note}`,
       color: item.status === "RESOLVED" ? "bg-emerald-500" : item.status === "ESCALATED" ? "bg-red-500" : "bg-sky-500",
     })),
-  ].filter((item) => item.date).sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
+  ].filter((item) => item.date).sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime() || right.id.localeCompare(left.id));
   const interventionStatusLabels: Record<string, string> = {
     OPEN: "Chưa xử lý",
     IN_PROGRESS: "Đang xử lý",
@@ -448,8 +385,6 @@ export default function StudentDetailPage() {
       ? "Nguy cơ cao"
       : warningData?.presentationState === "MONITORING"
         ? "Cần theo dõi"
-        : warningData?.presentationState === "PARTIAL_NO_RISK"
-          ? "Đã đánh giá một phần"
         : warningData?.presentationState === "INSUFFICIENT_DATA"
           ? "Chưa đủ dữ liệu"
           : "Bình thường";
@@ -474,9 +409,9 @@ export default function StudentDetailPage() {
               {profileExporting ? "Đang tạo PDF..." : "Xuất PDF hồ sơ"}
             </button>
           )}
-          <span className="text-xs font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200">
+          <TextLabel className="text-xs font-mono text-slate-700">
             MSSV: <strong>{sCode}</strong>
-          </span>
+          </TextLabel>
         </div>
       </div>
 
@@ -555,19 +490,18 @@ export default function StudentDetailPage() {
       )}
       {profileExportError && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-800" role="alert">{profileExportError}</div>}
 
-      {/* 6 Nav Tabs */}
+      {/* Profile tabs */}
       <div className="flex items-center space-x-1 border-b border-[var(--color-border)] overflow-x-auto scrollbar-hide">
         {[
           { id: "overview", label: "1. Tổng quan" },
           { id: "conduct", label: "2. Rèn luyện" },
-          { id: "grades", label: "3. Điểm học phần" },
+          { id: "grades", label: "3. Bảng điểm" },
           { id: "decisions", label: "4. Quyết định" },
           { id: "fee_policies", label: "5. Chính sách học phí" },
           { id: "registrations", label: "6. Đăng ký học phần" },
-          { id: "training_plan", label: "7. Kế hoạch đào tạo" },
           ...(canReadWarnings ? [{
             id: "warnings",
-            label: "8. Cảnh báo học vụ",
+            label: "7. Cảnh báo học vụ",
             badge: (warningData?.warningHistory?.length || (warningData?.warningLevel && warningData.warningLevel !== "green")) ? "!" : undefined,
           }] : []),
         ].map((t) => (
@@ -583,9 +517,9 @@ export default function StudentDetailPage() {
           >
             <span>{t.label}</span>
             {t.badge && (
-              <span className="rounded-full bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 leading-none">
+              <TextLabel className="text-red-700 text-[10px] font-bold leading-none">
                 {t.badge}
-              </span>
+              </TextLabel>
             )}
           </button>
         ))}
@@ -714,9 +648,9 @@ export default function StudentDetailPage() {
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">Thông tin đào tạo đối chiếu từ CTĐT và bảng điểm</p>
                 </div>
-                <span className="self-start rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-mono font-semibold text-slate-700">
+                <TextLabel className="self-start text-[11px] font-mono font-semibold text-slate-700">
                   {sProgram}
-                </span>
+                </TextLabel>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
@@ -824,13 +758,13 @@ export default function StudentDetailPage() {
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {latestConduct?.classification && (
-                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${conductClassificationStyle(latestConduct.classification)}`}>
+                  <TextLabel className={`rounded-full   text-[11px] font-bold ${conductClassificationStyle(latestConduct.classification)}`}>
                     {latestConduct.classification}
-                  </span>
+                  </TextLabel>
                 )}
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${conductApprovalStyle(latestConduct?.approval.code || "unknown")}`}>
+                <TextLabel className={`rounded-full   text-[11px] font-bold ${conductApprovalStyle(latestConduct?.approval.code || "unknown")}`}>
                   {latestConduct?.approval.label || "Chưa có dữ liệu"}
-                </span>
+                </TextLabel>
               </div>
 
               <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-lime-200 pt-4 text-xs">
@@ -856,22 +790,22 @@ export default function StudentDetailPage() {
                 <caption className="sr-only">Điểm rèn luyện của sinh viên theo từng học kỳ</caption>
                 <thead>
                   <tr className="bg-slate-50 text-[10px] font-semibold uppercase text-slate-500">
-                    <th scope="col" className="px-4 py-3">Học kỳ</th>
-                    <th scope="col" className="px-4 py-3">Tự đánh giá</th>
-                    <th scope="col" className="px-4 py-3">Lớp</th>
-                    <th scope="col" className="px-4 py-3">Khoa</th>
-                    <th scope="col" className="px-4 py-3">Công nhận</th>
-                    <th scope="col" className="px-4 py-3">Xếp loại</th>
-                    <th scope="col" className="px-4 py-3">Trạng thái</th>
+                    <th scope="col" className="px-4 py-3 text-center table-cell-center">Học kỳ</th>
+                    <th scope="col" className="px-4 py-3 text-center table-cell-center">Tự đánh giá</th>
+                    <th scope="col" className="px-4 py-3 text-center table-cell-center">Lớp</th>
+                    <th scope="col" className="px-4 py-3 text-center table-cell-center">Khoa</th>
+                    <th scope="col" className="px-4 py-3 text-center table-cell-center">Công nhận</th>
+                    <th scope="col" className="px-4 py-3 text-center table-cell-center">Xếp loại</th>
+                    <th scope="col" className="px-4 py-3 text-center table-cell-center">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {conductItems.map((record) => (
                     <tr key={record.id} className="hover:bg-slate-50/70">
-                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-800">
-                        <div className="flex items-center gap-2">
+                      <td className="whitespace-nowrap px-4 py-3 font-semibold text-slate-800 text-center table-cell-center">
+                        <div className="flex items-center gap-2 justify-center">
                           <span>{conductPeriodLabel(record)}</span>
-                          {record.isSummer && <span className="rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">Hè</span>}
+                          {record.isSummer && <TextLabel className="text-[10px] font-bold text-amber-800">Hè</TextLabel>}
                         </div>
                         {record.isSummer && (
                           <p className="mt-1 max-w-sm whitespace-normal text-[10px] font-normal leading-4 text-amber-700">
@@ -879,21 +813,21 @@ export default function StudentDetailPage() {
                           </p>
                         )}
                       </td>
-                      <td className="px-4 py-3 font-mono">{record.scores.self ?? "—"}</td>
-                      <td className="px-4 py-3 font-mono">{record.scores.class ?? "—"}</td>
-                      <td className="px-4 py-3 font-mono">{record.scores.department ?? "—"}</td>
-                      <td className="px-4 py-3 font-mono font-bold text-slate-900">{record.isSummer ? record.scores.sourceTemporary ?? "—" : record.scores.recognized ?? "—"}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 font-mono text-center table-cell-center">{record.scores.self ?? "—"}</td>
+                      <td className="px-4 py-3 font-mono text-center table-cell-center">{record.scores.class ?? "—"}</td>
+                      <td className="px-4 py-3 font-mono text-center table-cell-center">{record.scores.department ?? "—"}</td>
+                      <td className="px-4 py-3 font-mono font-bold text-slate-900 text-center table-cell-center">{record.isSummer ? record.scores.sourceTemporary ?? "—" : record.scores.recognized ?? "—"}</td>
+                      <td className="px-4 py-3 text-center table-cell-center">
                         {record.classification ? (
-                          <span className={`whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-bold ${conductClassificationStyle(record.classification)}`}>
+                          <TextLabel className={`whitespace-nowrap    text-[10px] font-bold ${conductClassificationStyle(record.classification)}`}>
                             {record.classification}
-                          </span>
+                          </TextLabel>
                         ) : "—"}
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`whitespace-nowrap rounded-full px-2 py-1 text-[10px] font-bold ${conductApprovalStyle(record.approval.code)}`}>
+                      <td className="px-4 py-3 text-center table-cell-center">
+                        <TextLabel className={`whitespace-nowrap    text-[10px] font-bold ${conductApprovalStyle(record.approval.code)}`}>
                           {record.approval.label}
-                        </span>
+                        </TextLabel>
                       </td>
                     </tr>
                   ))}
@@ -909,238 +843,6 @@ export default function StudentDetailPage() {
             </div>
           </div>
         </section>
-      )}
-
-      {/* 2. Grades Tab */}
-      {activeTab === "grades" && (
-        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-base font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                Bảng điểm Chi tiết các Học phần
-              </h3>
-              <p className="text-xs text-slate-500">Tất cả các môn đã đăng ký, điểm thi hệ 10, hệ 4 và điểm chữ</p>
-            </div>
-            <a
-              href={`/api/v1/students/${studentId}/grades/export`}
-              download
-              className="px-3.5 py-2 bg-[var(--color-primary)] hover:bg-[#81b234] text-white text-xs font-semibold rounded-xl transition-colors shadow-xs"
-            >
-              Xuất Bảng điểm →
-            </a>
-          </div>
-
-          {(summariesData?.conductRecords || []).length > 0 && (
-            <div className="rounded-xl border border-slate-200 overflow-hidden">
-              <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-                <h4 className="text-sm font-bold text-slate-900">Điểm rèn luyện đã ghi nhận</h4>
-                <p className="text-[11px] text-slate-500 mt-0.5">Dữ liệu nguồn theo lớp và học kỳ; xem trạng thái duyệt ở từng bản ghi</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="text-slate-500 uppercase font-semibold text-[10px] border-b border-slate-100">
-                      <th className="py-2.5 px-3">Năm học</th>
-                      <th className="py-2.5 px-3">Học kỳ</th>
-                      <th className="py-2.5 px-3">SV tự chấm</th>
-                      <th className="py-2.5 px-3">Lớp duyệt</th>
-                      <th className="py-2.5 px-3">Khoa duyệt</th>
-                      <th className="py-2.5 px-3">Điểm cuối</th>
-                      <th className="py-2.5 px-3">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {summariesData.conductRecords.map((record: ApiData) => (
-                      <tr key={record.id}>
-                        <td className="py-2.5 px-3 font-medium text-slate-800">{record.academicYear || "—"}</td>
-                        <td className="py-2.5 px-3">{record.termCode || "—"}</td>
-                        <td className="py-2.5 px-3 font-mono">{record.studentScore ?? "—"}</td>
-                        <td className="py-2.5 px-3 font-mono">{record.classScore ?? "—"}</td>
-                        <td className="py-2.5 px-3 font-mono">{record.departmentScore ?? "—"}</td>
-                        <td className="py-2.5 px-3 font-mono font-bold text-slate-900">{record.finalScore ?? "—"}</td>
-                        <td className="py-2.5 px-3 text-slate-500">{record.statusId || "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {(summariesData?.unscopedGrades || []).length > 0 && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
-              <h4 className="text-sm font-bold text-amber-900">
-                Điểm chưa xác định học kỳ ({summariesData.unscopedGrades.length})
-              </h4>
-              <p className="text-[11px] text-amber-700 mt-1">
-                Nguồn chưa cung cấp năm học hoặc học kỳ, nên các dòng này được bảo toàn nhưng không dùng để tính GPA.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {summariesData.unscopedGrades.map((grade: ApiData) => (
-                  <span key={grade.id} className="rounded-lg bg-white border border-amber-200 px-2.5 py-1.5 text-xs text-amber-950">
-                    <strong>{grade.courseCode || "Chưa có mã HP"}</strong>
-                    {grade.courseName ? ` · ${grade.courseName}` : ""}
-                    {grade.credits != null ? ` · ${grade.credits} TC` : ""}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 4 Thẻ số liệu tổng quan bảng điểm đồng bộ với Dự kiến tốt nghiệp */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center">
-              <p className="text-[10px] font-bold uppercase text-slate-500">Tổng môn học</p>
-              <p className="font-mono text-xl font-extrabold text-slate-900">{gradesData.length}</p>
-            </div>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 text-center">
-              <p className="text-[10px] font-bold uppercase text-emerald-700">Học phần đạt (Qua môn)</p>
-              <p className="font-mono text-xl font-extrabold text-emerald-800">{passedGrades.length}</p>
-            </div>
-            <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-3 text-center">
-              <p className="text-[10px] font-bold uppercase text-rose-700">Môn rớt (Điểm F)</p>
-              <p className="font-mono text-xl font-extrabold text-rose-800">{failedGrades.length}</p>
-            </div>
-            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3 text-center">
-              <p className="text-[10px] font-bold uppercase text-amber-700">Chưa có điểm</p>
-              <p className="font-mono text-xl font-extrabold text-amber-800">{pendingGrades.length}</p>
-            </div>
-          </div>
-
-          {/* Thanh tìm kiếm môn học & Lọc học kỳ, kết quả */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search size={14} className="pointer-events-none absolute left-3 top-2.5 text-slate-400" />
-              <input
-                value={transcriptSearch}
-                onChange={(e) => setTranscriptSearch(e.target.value)}
-                placeholder="Tìm tên môn học hoặc mã môn..."
-                className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-xs outline-none focus:border-lime-500 focus:ring-2 focus:ring-lime-100"
-              />
-            </div>
-            <select
-              value={transcriptTermFilter}
-              onChange={(e) => setTranscriptTermFilter(e.target.value)}
-              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-lime-500"
-            >
-              <option value="all">Tất cả học kỳ</option>
-              {uniqueTerms.map((term: string) => (
-                <option key={term} value={term}>
-                  {term}
-                </option>
-              ))}
-            </select>
-            <select
-              value={transcriptStatusFilter}
-              onChange={(e) => setTranscriptStatusFilter(e.target.value as "all" | "passed" | "failed" | "pending")}
-              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-lime-500"
-            >
-              <option value="all">Tất cả kết quả</option>
-              <option value="failed">Chỉ xem môn rớt (F)</option>
-              <option value="pending">Chỉ xem môn chưa có điểm</option>
-              <option value="passed">Chỉ xem môn đã đạt</option>
-            </select>
-          </div>
-
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase font-semibold text-[10px]">
-                  <th className="py-2.5 px-3">Mã HP</th>
-                  <th className="py-2.5 px-3">Tên học phần</th>
-                  <th className="py-2.5 px-2 text-center">Số TC</th>
-                  <th className="py-2.5 px-3">Học kỳ</th>
-                  <th className="py-2.5 px-2 text-center">Điểm 10</th>
-                  <th className="py-2.5 px-2 text-center">Điểm 4</th>
-                  <th className="py-2.5 px-2 text-center">Điểm chữ</th>
-                  <th className="py-2.5 px-3 text-right">Kết quả</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredGrades.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400">
-                      Không tìm thấy môn học nào phù hợp bộ lọc.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredGrades.map((g: ApiData, i: number) => {
-                    const isFail = failedGrades.includes(g);
-                    const isPendingGrade = pendingGrades.includes(g);
-
-                    return (
-                      <tr
-                        key={g.id || i}
-                        className={
-                          isFail
-                            ? "bg-rose-50/40 hover:bg-rose-50/60"
-                            : isPendingGrade
-                              ? "bg-amber-50/30 hover:bg-amber-50/50"
-                              : "hover:bg-slate-50"
-                        }
-                      >
-                        <td className="py-2.5 px-3 font-mono font-bold text-slate-900 whitespace-nowrap">{g.courseCode}</td>
-                        <td className="py-2.5 px-3 font-medium text-slate-800">{g.courseName}</td>
-                        <td className="py-2.5 px-2 text-center font-mono font-semibold text-slate-700">{g.credits}</td>
-                        <td className="py-2.5 px-3 text-slate-500 whitespace-nowrap">
-                          <span>{g.termCode} ({g.academicYear})</span>
-                          {g.isSummer && (
-                            <span
-                              className="ml-2 inline-flex rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
-                              title={g.rankingMainTerm
-                                ? `Kết quả dùng khi xếp hạng cùng ${g.rankingMainTerm.termCode} ${g.rankingMainTerm.academicYear}`
-                                : "Kỳ phụ; chưa xác định kỳ chính ngay trước"}
-                            >
-                              Hè
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-2 text-center font-mono font-bold">
-                          {g.score10 != null ? Number(g.score10).toFixed(1) : "—"}
-                        </td>
-                        <td className="py-2.5 px-2 text-center font-mono font-bold">
-                          {g.score4 != null ? Number(g.score4).toFixed(1) : "—"}
-                        </td>
-                        <td className="py-2.5 px-2 text-center font-mono font-extrabold">
-                          {g.letterGrade ? (
-                            <span
-                              className={
-                                g.letterGrade === "F"
-                                  ? "text-rose-700"
-                                  : g.letterGrade.startsWith("A")
-                                    ? "text-emerald-700"
-                                    : "text-slate-800"
-                              }
-                            >
-                              {g.letterGrade}
-                            </span>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td className="py-2.5 px-3 text-right">
-                          {isFail ? (
-                            <span className="inline-flex rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                              Không đạt (F)
-                            </span>
-                          ) : isPendingGrade ? (
-                            <span className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                              Chưa có điểm
-                            </span>
-                          ) : (
-                            <span className="inline-flex rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                              Đạt
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
       )}
 
       {/* 3. Decisions Tab */}
@@ -1166,12 +868,13 @@ export default function StudentDetailPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="bg-[var(--color-surface2)]/50 border-b border-[var(--color-border)] text-slate-500 uppercase font-semibold text-[11px]">
-                  <th className="py-3 px-3">Số quyết định</th>
-                  <th className="py-3 px-3">Tên quyết định</th>
-                  <th className="py-3 px-3">Ngày ký</th>
-                  <th className="py-3 px-3">Học kỳ áp dụng</th>
-                  <th className="py-3 px-3">Cảnh báo học vụ</th>
-                  <th className="py-3 px-3">Nội dung tóm tắt</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Số quyết định</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Tên quyết định</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Ngày ký</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Học kỳ áp dụng</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Cảnh báo học vụ</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Nội dung tóm tắt</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1184,27 +887,27 @@ export default function StudentDetailPage() {
                 ) : (
                   decisionsData.map((d: ApiData) => (
                     <tr key={d.id} className="hover:bg-slate-50">
-                      <td className="py-3 px-3 font-mono font-bold text-slate-800">{d.decisionNumber || d.sDecisionNumber}</td>
-                      <td className="py-3 px-3 font-medium text-slate-900">{d.decisionName || d.sDecisionName}</td>
-                      <td className="py-3 px-3 text-slate-500">{d.signDate ? new Date(d.signDate).toLocaleDateString("vi-VN") : "—"}</td>
-                      <td className="py-3 px-3 text-slate-500">{d.termCode || d.sTermId}</td>
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 font-mono font-bold text-slate-800 text-center table-cell-center">{d.decisionNumber || d.sDecisionNumber}</td>
+                      <td className="py-3 px-3 font-medium text-slate-900 text-center table-cell-center">{d.decisionName || d.sDecisionName}</td>
+                      <td className="py-3 px-3 text-slate-500 text-center table-cell-center">{d.signDate ? new Date(d.signDate).toLocaleDateString("vi-VN") : "—"}</td>
+                      <td className="py-3 px-3 text-slate-500 text-center table-cell-center">{d.termCode || d.sTermId}</td>
+                      <td className="py-3 px-3 text-center table-cell-center">
                         {d.isAcademicWarning ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-red-100 text-red-700">
+                          <TextLabel className="text-[11px] font-semibold text-red-700">
                             Cảnh báo học vụ
-                          </span>
+                          </TextLabel>
                         ) : (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-600">
+                          <TextLabel className="text-[11px] font-semibold text-slate-600">
                             Khác
-                          </span>
+                          </TextLabel>
                         )}
                       </td>
-                      <td className="py-3 px-3 text-slate-600 max-w-xs truncate">{d.reason || d.fullText || d.sFullText || "—"}</td>
-                      <td className="py-3 px-3 text-right">
+                      <td className="py-3 px-3 text-slate-600 max-w-xs truncate text-center table-cell-center">{d.reason || d.fullText || d.sFullText || "—"}</td>
+                      <td className="py-3 px-3 text-center table-cell-center">
                         <button
                           type="button"
                           onClick={() => setSelectedDecisionDetail(d)}
-                          className="px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                          className={`table-text-action ${plainTextClasses("px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer")}`}
                         >
                           Toàn văn →
                         </button>
@@ -1250,10 +953,10 @@ export default function StudentDetailPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="bg-[var(--color-surface2)]/50 border-b border-[var(--color-border)] text-slate-500 uppercase font-semibold text-[11px]">
-                  <th className="py-3 px-3">Tên chính sách / Đối tượng</th>
-                  <th className="py-3 px-3">Tỷ lệ miễn giảm</th>
-                  <th className="py-3 px-3">Năm học / Học kỳ</th>
-                  <th className="py-3 px-3">Số quyết định</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Tên chính sách / Đối tượng</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Tỷ lệ miễn giảm</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Năm học / Học kỳ</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Số quyết định</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1266,14 +969,14 @@ export default function StudentDetailPage() {
                 ) : (
                   feePoliciesData.map((f: ApiData) => (
                     <tr key={f.id} className="hover:bg-slate-50">
-                      <td className="py-3 px-3 font-semibold text-slate-900">{f.feeObjectDicName || f.sFeeObjectDicName}</td>
-                      <td className="py-3 px-3">
-                        <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold font-mono">
+                      <td className="py-3 px-3 font-semibold text-slate-900 text-center table-cell-center">{f.feeObjectDicName || f.sFeeObjectDicName}</td>
+                      <td className="py-3 px-3 text-center table-cell-center">
+                        <TextLabel className="text-emerald-800 font-bold font-mono">
                           {f.coefficientPercent || f.sCoefficient}%
-                        </span>
+                        </TextLabel>
                       </td>
-                      <td className="py-3 px-3 text-slate-500">{f.termCode || f.sTermId} ({f.academicYear || f.sYearStudy})</td>
-                      <td className="py-3 px-3 font-mono font-medium text-slate-800">{f.decisionNumber || f.sDecisionNumber || "—"}</td>
+                      <td className="py-3 px-3 text-slate-500 text-center table-cell-center">{f.termCode || f.sTermId} ({f.academicYear || f.sYearStudy})</td>
+                      <td className="py-3 px-3 font-mono font-medium text-slate-800 text-center table-cell-center">{f.decisionNumber || f.sDecisionNumber || "—"}</td>
                     </tr>
                   ))
                 )}
@@ -1297,11 +1000,11 @@ export default function StudentDetailPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="bg-[var(--color-surface2)]/50 border-b border-[var(--color-border)] text-slate-500 uppercase font-semibold text-[11px]">
-                  <th className="py-3 px-3">Mã học phần</th>
-                  <th className="py-3 px-3">Tên môn học</th>
-                  <th className="py-3 px-3">Số tín chỉ</th>
-                  <th className="py-3 px-3">Năm học / Học kỳ</th>
-                  <th className="py-3 px-3">Thời gian ghi nhận</th>
+                  <th className="py-3 px-3 text-left table-cell-left">Mã học phần</th>
+                  <th className="py-3 px-3 text-left table-cell-left">Tên môn học</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Số tín chỉ</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Năm học / Học kỳ</th>
+                  <th className="py-3 px-3 text-center table-cell-center">Thời gian ghi nhận</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1314,14 +1017,14 @@ export default function StudentDetailPage() {
                 ) : (
                   registrationsData.map((r: ApiData) => (
                     <tr key={r.id} className="hover:bg-slate-50">
-                      <td className="py-3 px-3 font-mono font-bold text-slate-800">{r.courseCode}</td>
-                      <td className="py-3 px-3 font-medium text-slate-900">{r.courseName}</td>
-                      <td className="py-3 px-3 font-mono">{r.credits} TC</td>
-                      <td className="py-3 px-3 text-slate-500">
+                      <td className="py-3 px-3 font-mono font-bold text-slate-800 text-left table-cell-left">{r.courseCode}</td>
+                      <td className="py-3 px-3 font-medium text-slate-900 text-left table-cell-left">{r.courseName}</td>
+                      <td className="py-3 px-3 font-mono text-center table-cell-center">{r.credits} TC</td>
+                      <td className="py-3 px-3 text-slate-500 text-center table-cell-center">
                         {r.termCode && r.academicYear ? `${r.termCode} • ${r.academicYear}` : "—"}
-                        {r.isSummer && <span className="ml-2 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">Kỳ phụ</span>}
+                        {r.isSummer && <TextLabel className="ml-2 text-[10px] font-bold text-amber-800">Kỳ phụ</TextLabel>}
                       </td>
-                      <td className="py-3 px-3 text-slate-400">{r.createdAt ? new Date(r.createdAt).toLocaleDateString("vi-VN") : "—"}</td>
+                      <td className="py-3 px-3 text-slate-400 text-center table-cell-center">{r.createdAt ? new Date(r.createdAt).toLocaleDateString("vi-VN") : "—"}</td>
                     </tr>
                   ))
                 )}
@@ -1331,12 +1034,13 @@ export default function StudentDetailPage() {
         </div>
       )}
 
-      {/* 6. Training plan tab */}
-      {activeTab === "training_plan" && (
+      {/* Semester transcript tab */}
+      {activeTab === "grades" && (
         <div className="space-y-5">
           <StudentProgressDetail
             studentId={studentId}
             showStudentHeader={false}
+            view="transcript"
           />
         </div>
       )}
@@ -1350,8 +1054,6 @@ export default function StudentDetailPage() {
               ? "bg-red-50/80 border-red-200"
               : warningData?.warningLevel === "yellow"
               ? "bg-amber-50/80 border-amber-200"
-              : warningData?.warningLevel === "partial"
-              ? "bg-blue-50/80 border-blue-200"
               : warningData?.warningLevel === "insufficient"
               ? "bg-slate-50/80 border-slate-200"
               : "bg-emerald-50/80 border-emerald-200"
@@ -1368,8 +1070,6 @@ export default function StudentDetailPage() {
                     ? "Sinh viên có mức nguy cơ cao"
                     : warningData?.presentationState === "MONITORING"
                     ? "Sinh viên cần được theo dõi"
-                    : warningData?.presentationState === "PARTIAL_NO_RISK"
-                    ? "Chưa ghi nhận nguy cơ trong các tiêu chí đã đánh giá"
                     : warningData?.presentationState === "INSUFFICIENT_DATA"
                     ? "Chưa đủ dữ liệu để kết luận trạng thái cảnh báo"
                     : "Chưa ghi nhận tín hiệu cảnh báo theo tiêu chí hiện tại"}
@@ -1381,11 +1081,9 @@ export default function StudentDetailPage() {
                     ? "Cần khẩn trương liên hệ, tư vấn lộ trình học tập và ghi nhận hành động hỗ trợ."
                     : warningData?.presentationState === "MONITORING"
                     ? "Sinh viên thiếu 4–11 tín chỉ so với tiến độ CTĐT hoặc đang tiến gần ngưỡng Điều 18; cố vấn học tập cần theo dõi và hỗ trợ."
-                    : warningData?.presentationState === "PARTIAL_NO_RISK"
-                    ? "Các tiêu chí có đủ dữ liệu chưa ghi nhận nguy cơ; tiêu chí còn thiếu dữ liệu không được suy diễn là bình thường."
                     : warningData?.presentationState === "INSUFFICIENT_DATA"
                     ? "Chưa đủ dữ liệu điểm hoặc cấu hình CTĐT để kết luận; trạng thái này không được xem là bình thường."
-                    : "Sinh viên thiếu không quá 3 tín chỉ so với tiến độ CTĐT và chưa chạm ngưỡng Điều 18 theo dữ liệu hiện có."}
+                    : "Chưa ghi nhận tín hiệu cảnh báo theo dữ liệu hiện có. Các tiêu chí chưa đủ dữ liệu được ghi rõ trong chi tiết đánh giá."}
                 </p>
               </div>
             </div>
@@ -1422,7 +1120,7 @@ export default function StudentDetailPage() {
                 <h3 id="student-unified-timeline" className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>Dòng thời gian hồ sơ hợp nhất</h3>
                 <p className="mt-0.5 text-xs text-slate-500">Cảnh báo, quyết định học vụ và hành động hỗ trợ theo cùng một trục thời gian.</p>
               </div>
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">{unifiedTimeline.length} sự kiện</span>
+              <TextLabel className="text-[11px] font-semibold text-slate-600">{unifiedTimeline.length} sự kiện</TextLabel>
             </div>
             {!unifiedTimeline.length ? (
               <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-xs text-slate-500">Chưa có sự kiện để hiển thị.</div>
@@ -1435,12 +1133,13 @@ export default function StudentDetailPage() {
                     <div className="min-w-0 rounded-xl border border-slate-100 bg-slate-50/70 px-3.5 py-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="rounded-md bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500 ring-1 ring-slate-200">{item.kind}</span>
+                          <TextLabel className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{item.kind}</TextLabel>
                           <strong className="text-xs text-slate-900">{item.title}</strong>
+                          {item.actorName && <span className="text-[11px] text-slate-500">{item.actorName}</span>}
                         </div>
-                        <time className="font-mono text-[10px] text-slate-400">{new Date(item.date).toLocaleString("vi-VN")}</time>
+                        <time className="font-mono text-[10px] text-slate-400">{formatHistoryDate(item.date)}</time>
                       </div>
-                      <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-slate-600">{item.detail}</p>
+                      <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{item.detail}</p>
                     </div>
                   </li>
                 ))}
@@ -1509,9 +1208,9 @@ export default function StudentDetailPage() {
                         <span className="w-2 h-2 rounded-full bg-red-600" />
                         {r.title || r.reasonCode}
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-800">
+                      <TextLabel className="text-[10px] font-bold text-red-800">
                         {r.severity === "high" ? "Mức cao" : "Mức TB"}
-                      </span>
+                      </TextLabel>
                     </div>
                     <p className="text-xs text-slate-600 leading-relaxed">
                       {r.reasonCode === "LOW_TERM_GPA"
@@ -1538,88 +1237,6 @@ export default function StudentDetailPage() {
             )}
           </div>
 
-          {/* Warning Run History Table */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
-            <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                Lịch sử các đợt quét cảnh báo của sinh viên
-              </h3>
-              <span className="text-xs text-slate-500 font-medium">
-                {warningData?.warningHistory?.length || 0} đợt ghi nhận
-              </span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-[11px] uppercase">
-                    <th className="py-3 px-4">Học kỳ / Năm học</th>
-                    <th className="py-3 px-4">Mức độ rủi ro</th>
-                    <th className="py-3 px-4">GPA Kỳ</th>
-                    <th className="py-3 px-4">GPA Tích lũy</th>
-                    <th className="py-3 px-4">Đăng ký HP</th>
-                    <th className="py-3 px-4">Tiến độ CTĐT</th>
-                    <th className="py-3 px-4 text-center">Quyết định VP</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(!warningData?.warningHistory || warningData.warningHistory.length === 0) ? (
-                    <tr>
-                      <td colSpan={7} className="py-8 text-center text-slate-400">
-                        Chưa có lịch sử cảnh báo học vụ cho sinh viên này.
-                      </td>
-                    </tr>
-                  ) : (
-                    warningData.warningHistory.map((w: ApiData) => (
-                      <tr key={w.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="py-3 px-4 font-mono text-slate-600">
-                          <span className="block font-sans font-semibold text-slate-800">
-                            {w.termCode || w.termName || "Học kỳ"}{w.academicYear ? ` · ${w.academicYear}` : ""}
-                          </span>
-                          <span className="mt-0.5 block text-[10px] text-slate-400">
-                            Quét lúc {w.createdAt ? new Date(w.createdAt).toLocaleString("vi-VN") : "—"}
-                          </span>
-                          <span className={`mt-1 block font-sans text-[10px] font-semibold ${w.isSummer ? "text-amber-700" : "text-slate-400"}`}>
-                            {w.evaluationLabel || "Kết quả kỳ chính thức"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                            w.maxSeverity === "high"
-                              ? "bg-red-100 text-red-700 border border-red-200"
-                              : w.maxSeverity === "medium"
-                              ? "bg-amber-100 text-amber-800 border border-amber-200"
-                              : w.dataStatus !== "COMPLETE"
-                              ? "bg-slate-100 text-slate-700 border border-slate-200"
-                              : "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                          }`}>
-                            {w.runMode === "SUMMER_MONITORING"
-                              ? (w.maxSeverity === "medium" ? "Tín hiệu cần hỗ trợ" : "Không có tín hiệu")
-                              : w.maxSeverity === "high" ? "Nguy cơ cao (Đỏ)" : w.maxSeverity === "medium" ? "Cần lưu ý (Vàng)" : w.dataStatus !== "COMPLETE" ? "Chưa đủ dữ liệu" : "Bình thường"}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 font-mono font-bold text-red-600">
-                          {w.termGpa4 !== null && w.termGpa4 !== undefined ? Number(w.termGpa4).toFixed(2) : "—"}
-                        </td>
-                        <td className="py-3 px-4 font-mono font-bold text-slate-800">
-                          {w.cumulativeGpa4 !== null && w.cumulativeGpa4 !== undefined ? Number(w.cumulativeGpa4).toFixed(2) : "—"}
-                        </td>
-                        <td className="py-3 px-4 text-slate-600 capitalize">
-                          {w.registrationStatus || "—"}
-                        </td>
-                        <td className="py-3 px-4 text-slate-600 capitalize">
-                          {w.scheduleStatus || "—"}
-                        </td>
-                        <td className="py-3 px-4 text-center font-bold font-mono">
-                          {w.academicWarningDecisions || 0}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
           {/* Intervention Log & Timeline */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
             <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
@@ -1642,7 +1259,7 @@ export default function StudentDetailPage() {
                     <div key={act.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-start justify-between gap-3">
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold ${
+                          <TextLabel className={`px-2.5   text-[11px] font-bold ${
                             act.actionType === "MEETING"
                               ? "bg-blue-100 text-blue-800"
                               : act.actionType === "NOTIFY_EMAIL"
@@ -1658,16 +1275,16 @@ export default function StudentDetailPage() {
                               : act.actionType === "SCHEDULE_MEETING"
                               ? "Lịch hẹn (ghi nhận)"
                               : "Tư vấn học vụ"}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                          </TextLabel>
+                          <TextLabel className={`px-2   text-[10px] font-bold  ${
                             act.status === "RESOLVED"
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              ? "bg-emerald-50 text-emerald-700 "
                               : act.status === "ESCALATED"
-                              ? "bg-red-50 text-red-700 border-red-200"
-                              : "bg-amber-50 text-amber-700 border-amber-200"
+                              ? "bg-red-50 text-red-700 "
+                              : "bg-amber-50 text-amber-700 "
                           }`}>
                             {act.status === "RESOLVED" ? "Đã giải quyết" : act.status === "ESCALATED" ? "Báo cấp trên (Escalated)" : "Đang theo dõi"}
-                          </span>
+                          </TextLabel>
                           <span className="text-[11px] text-slate-400">
                             • {act.actorName || "Cán bộ phụ trách"} • {act.createdAt ? new Date(act.createdAt).toLocaleString("vi-VN") : "—"}
                           </span>

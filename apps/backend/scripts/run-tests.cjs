@@ -11,9 +11,18 @@ const cli = require.resolve("tsx/cli");
 const requestedTests = process.argv.slice(2);
 const testFiles = requestedTests.length ? requestedTests : [
   "tests/backend.test.ts",
+  "tests/academic-course-rules.test.ts",
+  "tests/academic-debt-blocks.test.ts",
+  "tests/academic-debt-warning-levels.test.ts",
+  "tests/academic-warning-automation.test.ts",
+  "tests/academic-warning-qd600-run-contract.test.ts",
+  "tests/academic-warning-term-selection.test.ts",
   "tests/graduation-spec.test.ts",
   "tests/intervention-api.test.ts",
   "tests/intervention-cases.test.ts",
+  "tests/warning-history-display.test.ts",
+  "tests/actual-study-semester.test.ts",
+  "tests/student-progress-cohort.test.ts",
 ];
 const result = spawnSync(process.execPath, [
   cli,

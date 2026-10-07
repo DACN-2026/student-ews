@@ -120,8 +120,6 @@ export class StudentDashboardService {
           ? "red"
           : latestWarning?.maxSeverity === "medium"
             ? "yellow"
-            : latestWarning?.businessStatus === "PARTIAL_NO_RISK"
-              ? "partial"
             : latestWarning?.businessStatus === "INSUFFICIENT_DATA" || !latestWarning
               ? "insufficient"
               : "green",

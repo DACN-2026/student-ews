@@ -1,21 +1,10 @@
 "use client";
 
+import TextLabel from "@/components/ui/TextLabel";
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  AlertCircle,
-  Award,
-  Calendar,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  Layers,
-  RefreshCw,
-  TrendingDown,
-  TrendingUp,
-  XCircle,
-} from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight, Layers, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import { semesterProgressDisplay } from "@/lib/semester-progress-display";
 import type {
   CourseProgressStatus,
   CourseTimelineCategory,
@@ -27,6 +16,7 @@ interface Props {
   initialData?: StudentTrainingProgressData | null;
   onRefresh?: () => void;
   showStudentHeader?: boolean;
+  view?: "progress" | "transcript";
 }
 
 export default function StudentProgressDetail({
@@ -34,6 +24,7 @@ export default function StudentProgressDetail({
   initialData = null,
   onRefresh,
   showStudentHeader = true,
+  view = "progress",
 }: Props) {
   const [fetchedData, setFetchedData] = useState<StudentTrainingProgressData | null>(null);
   const data = initialData || fetchedData;
@@ -226,30 +217,24 @@ export default function StudentProgressDetail({
   const overdueCredits = scheduleProgress.overdueCredits ?? summary.overdueCredits ?? 0;
   const aheadCredits = scheduleProgress.aheadCredits ?? summary.aheadCredits ?? 0;
 
-  // Determine active studying semester from NO_SCORE courses:
-  // "Ở học kì mà có nhiều môn 'Chưa có điểm' thì đó là học kì 'đang theo học' của sinh viên đó"
-  const semesterWithMostNoScore = [...semesters]
-    .map((s) => ({
-      semNo: s.semesterNo,
-      noScoreCount: s.courses.filter((c) => c.status === "NO_SCORE").length,
-    }))
-    .filter((x) => x.noScoreCount > 0)
-    .sort((a, b) => b.noScoreCount - a.noScoreCount)[0];
+  const studyingSemesterNos = scheduleProgress.studyingSemesterNos ?? semesters
+    .filter(semester => semester.courses.some(course => course.isCurrentlyStudying))
+    .map(semester => semester.semesterNo);
+  const studyingSemesterLabel = studyingSemesterNos.map(no => semesters.find(semester => semester.semesterNo === no)?.name || `Học kỳ ${no}`).join(", ");
 
-  // Active studying semester from scheduleProgress or fallback
-  const studyingSemesterNo =
+  const benchmarkSemesterNo =
     scheduleProgress.expectedSemesterNo ??
     1;
-  const studyingYear = scheduleProgress.expectedYear ?? Math.ceil(studyingSemesterNo / 2);
-  const studyingTerm = scheduleProgress.expectedSemester ?? (studyingSemesterNo % 2 === 1 ? "HK1" : "HK2");
+  const benchmarkYear = scheduleProgress.expectedYear ?? Math.ceil(benchmarkSemesterNo / 2);
+  const benchmarkTerm = scheduleProgress.expectedSemester ?? (benchmarkSemesterNo % 2 === 1 ? "HK1" : "HK2");
 
   const benchmarkLabel =
     scheduleProgress.benchmarkLabel ||
-    `Năm ${studyingYear} - ${studyingTerm} (Học kỳ ${studyingSemesterNo})`;
+    `Năm ${benchmarkYear} - ${benchmarkTerm} (Học kỳ ${benchmarkSemesterNo})`;
 
   const effectiveLastCompletedSem =
     scheduleProgress.latestCompletedSemester ??
-    Math.max(0, studyingSemesterNo - 1);
+    Math.max(0, benchmarkSemesterNo - 1);
 
   // Normalized progress indicators
   const progressStatus = scheduleProgress.progressStatus ?? (scheduleProgress.isOnTrack && !scheduleProgress.isBehind ? "ON_TRACK" : "BEHIND");
@@ -319,7 +304,7 @@ export default function StudentProgressDetail({
       {/* ========================================================================= */}
       {/* TỔNG QUAN TIẾN ĐỘ ĐẾN MỐC HIỆN TẠI (SUMMARY NGẮN GỌN)                    */}
       {/* ========================================================================= */}
-      <section aria-labelledby="section-progress-summary" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
+      {view === "progress" && <section aria-labelledby="section-progress-summary" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
         {/* Header row with milestone & status */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3.5">
           <div>
@@ -327,36 +312,40 @@ export default function StudentProgressDetail({
               <h3 id="section-progress-summary" className="text-xs font-bold uppercase tracking-wider text-slate-500">
                 Tiến độ đào tạo đến mốc
               </h3>
-              <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold text-slate-800 border border-slate-200">
+              <TextLabel className="font-mono text-xs font-bold text-slate-800">
                 {effectiveLastCompletedSem != null && effectiveLastCompletedSem > 0
                   ? `Đến hết Học kỳ ${effectiveLastCompletedSem}`
                   : "Chưa có kỳ kết thúc"}
-              </span>
+              </TextLabel>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Kỳ hiện tại: <strong className="text-slate-800 font-semibold">{benchmarkLabel}</strong> (Đang theo học – chưa dùng để đánh giá tiến độ)
+              {student.studyScheduleSource === "REGISTRATION_SEQUENCE" ? `Mốc theo chuỗi đăng ký (tương ứng ${student.studyCohortCode}): `
+                : student.studyCohortCode ? `Mốc kế hoạch đang theo học (${student.studyCohortCode}): ` : "Mốc chuẩn của khóa: "}<strong className="text-slate-800 font-semibold">{benchmarkLabel}</strong>
+            </p>
+            <p className="text-xs text-slate-500 mt-1">
+              {studyingSemesterLabel ? <>Đang học các học phần: <strong className="text-slate-800 font-semibold">{studyingSemesterLabel}</strong></> : "Chưa ghi nhận học phần đang học trong kỳ hiện tại."}
             </p>
           </div>
 
           {/* Status Badges */}
           <div className="flex flex-wrap items-center gap-2">
             {isOnTrack ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3.5 py-1 text-xs font-bold text-emerald-800 shadow-2xs">
-                <CheckCircle2 size={13} className="text-emerald-600" />
+              <TextLabel className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+
                 Đúng tiến độ
-              </span>
+              </TextLabel>
             ) : (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-3.5 py-1 text-xs font-bold text-rose-800 shadow-2xs">
-                <AlertCircle size={13} className="text-rose-600" />
-                Chậm tiến độ
-              </span>
+              <TextLabel className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-800">
+
+                {progressStatus === "UNKNOWN" ? "Cần đối soát" : "Chậm tiến độ"}
+              </TextLabel>
             )}
 
             {creditDifference > 0 && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 bg-blue-50 px-3.5 py-1 text-xs font-bold text-blue-800 shadow-2xs">
-                <TrendingUp size={13} className="text-blue-600" />
+              <TextLabel className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-800">
+
                 Học vượt (+{creditDifference} TC)
-              </span>
+              </TextLabel>
             )}
           </div>
         </div>
@@ -404,24 +393,24 @@ export default function StudentProgressDetail({
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-rose-100 bg-rose-50/70 text-[10px] font-bold uppercase tracking-wider text-rose-800">
-                    <th className="py-2 px-3">Mã HP</th>
-                    <th className="py-2 px-3">Tên học phần</th>
-                    <th className="py-2 px-2 text-center">TC</th>
-                    <th className="py-2 px-3 text-center">Thuộc kỳ</th>
-                    <th className="py-2 px-3">Tình trạng</th>
+                    <th className="py-2 px-3 text-left table-cell-left">Mã HP</th>
+                    <th className="py-2 px-3 text-left table-cell-left">Tên học phần</th>
+                    <th className="py-2 px-2 text-center table-cell-center">TC</th>
+                    <th className="py-2 px-3 text-center table-cell-center">Thuộc kỳ</th>
+                    <th className="py-2 px-3 text-center table-cell-center">Tình trạng</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-rose-100">
                   {missingRequiredCourses.map((mc) => (
                     <tr key={mc.courseCode} className="hover:bg-rose-50/30">
-                      <td className="py-2 px-3 font-mono font-bold text-slate-900">{mc.courseCode}</td>
-                      <td className="py-2 px-3 font-medium text-slate-800">{mc.courseName}</td>
-                      <td className="py-2 px-2 font-mono text-center text-slate-700">{mc.credits}</td>
-                      <td className="py-2 px-3 text-center font-mono text-slate-700">HK {mc.semesterNo}</td>
-                      <td className="py-2 px-3">
-                        <span className="inline-flex items-center gap-1 rounded bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800">
+                      <td className="py-2 px-3 font-mono font-bold text-slate-900 text-left table-cell-left">{mc.courseCode}</td>
+                      <td className="py-2 px-3 font-medium text-slate-800 text-left table-cell-left">{mc.courseName}</td>
+                      <td className="py-2 px-2 font-mono text-center text-slate-700 table-cell-center">{mc.credits}</td>
+                      <td className="py-2 px-3 text-center font-mono text-slate-700 table-cell-center">HK {mc.semesterNo}</td>
+                      <td className="py-2 px-3 text-center table-cell-center">
+                        <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800">
                           {mc.reason}
-                        </span>
+                        </TextLabel>
                       </td>
                     </tr>
                   ))}
@@ -430,7 +419,7 @@ export default function StudentProgressDetail({
             </div>
           </div>
         )}
-      </section>
+      </section>}
 
       {/* ========================================================================= */}
       {/* PHẦN C: TIẾN ĐỘ THEO TỪNG HỌC KỲ                                         */}
@@ -440,10 +429,10 @@ export default function StudentProgressDetail({
           <div>
             <h3 id="section-semesters" className="text-sm font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
               <Layers size={16} className="text-indigo-600" />
-              Phần C: Tiến độ chi tiết theo từng học kỳ
+              {view === "transcript" ? "Bảng điểm theo từng học kỳ" : "Phần C: Tiến độ chi tiết theo từng học kỳ"}
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Phân cấp theo từng năm học và học kỳ lộ trình chuẩn của chương trình đào tạo
+              {view === "transcript" ? "Kết quả học phần theo từng năm học và học kỳ của chương trình đào tạo" : "Phân cấp theo từng năm học và học kỳ lộ trình chuẩn của chương trình đào tạo"}
             </p>
           </div>
 
@@ -469,24 +458,26 @@ export default function StudentProgressDetail({
         <div className="space-y-3">
           {semesters.map((sem) => {
             const isExpanded = expandedSemesters[sem.semesterNo] ?? false;
-            const semPlannedCredits = sem.plannedCredits ?? sem.requiredCredits ?? 0;
+            const display = semesterProgressDisplay(sem);
+            const semPlannedCredits = display.plannedCredits;
             const semCompPercentage =
               sem.completionPercentage ??
               (semPlannedCredits > 0 ? Math.round((sem.completedCredits / semPlannedCredits) * 100) : 0);
 
-            const isCurrentStudying = sem.timelineType === "CURRENT_STUDYING" || sem.semesterNo === studyingSemesterNo;
-            const isFutureSemester = sem.timelineType === "FUTURE_PLANNED" || sem.semesterNo > studyingSemesterNo;
-            const isPastSemester = sem.timelineType === "PAST_COMPLETED" || sem.semesterNo < studyingSemesterNo;
+            const isCurrentStudying = studyingSemesterNos.includes(sem.semesterNo);
+            const isCurrentPlan = !isCurrentStudying && sem.semesterNo === benchmarkSemesterNo;
+            const isFutureSemester = !isCurrentStudying && sem.semesterNo > benchmarkSemesterNo;
+            const isPastSemester = !isCurrentStudying && sem.semesterNo < benchmarkSemesterNo;
+            const academicCourses = sem.courses.filter(c => !c.isConditional && c.requirementType !== "conditional");
+            const isUnregisteredSemester = !isCurrentStudying && academicCourses.length > 0 &&
+              academicCourses.every(c => c.attemptCount === 0);
+            const semesterLabel = isUnregisteredSemester ? "Chưa đăng ký"
+              : isCurrentPlan ? (sem.statusLabel || "Chưa đăng ký") : display.label;
 
-            const hasFailedCourses = sem.courses.some((c) => c.status === "FAILED");
-            const hasMissingMandatory = isPastSemester && sem.courses.some(
-              (c) => c.requirementType === "mandatory" && c.status !== "PASSED"
-            );
-            const isCompletedSemester = isPastSemester && !hasFailedCourses && !hasMissingMandatory && sem.completedCredits >= semPlannedCredits;
-            const isOwedSemester = isPastSemester && (hasFailedCourses || hasMissingMandatory || sem.completedCredits < semPlannedCredits);
+            const isCompletedSemester = isPastSemester && display.isCompleted;
 
             const currentStudyingCredits = sem.courses
-              .filter((c) => c.status === "NO_SCORE")
+              .filter((c) => c.isCurrentlyStudying && !c.isConditional && c.requirementType !== "conditional")
               .reduce((sum, c) => sum + c.credits, 0);
 
             return (
@@ -506,52 +497,47 @@ export default function StudentProgressDetail({
                     <span className="text-slate-400">
                       {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                     </span>
-                    <span className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-xs font-bold text-slate-800">
+                    <TextLabel className="inline-flex font-mono text-xs font-bold text-slate-800">
                       HK {sem.semesterNo}
-                    </span>
+                    </TextLabel>
                     <div>
                       <div className="flex items-center gap-2">
                         <strong className="text-sm font-bold text-slate-900">
                           {sem.name || sem.semesterLabel || `Học kỳ ${sem.semesterNo}`}
                         </strong>
                         {isCurrentStudying && (
-                          <span className="rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800">
+                          <TextLabel className="text-[10px] font-bold text-blue-800">
                             Đang theo học
-                          </span>
+                          </TextLabel>
                         )}
-                        {isFutureSemester && (
-                          <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                        {isFutureSemester && !isUnregisteredSemester && (
+                          <TextLabel className="text-[10px] font-medium text-slate-600">
                             Kế hoạch kỳ sau
-                          </span>
+                          </TextLabel>
                         )}
-                        {isPastSemester && isCompletedSemester && (
-                          <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                            Đạt kỳ
-                          </span>
+                        {(isCurrentPlan || isUnregisteredSemester) && <TextLabel className="text-[10px] font-medium text-slate-600">{semesterLabel}</TextLabel>}
+                        {isPastSemester && !isUnregisteredSemester && isCompletedSemester && (
+                          <TextLabel className="text-[10px] font-bold text-emerald-800">
+                            {display.label}
+                          </TextLabel>
                         )}
-                        {isPastSemester && !isCompletedSemester && (
-                          <span className="rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800">
-                            {sem.completedCredits < semPlannedCredits 
-                              ? `Thiếu ${semPlannedCredits - sem.completedCredits} TC` 
-                              : hasFailedCourses 
-                                ? "Nợ môn" 
-                                : hasMissingMandatory 
-                                  ? "Thiếu môn Bắt buộc" 
-                                  : "Chưa đạt kỳ"}
-                          </span>
+                        {isPastSemester && !isUnregisteredSemester && !isCompletedSemester && (
+                          <TextLabel className="text-[10px] font-bold text-rose-800">
+                            {display.label}
+                          </TextLabel>
                         )}
                       </div>
                       {isCurrentStudying ? (
                         <span className="text-xs text-blue-700 font-medium">
-                          Đang theo học – chưa dùng để đánh giá tiến độ • Kế hoạch: {semPlannedCredits} TC
+                          Đang học trong {scheduleProgress.currentTermCode} ({scheduleProgress.currentAcademicYear}) • Kế hoạch: {display.plannedCreditsLabel} TC
                         </span>
-                      ) : isFutureSemester ? (
+                      ) : isFutureSemester && !isUnregisteredSemester ? (
                         <span className="text-xs text-slate-400">
-                          Kế hoạch tương lai / Kỳ sau • {sem.courses.length} học phần ({semPlannedCredits} TC)
+                          Kế hoạch tương lai / Kỳ sau • {sem.courses.length} học phần ({display.plannedCreditsLabel} TC)
                         </span>
                       ) : (
                         <span className="text-xs text-slate-500">
-                          {sem.courses.length} học phần • Kế hoạch: {semPlannedCredits} TC
+                          {sem.courses.length} học phần • Kế hoạch: {display.plannedCreditsLabel} TC
                         </span>
                       )}
                     </div>
@@ -566,13 +552,13 @@ export default function StudentProgressDetail({
                             {currentStudyingCredits > 0 ? `${currentStudyingCredits} TC đang học` : "Đang theo học"}
                           </div>
                           <div className="text-[10px] text-blue-600">
-                            Chưa tính vào tích lũy
+                            Chưa có kết quả kỳ này
                           </div>
                         </>
-                      ) : isFutureSemester ? (
+                      ) : isFutureSemester && !isUnregisteredSemester ? (
                         <>
                           <div className="font-mono text-xs font-bold text-slate-500">
-                            0 / {semPlannedCredits} TC
+                            {sem.completedCredits} / {display.plannedCreditsLabel} TC
                           </div>
                           <div className="text-[10px] text-slate-400">
                             Kế hoạch kỳ sau
@@ -581,26 +567,18 @@ export default function StudentProgressDetail({
                       ) : (
                         <>
                           <div className="font-mono text-xs font-bold text-slate-900">
-                            {sem.completedCredits} / {semPlannedCredits} TC
+                            {sem.completedCredits} / {display.plannedCreditsLabel} TC
                           </div>
                           <div
                             className={`text-[10px] ${
                               isCompletedSemester
                                 ? "text-emerald-700 font-semibold"
+                                : isCurrentPlan || isUnregisteredSemester
+                                ? "text-slate-500"
                                 : "text-rose-600 font-medium"
                             }`}
                           >
-                            {isCompletedSemester
-                              ? sem.completedCredits > semPlannedCredits
-                                ? `Đạt kỳ (+${sem.completedCredits - semPlannedCredits} TC)`
-                                : "Đạt kỳ"
-                              : sem.completedCredits < semPlannedCredits
-                                ? `Thiếu ${semPlannedCredits - sem.completedCredits} TC`
-                                : hasFailedCourses
-                                  ? "Nợ môn"
-                                  : hasMissingMandatory
-                                    ? "Thiếu môn Bắt buộc"
-                                    : "Chưa đạt kỳ"}
+                            {semesterLabel}
                           </div>
                         </>
                       )}
@@ -612,7 +590,7 @@ export default function StudentProgressDetail({
                           className={`h-full rounded-full transition-all ${
                             isCurrentStudying
                               ? "bg-blue-400"
-                              : isFutureSemester
+                              : isFutureSemester || isCurrentPlan || isUnregisteredSemester
                               ? "bg-slate-200"
                               : isCompletedSemester
                               ? "bg-emerald-500"
@@ -629,35 +607,35 @@ export default function StudentProgressDetail({
                       </div>
                     </div>
 
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
+                    <TextLabel
+                      className={`inline-flex items-center gap-1     text-[11px] font-bold ${
                         isCurrentStudying
-                          ? "border-blue-200 bg-blue-50 text-blue-800"
-                          : isFutureSemester
-                          ? "border-slate-200 bg-slate-100 text-slate-600"
+                          ? "border-blue-200  text-blue-800"
+                          : isFutureSemester || isCurrentPlan || isUnregisteredSemester
+                          ? "border-slate-200  text-slate-600"
                           : isCompletedSemester
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                          : "border-rose-200 bg-rose-50 text-rose-800"
+                          ? "border-emerald-200  text-emerald-800"
+                          : "border-rose-200  text-rose-800"
                       }`}
                     >
                       {isCurrentStudying ? (
                         <>
-                          <Clock size={12} /> Đang theo học
+                           Đang theo học
                         </>
-                      ) : isFutureSemester ? (
+                      ) : isFutureSemester && !isUnregisteredSemester ? (
                         <>
-                          <Calendar size={12} /> Kỳ sau
+                           Kỳ sau
                         </>
                       ) : isCompletedSemester ? (
                         <>
-                          <CheckCircle2 size={12} /> Đạt kỳ
+                           {semesterLabel}
                         </>
                       ) : (
                         <>
-                          <AlertCircle size={12} /> Thiếu {Math.max(0, semPlannedCredits - sem.completedCredits)} TC
+                           {semesterLabel}
                         </>
                       )}
-                    </span>
+                    </TextLabel>
                   </div>
                 </button>
 
@@ -668,15 +646,15 @@ export default function StudentProgressDetail({
                       <table className="w-full text-left text-xs">
                         <thead>
                           <tr className="border-b border-slate-200 bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                            <th className="py-2.5 px-3">Mã HP</th>
-                            <th className="py-2.5 px-3">Tên học phần</th>
-                            <th className="py-2.5 px-2 text-center">TC</th>
-                            <th className="py-2.5 px-3">Loại HP</th>
-                            <th className="py-2.5 px-3">Trạng thái</th>
-                            <th className="py-2.5 px-2 text-center">Điểm 10</th>
-                            <th className="py-2.5 px-2 text-center">Điểm 4</th>
-                            <th className="py-2.5 px-2 text-center">Chữ</th>
-                            <th className="py-2.5 px-3">Kỳ hoàn thành</th>
+                            <th className="py-2.5 px-3 text-left table-cell-left">Mã HP</th>
+                            <th className="py-2.5 px-3 text-left table-cell-left">Tên học phần</th>
+                            <th className="py-2.5 px-2 text-center table-cell-center">TC</th>
+                            <th className="py-2.5 px-3 text-center table-cell-center">Loại HP</th>
+                            <th className="py-2.5 px-3 text-center table-cell-center">Trạng thái</th>
+                            <th className="py-2.5 px-2 text-center table-cell-center">Điểm 10</th>
+                            <th className="py-2.5 px-2 text-center table-cell-center">Điểm 4</th>
+                            <th className="py-2.5 px-2 text-center table-cell-center">Chữ</th>
+                            <th className="py-2.5 px-3 text-center table-cell-center">Kỳ hoàn thành</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -698,52 +676,53 @@ export default function StudentProgressDetail({
                                     : ""
                                 }`}
                               >
-                                <td className="py-2.5 px-3 font-mono font-bold text-slate-900">
+                                <td className="py-2.5 px-3 font-mono font-bold text-slate-900 text-left table-cell-left">
                                   {c.courseCode}
                                 </td>
-                                <td className="py-2.5 px-3 font-medium text-slate-800">
+                                <td className="py-2.5 px-3 font-medium text-slate-800 text-left table-cell-left">
                                   {c.courseName}
                                 </td>
-                                <td className="py-2.5 px-2 font-mono text-center text-slate-700">
+                                <td className="py-2.5 px-2 font-mono text-center text-slate-700 table-cell-center">
                                   {c.credits}
                                 </td>
-                                <td className="py-2.5 px-3 text-slate-600">
+                                <td className="py-2.5 px-3 text-slate-600 text-center table-cell-center">
                                   {c.isConditional || c.requirementType === "conditional" ? (
-                                    <span className="inline-flex rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                                    <TextLabel className="inline-flex text-[10px] font-semibold text-amber-800">
                                       Điều kiện (GDTC/GDQP)
-                                    </span>
+                                    </TextLabel>
                                   ) : c.requirementType === "mandatory" ? (
                                     <span className="font-semibold text-slate-700">Bắt buộc</span>
                                   ) : (
                                     <span className="text-purple-700 font-medium">Tự chọn</span>
                                   )}
                                 </td>
-                                <td className="py-2.5 px-3">
+                                <td className="py-2.5 px-3 text-center table-cell-center">
                                   <CourseStatusBadge
                                     status={c.status}
                                     timeline={c.timelineCategory ?? null}
                                     isFutureSemester={isFutureSemester}
-                                    isCurrentSemester={isCurrentStudying}
+                                    isCurrentSemester={Boolean(c.isCurrentlyStudying)}
                                     isPastSemester={isPastSemester}
                                     requirementType={c.requirementType}
                                     isConditional={c.isConditional}
+                                    isUnregistered={c.attemptCount === 0}
                                   />
                                 </td>
 
-                                <td className="py-2.5 px-2 font-mono text-center text-slate-800">
+                                <td className="py-2.5 px-2 font-mono text-center text-slate-800 table-cell-center">
                                   {c.latestScore10 != null ? c.latestScore10.toFixed(1) : "—"}
                                 </td>
-                                <td className="py-2.5 px-2 font-mono text-center text-slate-800">
+                                <td className="py-2.5 px-2 font-mono text-center text-slate-800 table-cell-center">
                                   {c.latestScore4 != null ? c.latestScore4.toFixed(1) : "—"}
                                 </td>
-                                <td className="py-2.5 px-2 font-mono font-bold text-center text-slate-900">
+                                <td className="py-2.5 px-2 font-mono font-bold text-center text-slate-900 table-cell-center">
                                   {c.latestLetterCode || "—"}
                                 </td>
-                                <td className="py-2.5 px-3 font-mono text-slate-600">
+                                <td className="py-2.5 px-3 font-mono text-slate-600 text-center table-cell-center">
                                   {c.passedAcademicYear && c.passedTermCode ? (
-                                    <span className="inline-flex rounded bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                                    <TextLabel className="inline-flex text-[10px] font-bold text-emerald-800">
                                       {c.passedTermCode} ({c.passedAcademicYear})
-                                    </span>
+                                    </TextLabel>
                                   ) : (
                                     "—"
                                   )}
@@ -778,6 +757,7 @@ function CourseStatusBadge({
   isPastSemester,
   requirementType,
   isConditional,
+  isUnregistered,
 }: {
   status: CourseProgressStatus;
   timeline?: CourseTimelineCategory | null;
@@ -786,64 +766,72 @@ function CourseStatusBadge({
   isPastSemester?: boolean;
   requirementType?: string;
   isConditional?: boolean;
+  isUnregistered?: boolean;
 }) {
   if (status === "PASSED") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-        <CheckCircle2 size={11} /> Đã đạt
-      </span>
+      <TextLabel className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800">
+         {isCurrentSemester ? "Đang học cải thiện (Đã đạt)" : "Đã đạt"}
+      </TextLabel>
     );
   }
   if (status === "FAILED") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-800">
-        <XCircle size={11} /> Chưa đạt (Rớt)
-      </span>
+      <TextLabel className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-800">
+         Chưa đạt (Rớt)
+      </TextLabel>
     );
   }
   if (status === "NO_SCORE") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800">
-        <Clock size={11} /> {isCurrentSemester || timeline === "CURRENT" || timeline === "CURRENT_PLAN" ? "Đang học / Chưa có điểm" : "Chưa có điểm"}
-      </span>
+      <TextLabel className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800">
+         {isCurrentSemester ? "Đang học / Chưa có điểm" : "Chưa có điểm"}
+      </TextLabel>
     );
   }
 
   // NOT_COMPLETED
+  if (isUnregistered) {
+    return (
+      <TextLabel className="inline-flex text-[11px] font-medium text-slate-500">
+        Chưa đăng ký
+      </TextLabel>
+    );
+  }
   if (isFutureSemester || timeline === "FUTURE") {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+      <TextLabel className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
         Chưa học
-      </span>
+      </TextLabel>
     );
   }
 
   if (isPastSemester) {
     if (isConditional || requirementType === "conditional") {
       return (
-        <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+        <TextLabel className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
           Chưa học (Điều kiện)
-        </span>
+        </TextLabel>
       );
     }
     if (requirementType === "mandatory") {
       return (
-        <span className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">
-          <AlertCircle size={11} /> Nợ chưa học
-        </span>
+        <TextLabel className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700">
+           Nợ chưa học
+        </TextLabel>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+      <TextLabel className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
         Không chọn
-      </span>
+      </TextLabel>
     );
   }
 
   return (
-    <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+    <TextLabel className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600">
       Chưa đăng ký
-    </span>
+    </TextLabel>
   );
 }
 

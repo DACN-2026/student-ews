@@ -1,21 +1,8 @@
 "use client";
 
+import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  BookOpen,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  CircleAlert,
-  Inbox,
-  LoaderCircle,
-  Play,
-  RefreshCw,
-  Search,
-  X,
-  XCircle,
-} from "lucide-react";
+import { BookOpen, ChevronDown, ChevronRight, CircleAlert, Inbox, LoaderCircle, Play, RefreshCw, Search, X } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
@@ -439,13 +426,13 @@ export default function RegistrationProgressTab() {
                       : "border-slate-200/80 bg-slate-50/70 hover:border-slate-300 hover:bg-white text-slate-700"
                   }`}
                 >
-                  <span
-                    className={`inline-flex rounded-lg px-2 py-0.5 font-mono text-xs font-bold shadow-2xs ${
+                  <TextLabel
+                    className={`inline-flex    font-mono text-xs font-bold  ${
                       isSelected ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-800"
                     }`}
                   >
                     Khóa {card.cohortCode}
-                  </span>
+                  </TextLabel>
 
                   <span className="text-xs font-bold text-slate-900">
                     {card.plan.programCode || card.plan.programName}
@@ -456,20 +443,16 @@ export default function RegistrationProgressTab() {
                   {hasRun ? (
                     <div className="flex items-center gap-2 text-xs">
                       <span className="font-mono font-bold text-slate-800">{totalStud} SV</span>
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                      <TextLabel
+                        className={`inline-flex items-center gap-1    text-[10px] font-semibold ${
                           passRate >= 80
                             ? "bg-emerald-100/70 text-emerald-800"
                             : "bg-amber-100/70 text-amber-800"
                         }`}
                       >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            passRate >= 80 ? "bg-emerald-500" : "bg-amber-500"
-                          }`}
-                        />
+
                         {passRate}% đúng
-                      </span>
+                      </TextLabel>
                     </div>
                   ) : (
                     <span className="text-[11px] font-medium text-slate-400">Chưa kiểm tra</span>
@@ -488,15 +471,15 @@ export default function RegistrationProgressTab() {
           <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex rounded-md bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white">
+                <TextLabel className="inline-flex font-mono text-xs font-bold text-slate-700">
                   Khóa {activeCard.cohortCode}
-                </span>
+                </TextLabel>
                 <h3 className="text-base font-bold text-slate-900">
                   Danh sách sinh viên • {activeCard.plan.programName}
                 </h3>
-                <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs font-bold text-slate-700">
+                <TextLabel className="font-mono text-xs font-bold text-slate-700">
                   HK{activeCard.plan.curriculumSemesterNo} CTĐT
-                </span>
+                </TextLabel>
               </div>
               <p className="mt-1 text-xs text-slate-500">
                 Đối chiếu môn học theo khung kế hoạch chuẩn bản v{activeCard.plan.version}
@@ -507,23 +490,23 @@ export default function RegistrationProgressTab() {
               {/* Compact KPI Pills right in header */}
               {activeCard.latestRun && (
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+                  <TextLabel className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
                     <span className="text-slate-500 font-normal">Tổng:</span>
                     <strong className="font-mono font-bold text-slate-900">{studentCounts.total}</strong> SV
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-1 text-xs font-medium text-emerald-800">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  </TextLabel>
+                  <TextLabel className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-800">
+
                     <span>Đúng lộ trình:</span>
                     <strong className="font-mono font-bold text-emerald-900">{studentCounts.pass}</strong>
                     <span className="text-[11px] opacity-75">
                       ({studentCounts.total ? Math.round((studentCounts.pass / studentCounts.total) * 100) : 0}%)
                     </span>
-                  </div>
-                  <div className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-1 text-xs font-medium text-amber-800">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  </TextLabel>
+                  <TextLabel className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800">
+
                     <span>Cần tư vấn:</span>
                     <strong className="font-mono font-bold text-amber-900">{studentCounts.fail}</strong>
-                  </div>
+                  </TextLabel>
                 </div>
               )}
 
@@ -588,41 +571,41 @@ export default function RegistrationProgressTab() {
 
                 {/* Filter tabs */}
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <button
+                  <button aria-pressed={Boolean(!studentStatusFilter)}
                     type="button"
                     onClick={() => setStudentStatusFilter("")}
-                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`table-text-action text-filter ${plainTextClasses(`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                       !studentStatusFilter
                         ? "bg-slate-900 text-white shadow-xs"
                         : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                    }`}
+                    }`)}`}
                   >
                     Tất cả ({studentCounts.total})
                   </button>
 
-                  <button
+                  <button aria-pressed={Boolean(studentStatusFilter === "pass")}
                     type="button"
                     onClick={() => setStudentStatusFilter("pass")}
-                    className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`table-text-action text-filter ${plainTextClasses(`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                       studentStatusFilter === "pass"
                         ? "bg-emerald-600 text-white shadow-xs"
                         : "border border-emerald-200 bg-emerald-50/60 text-emerald-800 hover:bg-emerald-100"
-                    }`}
+                    }`)}`}
                   >
-                    <CheckCircle2 size={12} />
+
                     Đúng lộ trình ({studentCounts.pass})
                   </button>
 
-                  <button
+                  <button aria-pressed={Boolean(studentStatusFilter === "fail")}
                     type="button"
                     onClick={() => setStudentStatusFilter("fail")}
-                    className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`table-text-action text-filter ${plainTextClasses(`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                       studentStatusFilter === "fail"
                         ? "bg-amber-600 text-white shadow-xs"
                         : "border border-amber-200 bg-amber-50/60 text-amber-800 hover:bg-amber-100"
-                    }`}
+                    }`)}`}
                   >
-                    <AlertTriangle size={12} />
+
                     Cần tư vấn ({studentCounts.fail})
                   </button>
                 </div>
@@ -647,11 +630,11 @@ export default function RegistrationProgressTab() {
                   <table className="w-full min-w-[760px] text-left text-xs">
                     <thead className="sticky top-0 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 shadow-2xs">
                       <tr>
-                        <th className="px-4 py-3">Sinh viên</th>
-                        <th className="px-4 py-3">Học phần bắt buộc</th>
-                        <th className="px-4 py-3">Tín chỉ tự chọn</th>
-                        <th className="px-4 py-3">Ngoài kế hoạch</th>
-                        <th className="px-4 py-3 text-right">Tình trạng đối chiếu</th>
+                        <th className="px-4 py-3 text-left table-cell-left">Sinh viên</th>
+                        <th className="px-4 py-3 text-center table-cell-center">Học phần bắt buộc</th>
+                        <th className="px-4 py-3 text-center table-cell-center">Tín chỉ tự chọn</th>
+                        <th className="px-4 py-3 text-center table-cell-center">Ngoài kế hoạch</th>
+                        <th className="px-4 py-3 text-center table-cell-center">Tình trạng đối chiếu</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -675,7 +658,7 @@ export default function RegistrationProgressTab() {
                               className="cursor-pointer transition-colors hover:bg-lime-50/60 active:bg-lime-100/60"
                             >
                               {/* Student Identity */}
-                              <td className="px-4 py-3.5">
+                              <td className="px-4 py-3.5 text-left table-cell-left">
                                 <p className="font-bold text-slate-900">{student.studentName}</p>
                                 <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-slate-500">
                                   <span>{student.studentId}</span>
@@ -689,66 +672,66 @@ export default function RegistrationProgressTab() {
                               </td>
 
                               {/* Mandatory Courses */}
-                              <td className="px-4 py-3.5">
-                                <div className="flex items-center gap-1.5">
+                              <td className="px-4 py-3.5 text-center table-cell-center">
+                                <div className="flex items-center gap-1.5 justify-center">
                                   <span className="font-mono font-bold text-slate-900">
                                     {student.mandatory.registeredCourses} / {student.mandatory.requiredCourses}
                                   </span>
                                   <span className="text-slate-500">môn</span>
                                 </div>
                                 {isMandatoryMissing ? (
-                                  <span className="mt-0.5 inline-flex rounded-md bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-800">
+                                  <TextLabel className="mt-0.5 inline-flex text-[10px] font-bold text-red-800">
                                     Thiếu {student.mandatory.requiredCourses - student.mandatory.registeredCourses} môn
-                                  </span>
+                                  </TextLabel>
                                 ) : (
                                   <span className="mt-0.5 inline-flex text-[10px] text-emerald-700">Đủ môn bắt buộc</span>
                                 )}
                               </td>
 
                               {/* Electives */}
-                              <td className="px-4 py-3.5">
-                                <div className="flex items-center gap-1.5">
+                              <td className="px-4 py-3.5 text-center table-cell-center">
+                                <div className="flex items-center gap-1.5 justify-center">
                                   <span className="font-mono font-bold text-slate-900">
                                     {student.elective.registeredCredits} / {student.elective.requiredCredits}
                                   </span>
                                   <span className="text-slate-500">TC</span>
                                 </div>
                                 {isElectiveMissing && student.elective.requiredCredits > 0 ? (
-                                  <span className="mt-0.5 inline-flex rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                                  <TextLabel className="mt-0.5 inline-flex text-[10px] font-bold text-amber-800">
                                     Thiếu {student.elective.requiredCredits - student.elective.registeredCredits} TC
-                                  </span>
+                                  </TextLabel>
                                 ) : (
                                   <span className="mt-0.5 inline-flex text-[10px] text-emerald-700">Đủ tín chỉ</span>
                                 )}
                               </td>
 
                               {/* Outside Plan */}
-                              <td className="px-4 py-3.5">
+                              <td className="px-4 py-3.5 text-center table-cell-center">
                                 {student.outsidePlanCredits > 0 ? (
-                                  <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-blue-800">
+                                  <TextLabel className="inline-flex font-mono text-[11px] font-semibold text-blue-800">
                                     +{student.outsidePlanCredits} TC ngoài kế hoạch
-                                  </span>
+                                  </TextLabel>
                                 ) : (
                                   <span className="text-slate-400">0 TC</span>
                                 )}
                               </td>
 
                               {/* Status Tag + Detail hint */}
-                              <td className="px-4 py-3.5 text-right">
+                              <td className="px-4 py-3.5 text-center table-cell-center">
                                 {student.status === "pass" ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                                    <CheckCircle2 size={13} /> Khớp lộ trình
-                                  </span>
+                                  <TextLabel className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">
+                                     Khớp lộ trình
+                                  </TextLabel>
                                 ) : student.status === "data_error" ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">
-                                    <CircleAlert size={13} /> Lỗi dữ liệu
-                                  </span>
+                                  <TextLabel className="inline-flex items-center gap-1 text-xs font-bold text-slate-700">
+                                     Lỗi dữ liệu
+                                  </TextLabel>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
-                                    <AlertTriangle size={13} /> Cần tư vấn
-                                  </span>
+                                  <TextLabel className="inline-flex items-center gap-1 text-xs font-bold text-amber-800">
+                                     Cần tư vấn
+                                  </TextLabel>
                                 )}
-                                <div className="mt-1.5 flex items-center justify-end gap-1 text-[10px] font-medium text-lime-700 opacity-70 group-hover:opacity-100">
+                                <div className="mt-1.5 flex items-center justify-center gap-1 text-[10px] font-medium text-lime-700 opacity-70 group-hover:opacity-100">
                                   <BookOpen size={10} />
                                   <span>Xem chi tiết môn học</span>
                                   <ChevronRight size={10} />
@@ -821,17 +804,17 @@ export default function RegistrationProgressTab() {
                         <><span>•</span><span>Lớp: {studentDetail.className}</span></>
                       )}
                       {studentDetail.status === "pass" ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700">
-                          <CheckCircle2 size={11} /> Khớp lộ trình
-                        </span>
+                        <TextLabel className="inline-flex items-center gap-1 font-semibold text-emerald-700">
+                           Khớp lộ trình
+                        </TextLabel>
                       ) : studentDetail.status === "data_error" ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 font-semibold text-slate-600">
-                          <CircleAlert size={11} /> Lỗi dữ liệu
-                        </span>
+                        <TextLabel className="inline-flex items-center gap-1 font-semibold text-slate-600">
+                           Lỗi dữ liệu
+                        </TextLabel>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-800">
-                          <AlertTriangle size={11} /> Cần tư vấn
-                        </span>
+                        <TextLabel className="inline-flex items-center gap-1 font-semibold text-amber-800">
+                           Cần tư vấn
+                        </TextLabel>
                       )}
                     </div>
                   </>
@@ -900,29 +883,29 @@ export default function RegistrationProgressTab() {
                         <table className="w-full text-xs">
                           <thead className="border-b border-slate-100 text-[11px] font-semibold text-slate-500">
                             <tr>
-                              <th className="px-5 py-2 text-left">Mã môn</th>
-                              <th className="px-5 py-2 text-left">Tên môn học</th>
-                              <th className="px-5 py-2 text-center">Tín chỉ</th>
-                              <th className="px-5 py-2 text-center">Tình trạng</th>
+                              <th className="px-5 py-2 text-left table-cell-left">Mã môn</th>
+                              <th className="px-5 py-2 text-left table-cell-left">Tên môn học</th>
+                              <th className="px-5 py-2 text-center table-cell-center">Tín chỉ</th>
+                              <th className="px-5 py-2 text-center table-cell-center">Tình trạng</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
                             {courses.map((course) => (
                               <tr key={`${course.courseCode}-${course.group}`} className="hover:bg-slate-50/60">
-                                <td className="px-5 py-2.5 font-mono font-semibold text-slate-700">
+                                <td className="px-5 py-2.5 font-mono font-semibold text-slate-700 text-left table-cell-left">
                                   {course.courseCode}
                                 </td>
-                                <td className="px-5 py-2.5 text-slate-800">{course.courseName}</td>
-                                <td className="px-5 py-2.5 text-center font-mono text-slate-600">{course.credits}</td>
-                                <td className="px-5 py-2.5 text-center">
+                                <td className="px-5 py-2.5 text-slate-800 text-left table-cell-left">{course.courseName}</td>
+                                <td className="px-5 py-2.5 text-center font-mono text-slate-600 table-cell-center">{course.credits}</td>
+                                <td className="px-5 py-2.5 text-center table-cell-center">
                                   {course.registrationStatus === "registered" ? (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
-                                      <CheckCircle2 size={10} /> Đã đăng ký
-                                    </span>
+                                    <TextLabel className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                                       Đã đăng ký
+                                    </TextLabel>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-bold text-red-700">
-                                      <XCircle size={10} /> Chưa đăng ký
-                                    </span>
+                                    <TextLabel className="inline-flex items-center gap-1 text-[11px] font-bold text-red-700">
+                                       Chưa đăng ký
+                                    </TextLabel>
                                   )}
                                 </td>
                               </tr>

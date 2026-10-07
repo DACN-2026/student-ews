@@ -10,7 +10,7 @@ import {
 } from "@/lib/services/academic-warning-policy";
 
 export const QD600_EXECUTION_PROFILE = "QD600_PARTIAL_REGULATORY" as const;
-export const QD600_RULE_ENGINE_VERSION = "academic-warning-qd600-article18-and-progress-v7" as const;
+export const QD600_RULE_ENGINE_VERSION = "academic-warning-qd600-article18-and-progress-v11" as const;
 
 export type Qd600RuleCode =
   | "QD600_FAILED_CREDIT_RATIO"
@@ -18,12 +18,13 @@ export type Qd600RuleCode =
   | "QD600_CUMULATIVE_GPA_NEAR_THRESHOLD"
   | "QD600_TERM_GPA"
   | "QD600_ACCUMULATED_DEBT_CREDITS"
+  | "ACCUMULATED_DEBT_CREDIT_RISK"
   | "TRAINING_PROGRESS_CREDIT_DEFICIT";
 
 export type Qd600RuleSourceType = "REGULATORY" | "ADVISORY" | "OPERATIONAL";
 export type Qd600RuleEvaluationStatus = "EVALUATED" | "NOT_EVALUATED" | "NOT_APPLICABLE";
 export type Qd600RuleDataStatus = "COMPLETE" | "PARTIAL" | "INSUFFICIENT" | "UNVERIFIED";
-export type Qd600BusinessStatus = "NORMAL" | "PARTIAL_NO_RISK" | "MONITORING" | "HIGH_RISK" | "VERIFY_REQUIRED" | "INSUFFICIENT_DATA";
+export type Qd600BusinessStatus = "NORMAL" | "MONITORING" | "HIGH_RISK" | "VERIFY_REQUIRED" | "INSUFFICIENT_DATA";
 export type Qd600CoverageStatus = "FULL" | "PARTIAL" | "INSUFFICIENT";
 export type LegacySignalSourceType = "ADVISORY" | "OPERATIONAL_SIGNAL" | "OFFICIAL_CONTEXT";
 
@@ -257,7 +258,7 @@ export function evaluateTrainingProgressCreditDeficit(input: Qd600EvaluationInpu
       : riskLevel === "YELLOW"
         ? `Thiếu ${gap} tín chỉ so với tiến độ CTĐT (mức Vàng từ 4 đến 11 tín chỉ).`
         : `Thiếu ${gap} tín chỉ so với tiến độ CTĐT (mức Xanh từ 0 đến 3 tín chỉ).`)
-      + (progress.dataStatus === "PARTIAL" ? " Số liệu nhóm tự chọn chưa hoàn chỉnh nên kết quả không được dùng để xác nhận mức Xanh." : ""),
+      + (progress.dataStatus === "PARTIAL" ? " Số liệu nhóm tự chọn chưa hoàn chỉnh; các tiêu chí chưa đủ dữ liệu được ghi rõ trong chi tiết đánh giá." : ""),
     regulatorySource: null,
     articleRef: null,
     riskLevel,
@@ -532,7 +533,7 @@ function evaluateAccumulatedDebt(input: Qd600EvaluationInput): Qd600RuleEvaluati
         ? "UNVERIFIED"
         : data.dataStatus,
       capabilityStatus: capability.status,
-      reasonCode: "ACCUMULATED_DEBT_SEMANTICS_UNVERIFIED",
+      reasonCode: data.dataStatus === "UNVERIFIED" ? "ACCUMULATED_DEBT_SEMANTICS_UNVERIFIED" : data.reasonCode ?? "ACCUMULATED_DEBT_SEMANTICS_UNVERIFIED",
       explanation: "Cần đối chiếu lịch sử học lại môn rớt và môn tự chọn thay thế để xác định chính xác số tín chỉ F còn nợ đọng theo Điều 18.",
       thresholdValue: input.policyDefinition.thresholds.accumulatedDebtCredits.value,
       policy: input.policyDefinition,
@@ -574,15 +575,47 @@ function regulatoryCoverage(rules: Qd600RuleEvaluation[]) {
   return { status, evaluatedRules, totalRules: regulatoryRules.length, notEvaluatedRuleCodes };
 }
 
+/** Internal monitoring thresholds; QĐ600's >24-credit rule stays separate. */
+function evaluateAccumulatedDebtRisk(debt: Qd600RuleEvaluation): Qd600RuleEvaluation {
+  const credits = debt.observedValue!;
+  const riskLevel = credits >= 19 ? "RED" : credits >= 13 ? "YELLOW" : "GREEN";
+  return {
+    ruleCode: "ACCUMULATED_DEBT_CREDIT_RISK",
+    sourceType: "ADVISORY",
+    evaluationStatus: "EVALUATED",
+    dataStatus: "COMPLETE",
+    observedValue: credits,
+    thresholdValue: riskLevel === "RED" ? 19 : 13,
+    margin: null,
+    isNearThreshold: riskLevel === "YELLOW",
+    isThresholdBreached: riskLevel === "RED",
+    capabilityStatus: debt.capabilityStatus,
+    reasonCode: riskLevel === "RED" ? "ACCUMULATED_DEBT_RISK_RED"
+      : riskLevel === "YELLOW" ? "ACCUMULATED_DEBT_RISK_YELLOW" : null,
+    explanation: `Nợ tích lũy còn ${credits} tín chỉ sau đối chiếu nhóm lựa chọn của từng học kỳ, học lại và bù bằng môn tự chọn cùng khối CTĐT có tín chỉ đạt dư so với kế hoạch học kỳ. `
+      + (riskLevel === "RED" ? "Nguy cơ cao từ 19 tín chỉ."
+        : riskLevel === "YELLOW" ? "Cần chú ý từ 13 đến 18 tín chỉ."
+          : "Chưa chạm mức theo dõi 13 tín chỉ.")
+      + " Đây là ngưỡng theo dõi của hệ thống; cảnh báo theo QĐ600 áp dụng khi nợ trên 24 tín chỉ.",
+    regulatorySource: null,
+    articleRef: null,
+    riskLevel,
+  };
+}
+
 export function evaluateQd600Article18(input: Qd600EvaluationInput): Qd600EvaluationResult {
+  const debt = evaluateAccumulatedDebt(input);
   const rules = [
     evaluateFailedCreditRatio(input),
     evaluateCumulativeGpa(input),
     evaluateCumulativeGpaAdvisory(input),
     evaluateTermGpa(input),
-    evaluateAccumulatedDebt(input),
+    debt,
     evaluateTrainingProgressCreditDeficit(input),
   ];
+  // Do not classify advisory debt from an incomplete historical calculation.
+  // The regulatory debt rule already explains why evaluation is unavailable.
+  if (debt.evaluationStatus === "EVALUATED") rules.push(evaluateAccumulatedDebtRisk(debt));
   const coverage = regulatoryCoverage(rules);
   const legacySignalContext = [...new Set(input.legacySignalCodes || [])].map((reasonCode) => ({
     reasonCode,
@@ -593,18 +626,14 @@ export function evaluateQd600Article18(input: Qd600EvaluationInput): Qd600Evalua
   const hasRedProgressRisk = rules.some((rule) => rule.ruleCode === "TRAINING_PROGRESS_CREDIT_DEFICIT" && rule.riskLevel === "RED");
   const hasYellowProgressRisk = rules.some((rule) => rule.ruleCode === "TRAINING_PROGRESS_CREDIT_DEFICIT" && rule.riskLevel === "YELLOW");
   const hasNearThreshold = rules.some((rule) => rule.sourceType === "ADVISORY" && rule.isNearThreshold);
-  const hasIncompleteRuleData = rules.some((rule) =>
-    rule.evaluationStatus === "NOT_EVALUATED" || rule.dataStatus !== "COMPLETE",
-  );
-  const businessStatus: Qd600BusinessStatus = hasRegulatoryBreach || hasRedProgressRisk
+  const hasRedDebtRisk = rules.some((rule) => rule.ruleCode === "ACCUMULATED_DEBT_CREDIT_RISK" && rule.riskLevel === "RED");
+  const businessStatus: Qd600BusinessStatus = hasRegulatoryBreach || hasRedProgressRisk || hasRedDebtRisk
     ? "HIGH_RISK"
     : hasNearThreshold || hasYellowProgressRisk
       ? "MONITORING"
         : coverage.status === "INSUFFICIENT"
           ? "INSUFFICIENT_DATA"
-          : coverage.status === "PARTIAL" || hasIncompleteRuleData
-            ? "PARTIAL_NO_RISK"
-            : "NORMAL";
+          : "NORMAL";
 
   return {
     engineVersion: QD600_RULE_ENGINE_VERSION,

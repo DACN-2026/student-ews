@@ -1,30 +1,9 @@
 "use client";
 
+import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import {
-  AlertCircle,
-  AlertTriangle,
-  BookOpen,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  CircleHelp,
-  Clock,
-  Download,
-  FileCheck2,
-  FileText,
-  Filter,
-  GraduationCap,
-  Info,
-  LoaderCircle,
-  Play,
-  RefreshCw,
-  Search,
-  ShieldAlert,
-  Users,
-  X,
-  XCircle,
-} from "lucide-react";
+import { AlertTriangle, Check, CircleHelp, Clock, Download, FileCheck2, Filter, GraduationCap, Info, LoaderCircle, Play, RefreshCw, Search, ShieldAlert, Users, X } from "lucide-react";
+import { studyTimeline } from "@/lib/academic-timeline";
 import { apiFetch } from "@/lib/api-client";
 import Modal from "@/components/ui/Modal";
 import ForecastDetail from "@/components/graduation/ForecastDetail";
@@ -147,128 +126,6 @@ function getCohortStudyYearInfo(run: ApiData | null): { yearNumber: number; isFi
   };
 }
 
-const REASON_LABELS: Record<string, string> = {
-  thieuTinChi: "Thiếu tín chỉ CTĐT",
-  thieuBatBuoc: "Thiếu học phần bắt buộc",
-  thieuTuChon: "Thiếu tín chỉ tự chọn",
-  chuaDat: "Có học phần chưa đạt",
-};
-
-const YEAR23_LABELS: Record<string, string> = {
-  all: "Tất cả",
-  clean: "Không thiếu",
-  overdueMandatory: "Thiếu HP bắt buộc",
-  failed: "Có HP chưa đạt",
-  elective: "Thiếu tự chọn",
-  pending: "Đang học kỳ này",
-};
-
-export type StudentBacklogCourse = {
-  courseCode: string;
-  courseName: string;
-  credits: number;
-  semesterNo?: number | null;
-  letterGrade?: string;
-  score10?: number;
-  isMandatory?: boolean;
-};
-
-export type StudentBacklogInfo = {
-  status: "NO_BACKLOG" | "HAS_OVERDUE" | "HAS_FAILED" | "HAS_ELECTIVE_OVERDUE";
-  hasNoBacklog: boolean;
-  hasOverdueMandatory: boolean;
-  hasFailed: boolean;
-  hasElectiveBacklog: boolean;
-  overdueMandatoryCount: number;
-  failedCount: number;
-  failedMandatoryCount: number;
-  failedElectiveCount: number;
-  electiveBacklogCount: number;
-  totalBacklogCount: number;
-  overdueMandatoryCourses: StudentBacklogCourse[];
-  failedCourses: StudentBacklogCourse[];
-  failedElectiveCourses: StudentBacklogCourse[];
-  electiveGroupBacklogs: Array<{ groupCode: string; message: string; remainingCredits: number }>;
-  pendingCount: number;
-};
-
-export function getStudentBacklog(student: ApiData): StudentBacklogInfo {
-  const b = student.backlog as Partial<StudentBacklogInfo> | undefined;
-  if (b && typeof b.totalBacklogCount === "number") {
-    return b as StudentBacklogInfo;
-  }
-
-  const reasons = Array.isArray(student.reasons) ? student.reasons : [];
-  const overdueMandatoryCourses: StudentBacklogCourse[] = [];
-  const failedCourses: StudentBacklogCourse[] = [];
-  const failedElectiveCourses: StudentBacklogCourse[] = [];
-  const electiveGroupBacklogs: Array<{ groupCode: string; message: string; remainingCredits: number }> = [];
-
-  for (const r of reasons) {
-    if (r.code === "OVERDUE_MANDATORY_COURSE") {
-      overdueMandatoryCourses.push({
-        courseCode: String(r.courseCode || ""),
-        courseName: String(r.courseName || ""),
-        credits: Number(r.credits || 0),
-        semesterNo: r.semesterNo != null ? Number(r.semesterNo) : null,
-        isMandatory: true,
-      });
-    } else if (r.code === "FAILED_COURSE") {
-      const isMand = r.isMandatory !== undefined ? Boolean(r.isMandatory) : !/tự chọn|elective/i.test(String(r.courseName || "") + " " + String(r.requirementType || ""));
-      const courseItem: StudentBacklogCourse = {
-        courseCode: String(r.courseCode || ""),
-        courseName: String(r.courseName || ""),
-        credits: Number(r.credits || 0),
-        letterGrade: r.letterGrade ? String(r.letterGrade) : undefined,
-        score10: r.score10 != null ? Number(r.score10) : undefined,
-        semesterNo: r.semesterNo != null ? Number(r.semesterNo) : null,
-        isMandatory: isMand,
-      };
-      failedCourses.push(courseItem);
-      if (!isMand) {
-        failedElectiveCourses.push(courseItem);
-      }
-    } else if (r.code === "MISSING_ELECTIVE_CREDITS") {
-      electiveGroupBacklogs.push({
-        groupCode: String(r.groupCode || "TC"),
-        message: String(r.message || ""),
-        remainingCredits: Number(r.remainingCredits || 0),
-      });
-    }
-  }
-
-  const overdueMandatoryCount = overdueMandatoryCourses.length;
-  const failedCount = failedCourses.length;
-  const electiveBacklogCount = failedElectiveCourses.length + electiveGroupBacklogs.length;
-  const totalBacklogCount = overdueMandatoryCount + failedCount + electiveGroupBacklogs.length;
-
-  const hasOverdueMandatory = overdueMandatoryCount > 0;
-  const hasFailed = failedCount > 0;
-  const hasElectiveBacklog = electiveBacklogCount > 0;
-  const hasNoBacklog = !hasOverdueMandatory && !hasFailed && !hasElectiveBacklog;
-
-  const status = hasNoBacklog ? "NO_BACKLOG" : hasFailed ? "HAS_FAILED" : hasOverdueMandatory ? "HAS_OVERDUE" : "HAS_ELECTIVE_OVERDUE";
-
-  return {
-    status,
-    hasNoBacklog,
-    hasOverdueMandatory,
-    hasFailed,
-    hasElectiveBacklog,
-    overdueMandatoryCount,
-    failedCount,
-    failedMandatoryCount: failedCourses.filter((c) => c.isMandatory).length,
-    failedElectiveCount: failedElectiveCourses.length,
-    electiveBacklogCount,
-    totalBacklogCount,
-    overdueMandatoryCourses,
-    failedCourses,
-    failedElectiveCourses,
-    electiveGroupBacklogs,
-    pendingCount: Number(student.pendingResultCourses || 0),
-  };
-}
-
 export default function GraduationForecastPage() {
   const { user, can, status } = useAuthStore();
   const isClassAdvisor = user?.role === "CLASS_ADVISOR";
@@ -284,7 +141,7 @@ export default function GraduationForecastPage() {
     ? `Dự kiến tốt nghiệp • Lớp ${user?.className || ""}`
     : isFacultyBoard
     ? "Dự kiến tốt nghiệp Khoa"
-    : "Dự kiến tốt nghiệp & Tiến độ CTĐT";
+    : "Dự kiến tốt nghiệp";
 
   const [runs, setRuns] = useState<ApiData[]>([]);
   const [cohorts, setCohorts] = useState<ApiData[]>([]);
@@ -299,9 +156,6 @@ export default function GraduationForecastPage() {
   // Selected batch
   const [selectedRun, setSelectedRun] = useState<ApiData | null>(null);
 
-  // Manual view mode toggle override ("auto" | "final_year" | "ongoing")
-  const [manualViewMode, setManualViewMode] = useState<"auto" | "final_year" | "ongoing">("auto");
-
   // Student list in selected batch
   const [allStudents, setAllStudents] = useState<ApiData[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
@@ -310,15 +164,6 @@ export default function GraduationForecastPage() {
 
   // Class filter (Lớp)
   const [classFilter, setClassFilter] = useState("all");
-
-  // Final year missing reasons filter: "all" | "thieuTinChi" | "thieuBatBuoc" | "thieuTuChon" | "chuaDat"
-  const [activeReasonFilter, setActiveReasonFilter] = useState<string>("all");
-
-  // Year 2-3 progress tier filter: "all" | "clean" | "overdueMandatory" | "failed" | "elective"
-  const [year23Filter, setYear23Filter] = useState<string>("all");
-
-  // Quick filter by specific common backlog course
-  const [selectedCourseBacklogFilter, setSelectedCourseBacklogFilter] = useState<string | null>(null);
 
   // Filter batches by cohort
   const [cohortFilter, setCohortFilter] = useState<string>("all");
@@ -341,10 +186,9 @@ export default function GraduationForecastPage() {
 
   const loadRunStudents = useCallback(async (run: ApiData) => {
     setStudentsLoading(true);
-    setActiveReasonFilter("all");
-    setYear23Filter("all");
+
     setClassFilter("all");
-    setSelectedCourseBacklogFilter(null);
+
     try {
       const params = new URLSearchParams({ pageSize: "100" });
       const response = await apiFetch(`/api/v1/graduation-evaluations/${run.id}/students?${params}`);
@@ -383,7 +227,7 @@ export default function GraduationForecastPage() {
     setLoadError("");
     try {
       const [runResponse, cohortResponse, programResponse, yearResponse] = await Promise.all([
-        apiFetch("/api/v1/graduation-evaluations?pageSize=100&status=completed"),
+        apiFetch("/api/v1/graduation-evaluations?pageSize=100&status=completed&latestPerScope=true"),
         apiFetch("/api/v1/cohorts?pageSize=100"),
         apiFetch("/api/v1/training-programs?pageSize=100"),
         apiFetch("/api/v1/academic-years?pageSize=100"),
@@ -422,11 +266,9 @@ export default function GraduationForecastPage() {
   const selectRun = async (run: ApiData) => {
     setSelectedRun(run);
     setStatusFilter("all");
-    setActiveReasonFilter("all");
-    setYear23Filter("all");
+
     setClassFilter("all");
-    setSelectedCourseBacklogFilter(null);
-    setManualViewMode("auto");
+
     setKeyword("");
     await loadRunStudents(run);
   };
@@ -524,14 +366,6 @@ export default function GraduationForecastPage() {
     }
   };
 
-  // Identify whether selected batch is final year or ongoing (Year 2-3)
-  const currentBatchInfo = useMemo(() => getCohortStudyYearInfo(selectedRun), [selectedRun]);
-  const isFinalYear = useMemo(() => {
-    if (manualViewMode === "final_year") return true;
-    if (manualViewMode === "ongoing") return false;
-    return currentBatchInfo.isFinalYear;
-  }, [manualViewMode, currentBatchInfo.isFinalYear]);
-
   // Split runs into categories
   const finalYearRuns = useMemo(() => runs.filter((r) => getCohortStudyYearInfo(r).isFinalYear), [runs]);
   const ongoingRuns = useMemo(() => runs.filter((r) => !getCohortStudyYearInfo(r).isFinalYear), [runs]);
@@ -540,7 +374,7 @@ export default function GraduationForecastPage() {
   const handleCategoryChange = (category: "final_year" | "ongoing" | "all") => {
     setBatchCategory(category);
     setCohortFilter("all");
-    setSelectedCourseBacklogFilter(null);
+
     if (category === "final_year" && finalYearRuns.length > 0) {
       if (!selectedRun || !getCohortStudyYearInfo(selectedRun).isFinalYear) {
         void selectRun(finalYearRuns[0]);
@@ -554,10 +388,11 @@ export default function GraduationForecastPage() {
 
   // Category pool runs before cohortFilter
   const categoryRuns = useMemo(() => {
+    if (isClassAdvisor) return runs;
     if (batchCategory === "final_year") return finalYearRuns;
     if (batchCategory === "ongoing") return ongoingRuns;
     return runs;
-  }, [runs, batchCategory, finalYearRuns, ongoingRuns]);
+  }, [isClassAdvisor, runs, batchCategory, finalYearRuns, ongoingRuns]);
 
   // Unique cohort codes in currently selected category (does not shrink when filtered)
   const uniqueCohortCodes = useMemo(() => {
@@ -574,7 +409,7 @@ export default function GraduationForecastPage() {
     return categoryRuns.filter((r) => r.cohortCode === cohortFilter);
   }, [categoryRuns, cohortFilter]);
 
-  const selectedTotalCreditsThreshold = configuredThreshold(selectedRun?.sourceSnapshot, "TOTAL_CREDITS", 145) || 145;
+  const selectedTotalCreditsThreshold = configuredThreshold(selectedRun?.sourceSnapshot, "TOTAL_CREDITS", 150) || 150;
 
   // Unique classes in current batch
   const uniqueClasses = useMemo(() => {
@@ -613,230 +448,29 @@ export default function GraduationForecastPage() {
     return counts;
   }, [scopedStudents]);
 
-  // Missing reasons breakdown (Thống kê nguyên nhân còn thiếu)
-  const missingReasons = useMemo(() => {
-    let thieuTinChi = 0;
-    let thieuBatBuoc = 0;
-    let thieuTuChon = 0;
-    let chuaDat = 0;
-
-    for (const s of scopedStudents) {
-      if (s.finalStatus === "NOT_ELIGIBLE") {
-        const reasons = Array.isArray(s.reasons) ? s.reasons : [];
-        const isThieuTinChi = Number(s.totalCredits || 0) < selectedTotalCreditsThreshold || reasons.some((r: ApiData) => r.code === "TOTAL_CREDITS");
-        const isThieuBatBuoc = Number(s.missingRequiredCourses || 0) > 0 || reasons.some((r: ApiData) => r.code === "MISSING_REQUIRED_COURSE");
-        const isThieuTuChon =
-          (s.missingElectiveCredits != null && Number(s.missingElectiveCredits) > 0) ||
-          reasons.some((r: ApiData) => (r.code === "MISSING_ELECTIVE_CREDITS" || r.code === "ELECTIVE_CREDITS") && r.result === "FAIL");
-        const isChuaDat = reasons.some((r: ApiData) => r.code === "FAILED_COURSE");
-
-        if (isThieuTinChi) thieuTinChi++;
-        if (isThieuBatBuoc) thieuBatBuoc++;
-        if (isThieuTuChon) thieuTuChon++;
-        if (isChuaDat) chuaDat++;
-      }
-    }
-    return { thieuTinChi, thieuBatBuoc, thieuTuChon, chuaDat };
-  }, [scopedStudents, selectedTotalCreditsThreshold]);
-
-  // Final Year Status Filter Tabs
-  const finalYearStatusTabs = useMemo(() => [
+  // Graduation status options, counted within the selected class scope.
+  const finalYearStatusOptions = useMemo(() => [
     {
       key: "all",
       label: "Tất cả",
       count: statusCounts.all,
-      icon: null,
-      activeCls: "bg-slate-900 border-slate-900 text-white shadow-xs",
-      inactiveCls: "bg-slate-100/80 border-slate-200 text-slate-700 hover:bg-slate-200/80 hover:text-slate-900",
-      badgeActiveCls: "bg-white/20 text-white",
-      badgeInactiveCls: "bg-slate-200 text-slate-700",
     },
     {
       key: "EXPECTED_ELIGIBLE",
       label: "Đủ yêu cầu",
       count: statusCounts.EXPECTED_ELIGIBLE,
-      icon: Check,
-      activeCls: "bg-emerald-600 border-emerald-600 text-white shadow-xs",
-      inactiveCls: "bg-emerald-50/70 border-emerald-200 text-emerald-800 hover:bg-emerald-100",
-      badgeActiveCls: "bg-white/20 text-white",
-      badgeInactiveCls: "bg-emerald-100 text-emerald-800",
     },
     {
       key: "PENDING_GRADE",
       label: "Đang hoàn thiện",
       count: statusCounts.PENDING_GRADE,
-      icon: Clock,
-      activeCls: "bg-sky-600 border-sky-600 text-white shadow-xs",
-      inactiveCls: "bg-sky-50/70 border-sky-200 text-sky-800 hover:bg-sky-100",
-      badgeActiveCls: "bg-white/20 text-white",
-      badgeInactiveCls: "bg-sky-100 text-sky-800",
     },
     {
       key: "NOT_ELIGIBLE",
       label: "Còn thiếu",
       count: statusCounts.NOT_ELIGIBLE,
-      icon: AlertTriangle,
-      activeCls: "bg-amber-600 border-amber-600 text-white shadow-xs",
-      inactiveCls: "bg-amber-50/70 border-amber-200 text-amber-800 hover:bg-amber-100",
-      badgeActiveCls: "bg-white/20 text-white",
-      badgeInactiveCls: "bg-amber-100 text-amber-800",
     },
   ], [statusCounts]);
-
-  // ==========================================
-  // YEAR 2-4 BACKLOG STATS, COMMON BACKLOG ITEMS & TABS (SCOPED BY CLASS FILTER)
-  // ==========================================
-  const currentStudyYearLabel = useMemo(() => {
-    const codeMatch = (selectedRun?.cohortCode || "").match(/K(\d+)/i);
-    if (!codeMatch) return "Năm 2";
-    const cohortNum = Number(codeMatch[1]);
-    const year = Math.max(1, 51 - cohortNum);
-    return `Năm ${year}`;
-  }, [selectedRun]);
-
-  // Common backlog items across students in current scope (Yêu cầu còn thiếu phổ biến)
-  const commonBacklogItems = useMemo(() => {
-    const map = new Map<string, {
-      key: string;
-      code: string;
-      name: string;
-      type: "mandatory" | "failed" | "elective";
-      studentIds: Set<string>;
-    }>();
-
-    for (const s of scopedStudents) {
-      const b = getStudentBacklog(s);
-      const sid = String(s.sStudentId || s.id);
-
-      // 1. Overdue mandatory courses
-      for (const c of b.overdueMandatoryCourses) {
-        const key = `M_${c.courseCode}`;
-        if (!map.has(key)) {
-          map.set(key, {
-            key,
-            code: c.courseCode,
-            name: c.courseName || c.courseCode,
-            type: "mandatory",
-            studentIds: new Set(),
-          });
-        }
-        map.get(key)!.studentIds.add(sid);
-      }
-
-      // 2. Failed courses
-      for (const c of b.failedCourses) {
-        const key = `F_${c.courseCode}`;
-        if (!map.has(key)) {
-          map.set(key, {
-            key,
-            code: c.courseCode,
-            name: c.courseName || c.courseCode,
-            type: "failed",
-            studentIds: new Set(),
-          });
-        }
-        map.get(key)!.studentIds.add(sid);
-      }
-
-      // 3. Elective groups
-      for (const g of b.electiveGroupBacklogs) {
-        const key = `E_${g.groupCode}`;
-        if (!map.has(key)) {
-          map.set(key, {
-            key,
-            code: g.groupCode,
-            name: `Nhóm tự chọn ${g.groupCode}`,
-            type: "elective",
-            studentIds: new Set(),
-          });
-        }
-        map.get(key)!.studentIds.add(sid);
-      }
-    }
-
-    return Array.from(map.values())
-      .map((item) => ({
-        ...item,
-        count: item.studentIds.size,
-      }))
-      .filter((item) => item.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
-  }, [scopedStudents]);
-
-  const year23BacklogStats = useMemo(() => {
-    let clean = 0;
-    let overdueMandatory = 0;
-    let failed = 0;
-    let elective = 0;
-    let pending = 0;
-
-    for (const s of scopedStudents) {
-      const b = getStudentBacklog(s);
-      if (b.hasNoBacklog) clean++;
-      if (b.hasOverdueMandatory) overdueMandatory++;
-      if (b.hasFailed) failed++;
-      if (b.hasElectiveBacklog) elective++;
-      if (b.pendingCount > 0) pending++;
-    }
-
-    return {
-      total: scopedStudents.length,
-      clean,
-      overdueMandatory,
-      failed,
-      elective,
-      pending,
-    };
-  }, [scopedStudents]);
-
-  const year23Tabs = useMemo(() => [
-    {
-      key: "all",
-      label: "Tất cả",
-      count: year23BacklogStats.total,
-      activeCls: "bg-slate-900 border-slate-900 text-white shadow-xs",
-      inactiveCls: "bg-slate-100/80 border-slate-200 text-slate-700 hover:bg-slate-200/80 hover:text-slate-900",
-      badgeActiveCls: "bg-white/20 text-white",
-      badgeInactiveCls: "bg-slate-200 text-slate-700",
-    },
-    {
-      key: "clean",
-      label: "Không thiếu",
-      count: year23BacklogStats.clean,
-      activeCls: "bg-emerald-600 border-emerald-600 text-white shadow-xs",
-      inactiveCls: "bg-emerald-50/70 border-emerald-200 text-emerald-800 hover:bg-emerald-100",
-      badgeActiveCls: "bg-white/20 text-white",
-      badgeInactiveCls: "bg-emerald-100 text-emerald-800",
-    },
-    {
-      key: "overdueMandatory",
-      label: "Thiếu HP bắt buộc",
-      count: year23BacklogStats.overdueMandatory,
-      activeCls: "bg-amber-600 border-amber-600 text-white shadow-xs",
-      inactiveCls: "bg-amber-50/70 border-amber-200 text-amber-800 hover:bg-amber-100",
-      badgeActiveCls: "bg-white/20 text-white",
-      badgeInactiveCls: "bg-amber-100 text-amber-800",
-    },
-    {
-      key: "failed",
-      label: "Có HP chưa đạt",
-      count: year23BacklogStats.failed,
-      activeCls: "bg-rose-600 border-rose-600 text-white shadow-xs",
-      inactiveCls: "bg-rose-50/70 border-rose-200 text-rose-800 hover:bg-rose-100",
-      badgeActiveCls: "bg-white/20 text-white",
-      badgeInactiveCls: "bg-rose-100 text-rose-800",
-    },
-    {
-      key: "elective",
-      label: "Thiếu tự chọn",
-      count: year23BacklogStats.elective,
-      activeCls: "bg-indigo-600 border-indigo-600 text-white shadow-xs",
-      inactiveCls: "bg-indigo-50/70 border-indigo-200 text-indigo-800 hover:bg-indigo-100",
-      badgeActiveCls: "bg-white/20 text-white",
-      badgeInactiveCls: "bg-indigo-100 text-indigo-800",
-    },
-  ], [year23BacklogStats]);
 
   // ==========================================
   // FILTERED STUDENTS LIST
@@ -844,57 +478,9 @@ export default function GraduationForecastPage() {
   const filteredStudents = useMemo(() => {
     let list = scopedStudents;
 
-    if (isFinalYear) {
-      // Final year filter by status
-      if (statusFilter !== "all") {
-        list = list.filter((s) => s.finalStatus === statusFilter);
-      }
-      // Filter by missing reasons if user clicked a reason card
-      if (activeReasonFilter !== "all") {
-        list = list.filter((s) => {
-          if (s.finalStatus !== "NOT_ELIGIBLE") return false;
-          const reasons = Array.isArray(s.reasons) ? s.reasons : [];
-          if (activeReasonFilter === "thieuTinChi") {
-            return Number(s.totalCredits || 0) < selectedTotalCreditsThreshold || reasons.some((r: ApiData) => r.code === "TOTAL_CREDITS");
-          }
-          if (activeReasonFilter === "thieuBatBuoc") {
-            return Number(s.missingRequiredCourses || 0) > 0 || reasons.some((r: ApiData) => r.code === "MISSING_REQUIRED_COURSE");
-          }
-          if (activeReasonFilter === "thieuTuChon") {
-            return (
-              (s.missingElectiveCredits != null && Number(s.missingElectiveCredits) > 0) ||
-              reasons.some((r: ApiData) => (r.code === "MISSING_ELECTIVE_CREDITS" || r.code === "ELECTIVE_CREDITS") && r.result === "FAIL")
-            );
-          }
-          if (activeReasonFilter === "chuaDat") {
-            return reasons.some((r: ApiData) => r.code === "FAILED_COURSE");
-          }
-          return true;
-        });
-      }
-    } else {
-      // Year 2-4 backlog filter
-      if (year23Filter === "clean") {
-        list = list.filter((s) => getStudentBacklog(s).hasNoBacklog);
-      } else if (year23Filter === "overdueMandatory") {
-        list = list.filter((s) => getStudentBacklog(s).hasOverdueMandatory);
-      } else if (year23Filter === "failed") {
-        list = list.filter((s) => getStudentBacklog(s).hasFailed);
-      } else if (year23Filter === "elective") {
-        list = list.filter((s) => getStudentBacklog(s).hasElectiveBacklog);
-      }
-
-      // Quick filter by specific common backlog course
-      if (selectedCourseBacklogFilter) {
-        list = list.filter((s) => {
-          const b = getStudentBacklog(s);
-          return (
-            b.overdueMandatoryCourses.some((c) => c.courseCode === selectedCourseBacklogFilter) ||
-            b.failedCourses.some((c) => c.courseCode === selectedCourseBacklogFilter) ||
-            b.electiveGroupBacklogs.some((g) => g.groupCode === selectedCourseBacklogFilter)
-          );
-        });
-      }
+    // Filter by graduation status
+    if (statusFilter !== "all") {
+      list = list.filter((s) => s.finalStatus === statusFilter);
     }
 
     // Search query
@@ -909,7 +495,7 @@ export default function GraduationForecastPage() {
     }
 
     return list;
-  }, [scopedStudents, isFinalYear, statusFilter, activeReasonFilter, year23Filter, selectedCourseBacklogFilter, selectedTotalCreditsThreshold, keyword]);
+  }, [scopedStudents, statusFilter, keyword]);
 
   if (status !== "loading" && status !== "idle" && !can("graduation.read")) {
     return <ForbiddenState requiredPermission="graduation.read" />;
@@ -926,9 +512,9 @@ export default function GraduationForecastPage() {
             {scopeBadgeText && (
               <>
                 <span className="text-slate-300">•</span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 lowercase first-letter:uppercase">
+                <TextLabel className="inline-flex items-center text-xs font-medium text-emerald-700 lowercase first-letter:uppercase">
                   {scopeBadgeText}
-                </span>
+                </TextLabel>
               </>
             )}
           </div>
@@ -936,7 +522,7 @@ export default function GraduationForecastPage() {
             {pageTitle}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Theo dõi điều kiện tốt nghiệp cho sinh viên năm cuối (Năm 5) và mức độ hoàn thành chương trình đào tạo cho sinh viên các năm 2, 3, 4.
+            Đối chiếu điều kiện tốt nghiệp của sinh viên theo từng đợt đánh giá.
           </p>
         </div>
 
@@ -973,6 +559,7 @@ export default function GraduationForecastPage() {
           </div>
 
           {/* CHỌN NHÓM ĐỐI TƯỢNG: MẶC ĐỊNH LÀ SINH VIÊN NĂM CUỐI */}
+          {!isClassAdvisor && (
           <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-xl text-xs font-bold">
             <button
               type="button"
@@ -983,11 +570,10 @@ export default function GraduationForecastPage() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              <GraduationCap size={14} className={batchCategory === "final_year" ? "text-lime-600" : "text-slate-400"} />
               <span>Sinh viên năm cuối (Năm 5)</span>
-              <span className="rounded-md bg-lime-100 text-lime-800 px-1.5 py-0.2 text-[10px] font-mono">
+              <TextLabel className="text-lime-800 text-[10px] font-mono">
                 {finalYearRuns.length}
-              </span>
+              </TextLabel>
             </button>
             <button
               type="button"
@@ -998,11 +584,10 @@ export default function GraduationForecastPage() {
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              <BookOpen size={14} className={batchCategory === "ongoing" ? "text-blue-600" : "text-slate-400"} />
               <span>Sinh viên năm 2 - 4</span>
-              <span className="rounded-md bg-blue-100 text-blue-800 px-1.5 py-0.2 text-[10px] font-mono">
+              <TextLabel className="text-blue-800 text-[10px] font-mono">
                 {ongoingRuns.length}
-              </span>
+              </TextLabel>
             </button>
             <button
               type="button"
@@ -1016,6 +601,7 @@ export default function GraduationForecastPage() {
               <span>Tất cả ({runs.length})</span>
             </button>
           </div>
+          )}
         </div>
 
         {/* Lọc nhanh theo khóa học nếu có nhiều khóa trong nhóm */}
@@ -1097,9 +683,9 @@ export default function GraduationForecastPage() {
                   }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold text-slate-700 shrink-0">
+                    <TextLabel className="inline-flex font-mono text-xs font-bold text-slate-700 shrink-0">
                       {run.cohortCode || "Khóa"}
-                    </span>
+                    </TextLabel>
                     <span className="text-sm font-bold text-slate-900 truncate">
                       {run.programName || run.programCode}
                     </span>
@@ -1107,14 +693,14 @@ export default function GraduationForecastPage() {
 
                   <div className="shrink-0">
                     {isSelected ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-lime-600 px-2.5 py-0.5 text-xs font-bold text-white shadow-xs">
-                        <Check size={12} strokeWidth={3} />
+                      <TextLabel className="inline-flex items-center gap-1 text-xs font-bold text-lime-700">
+
                         Đang xem
-                      </span>
+                      </TextLabel>
                     ) : (
-                      <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-medium text-slate-400 group-hover:text-slate-700 group-hover:bg-slate-100 transition">
+                      <TextLabel className="inline-flex items-center text-xs font-medium text-slate-400 group-hover:text-slate-700 group-hover:bg-slate-100 transition">
                         Bấm để xem
-                      </span>
+                      </TextLabel>
                     )}
                   </div>
                 </button>
@@ -1130,7 +716,7 @@ export default function GraduationForecastPage() {
           aria-labelledby="student-list-heading"
           className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden"
         >
-          {/* Header đợt đang xem & Chuyển góc nhìn & Nút tải xuất file */}
+          {/* Header đợt đang xem & Nút tải xuất file */}
           <div className="border-b border-slate-200 bg-slate-50/80 p-4 sm:p-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -1138,7 +724,7 @@ export default function GraduationForecastPage() {
                   2
                 </span>
                 <h2 id="student-list-heading" className="text-base font-bold text-slate-900">
-                  {isFinalYear ? "Dự kiến tốt nghiệp sinh viên năm cuối" : "Rà soát tiến độ CTĐT sinh viên"}: {selectedRun.cohortCode} • {selectedRun.programName || selectedRun.programCode}
+                  Dự kiến tốt nghiệp sinh viên: {selectedRun.cohortCode} • {selectedRun.programName || selectedRun.programCode}
                 </h2>
               </div>
               <p className="mt-0.5 text-xs text-slate-500 pl-8">
@@ -1149,27 +735,6 @@ export default function GraduationForecastPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 pl-8 lg:pl-0">
-              {/* Nút chuyển góc nhìn linh hoạt */}
-              <div className="flex items-center gap-1 bg-slate-200/70 p-0.5 rounded-xl text-xs font-semibold">
-                <button
-                  type="button"
-                  onClick={() => setManualViewMode("final_year")}
-                  className={`rounded-lg px-2.5 py-1 transition cursor-pointer ${
-                    isFinalYear ? "bg-white text-slate-900 shadow-xs font-bold" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  🎓 Góc nhìn tốt nghiệp
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setManualViewMode("ongoing")}
-                  className={`rounded-lg px-2.5 py-1 transition cursor-pointer ${
-                    !isFinalYear ? "bg-white text-slate-900 shadow-xs font-bold" : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  📋 Rà soát tiến độ CTĐT
-                </button>
-              </div>
 
               {can("graduation.export") && (
                 <div className="flex items-center gap-1.5 ml-2">
@@ -1193,26 +758,25 @@ export default function GraduationForecastPage() {
           </div>
 
           {/* ========================================================= */}
-          {/* GÓC NHÌN A: SINH VIÊN NĂM CUỐI (DEFAULT)                   */}
+          {/* ĐÁNH GIÁ ĐIỀU KIỆN TỐT NGHIỆP                   */}
           {/* ========================================================= */}
-          {isFinalYear ? (
             <div className="p-4 sm:p-5 space-y-5 bg-white">
               {/* THẺ TỔNG QUAN 4 CHỈ SỐ: TỔNG SV, ĐỦ YÊU CẦU, ĐANG HOÀN THIỆN, CÒN THIẾU (INTERACTIVE: BẤM ĐỂ LỌC) */}
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {/* 1. Tổng sinh viên năm cuối */}
+                {/* 1. Tổng sinh viên */}
                 <div
                   onClick={() => {
                     setStatusFilter("all");
-                    setActiveReasonFilter("all");
+
                   }}
                   className={`rounded-xl border p-4 transition cursor-pointer ${
-                    statusFilter === "all" && activeReasonFilter === "all"
+                    statusFilter === "all"
                       ? "border-slate-800 bg-slate-100 shadow-xs ring-2 ring-slate-400"
                       : "border-slate-200 bg-slate-50/70 hover:bg-slate-100 hover:border-slate-300"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tổng SV năm cuối</span>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tổng sinh viên</span>
                     <Users size={18} className="text-slate-400" />
                   </div>
                   <p className="mt-2 font-mono text-3xl font-extrabold text-slate-900">{statusCounts.all}</p>
@@ -1225,7 +789,7 @@ export default function GraduationForecastPage() {
                 <div
                   onClick={() => {
                     setStatusFilter("EXPECTED_ELIGIBLE");
-                    setActiveReasonFilter("all");
+
                   }}
                   className={`rounded-xl border p-4 transition cursor-pointer ${
                     statusFilter === "EXPECTED_ELIGIBLE"
@@ -1248,7 +812,7 @@ export default function GraduationForecastPage() {
                 <div
                   onClick={() => {
                     setStatusFilter("PENDING_GRADE");
-                    setActiveReasonFilter("all");
+
                   }}
                   className={`rounded-xl border p-4 transition cursor-pointer ${
                     statusFilter === "PENDING_GRADE"
@@ -1271,10 +835,10 @@ export default function GraduationForecastPage() {
                 <div
                   onClick={() => {
                     setStatusFilter("NOT_ELIGIBLE");
-                    setActiveReasonFilter("all");
+
                   }}
                   className={`rounded-xl border p-4 transition cursor-pointer ${
-                    statusFilter === "NOT_ELIGIBLE" && activeReasonFilter === "all"
+                    statusFilter === "NOT_ELIGIBLE"
                       ? "border-amber-600 bg-amber-100/60 shadow-xs ring-2 ring-amber-500"
                       : "border-amber-200 bg-amber-50/50 hover:bg-amber-100/50 hover:border-amber-300"
                   }`}
@@ -1291,119 +855,24 @@ export default function GraduationForecastPage() {
                 </div>
               </div>
 
-              {/* KHU VỰC THỐNG KÊ NGUYÊN NHÂN CÒN THIẾU (THIẾU TÍN CHỈ, THIẾU BẮT BUỘC, THIẾU TỰ CHỌN, CÓ MÔN CHƯA ĐẠT) */}
-              <div className="rounded-xl border border-amber-200/90 bg-amber-50/30 p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-amber-200/60 pb-3">
-                  <div>
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-2">
-                      <AlertTriangle size={15} className="text-amber-600" />
-                      <span>Thống kê nguyên nhân còn thiếu ({statusCounts.NOT_ELIGIBLE} sinh viên chưa đủ điều kiện)</span>
-                    </h3>
-                    <p className="text-[11px] text-amber-700 mt-0.5">
-                      Một sinh viên có thể thiếu nhiều loại yêu cầu cùng lúc. Bấm vào từng mục để lọc nhanh danh sách sinh viên bên dưới.
-                    </p>
-                  </div>
-                  {activeReasonFilter !== "all" && (
-                    <button
-                      type="button"
-                      onClick={() => setActiveReasonFilter("all")}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-950 underline cursor-pointer"
-                    >
-                      <X size={12} />
-                      Bỏ lọc nguyên nhân ({REASON_LABELS[activeReasonFilter]})
-                    </button>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 mt-3">
-                  {/* Nguyên nhân 1: Thiếu tín chỉ */}
-                  <div
-                    onClick={() => setActiveReasonFilter(activeReasonFilter === "thieuTinChi" ? "all" : "thieuTinChi")}
-                    className={`rounded-lg p-3 transition border cursor-pointer ${
-                      activeReasonFilter === "thieuTinChi"
-                        ? "bg-amber-100/90 border-amber-500 shadow-xs ring-2 ring-amber-400/40"
-                        : "bg-white border-amber-200 hover:border-amber-300 hover:bg-amber-50/50"
-                    }`}
-                  >
-                    <p className="text-[11px] font-bold text-slate-700">Thiếu tín chỉ</p>
-                    <p className="font-mono text-xl font-extrabold text-amber-800 mt-1">{missingReasons.thieuTinChi}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Chưa đủ {selectedTotalCreditsThreshold} tín chỉ CTĐT</p>
-                  </div>
-
-                  {/* Nguyên nhân 2: Thiếu học phần bắt buộc */}
-                  <div
-                    onClick={() => setActiveReasonFilter(activeReasonFilter === "thieuBatBuoc" ? "all" : "thieuBatBuoc")}
-                    className={`rounded-lg p-3 transition border cursor-pointer ${
-                      activeReasonFilter === "thieuBatBuoc"
-                        ? "bg-amber-100/90 border-amber-500 shadow-xs ring-2 ring-amber-400/40"
-                        : "bg-white border-amber-200 hover:border-amber-300 hover:bg-amber-50/50"
-                    }`}
-                  >
-                    <p className="text-[11px] font-bold text-slate-700">Thiếu HP bắt buộc</p>
-                    <p className="font-mono text-xl font-extrabold text-amber-800 mt-1">{missingReasons.thieuBatBuoc}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Còn môn bắt buộc chưa đạt</p>
-                  </div>
-
-                  {/* Nguyên nhân 3: Thiếu yêu cầu tự chọn */}
-                  <div
-                    onClick={() => setActiveReasonFilter(activeReasonFilter === "thieuTuChon" ? "all" : "thieuTuChon")}
-                    className={`rounded-lg p-3 transition border cursor-pointer ${
-                      activeReasonFilter === "thieuTuChon"
-                        ? "bg-amber-100/90 border-amber-500 shadow-xs ring-2 ring-amber-400/40"
-                        : "bg-white border-amber-200 hover:border-amber-300 hover:bg-amber-50/50"
-                    }`}
-                  >
-                    <p className="text-[11px] font-bold text-slate-700">Thiếu TC tự chọn</p>
-                    <p className="font-mono text-xl font-extrabold text-amber-800 mt-1">{missingReasons.thieuTuChon}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Chưa tích lũy đủ tự chọn theo nhóm</p>
-                  </div>
-
-                  {/* Nguyên nhân 4: Có học phần chưa đạt */}
-                  <div
-                    onClick={() => setActiveReasonFilter(activeReasonFilter === "chuaDat" ? "all" : "chuaDat")}
-                    className={`rounded-lg p-3 transition border cursor-pointer ${
-                      activeReasonFilter === "chuaDat"
-                        ? "bg-amber-100/90 border-amber-500 shadow-xs ring-2 ring-amber-400/40"
-                        : "bg-white border-amber-200 hover:border-amber-300 hover:bg-amber-50/50"
-                    }`}
-                  >
-                    <p className="text-[11px] font-bold text-slate-700">Có HP chưa đạt</p>
-                    <p className="font-mono text-xl font-extrabold text-amber-800 mt-1">{missingReasons.chuaDat}</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Từng rớt môn (điểm F) chưa trả nợ</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* BỘ LỌC TRẠNG THÁI, CHỌN LỚP VÀ Ô TÌM KIẾM CHO NĂM CUỐI */}
+              {/* BỘ LỌC TRẠNG THÁI, CHỌN LỚP VÀ Ô TÌM KIẾM */}
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between pt-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  {finalYearStatusTabs.map((tab) => {
-                    const isActive = statusFilter === tab.key;
-                    const Icon = tab.icon;
-                    return (
-                      <button
-                        key={tab.key}
-                        type="button"
-                        onClick={() => {
-                          setStatusFilter(tab.key);
-                          if (tab.key !== "NOT_ELIGIBLE") setActiveReasonFilter("all");
-                        }}
-                        className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
-                          isActive ? tab.activeCls : tab.inactiveCls
-                        }`}
-                      >
-                        {Icon && <Icon size={13} strokeWidth={2.5} className="shrink-0" />}
-                        <span>{tab.label}</span>
-                        <span
-                          className={`ml-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-bold ${
-                            isActive ? tab.badgeActiveCls : tab.badgeInactiveCls
-                          }`}
-                        >
-                          {tab.count}
-                        </span>
-                      </button>
-                    );
-                  })}
+                <div className="flex items-center gap-2">
+                  <label htmlFor="graduation-status-filter" className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+                    Trạng thái:
+                  </label>
+                  <select
+                    id="graduation-status-filter"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="h-10 min-w-0 flex-1 sm:flex-none rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-lime-500 focus:ring-2 focus:ring-lime-100 cursor-pointer"
+                  >
+                    {finalYearStatusOptions.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label} ({option.count})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
@@ -1429,9 +898,9 @@ export default function GraduationForecastPage() {
                   ) : (uniqueClasses[0] || user?.className) && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Lớp:</span>
-                      <span className="h-10 px-3 flex items-center rounded-xl border border-slate-200 bg-slate-100 text-xs font-bold text-slate-800">
+                      <TextLabel className="h-10 flex items-center text-xs font-bold text-slate-800">
                         {uniqueClasses[0] || user?.className}
-                      </span>
+                      </TextLabel>
                     </div>
                   )}
 
@@ -1457,34 +926,29 @@ export default function GraduationForecastPage() {
               </div>
 
               {/* THANH THÔNG TIN BỘ LỌC ĐANG ÁP DỤNG */}
-              {(classFilter !== "all" || statusFilter !== "all" || activeReasonFilter !== "all" || keyword) && (
+              {(classFilter !== "all" || statusFilter !== "all" || keyword) && (
                 <div className="flex flex-wrap items-center gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
                   <span className="font-semibold text-slate-500 flex items-center gap-1">
                     <Filter size={13} /> Đang lọc:
                   </span>
                   {classFilter !== "all" && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-white border border-slate-200 px-2 py-0.5 font-medium text-slate-700 shadow-2xs">
+                    <TextLabel className="inline-flex items-center gap-1 font-medium text-slate-700">
                       Lớp: {classFilter}
-                      <X size={12} className="cursor-pointer hover:text-rose-600" onClick={() => setClassFilter("all")} />
-                    </span>
+
+                    </TextLabel>
                   )}
                   {statusFilter !== "all" && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-white border border-slate-200 px-2 py-0.5 font-medium text-slate-700 shadow-2xs">
+                    <TextLabel className="inline-flex items-center gap-1 font-medium text-slate-700">
                       Trạng thái: {statusMeta(statusFilter).label}
-                      <X size={12} className="cursor-pointer hover:text-rose-600" onClick={() => setStatusFilter("all")} />
-                    </span>
+
+                    </TextLabel>
                   )}
-                  {activeReasonFilter !== "all" && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 font-medium text-amber-900 shadow-2xs">
-                      Nguyên nhân: {REASON_LABELS[activeReasonFilter]}
-                      <X size={12} className="cursor-pointer hover:text-rose-600" onClick={() => setActiveReasonFilter("all")} />
-                    </span>
-                  )}
+
                   {keyword && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-white border border-slate-200 px-2 py-0.5 font-medium text-slate-700 shadow-2xs">
+                    <TextLabel className="inline-flex items-center gap-1 font-medium text-slate-700">
                       Từ khóa: &quot;{keyword}&quot;
-                      <X size={12} className="cursor-pointer hover:text-rose-600" onClick={() => setKeyword("")} />
-                    </span>
+
+                    </TextLabel>
                   )}
                   <span className="text-slate-400">({filteredStudents.length} sinh viên)</span>
                   <button
@@ -1492,7 +956,7 @@ export default function GraduationForecastPage() {
                     onClick={() => {
                       setClassFilter("all");
                       setStatusFilter("all");
-                      setActiveReasonFilter("all");
+
                       setKeyword("");
                     }}
                     className="ml-auto font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
@@ -1502,17 +966,17 @@ export default function GraduationForecastPage() {
                 </div>
               )}
 
-              {/* BẢNG DANH SÁCH SINH VIÊN NĂM CUỐI */}
+              {/* BẢNG DANH SÁCH SINH VIÊN */}
               <div className="overflow-x-auto rounded-xl border border-slate-200">
                 <table className="w-full text-left text-xs">
                   <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     <tr>
-                      <th className="px-4 py-3.5">Họ tên & MSSV</th>
-                      <th className="px-3 py-3.5 text-center">Khóa / Lớp</th>
-                      <th className="px-3 py-3.5 text-center">Tích lũy / Tổng CTĐT</th>
-                      <th className="px-3 py-3.5 text-center">HP đang học</th>
-                      <th className="px-3 py-3.5 text-center">Trạng thái</th>
-                      <th className="px-4 py-3.5 text-right">Thao tác</th>
+                      <th className="px-4 py-3.5 text-left table-cell-left">Họ tên & MSSV</th>
+                      <th className="px-3 py-3.5 text-center table-cell-center">Khóa / Lớp</th>
+                      <th className="px-3 py-3.5 text-center table-cell-center">Tích lũy / Tổng CTĐT</th>
+                      <th className="px-3 py-3.5 text-center table-cell-center">HP đang học</th>
+                      <th className="px-3 py-3.5 text-center table-cell-center">Trạng thái</th>
+                      <th className="px-4 py-3.5 text-center table-cell-center">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -1520,7 +984,7 @@ export default function GraduationForecastPage() {
                       <tr>
                         <td colSpan={6} className="py-16 text-center text-slate-500">
                           <LoaderCircle size={22} className="mx-auto mb-2 animate-spin text-lime-600" />
-                          Đang tải danh sách sinh viên năm cuối...
+                          Đang tải danh sách sinh viên...
                         </td>
                       </tr>
                     ) : filteredStudents.length === 0 ? (
@@ -1533,10 +997,10 @@ export default function GraduationForecastPage() {
                             onClick={() => {
                               setClassFilter("all");
                               setStatusFilter("all");
-                              setActiveReasonFilter("all");
+
                               setKeyword("");
                             }}
-                            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs"
+                            className={`table-text-action text-filter ${plainTextClasses(`table-text-action ${plainTextClasses("mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs")}`)}`}
                           >
                             Xóa bộ lọc
                           </button>
@@ -1556,7 +1020,7 @@ export default function GraduationForecastPage() {
                             className="transition hover:bg-lime-50/20 cursor-pointer"
                           >
                             {/* Họ tên & MSSV */}
-                            <td className="px-4 py-3.5">
+                            <td className="px-4 py-3.5 text-left table-cell-left">
                               <p className="font-bold text-slate-900 text-sm hover:text-lime-700 transition">
                                 {student.sStudentName}
                               </p>
@@ -1564,14 +1028,14 @@ export default function GraduationForecastPage() {
                             </td>
 
                             {/* Khóa / Lớp */}
-                            <td className="px-3 py-3.5 text-center">
-                              <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs font-semibold text-slate-700">
+                            <td className="px-3 py-3.5 text-center table-cell-center">
+                              <TextLabel className="inline-block font-mono text-xs font-semibold text-slate-700">
                                 {student.sClassName || selectedRun.cohortCode || "—"}
-                              </span>
+                              </TextLabel>
                             </td>
 
                             {/* Tín chỉ tích lũy / Tổng CTĐT */}
-                            <td className="px-3 py-3.5 text-center">
+                            <td className="px-3 py-3.5 text-center table-cell-center">
                               <div className="inline-flex flex-col items-center">
                                 <div>
                                   <span className="font-mono text-sm font-bold text-slate-900">{credits}</span>
@@ -1593,44 +1057,44 @@ export default function GraduationForecastPage() {
                             </td>
 
                             {/* Học phần đang học */}
-                            <td className="px-3 py-3.5 text-center">
+                            <td className="px-3 py-3.5 text-center table-cell-center">
                               {pendingCourses > 0 ? (
-                                <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-2 py-0.5 font-mono text-xs font-bold text-sky-700">
-                                  <Clock size={12} /> {pendingCourses} môn
-                                </span>
+                                <TextLabel className="inline-flex items-center gap-1 font-mono text-xs font-bold text-sky-700">
+                                   {pendingCourses} môn
+                                </TextLabel>
                               ) : (
                                 <span className="text-slate-400 font-mono text-xs">—</span>
                               )}
                             </td>
 
                             {/* Trạng thái */}
-                            <td className="px-3 py-3.5 text-center">
-                              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-bold ${meta.pillBg}`}>
-                                <span className={`h-1.5 w-1.5 rounded-full ${meta.dotColor}`} />
+                            <td className="px-3 py-3.5 text-center table-cell-center">
+                              <TextLabel className={`inline-flex items-center gap-1.5     text-xs font-bold ${meta.pillBg}`}>
+
                                 {meta.short}
-                              </span>
+                              </TextLabel>
                             </td>
 
                             {/* Thao tác */}
-                            <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center justify-end gap-1.5">
+                            <td className="px-4 py-3.5 text-center table-cell-center" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-1.5">
                                 <button
                                   type="button"
                                   disabled={studentLoading}
                                   onClick={() => void openStudent(student, "transcript")}
-                                  className="inline-flex items-center gap-1.5 rounded-xl border border-lime-300 bg-lime-50/60 px-2.5 py-1 text-xs font-bold text-lime-800 shadow-2xs hover:bg-lime-100 cursor-pointer disabled:opacity-50"
+                                  className={`table-text-action ${plainTextClasses("inline-flex items-center gap-1.5 rounded-xl border border-lime-300 bg-lime-50/60 px-2.5 py-1 text-xs font-bold text-lime-800 shadow-2xs hover:bg-lime-100 cursor-pointer disabled:opacity-50")}`}
                                 >
-                                  <FileText size={13} />
+
                                   Bảng điểm
                                 </button>
                                 <button
                                   type="button"
                                   disabled={studentLoading}
                                   onClick={() => void openStudent(student, "summary")}
-                                  className="inline-flex items-center rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
+                                  className={`table-text-action ${plainTextClasses("inline-flex items-center rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer")}`}
                                   title="Xem chi tiết"
-                                >
-                                  <ChevronRight size={16} />
+                                >Xem chi tiết
+
                                 </button>
                               </div>
                             </td>
@@ -1642,570 +1106,10 @@ export default function GraduationForecastPage() {
                 </table>
               </div>
             </div>
-          ) : (
-            /* ========================================================= */
-            /* GÓC NHÌN B: SINH VIÊN NĂM 2-4 (PHÁT HIỆN PHẦN CÒN THIẾU)  */
-            /* ========================================================= */
-            <div className="p-4 sm:p-5 space-y-5 bg-white">
-              {/* THÔNG BÁO VỀ GÓC NHÌN PHÁT HIỆN PHẦN CÒN THIẾU NĂM 2-4 */}
-              <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3.5 flex items-start gap-3">
-                <AlertCircle size={20} className="text-amber-600 mt-0.5 shrink-0" />
-                <div className="text-xs">
-                  <p className="font-bold text-amber-900">
-                    Phát hiện sớm các yêu cầu CTĐT còn thiếu ({currentBatchInfo.label})
-                  </p>
-                  <p className="text-amber-800 mt-0.5">
-                    Hệ thống rà soát các học phần bắt buộc và yêu cầu từ các giai đoạn/học kỳ đã đi qua nhưng sinh viên chưa hoàn thành hoặc chưa đạt. Không tính các yêu cầu của học kỳ tương lai.
-                  </p>
-                </div>
-              </div>
-
-              {/* 5 THẺ TỔNG QUAN PHẦN CÒN THIẾU NĂM 2-4 */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {/* 1. Tổng sinh viên đang xem */}
-                <div
-                  onClick={() => setYear23Filter("all")}
-                  className={`rounded-xl border p-3.5 transition cursor-pointer flex flex-col justify-between ${
-                    year23Filter === "all"
-                      ? "border-slate-800 bg-slate-100 shadow-xs ring-2 ring-slate-400"
-                      : "border-slate-200 bg-slate-50/70 hover:bg-slate-100 hover:border-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Tổng sinh viên</span>
-                    <Users size={16} className="text-slate-400" />
-                  </div>
-                  <div className="my-1.5">
-                    <p className="font-mono text-2xl font-black text-slate-900">{year23BacklogStats.total}</p>
-                  </div>
-                  <p className="text-[11px] text-slate-500 truncate">
-                    {classFilter === "all" ? `Khóa ${selectedRun.cohortCode}` : `Lớp ${classFilter}`} • {currentStudyYearLabel}
-                  </p>
-                </div>
-
-                {/* 2. Sinh viên không thiếu yêu cầu (🟢) */}
-                <div
-                  onClick={() => setYear23Filter(year23Filter === "clean" ? "all" : "clean")}
-                  className={`rounded-xl border p-3.5 transition cursor-pointer flex flex-col justify-between ${
-                    year23Filter === "clean"
-                      ? "border-emerald-600 bg-emerald-100/60 shadow-xs ring-2 ring-emerald-500"
-                      : "border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100/50 hover:border-emerald-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">Không thiếu</span>
-                    <CheckCircle2 size={16} className="text-emerald-600" />
-                  </div>
-                  <div className="my-1.5 flex items-baseline gap-2">
-                    <p className="font-mono text-2xl font-black text-emerald-700">
-                      {year23BacklogStats.clean}
-                    </p>
-                    <span className="text-[11px] font-bold text-emerald-600 font-mono">
-                      ({Math.round((year23BacklogStats.clean / (year23BacklogStats.total || 1)) * 100)}%)
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-emerald-700 font-medium truncate">
-                    Đạt tốt mọi kỳ đã qua
-                  </p>
-                </div>
-
-                {/* 3. Sinh viên thiếu HP bắt buộc (🟠) */}
-                <div
-                  onClick={() => setYear23Filter(year23Filter === "overdueMandatory" ? "all" : "overdueMandatory")}
-                  className={`rounded-xl border p-3.5 transition cursor-pointer flex flex-col justify-between ${
-                    year23Filter === "overdueMandatory"
-                      ? "border-amber-600 bg-amber-100/60 shadow-xs ring-2 ring-amber-500"
-                      : "border-amber-200 bg-amber-50/50 hover:bg-amber-100/50 hover:border-amber-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">Thiếu HP bắt buộc</span>
-                    <AlertTriangle size={16} className="text-amber-600" />
-                  </div>
-                  <div className="my-1.5 flex items-baseline gap-2">
-                    <p className="font-mono text-2xl font-black text-amber-700">
-                      {year23BacklogStats.overdueMandatory}
-                    </p>
-                    <span className="text-[11px] font-bold text-amber-600 font-mono">
-                      ({Math.round((year23BacklogStats.overdueMandatory / (year23BacklogStats.total || 1)) * 100)}%)
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-amber-700 font-medium truncate">
-                    Chưa hoàn thành từ kỳ trước
-                  </p>
-                </div>
-
-                {/* 4. Sinh viên có học phần chưa đạt (🔴) */}
-                <div
-                  onClick={() => setYear23Filter(year23Filter === "failed" ? "all" : "failed")}
-                  className={`rounded-xl border p-3.5 transition cursor-pointer flex flex-col justify-between ${
-                    year23Filter === "failed"
-                      ? "border-rose-600 bg-rose-100/60 shadow-xs ring-2 ring-rose-500"
-                      : "border-rose-200 bg-rose-50/50 hover:bg-rose-100/50 hover:border-rose-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-rose-800 uppercase tracking-wider">Có HP chưa đạt</span>
-                    <XCircle size={16} className="text-rose-600" />
-                  </div>
-                  <div className="my-1.5 flex items-baseline gap-2">
-                    <p className="font-mono text-2xl font-black text-rose-700">
-                      {year23BacklogStats.failed}
-                    </p>
-                    <span className="text-[11px] font-bold text-rose-600 font-mono">
-                      ({Math.round((year23BacklogStats.failed / (year23BacklogStats.total || 1)) * 100)}%)
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-rose-700 font-medium truncate">
-                    Từng rớt môn cần học lại trả nợ
-                  </p>
-                </div>
-
-                {/* 5. Sinh viên thiếu yêu cầu tự chọn (🟣) */}
-                <div
-                  onClick={() => setYear23Filter(year23Filter === "elective" ? "all" : "elective")}
-                  className={`rounded-xl border p-3.5 transition cursor-pointer flex flex-col justify-between col-span-2 sm:col-span-1 ${
-                    year23Filter === "elective"
-                      ? "border-indigo-600 bg-indigo-100/60 shadow-xs ring-2 ring-indigo-500"
-                      : "border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100/50 hover:border-indigo-300"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-indigo-800 uppercase tracking-wider">Thiếu tự chọn</span>
-                    <BookOpen size={16} className="text-indigo-600" />
-                  </div>
-                  <div className="my-1.5 flex items-baseline gap-2">
-                    <p className="font-mono text-2xl font-black text-indigo-700">
-                      {year23BacklogStats.elective}
-                    </p>
-                    <span className="text-[11px] font-bold text-indigo-600 font-mono">
-                      ({Math.round((year23BacklogStats.elective / (year23BacklogStats.total || 1)) * 100)}%)
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-indigo-700 font-medium truncate">
-                    Nợ môn/nhóm tự chọn kỳ trước
-                  </p>
-                </div>
-              </div>
-
-              {/* KHU VỰC: YÊU CẦU CÒN THIẾU PHỔ BIẾN */}
-              {commonBacklogItems.length > 0 && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-100 text-amber-800 text-xs font-bold">
-                        ⚡
-                      </span>
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                        Yêu cầu & học phần còn thiếu phổ biến nhất ({currentStudyYearLabel})
-                      </h3>
-                    </div>
-                    <span className="text-[11px] text-slate-500 italic">
-                      Bấm vào học phần để lọc nhanh danh sách sinh viên bị ảnh hưởng
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
-                    {commonBacklogItems.map((item) => {
-                      const isSelected = selectedCourseBacklogFilter === item.code;
-                      const badgeCls =
-                        item.type === "failed"
-                          ? "border-rose-200 bg-white hover:bg-rose-50/60 text-rose-900"
-                          : item.type === "elective"
-                          ? "border-indigo-200 bg-white hover:bg-indigo-50/60 text-indigo-900"
-                          : "border-amber-200 bg-white hover:bg-amber-50/60 text-amber-900";
-                      const tagCls =
-                        item.type === "failed"
-                          ? "bg-rose-100 text-rose-800"
-                          : item.type === "elective"
-                          ? "bg-indigo-100 text-indigo-800"
-                          : "bg-amber-100 text-amber-800";
-                      const typeLabel =
-                        item.type === "failed" ? "Môn F" : item.type === "elective" ? "Tự chọn" : "Bắt buộc";
-
-                      return (
-                        <div
-                          key={item.key}
-                          onClick={() => setSelectedCourseBacklogFilter(isSelected ? null : item.code)}
-                          className={`rounded-xl border p-2.5 transition cursor-pointer flex flex-col justify-between gap-1.5 shadow-2xs ${
-                            isSelected ? "ring-2 ring-slate-900 bg-amber-50/80 border-slate-900" : badgeCls
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-1">
-                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${tagCls}`}>
-                              {typeLabel}
-                            </span>
-                            <span className="font-mono text-xs font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded">
-                              {item.count} SV
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-bold text-xs text-slate-900 line-clamp-1" title={item.name}>
-                              {item.name}
-                            </p>
-                            <p className="font-mono text-[10px] text-slate-500 mt-0.5">{item.code}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* BỘ LỌC PHẦN CÒN THIẾU, LỚP VÀ TÌM KIẾM CHO NĂM 2-4 */}
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between pt-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  {year23Tabs.map((tab) => {
-                    const isActive = year23Filter === tab.key;
-                    return (
-                      <button
-                        key={tab.key}
-                        type="button"
-                        onClick={() => setYear23Filter(tab.key)}
-                        className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all duration-200 cursor-pointer ${
-                          isActive ? tab.activeCls : tab.inactiveCls
-                        }`}
-                      >
-                        <span>{tab.label}</span>
-                        <span
-                          className={`ml-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-bold ${
-                            isActive ? tab.badgeActiveCls : tab.badgeInactiveCls
-                          }`}
-                        >
-                          {tab.count}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-                  {uniqueClasses.length > 1 ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Lớp:</span>
-                      <select
-                        value={classFilter}
-                        onChange={(e) => setClassFilter(e.target.value)}
-                        className="h-10 rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs font-semibold text-slate-700 outline-none transition focus:border-lime-500 focus:bg-white focus:ring-2 focus:ring-lime-100 cursor-pointer"
-                      >
-                        <option value="all">Tất cả lớp ({allStudents.length} SV)</option>
-                        {uniqueClasses.map((cls) => {
-                          const count = allStudents.filter((s) => s.sClassName === cls).length;
-                          return (
-                            <option key={cls} value={cls}>
-                              {cls} ({count} SV)
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </div>
-                  ) : (uniqueClasses[0] || user?.className) && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">Lớp:</span>
-                      <span className="h-10 px-3 flex items-center rounded-xl border border-slate-200 bg-slate-100 text-xs font-bold text-slate-800">
-                        {uniqueClasses[0] || user?.className}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="relative w-full sm:w-72">
-                    <Search size={15} className="pointer-events-none absolute left-3.5 top-3 text-slate-400" />
-                    <input
-                      value={keyword}
-                      onChange={(e) => setKeyword(e.target.value)}
-                      placeholder="Tìm sinh viên, MSSV..."
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-8 text-xs outline-none transition focus:border-lime-500 focus:bg-white focus:ring-2 focus:ring-lime-100"
-                    />
-                    {keyword && (
-                      <button
-                        type="button"
-                        onClick={() => setKeyword("")}
-                        className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* THANH THÔNG TIN BỘ LỌC ĐANG ÁP DỤNG (NĂM 2-4) */}
-              {(classFilter !== "all" || year23Filter !== "all" || selectedCourseBacklogFilter || keyword) && (
-                <div className="flex flex-wrap items-center gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                  <span className="font-semibold text-slate-500 flex items-center gap-1">
-                    <Filter size={13} /> Đang lọc:
-                  </span>
-                  {classFilter !== "all" && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-white border border-slate-200 px-2 py-0.5 font-medium text-slate-700 shadow-2xs">
-                      Lớp: {classFilter}
-                      <X size={12} className="cursor-pointer hover:text-rose-600" onClick={() => setClassFilter("all")} />
-                    </span>
-                  )}
-                  {year23Filter !== "all" && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-white border border-slate-200 px-2 py-0.5 font-medium text-slate-700 shadow-2xs">
-                      Trạng thái: {YEAR23_LABELS[year23Filter] || year23Filter}
-                      <X size={12} className="cursor-pointer hover:text-rose-600" onClick={() => setYear23Filter("all")} />
-                    </span>
-                  )}
-                  {selectedCourseBacklogFilter && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 font-bold text-amber-800 shadow-2xs">
-                      Học phần còn thiếu: {selectedCourseBacklogFilter}
-                      <X size={12} className="cursor-pointer hover:text-rose-600" onClick={() => setSelectedCourseBacklogFilter(null)} />
-                    </span>
-                  )}
-                  {keyword && (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-white border border-slate-200 px-2 py-0.5 font-medium text-slate-700 shadow-2xs">
-                      Từ khóa: &quot;{keyword}&quot;
-                      <X size={12} className="cursor-pointer hover:text-rose-600" onClick={() => setKeyword("")} />
-                    </span>
-                  )}
-                  <span className="text-slate-400">({filteredStudents.length} sinh viên)</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setClassFilter("all");
-                      setYear23Filter("all");
-                      setSelectedCourseBacklogFilter(null);
-                      setKeyword("");
-                    }}
-                    className="ml-auto font-bold text-rose-600 hover:text-rose-800 cursor-pointer"
-                  >
-                    Xóa tất cả bộ lọc
-                  </button>
-                </div>
-              )}
-
-              {/* BẢNG THEO DÕI NĂM 2-4: CÁC CỘT ƯU TIÊN THEO YÊU CẦU */}
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
-                <table className="w-full min-w-[980px] text-left text-xs">
-                  <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <tr>
-                      <th className="px-3.5 py-3.5">MSSV</th>
-                      <th className="px-3.5 py-3.5">Họ tên</th>
-                      <th className="px-3 py-3.5 text-center">Khóa / Lớp</th>
-                      <th className="px-2.5 py-3.5 text-center">Năm học</th>
-                      <th className="px-3.5 py-3.5 text-center">Thiếu HP bắt buộc</th>
-                      <th className="px-3.5 py-3.5 text-center">Có HP chưa đạt</th>
-                      <th className="px-3.5 py-3.5 text-center">Thiếu tự chọn</th>
-                      <th className="px-3 py-3.5 text-center">Tổng thiếu</th>
-                      <th className="px-3.5 py-3.5 text-right">Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {studentsLoading ? (
-                      <tr>
-                        <td colSpan={9} className="py-16 text-center text-slate-500">
-                          <LoaderCircle size={22} className="mx-auto mb-2 animate-spin text-lime-600" />
-                          Đang tải danh sách sinh viên...
-                        </td>
-                      </tr>
-                    ) : filteredStudents.length === 0 ? (
-                      <tr>
-                        <td colSpan={9} className="py-16 text-center text-slate-500">
-                          <p className="font-semibold text-slate-700">Không có sinh viên nào phù hợp bộ lọc</p>
-                          <p className="text-xs text-slate-400 mt-1">Hãy xóa từ khóa tìm kiếm hoặc bấm &quot;Xóa tất cả bộ lọc&quot;.</p>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setClassFilter("all");
-                              setYear23Filter("all");
-                              setSelectedCourseBacklogFilter(null);
-                              setKeyword("");
-                            }}
-                            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs"
-                          >
-                            Xóa bộ lọc
-                          </button>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredStudents.map((student) => {
-                        const backlog = getStudentBacklog(student);
-                        const pendingCourses = backlog.pendingCount;
-
-                        return (
-                          <tr
-                            key={student.id}
-                            onClick={() => void openStudent(student, "summary")}
-                            className="transition hover:bg-blue-50/20 cursor-pointer"
-                          >
-                            {/* 1. MSSV */}
-                            <td className="px-3.5 py-3 font-mono font-bold text-xs text-slate-800">
-                              {student.sStudentId}
-                            </td>
-
-                            {/* 2. Họ tên */}
-                            <td className="px-3.5 py-3">
-                              <p className="font-bold text-slate-900 text-xs hover:text-blue-700 transition">
-                                {student.sStudentName}
-                              </p>
-                              {pendingCourses > 0 && (
-                                <p className="mt-0.5 text-[10px] text-sky-700 flex items-center gap-1">
-                                  <Clock size={10} /> Đang học {pendingCourses} môn
-                                </p>
-                              )}
-                            </td>
-
-                            {/* 3. Khóa / Lớp */}
-                            <td className="px-3 py-3 text-center">
-                              <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-700">
-                                {student.sClassName || selectedRun.cohortCode || "—"}
-                              </span>
-                            </td>
-
-                            {/* 4. Năm học */}
-                            <td className="px-2.5 py-3 text-center">
-                              <span className="inline-block rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-[11px] font-bold text-slate-700">
-                                {currentStudyYearLabel}
-                              </span>
-                            </td>
-
-                            {/* 5. Thiếu HP bắt buộc */}
-                            <td className="px-3.5 py-3 text-center">
-                              {backlog.overdueMandatoryCourses.length > 0 ? (
-                                <div className="flex flex-col items-center gap-1">
-                                  <span className="font-mono text-xs font-bold text-amber-800">
-                                    {backlog.overdueMandatoryCourses.length} HP
-                                  </span>
-                                  <div className="flex flex-wrap justify-center gap-1 max-w-[170px]">
-                                    {backlog.overdueMandatoryCourses.slice(0, 2).map((c) => (
-                                      <span
-                                        key={c.courseCode}
-                                        title={`${c.courseName}${c.semesterNo ? ` (HK${c.semesterNo})` : ""}`}
-                                        className="inline-block rounded bg-amber-100/90 border border-amber-200 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-800"
-                                      >
-                                        {c.courseCode}
-                                      </span>
-                                    ))}
-                                    {backlog.overdueMandatoryCourses.length > 2 && (
-                                      <span className="rounded bg-amber-100/90 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-800">
-                                        +{backlog.overdueMandatoryCourses.length - 2}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : (
-                                <span className="text-slate-400 font-mono text-xs">—</span>
-                              )}
-                            </td>
-
-                            {/* 6. HP chưa đạt (F) */}
-                            <td className="px-3.5 py-3 text-center">
-                              {backlog.failedCourses.length > 0 ? (
-                                <div className="flex flex-col items-center gap-1">
-                                  <span className="font-mono text-xs font-bold text-rose-800">
-                                    {backlog.failedCourses.length} HP
-                                  </span>
-                                  <div className="flex flex-wrap justify-center gap-1 max-w-[170px]">
-                                    {backlog.failedCourses.slice(0, 2).map((c) => (
-                                      <span
-                                        key={c.courseCode}
-                                        title={`${c.courseName}${c.letterGrade ? ` (Điểm ${c.letterGrade})` : ""}`}
-                                        className="inline-block rounded bg-rose-100/90 border border-rose-200 px-1.5 py-0.5 font-mono text-[10px] font-bold text-rose-800"
-                                      >
-                                        {c.courseCode} ({c.letterGrade || "F"})
-                                      </span>
-                                    ))}
-                                    {backlog.failedCourses.length > 2 && (
-                                      <span className="rounded bg-rose-100/90 px-1.5 py-0.5 font-mono text-[10px] font-bold text-rose-800">
-                                        +{backlog.failedCourses.length - 2}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : (
-                                <span className="text-slate-400 font-mono text-xs">—</span>
-                              )}
-                            </td>
-
-                            {/* 7. Thiếu yêu cầu tự chọn */}
-                            <td className="px-3.5 py-3 text-center">
-                              {backlog.electiveBacklogCount > 0 ? (
-                                <div className="flex flex-col items-center gap-1">
-                                  <span className="font-mono text-xs font-bold text-indigo-800">
-                                    {backlog.electiveBacklogCount} yêu cầu
-                                  </span>
-                                  <div className="flex flex-wrap justify-center gap-1 max-w-[170px]">
-                                    {backlog.failedElectiveCourses.slice(0, 2).map((c) => (
-                                      <span
-                                        key={c.courseCode}
-                                        title={`${c.courseName} (Môn tự chọn rớt điểm ${c.letterGrade || "F"})`}
-                                        className="inline-block rounded bg-indigo-100/90 border border-indigo-200 px-1.5 py-0.5 font-mono text-[10px] font-bold text-indigo-800"
-                                      >
-                                        {c.courseCode} (F)
-                                      </span>
-                                    ))}
-                                    {backlog.electiveGroupBacklogs.slice(0, 1).map((g) => (
-                                      <span
-                                        key={g.groupCode}
-                                        title={g.message}
-                                        className="inline-block rounded bg-indigo-100/90 border border-indigo-200 px-1.5 py-0.5 font-mono text-[10px] font-bold text-indigo-800"
-                                      >
-                                        {g.groupCode}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              ) : (
-                                <span className="text-slate-400 font-mono text-xs">—</span>
-                              )}
-                            </td>
-
-                            {/* 8. Tổng số yêu cầu còn thiếu */}
-                            <td className="px-3 py-3 text-center">
-                              {backlog.totalBacklogCount === 0 ? (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold text-emerald-700">
-                                  <CheckCircle2 size={13} className="text-emerald-600" />
-                                  0 (Sạch)
-                                </span>
-                              ) : (
-                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                                  backlog.totalBacklogCount >= 3
-                                    ? "bg-rose-100 border border-rose-200 text-rose-800"
-                                    : "bg-amber-100 border border-amber-200 text-amber-800"
-                                }`}>
-                                  <AlertTriangle size={12} />
-                                  {backlog.totalBacklogCount} mục thiếu
-                                </span>
-                              )}
-                            </td>
-
-                            {/* 9. Thao tác */}
-                            <td className="px-3.5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                              <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  type="button"
-                                  disabled={studentLoading}
-                                  onClick={() => void openStudent(student, "summary")}
-                                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 cursor-pointer disabled:opacity-50"
-                                >
-                                  <BookOpen size={13} />
-                                  Chi tiết
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={studentLoading}
-                                  onClick={() => void openStudent(student, "transcript")}
-                                  className="inline-flex items-center gap-1.5 rounded-xl border border-blue-300 bg-blue-50/60 px-2.5 py-1 text-xs font-bold text-blue-800 shadow-2xs hover:bg-blue-100 cursor-pointer disabled:opacity-50"
-                                >
-                                  <FileText size={13} />
-                                  Bảng điểm
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </section>
       )}
 
-      {/* 4. MODAL CHI TIẾT SINH VIÊN VÀ TIẾN ĐỘ CTĐT */}
+      {/* 4. MODAL CHI TIẾT ĐIỀU KIỆN TỐT NGHIỆP */}
       <Modal
         isOpen={Boolean(selectedStudent)}
         onClose={() => setSelectedStudent(null)}
@@ -2215,9 +1119,9 @@ export default function GraduationForecastPage() {
               <span className="text-base font-bold text-slate-900">
                 {selectedStudent.student?.sStudentName || selectedStudent.student?.studentName || "Hồ sơ sinh viên"}
               </span>
-              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+              <TextLabel className="font-mono text-xs font-semibold text-slate-700">
                 MSSV: {selectedStudent.student?.sStudentId || selectedStudent.student?.studentId}
-              </span>
+              </TextLabel>
             </div>
           ) : (
             "Hồ sơ sinh viên"
@@ -2231,8 +1135,9 @@ export default function GraduationForecastPage() {
               s?.cohortCode?.match(/K(\d{2})/i) ||
               s?.sStudentId?.match(/^\d{2}(\d{2})/i);
             const cohortNum = cohortMatch ? Number(cohortMatch[1]) : null;
-            const isOngoing = cohortNum ? cohortNum >= 47 : false;
-            const sYear = cohortNum ? Math.max(1, 51 - cohortNum) : null;
+            const timeline = studyTimeline(cohortNum, s?.assessmentAcademicYear, s?.assessmentTermCode);
+            const isOngoing = timeline?.isOngoing ?? false;
+            const sYear = timeline?.studyYear ?? null;
 
             return (
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 mt-1">
@@ -2260,36 +1165,7 @@ export default function GraduationForecastPage() {
             return !code.startsWith("SHCD") && !name.includes("sinh hoạt công dân");
           });
 
-          // Khử trùng lặp môn học
-          const byCode = new Map<string, ApiData>();
-          for (const g of cleanGrades) {
-            const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
-            if (!code) continue;
-            if (!byCode.has(code)) {
-              byCode.set(code, g);
-              continue;
-            }
-            const existing = byCode.get(code)!;
-            const gPass = Boolean(g.isPass || g.isPassed);
-            const exPass = Boolean(existing.isPass || existing.isPassed);
-            if (gPass && !exPass) { byCode.set(code, g); continue; }
-            if (!gPass && exPass) continue;
-            if (gPass && exPass) {
-              const scoreG = Number(g.score10 ?? g.score4 ?? 0);
-              const scoreEx = Number(existing.score10 ?? existing.score4 ?? 0);
-              if (scoreG > scoreEx) { byCode.set(code, g); continue; }
-              if (scoreG === scoreEx && String(g.academicYear || "") > String(existing.academicYear || "")) {
-                byCode.set(code, g); continue;
-              }
-              continue;
-            }
-            const hasScoreG = g.score10 != null || g.score4 != null || Boolean(g.letterGrade || g.letterCode);
-            const hasScoreEx = existing.score10 != null || existing.score4 != null || Boolean(existing.letterGrade || existing.letterCode);
-            if (hasScoreG && !hasScoreEx) { byCode.set(code, g); continue; }
-            if (!hasScoreG && hasScoreEx) continue;
-            if (String(g.academicYear || "") > String(existing.academicYear || "")) { byCode.set(code, g); }
-          }
-          const grades = Array.from(byCode.values());
+          const grades = cleanGrades;
 
           return forecast ? (
             <ForecastDetail

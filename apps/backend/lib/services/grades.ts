@@ -1,3 +1,4 @@
+import { academicOfferingPredicate } from "../academic-course-sql";
 import { prisma } from "@/lib/prisma";
 import { studentIdWhere } from "@/lib/utils/is-uuid";
 import crypto from "crypto";
@@ -137,7 +138,8 @@ export function gradeImportRowKey(year: string, term: string, grade: SourceGrade
     (grade.StudyProgramID || "").trim(),
     year.trim(),
     normalizeTerm(term),
-    grade.StudyUnitID.trim(),
+    grade.CurriculumID.trim(),
+    (grade.StudyUnitID || "").trim(),
     (grade.ScheduleStudyUnitID || "").trim(),
   ].join("|");
 }
@@ -432,10 +434,17 @@ export class GradesService {
           throw new ApiError(`Invalid term code: ${t.HocKy}`, "INVALID_REQUEST", 400);
         }
         for (const g of (t.DanhSachDiemHK || [])) {
-          if (!g.StudentID?.trim() || !g.CurriculumID?.trim() || !g.StudyUnitID?.trim()) {
-            throw new ApiError("StudentID, CurriculumID, and StudyUnitID are required", "INVALID_REQUEST", 400);
+          if (!g.StudentID?.trim() || !g.CurriculumID?.trim()) {
+            throw new ApiError("StudentID and CurriculumID are required", "INVALID_REQUEST", 400);
           }
-          const key = gradeImportRowKey(y.NamHoc, term, g);
+          // The database identity is a source attempt, independent of program.
+          // Two programs claiming that same attempt require reconciliation,
+          // rather than allowing the later program to overwrite the first.
+          const key = gradeImportRowKey(y.NamHoc, term, { ...g, StudyProgramID: "" });
+          const previous = uniqueRows.get(key);
+          if (previous && previous.payload !== JSON.stringify(g)) {
+            throw new ApiError("Conflicting attempts share the same source identity; reconciliation is required", "AMBIGUOUS_GRADE_ATTEMPT", 422);
+          }
           uniqueRows.set(key, { year: y.NamHoc, term, grade: g, payload: JSON.stringify(g), row: uniqueRows.size });
         }
       }
@@ -616,7 +625,7 @@ export class GradesService {
 
     const credits = parseCredits(g.Credits);
     const programCode = (g.StudyProgramID || "").trim();
-    const studyUnitId = g.StudyUnitID.trim();
+    const studyUnitId = (g.StudyUnitID || "").trim();
     const scheduleStudyUnitId = (g.ScheduleStudyUnitID || "").trim();
     const courseNameEng = (g.EnglishCurriculumName || "").trim();
     const courseGroup = (g.CurriculumGroupID || "").trim().toUpperCase();
@@ -630,14 +639,16 @@ export class GradesService {
         ${g.StudentID.trim()}, NULLIF(${programCode},''), ${g.CurriculumID.trim()}, ${studyUnitId}, ${scheduleStudyUnitId},
         ${courseName}, NULLIF(${courseNameEng},''), NULLIF(${courseGroup},''), ${credits}::smallint,
         ${payload}::jsonb, NULLIF(${(g.MD5 || "").trim()},''), ${batchId}::uuid)
-      ON CONFLICT (student_id, academic_term_id, s_study_unit_id, s_schedule_study_unit_id) DO UPDATE SET
+      ON CONFLICT (student_id, academic_term_id, s_curriculum_id, s_study_unit_id, s_schedule_study_unit_id) DO UPDATE SET
         course_id = EXCLUDED.course_id, s_program_code = EXCLUDED.s_program_code, s_curriculum_id = EXCLUDED.s_curriculum_id,
         s_course_name = EXCLUDED.s_course_name, s_course_name_eng = EXCLUDED.s_course_name_eng,
         s_course_group = EXCLUDED.s_course_group, s_credits = EXCLUDED.s_credits,
         source_payload = EXCLUDED.source_payload, source_md5 = EXCLUDED.source_md5,
         grade_import_batch_id = EXCLUDED.grade_import_batch_id, updated_at = now()
+      WHERE student_course_offerings.s_program_code IS NOT DISTINCT FROM EXCLUDED.s_program_code
       RETURNING id::text
     `;
+    if (!offeringResult.length) throw new ApiError("The existing source attempt belongs to a different program; reconciliation is required", "AMBIGUOUS_GRADE_ATTEMPT", 422);
     const offeringId = offeringResult[0].id;
 
     // Parse scores
@@ -732,21 +743,15 @@ export class GradesService {
       const studentId = ids[0].student_id;
       const termId = ids[0].term_id;
 
-      // Delete stale offerings (same scope, different batch)
-      if (programCode) {
-        await tx.$executeRaw`
-          DELETE FROM student_course_offerings
-          WHERE student_id = ${studentId}::uuid AND academic_term_id = ${termId}::uuid
-            AND s_program_code = ${programCode} AND grade_import_batch_id <> ${batchId}::uuid
-        `;
-      }
+      // Imports may be partial corrections or registrations. An omitted attempt
+      // is not proof it was withdrawn; preserve historical F/VT and source rows.
 
       // Recalculate registered credits
       if (programCode) {
         await tx.$executeRaw`
           UPDATE student_term_summaries SET
             registered_credits = (SELECT COALESCE(SUM(o.s_credits),0) FROM student_course_offerings o
-              WHERE o.student_id = ${studentId}::uuid AND o.academic_term_id = ${termId}::uuid AND o.s_program_code = ${programCode}),
+              WHERE o.student_id = ${studentId}::uuid AND o.academic_term_id = ${termId}::uuid AND o.s_program_code = ${programCode} AND ${academicOfferingPredicate}),
             updated_at = now()
           WHERE student_id = ${studentId}::uuid AND academic_term_id = ${termId}::uuid AND s_program_code = ${programCode}
         `;
@@ -769,7 +774,7 @@ export class GradesService {
     await tx.$executeRaw`
       WITH latest AS (
         SELECT s.id, s.student_id, s.s_program_code, s.cumulative_credits, s.cumulative_gpa_10, s.cumulative_gpa_4,
-          (SELECT COALESCE(SUM(o.s_credits),0) FROM student_course_offerings o WHERE o.student_id = s.student_id AND o.s_program_code = s.s_program_code) AS cumulative_registered_credits,
+          (SELECT COALESCE(SUM(o.s_credits),0) FROM student_course_offerings o WHERE o.student_id = s.student_id AND o.s_program_code = s.s_program_code AND ${academicOfferingPredicate}) AS cumulative_registered_credits,
           s.academic_term_id, t.academic_year_id, s.grade_import_batch_id
         FROM student_term_summaries s
         JOIN academic_terms t ON t.id = s.academic_term_id

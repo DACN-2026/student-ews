@@ -1,22 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  Award,
-  BookOpen,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  GraduationCap,
-  Info,
-  Search,
-  Shield,
-  Sparkles,
-  TrendingUp,
-  XCircle,
-} from "lucide-react";
+import TextLabel from "@/components/ui/TextLabel";
+import ElectiveAlternatives, { type ElectiveReplacementGroup } from "./ElectiveAlternatives";
+import { studyTimeline } from "@/lib/academic-timeline";
+import { Fragment, useId, useMemo, useState } from "react";
+import { AlertTriangle, Award, BookOpen, CheckCircle2, ChevronDown, ChevronUp, Clock, GraduationCap, Info, Search, Shield, Sparkles, TrendingUp } from "lucide-react";
 
 export type Course = {
   courseId: string;
@@ -41,6 +29,7 @@ export type StudentGrade = {
   letterGrade?: string | null;
   isPassed?: boolean;
   isPass?: boolean;
+  specialCode?: string | null;
   scoreStatus?: string;
   notScore?: boolean;
   academicYear?: string | null;
@@ -99,6 +88,7 @@ export type Forecast = {
   }[];
   electiveOptions: Course[];
   electiveCourses?: Course[];
+  electiveReplacementGroups?: ElectiveReplacementGroup[];
   remainingBySemester: { academicYear: string; termCode: string; label: string; courses: Course[] }[];
   unmatchedGrades: { courseCode?: string | null; courseName?: string | null }[];
   warnings: string[];
@@ -120,6 +110,8 @@ export type StudentInfo = {
   sClassName?: string | null;
   sProgramCode?: string | null;
   cohortCode?: string | null;
+  assessmentAcademicYear?: string | null;
+  assessmentTermCode?: string | null;
   cumulativeGpa4?: number | null;
   totalCredits?: number | null;
   wholeCourseTrainingScore?: number | null;
@@ -199,9 +191,10 @@ export default function ForecastDetail({
     student?.cohortCode?.match(/K(\d{2})/i) ||
     student?.sStudentId?.match(/^\d{2}(\d{2})/i);
   const cohortNumber = cohortMatch ? Number(cohortMatch[1]) : null;
-  const isOngoingStudent = cohortNumber ? cohortNumber >= 47 : false;
-  const studyYear = cohortNumber ? Math.max(1, 51 - cohortNumber) : null;
-  const expectedSemesterNo = cohortNumber ? Math.max(1, (50 - cohortNumber) * 2 + 1) : null;
+  const timeline = studyTimeline(cohortNumber, student?.assessmentAcademicYear, student?.assessmentTermCode);
+  const isOngoingStudent = timeline?.isOngoing ?? false;
+  const studyYear = timeline?.studyYear ?? null;
+  const expectedSemesterNo = timeline?.semester ?? null;
 
   // Real earned credits calculation
   const earnedCredits =
@@ -217,7 +210,10 @@ export default function ForecastDetail({
     const map = new Map<string, StudentGrade>();
     for (const g of grades || []) {
       const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
-      if (code) map.set(code, g);
+      if (code) {
+        const existing = map.get(code);
+        if (!existing || (!existing.isPassed && !existing.isPass) || (g.isPassed || g.isPass)) map.set(code, g);
+      }
     }
     return map;
   }, [grades]);
@@ -348,7 +344,7 @@ export default function ForecastDetail({
         statusLabel: "Chưa đạt (Điểm F)",
         statusType: "fail",
         termInfo: g?.academicYear && g?.termCode ? `${g.academicYear} • ${g.termCode}` : undefined,
-        advice: "Học phần bắt buộc chưa đạt, cần sớm đăng ký học lại để trả nợ môn.",
+        advice: "Cần học lại",
       });
     }
 
@@ -366,7 +362,7 @@ export default function ForecastDetail({
         statusLabel: "Chưa đạt (Điểm F)",
         statusType: "fail",
         termInfo: g?.academicYear && g?.termCode ? `${g.academicYear} • ${g.termCode}` : undefined,
-        advice: "Cần học lại hoặc lựa chọn học phần tự chọn phù hợp khác trong khung CTĐT.",
+        advice: "Cần học lại hoặc học các môn sau:",
       });
     }
 
@@ -433,6 +429,30 @@ export default function ForecastDetail({
   ]);
 
   const actionCount = actionItems.length;
+  const [expandedElectiveId, setExpandedElectiveId] = useState<string | null>(null);
+  const electiveDisclosureId = useId();
+  const renderAdvice = (item: ActionItem) => (
+    <span>
+      {item.advice}
+      {item.requirementType === "Tự chọn" && item.statusType === "fail" && (
+        <> <button
+          type="button"
+          className="font-medium text-blue-700 underline underline-offset-2 hover:text-blue-900 focus-visible:outline-2 focus-visible:outline-offset-2 cursor-pointer"
+          aria-label={`Xem các môn tự chọn thay thế cho ${item.courseName}`}
+          aria-expanded={expandedElectiveId === item.id}
+          aria-controls={`${electiveDisclosureId}-${item.id}`}
+          onClick={() => setExpandedElectiveId(current => current === item.id ? null : item.id)}
+        >chi tiết</button></>
+      )}
+    </span>
+  );
+  const renderAlternatives = (item: ActionItem) => (
+    <ElectiveAlternatives
+      id={`${electiveDisclosureId}-${item.id}`}
+      courseName={item.courseName}
+      group={forecast.electiveReplacementGroups?.find(group => group.courseCode === item.courseCode)}
+    />
+  );
 
   // Short recommendations (Section 6)
   const shortRecommendations = useMemo(() => {
@@ -575,16 +595,16 @@ export default function ForecastDetail({
   const [transcriptTermFilter, setTranscriptTermFilter] = useState("all");
   const [transcriptStatusFilter, setTranscriptStatusFilter] = useState<"all" | "passed" | "failed" | "pending">("all");
 
-  const passedGrades = useMemo(() => (grades || []).filter((g) => g.isPassed), [grades]);
+  const passedGrades = useMemo(() => (grades || []).filter((g) => (g.isPassed || g.isPass) && !g.notScore && (g.specialCode || g.letterGrade)?.toUpperCase() !== "VT"), [grades]);
   const failedGrades = useMemo(
     () =>
       (grades || []).filter(
-        (g) => !g.isPassed && g.scoreStatus === "graded" && !g.notScore && (g.score10 != null || g.score4 != null || g.letterGrade)
+        (g) => (g.specialCode || g.letterGrade)?.toUpperCase() === "VT" || (!(g.isPassed || g.isPass) && g.scoreStatus === "graded" && !g.notScore && (g.score10 != null || g.score4 != null || g.letterGrade))
       ),
     [grades]
   );
   const pendingGrades = useMemo(
-    () => (grades || []).filter((g) => !g.isPassed && !failedGrades.includes(g)),
+    () => (grades || []).filter((g) => !(g.isPassed || g.isPass) && !failedGrades.includes(g) && (g.notScore || g.scoreStatus === "pending")),
     [grades, failedGrades]
   );
 
@@ -626,15 +646,15 @@ export default function ForecastDetail({
             </span>
             <span className="text-slate-300">•</span>
             {actionCount > 0 ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 border border-amber-200">
-                <AlertTriangle size={12} className="text-amber-600" />
+              <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
+
                 Có {actionCount} yêu cầu cần xử lý
-              </span>
+              </TextLabel>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200">
-                <CheckCircle2 size={12} className="text-emerald-600" />
+              <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
+
                 {isOngoingStudent ? "Không có yêu cầu tồn đọng từ kỳ trước" : "Đạt yêu cầu chương trình"}
-              </span>
+              </TextLabel>
             )}
           </div>
 
@@ -776,13 +796,13 @@ export default function ForecastDetail({
           <AlertTriangle size={13} className={actionCount > 0 ? "text-amber-400" : "text-slate-400"} />
           <span>Cần xử lý</span>
           {actionCount > 0 && (
-            <span
-              className={`ml-0.5 rounded-full px-1.5 py-0.2 text-[10px] font-extrabold ${
+            <TextLabel
+              className={`ml-0.5    text-[10px] font-extrabold ${
                 activeMainTab === "action" ? "bg-amber-400 text-slate-900" : "bg-amber-100 text-amber-800"
               }`}
             >
               {actionCount}
-            </span>
+            </TextLabel>
           )}
         </button>
 
@@ -799,13 +819,13 @@ export default function ForecastDetail({
           <Clock size={13} />
           <span>Đang học</span>
           {forecast.noScoreCourses.length > 0 && (
-            <span
-              className={`ml-0.5 rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+            <TextLabel
+              className={`ml-0.5    text-[10px] font-bold ${
                 activeMainTab === "enrolled" ? "bg-sky-400 text-slate-900" : "bg-sky-100 text-sky-800"
               }`}
             >
               {forecast.noScoreCourses.length}
-            </span>
+            </TextLabel>
           )}
         </button>
 
@@ -822,13 +842,13 @@ export default function ForecastDetail({
           <BookOpen size={13} />
           <span>Kế hoạch</span>
           {futureMandatoryCourses.length > 0 && (
-            <span
-              className={`ml-0.5 rounded-full px-1.5 py-0.2 text-[10px] font-semibold ${
+            <TextLabel
+              className={`ml-0.5    text-[10px] font-semibold ${
                 activeMainTab === "plan" ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
               }`}
             >
               {futureMandatoryCourses.length}
-            </span>
+            </TextLabel>
           )}
         </button>
 
@@ -869,9 +889,9 @@ export default function ForecastDetail({
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-bold text-slate-900 text-sm">{actionItems[0].courseName}</h4>
-                    <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                    <TextLabel className="font-mono text-xs font-semibold text-slate-700">
                       {actionItems[0].courseCode}
-                    </span>
+                    </TextLabel>
                   </div>
                   <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
                     {actionItems[0].credits > 0 && <span>{actionItems[0].credits} TC</span>}
@@ -892,22 +912,24 @@ export default function ForecastDetail({
                   </div>
                 </div>
 
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold self-start sm:self-center ${
+                <TextLabel
+                  className={`inline-flex items-center gap-1    text-xs font-bold self-start sm:self-center ${
                     actionItems[0].statusType === "fail"
-                      ? "bg-rose-50 text-rose-800 border border-rose-200"
-                      : "bg-amber-50 text-amber-800 border border-amber-200"
+                      ? "bg-rose-50 text-rose-800  "
+                      : "bg-amber-50 text-amber-800  "
                   }`}
                 >
-                  {actionItems[0].statusType === "fail" ? <XCircle size={12} /> : <AlertTriangle size={12} />}
                   {actionItems[0].statusLabel}
-                </span>
+                </TextLabel>
               </div>
 
               <div className="mt-3 text-xs text-slate-700 flex items-start gap-1.5">
                 <span className="font-semibold text-slate-900 shrink-0">Khuyến nghị:</span>
-                <span className="leading-relaxed">{actionItems[0].advice}</span>
+                <span className="leading-relaxed">{renderAdvice(actionItems[0])}</span>
               </div>
+              {expandedElectiveId === actionItems[0].id && (
+                <div className="mt-4 border-t border-slate-100 pt-4">{renderAlternatives(actionItems[0])}</div>
+              )}
             </div>
           ) : (
             // Nếu có nhiều vấn đề: hiển thị bảng / danh sách gọn
@@ -916,29 +938,30 @@ export default function ForecastDetail({
                 <table className="w-full min-w-[600px] text-left text-xs">
                   <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
                     <tr>
-                      <th className="px-3.5 py-2.5">Mã HP</th>
-                      <th className="px-3.5 py-2.5">Tên học phần / Yêu cầu</th>
-                      <th className="px-2 py-2.5 text-center">Số TC</th>
-                      <th className="px-3 py-2.5">Loại</th>
-                      <th className="px-3 py-2.5">Tình trạng</th>
-                      <th className="px-3.5 py-2.5 text-right">Khuyến nghị xử lý</th>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần / Yêu cầu</th>
+                      <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                      <th className="px-3 py-2.5 text-center table-cell-center">Loại</th>
+                      <th className="px-3 py-2.5 text-center table-cell-center">Tình trạng</th>
+                      <th className="px-3.5 py-2.5 text-center table-cell-center">Khuyến nghị xử lý</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {actionItems.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-50/70 transition">
-                        <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap">
+                      <Fragment key={item.id}>
+                      <tr className="hover:bg-slate-50/70 transition">
+                        <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
                           {item.courseCode}
                         </td>
-                        <td className="px-3.5 py-2.5 font-medium text-slate-800">
+                        <td className="px-3.5 py-2.5 font-medium text-slate-800 text-left table-cell-left">
                           {item.courseName}
                         </td>
-                        <td className="px-2 py-2.5 text-center font-mono text-slate-700">
+                        <td className="px-2 py-2.5 text-center font-mono text-slate-700 table-cell-center">
                           {item.credits > 0 ? item.credits : "—"}
                         </td>
-                        <td className="px-3 py-2.5">
-                          <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                        <td className="px-3 py-2.5 text-center table-cell-center">
+                          <TextLabel
+                            className={`rounded   text-[10px] font-semibold ${
                               item.requirementType === "Tự chọn"
                                 ? "bg-indigo-50 text-indigo-700"
                                 : item.requirementType === "Bắt buộc"
@@ -947,24 +970,29 @@ export default function ForecastDetail({
                             }`}
                           >
                             {item.requirementType}
-                          </span>
+                          </TextLabel>
                         </td>
-                        <td className="px-3 py-2.5 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                        <td className="px-3 py-2.5 whitespace-nowrap text-center table-cell-center">
+                          <TextLabel
+                            className={`inline-flex items-center gap-1    text-[11px] font-bold ${
                               item.statusType === "fail"
-                                ? "bg-rose-50 text-rose-800 border border-rose-200"
-                                : "bg-amber-50 text-amber-800 border border-amber-200"
+                                ? "bg-rose-50 text-rose-800  "
+                                : "bg-amber-50 text-amber-800  "
                             }`}
                           >
-                            {item.statusType === "fail" ? <XCircle size={11} /> : <AlertTriangle size={11} />}
                             {item.statusLabel}
-                          </span>
+                          </TextLabel>
                         </td>
-                        <td className="px-3.5 py-2.5 text-right text-slate-600 max-w-xs truncate">
-                          {item.advice}
+                        <td className="px-3.5 py-2.5 text-center text-slate-600 max-w-xs whitespace-normal leading-relaxed table-cell-center">
+                          {renderAdvice(item)}
                         </td>
                       </tr>
+                      {expandedElectiveId === item.id && (
+                        <tr>
+                          <td colSpan={6} className="px-3.5 py-3 bg-slate-50/50">{renderAlternatives(item)}</td>
+                        </tr>
+                      )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
@@ -983,9 +1011,9 @@ export default function ForecastDetail({
             <span>
               Các học phần sinh viên đang theo học trong học kỳ hiện tại, chưa có điểm tổng kết cuối kỳ.
             </span>
-            <span className="font-semibold text-sky-800 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-md">
+            <TextLabel className="font-semibold text-sky-800">
               {forecast.noScoreCourses.length} học phần
-            </span>
+            </TextLabel>
           </div>
 
           {forecast.noScoreCourses.length === 0 ? (
@@ -999,26 +1027,26 @@ export default function ForecastDetail({
                 <table className="w-full min-w-[550px] text-left text-xs">
                   <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
                     <tr>
-                      <th className="px-3.5 py-2.5">Mã HP</th>
-                      <th className="px-3.5 py-2.5">Tên học phần</th>
-                      <th className="px-2 py-2.5 text-center">Số TC</th>
-                      <th className="px-3 py-2.5">Loại yêu cầu</th>
-                      <th className="px-3.5 py-2.5 text-right">Trạng thái</th>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần</th>
+                      <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                      <th className="px-3 py-2.5 text-center table-cell-center">Loại yêu cầu</th>
+                      <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {forecast.noScoreCourses.map((c) => (
                       <tr key={c.courseId} className="hover:bg-slate-50/70 transition">
-                        <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap">
+                        <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
                           {c.courseCode}
                         </td>
-                        <td className="px-3.5 py-2.5 font-medium text-slate-800">{c.courseName}</td>
-                        <td className="px-2 py-2.5 text-center font-mono text-slate-700">{c.credits}</td>
-                        <td className="px-3 py-2.5 text-slate-600">{c.requirementType || "Bắt buộc"}</td>
-                        <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1 rounded-md bg-sky-50 border border-sky-200 px-2 py-0.5 text-[11px] font-semibold text-sky-800">
-                            <Clock size={11} /> Đang học
-                          </span>
+                        <td className="px-3.5 py-2.5 font-medium text-slate-800 text-left table-cell-left">{c.courseName}</td>
+                        <td className="px-2 py-2.5 text-center font-mono text-slate-700 table-cell-center">{c.credits}</td>
+                        <td className="px-3 py-2.5 text-slate-600 text-center table-cell-center">{c.requirementType || "Bắt buộc"}</td>
+                        <td className="px-3.5 py-2.5 text-center whitespace-nowrap table-cell-center">
+                          <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800">
+                             Đang học
+                          </TextLabel>
                         </td>
                       </tr>
                     ))}
@@ -1039,9 +1067,9 @@ export default function ForecastDetail({
             <span>
               Các học phần bắt buộc thuộc các học kỳ tương lai theo khung chương trình đào tạo.
             </span>
-            <span className="rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-slate-600 font-semibold">
+            <TextLabel className="text-slate-600 font-semibold">
               Kế hoạch tương lai ({futureMandatoryCourses.length} môn)
-            </span>
+            </TextLabel>
           </div>
 
           {futureMandatoryCourses.length === 0 ? (
@@ -1056,28 +1084,28 @@ export default function ForecastDetail({
                 <table className="w-full min-w-[550px] text-left text-xs">
                   <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
                     <tr>
-                      <th className="px-3.5 py-2.5">Mã HP</th>
-                      <th className="px-3.5 py-2.5">Tên học phần</th>
-                      <th className="px-2 py-2.5 text-center">Số TC</th>
-                      <th className="px-3 py-2.5">Lộ trình học kỳ</th>
-                      <th className="px-3.5 py-2.5 text-right">Trạng thái</th>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần</th>
+                      <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                      <th className="px-3 py-2.5 text-center table-cell-center">Lộ trình học kỳ</th>
+                      <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {futureMandatoryCourses.map((c) => (
                       <tr key={c.courseId} className="hover:bg-slate-50/70 transition">
-                        <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap">
+                        <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
                           {c.courseCode}
                         </td>
-                        <td className="px-3.5 py-2.5 font-medium text-slate-800">{c.courseName}</td>
-                        <td className="px-2 py-2.5 text-center font-mono text-slate-700">{c.credits}</td>
-                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap">
+                        <td className="px-3.5 py-2.5 font-medium text-slate-800 text-left table-cell-left">{c.courseName}</td>
+                        <td className="px-2 py-2.5 text-center font-mono text-slate-700 table-cell-center">{c.credits}</td>
+                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap text-center table-cell-center">
                           {c.semesterNo ? `Học kỳ ${c.semesterNo} (Năm ${Math.ceil(c.semesterNo / 2)})` : "Kỳ sau"}
                         </td>
-                        <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
-                          <span className="rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                        <td className="px-3.5 py-2.5 text-center whitespace-nowrap table-cell-center">
+                          <TextLabel className="text-[11px] font-medium text-slate-600">
                             Kế hoạch tương lai
-                          </span>
+                          </TextLabel>
                         </td>
                       </tr>
                     ))}
@@ -1200,11 +1228,11 @@ export default function ForecastDetail({
                   <table className="w-full min-w-[550px] text-left text-xs">
                     <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
                       <tr>
-                        <th className="px-3.5 py-2.5">Mã HP</th>
-                        <th className="px-3.5 py-2.5">Tên học phần</th>
-                        <th className="px-2 py-2.5 text-center">Số TC</th>
-                        <th className="px-3 py-2.5">Lộ trình CTĐT</th>
-                        <th className="px-3.5 py-2.5 text-right">Trạng thái</th>
+                        <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
+                        <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần</th>
+                        <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                        <th className="px-3 py-2.5 text-center table-cell-center">Lộ trình CTĐT</th>
+                        <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1230,35 +1258,35 @@ export default function ForecastDetail({
 
                           return (
                             <tr key={c.courseId} className="hover:bg-slate-50/70 transition">
-                              <td className="px-3.5 py-2 font-mono font-bold text-slate-900 whitespace-nowrap">
+                              <td className="px-3.5 py-2 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
                                 {c.courseCode}
                               </td>
-                              <td className="px-3.5 py-2 font-medium text-slate-800">{c.courseName}</td>
-                              <td className="px-2 py-2 text-center font-mono text-slate-700">{c.credits}</td>
-                              <td className="px-3 py-2 text-slate-500 whitespace-nowrap">
+                              <td className="px-3.5 py-2 font-medium text-slate-800 text-left table-cell-left">{c.courseName}</td>
+                              <td className="px-2 py-2 text-center font-mono text-slate-700 table-cell-center">{c.credits}</td>
+                              <td className="px-3 py-2 text-slate-500 whitespace-nowrap text-center table-cell-center">
                                 {c.semesterNo ? `Học kỳ ${c.semesterNo}` : "Chưa phân kỳ"}
                               </td>
-                              <td className="px-3.5 py-2 text-right whitespace-nowrap">
+                              <td className="px-3.5 py-2 text-center whitespace-nowrap table-cell-center">
                                 {isPass ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200">
-                                    <CheckCircle2 size={11} className="text-emerald-600" /> Đã đạt
-                                  </span>
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
+                                     Đã đạt
+                                  </TextLabel>
                                 ) : isFail ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-800 border border-rose-200">
-                                    <XCircle size={11} className="text-rose-600" /> Chưa đạt (F)
-                                  </span>
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800">
+                                     Chưa đạt (F)
+                                  </TextLabel>
                                 ) : isNoScore ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800 border border-sky-200">
-                                    <Clock size={11} className="text-sky-600" /> Đang học
-                                  </span>
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800">
+                                     Đang học
+                                  </TextLabel>
                                 ) : isOverdue ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 border border-amber-200">
-                                    <AlertTriangle size={11} className="text-amber-600" /> Còn thiếu
-                                  </span>
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
+                                     Còn thiếu
+                                  </TextLabel>
                                 ) : (
-                                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 border border-slate-200">
+                                  <TextLabel className="text-[11px] font-medium text-slate-600">
                                     Kế hoạch
-                                  </span>
+                                  </TextLabel>
                                 )}
                               </td>
                             </tr>
@@ -1322,13 +1350,13 @@ export default function ForecastDetail({
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-slate-900">{group.code}</span>
-                          <span
-                            className={`rounded px-1.5 py-0.2 text-[10px] font-bold ${
+                          <TextLabel
+                            className={`rounded   text-[10px] font-bold ${
                               isPass ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"
                             }`}
                           >
                             {isPass ? "Đạt định mức" : "Đang tích lũy"}
-                          </span>
+                          </TextLabel>
                         </div>
                         <div className="mt-1 text-slate-600">
                           Đã tích lũy: <strong className="font-mono text-slate-900">{group.passedCredits} TC</strong>
@@ -1399,12 +1427,12 @@ export default function ForecastDetail({
                   <table className="w-full min-w-[550px] text-left text-xs">
                     <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
                       <tr>
-                        <th className="px-3.5 py-2.5">Mã HP</th>
-                        <th className="px-3.5 py-2.5">Tên môn học</th>
-                        <th className="px-2 py-2.5 text-center">Số TC</th>
-                        <th className="px-3 py-2.5">Kỳ học / Đợt</th>
-                        <th className="px-2 py-2.5 text-center">Điểm chữ</th>
-                        <th className="px-3.5 py-2.5 text-right">Trạng thái</th>
+                        <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
+                        <th className="px-3.5 py-2.5 text-left table-cell-left">Tên môn học</th>
+                        <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                        <th className="px-3 py-2.5 text-center table-cell-center">Kỳ học / Đợt</th>
+                        <th className="px-2 py-2.5 text-center table-cell-center">Điểm chữ</th>
+                        <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1423,19 +1451,19 @@ export default function ForecastDetail({
 
                           return (
                             <tr key={course.courseId} className="hover:bg-slate-50/70 transition">
-                              <td className="px-3.5 py-2 font-mono font-bold text-slate-900 whitespace-nowrap">
+                              <td className="px-3.5 py-2 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
                                 {course.courseCode}
                               </td>
-                              <td className="px-3.5 py-2 font-medium text-slate-800">{course.courseName}</td>
-                              <td className="px-2 py-2 text-center font-mono text-slate-700">{course.credits}</td>
-                              <td className="px-3 py-2 text-slate-500 whitespace-nowrap">
+                              <td className="px-3.5 py-2 font-medium text-slate-800 text-left table-cell-left">{course.courseName}</td>
+                              <td className="px-2 py-2 text-center font-mono text-slate-700 table-cell-center">{course.credits}</td>
+                              <td className="px-3 py-2 text-slate-500 whitespace-nowrap text-center table-cell-center">
                                 {grade?.academicYear && grade?.termCode ? (
                                   <span className="font-mono text-slate-700">{grade.academicYear} • {grade.termCode}</span>
                                 ) : (
                                   "Theo CTĐT"
                                 )}
                               </td>
-                              <td className="px-2 py-2 text-center font-mono font-extrabold">
+                              <td className="px-2 py-2 text-center font-mono font-extrabold table-cell-center">
                                 {grade?.letterGrade ? (
                                   <span className={grade.letterGrade === "F" ? "text-rose-700" : "text-slate-800"}>
                                     {grade.letterGrade}
@@ -1444,23 +1472,23 @@ export default function ForecastDetail({
                                   "—"
                                 )}
                               </td>
-                              <td className="px-3.5 py-2 text-right whitespace-nowrap">
+                              <td className="px-3.5 py-2 text-center whitespace-nowrap table-cell-center">
                                 {isPassed ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-800 border border-emerald-200">
-                                    <CheckCircle2 size={11} className="text-emerald-600" /> Đã đạt
-                                  </span>
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
+                                     Đã đạt
+                                  </TextLabel>
                                 ) : isNoScore ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-800 border border-sky-200">
-                                    <Clock size={11} className="text-sky-600" /> Đang học
-                                  </span>
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800">
+                                     Đang học
+                                  </TextLabel>
                                 ) : isFail ? (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-800 border border-rose-200">
-                                    <XCircle size={11} className="text-rose-600" /> Chưa đạt (F)
-                                  </span>
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800">
+                                     Chưa đạt (F)
+                                  </TextLabel>
                                 ) : (
-                                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 border border-slate-200">
+                                  <TextLabel className="text-[11px] font-medium text-slate-600">
                                     Chưa học
-                                  </span>
+                                  </TextLabel>
                                 )}
                               </td>
                             </tr>
@@ -1525,17 +1553,17 @@ export default function ForecastDetail({
                           </div>
                         </div>
 
-                        <span
-                          className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                        <TextLabel
+                          className={`inline-flex shrink-0    text-[11px] font-bold ${
                             isPass
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                              ? "bg-emerald-100 text-emerald-800  "
                               : isFail
-                                ? "bg-rose-100 text-rose-800 border border-rose-300"
-                                : "bg-slate-100 text-slate-700 border border-slate-300"
+                                ? "bg-rose-100 text-rose-800  "
+                                : "bg-slate-100 text-slate-700  "
                           }`}
                         >
                           {isPass ? "Đã đạt" : isFail ? "Chưa đạt" : "Chưa có dữ liệu"}
-                        </span>
+                        </TextLabel>
                       </div>
 
                       <div className="mt-2.5 pt-2 border-t border-slate-100 text-slate-600 text-[11px]">
@@ -1619,14 +1647,14 @@ export default function ForecastDetail({
                   <table className="w-full min-w-[650px] text-left text-xs">
                     <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
                       <tr>
-                        <th className="px-3.5 py-2.5">Học kỳ</th>
-                        <th className="px-3 py-2.5">Mã HP</th>
-                        <th className="px-3.5 py-2.5">Tên môn học</th>
-                        <th className="px-2 py-2.5 text-center">Số TC</th>
-                        <th className="px-2 py-2.5 text-center">Điểm 10</th>
-                        <th className="px-2 py-2.5 text-center">Điểm 4</th>
-                        <th className="px-2 py-2.5 text-center">Điểm chữ</th>
-                        <th className="px-3.5 py-2.5 text-right">Trạng thái</th>
+                        <th className="px-3.5 py-2.5 text-center table-cell-center">Học kỳ</th>
+                        <th className="px-3 py-2.5 text-left table-cell-left">Mã HP</th>
+                        <th className="px-3.5 py-2.5 text-left table-cell-left">Tên môn học</th>
+                        <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                        <th className="px-2 py-2.5 text-center table-cell-center">Điểm 10</th>
+                        <th className="px-2 py-2.5 text-center table-cell-center">Điểm 4</th>
+                        <th className="px-2 py-2.5 text-center table-cell-center">Điểm chữ</th>
+                        <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -1652,25 +1680,25 @@ export default function ForecastDetail({
                                     : "hover:bg-slate-50/70"
                               }
                             >
-                              <td className="px-3.5 py-2 text-slate-500 font-mono text-[11px] whitespace-nowrap">
+                              <td className="px-3.5 py-2 text-slate-500 font-mono text-[11px] whitespace-nowrap text-center table-cell-center">
                                 {g.academicYear} • {g.termCode}
                               </td>
-                              <td className="px-3 py-2 font-mono font-bold text-slate-900 whitespace-nowrap">
+                              <td className="px-3 py-2 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
                                 {g.courseCode}
                               </td>
-                              <td className="px-3.5 py-2 font-medium text-slate-800">
+                              <td className="px-3.5 py-2 font-medium text-slate-800 text-left table-cell-left">
                                 {g.courseName}
                               </td>
-                              <td className="px-2 py-2 text-center font-mono text-slate-700">
+                              <td className="px-2 py-2 text-center font-mono text-slate-700 table-cell-center">
                                 {g.credits}
                               </td>
-                              <td className="px-2 py-2 text-center font-mono font-bold">
+                              <td className="px-2 py-2 text-center font-mono font-bold table-cell-center">
                                 {g.score10 != null ? Number(g.score10).toFixed(1) : "—"}
                               </td>
-                              <td className="px-2 py-2 text-center font-mono font-bold">
+                              <td className="px-2 py-2 text-center font-mono font-bold table-cell-center">
                                 {g.score4 != null ? Number(g.score4).toFixed(1) : "—"}
                               </td>
-                              <td className="px-2 py-2 text-center font-mono font-extrabold">
+                              <td className="px-2 py-2 text-center font-mono font-extrabold table-cell-center">
                                 {g.letterGrade ? (
                                   <span
                                     className={
@@ -1687,19 +1715,19 @@ export default function ForecastDetail({
                                   "—"
                                 )}
                               </td>
-                              <td className="px-3.5 py-2 text-right whitespace-nowrap">
+                              <td className="px-3.5 py-2 text-center whitespace-nowrap table-cell-center">
                                 {isFail ? (
-                                  <span className="inline-flex rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                                  <TextLabel className="inline-flex text-[10px] font-bold text-rose-700">
                                     Không đạt (F)
-                                  </span>
+                                  </TextLabel>
                                 ) : isPendingGrade ? (
-                                  <span className="inline-flex rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                                  <TextLabel className="inline-flex text-[10px] font-bold text-amber-800">
                                     Chưa có điểm
-                                  </span>
+                                  </TextLabel>
                                 ) : (
-                                  <span className="inline-flex rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                                  <TextLabel className="inline-flex text-[10px] font-bold text-emerald-800">
                                     Đạt
-                                  </span>
+                                  </TextLabel>
                                 )}
                               </td>
                             </tr>

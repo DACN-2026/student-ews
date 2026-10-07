@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { Fragment, useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
@@ -533,9 +534,9 @@ export default function AcademicsPage() {
               Quản trị Đào tạo & Khung Chương trình
             </h1>
             {scopeBadgeText && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <TextLabel className="inline-flex items-center text-xs font-medium text-emerald-700">
                 {scopeBadgeText}
-              </span>
+              </TextLabel>
             )}
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -645,48 +646,45 @@ export default function AcademicsPage() {
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                      <th className="py-3 px-4">Mã năm học</th>
-                      <th className="py-3 px-4">Trạng thái</th>
-                      <th className="py-3 px-4">Năm hiện tại</th>
-                      <th className="py-3 px-4">Thời gian</th>
-                      <th className="py-3 px-4 text-right">Thao tác</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Mã năm học</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Trạng thái</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Năm hiện tại</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Thời gian</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {years.map((y) => (
                       <tr key={y.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3.5 px-4 font-bold font-mono text-slate-900">{y.sYearCode || y.yearCode}</td>
-                        <td className="py-3.5 px-4">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${y.status === "open" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+                        <td className="py-3.5 px-4 font-bold font-mono text-slate-900 text-center table-cell-center">{y.sYearCode || y.yearCode}</td>
+                        <td className="py-3.5 px-4 text-center table-cell-center">
+                          <TextLabel className={`inline-flex items-center    text-[11px] font-semibold ${y.status === "open" ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
                             }`}>
                             {y.status === "open" ? "Đang mở" : "Đã đóng"}
-                          </span>
+                          </TextLabel>
                         </td>
-                        <td className="py-3.5 px-4">
+                        <td className="py-3.5 px-4 text-center table-cell-center">
                           {y.isCurrent ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                            <TextLabel className="inline-flex items-center text-[11px] font-bold text-blue-700">
                               Đang dùng
-                            </span>
+                            </TextLabel>
                           ) : (
                             <span className="text-slate-400">—</span>
                           )}
                         </td>
-                        <td className="py-3.5 px-4 text-slate-500">
+                        <td className="py-3.5 px-4 text-slate-500 text-center table-cell-center">
                           {y.startDate ? new Date(y.startDate).toLocaleDateString("vi-VN") : "—"} đến{" "}
                           {y.endDate ? new Date(y.endDate).toLocaleDateString("vi-VN") : "—"}
                         </td>
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3.5 px-4 text-center table-cell-center">
                           {can("academic_term.manage") && (
                             <button
                               type="button"
                               onClick={() => setDeleteTarget({ type: "academic-years", id: y.id, name: y.sYearCode || y.yearCode })}
-                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                              className={`table-text-action ${plainTextClasses("p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer")}`}
                               title="Xóa năm học"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="3 6 5 6 21 6" />
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              </svg>
+                            >Xóa năm học
+
                             </button>
                           )}
                         </td>
@@ -727,14 +725,14 @@ export default function AcademicsPage() {
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                        <th className="py-3 px-4">Mã kỳ</th>
-                        <th className="py-3 px-4">Tên học kỳ</th>
-                        <th className="py-3 px-4">Thứ tự</th>
-                        <th className="py-3 px-4">Kỳ hè</th>
-                        <th className="py-3 px-4">Hiện tại</th>
-                        <th className="py-3 px-4">Trạng thái</th>
-                        <th className="py-3 px-4">Chốt điểm</th>
-                        <th className="py-3 px-4 text-right">Thao tác</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Mã kỳ</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Tên học kỳ</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Thứ tự</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Kỳ hè</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Hiện tại</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Trạng thái</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Chốt điểm</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -755,37 +753,37 @@ export default function AcademicsPage() {
                               </tr>
                             )}
                             <tr className="hover:bg-slate-50/70 transition-colors">
-                              <td className="py-3.5 px-4 font-bold font-mono text-slate-900">{t.sTermCode || t.termCode}</td>
-                              <td className="py-3.5 px-4 font-semibold text-slate-800">{t.sTermName || t.termName}</td>
-                              <td className="py-3.5 px-4 text-slate-600">{t.sTermOrder || t.termOrder}</td>
-                              <td className="py-3.5 px-4">
+                              <td className="py-3.5 px-4 font-bold font-mono text-slate-900 text-center table-cell-center">{t.sTermCode || t.termCode}</td>
+                              <td className="py-3.5 px-4 font-semibold text-slate-800 text-center table-cell-center">{t.sTermName || t.termName}</td>
+                              <td className="py-3.5 px-4 text-slate-600 text-center table-cell-center">{t.sTermOrder || t.termOrder}</td>
+                              <td className="py-3.5 px-4 text-center table-cell-center">
                                 {t.bIsSummer || t.isSummer ? (
-                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                  <TextLabel className="text-[10px] font-bold text-amber-700">
                                     Học kỳ hè
-                                  </span>
+                                  </TextLabel>
                                 ) : (
                                   <span className="text-slate-400">Chính</span>
                                 )}
                               </td>
-                              <td className="py-3.5 px-4">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
                                 {t.isCurrent ? (
-                                  <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                  <TextLabel className="text-[11px] font-bold text-blue-700">
                                     Đang dùng
-                                  </span>
+                                  </TextLabel>
                                 ) : (
                                   <span className="text-slate-400">—</span>
                                 )}
                               </td>
-                              <td className="py-3.5 px-4">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
+                                <TextLabel className="inline-flex items-center text-[11px] font-semibold text-emerald-800">
                                   {t.status || "Đang mở"}
-                                </span>
+                                </TextLabel>
                               </td>
-                              <td className="py-3.5 px-4">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
                                 {t.isSummer || t.bIsSummer ? (
                                   <span className="text-[11px] text-slate-400">Không áp dụng</span>
                                 ) : t.gradesFinalizedAt ? (
-                                  <span className="inline-flex flex-col text-[11px] font-semibold text-emerald-700">
+                                  <span className="inline-flex flex-col text-[11px] font-semibold text-emerald-700 items-center">
                                     <span>Đã chốt điểm</span>
                                     <span className="font-normal text-slate-400">{new Date(t.gradesFinalizedAt).toLocaleString("vi-VN")}</span>
                                   </span>
@@ -793,7 +791,7 @@ export default function AcademicsPage() {
                                   <span className="text-[11px] text-amber-700">Chưa chốt</span>
                                 )}
                               </td>
-                              <td className="py-3.5 px-4 text-right">
+                              <td className="py-3.5 px-4 text-center table-cell-center">
                                 {can("academic_term.manage") && !(t.isSummer || t.bIsSummer) && (
                                   <button
                                     type="button"
@@ -843,11 +841,11 @@ export default function AcademicsPage() {
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                        <th className="py-3 px-4">Mã HP</th>
-                        <th className="py-3 px-4">Tên học phần</th>
-                        <th className="py-3 px-4">Số tín chỉ</th>
-                        <th className="py-3 px-4">Lý thuyết / Thực hành</th>
-                        <th className="py-3 px-4">Học phần tiên quyết</th>
+                        <th className="py-3 px-4 text-left table-cell-left">Mã HP</th>
+                        <th className="py-3 px-4 text-left table-cell-left">Tên học phần</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Số tín chỉ</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Lý thuyết / Thực hành</th>
+                        <th className="py-3 px-4 text-center table-cell-center">Học phần tiên quyết</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -859,19 +857,19 @@ export default function AcademicsPage() {
                         )
                         .map((c) => (
                           <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900 text-left table-cell-left">
                               {c.sCourseId || c.courseCode}
                             </td>
-                            <td className="py-3.5 px-4 font-semibold text-slate-800">
+                            <td className="py-3.5 px-4 font-semibold text-slate-800 text-left table-cell-left">
                               {c.sCourseName || c.courseName}
                             </td>
-                            <td className="py-3.5 px-4 font-mono font-bold text-emerald-600">
+                            <td className="py-3.5 px-4 font-mono font-bold text-emerald-600 text-center table-cell-center">
                               {c.nCredits || c.credits} TC
                             </td>
-                            <td className="py-3.5 px-4 text-slate-600">
+                            <td className="py-3.5 px-4 text-slate-600 text-center table-cell-center">
                               {c.nTheoryHours ?? 45} LT / {c.nPracticeHours ?? 0} TH
                             </td>
-                            <td className="py-3.5 px-4 text-slate-400">
+                            <td className="py-3.5 px-4 text-slate-400 text-center table-cell-center">
                               {c.prerequisites ? c.prerequisites.join(", ") : "Không có"}
                             </td>
                           </tr>
@@ -896,32 +894,31 @@ export default function AcademicsPage() {
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                      <th className="py-3 px-4">Mã CTĐT</th>
-                      <th className="py-3 px-4">Tên chương trình</th>
-                      <th className="py-3 px-4">Ngành đào tạo</th>
-                      <th className="py-3 px-4">Bậc / Hệ đào tạo</th>
-                      <th className="py-3 px-4">Số học phần</th>
-                      <th className="py-3 px-4 text-right">Chi tiết</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Mã CTĐT</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Tên chương trình</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Ngành đào tạo</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Bậc / Hệ đào tạo</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Số học phần</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Chi tiết</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {programs.map((p) => (
                       <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{p.programCode}</td>
-                        <td className="py-3.5 px-4 font-semibold text-slate-800">{p.programName}</td>
-                        <td className="py-3.5 px-4 text-slate-600">{p.majorName || "Công nghệ Thông tin"}</td>
-                        <td className="py-3.5 px-4 text-slate-600">
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900 text-center table-cell-center">{p.programCode}</td>
+                        <td className="py-3.5 px-4 font-semibold text-slate-800 text-center table-cell-center">{p.programName}</td>
+                        <td className="py-3.5 px-4 text-slate-600 text-center table-cell-center">{p.majorName || "Công nghệ Thông tin"}</td>
+                        <td className="py-3.5 px-4 text-slate-600 text-center table-cell-center">
                           {p.degreeLevel || "Đại học"} • {p.studyType || "Chính quy"}
                         </td>
-                        <td className="py-3.5 px-4 font-mono font-bold text-blue-600">{p.courseCount || 42} học phần</td>
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3.5 px-4 font-mono font-bold text-blue-600 text-center table-cell-center">{p.courseCount || 42} học phần</td>
+                        <td className="py-3.5 px-4 text-center table-cell-center">
                           <button
                             type="button"
                             onClick={() => router.push(`/academics/training-programs/${p.id}`)}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-[var(--color-primary)] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            className={`table-text-action ${plainTextClasses("inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-[var(--color-primary)] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer")}`}
                           >
                             <span>Xem khung môn</span>
-                            <span>→</span>
                           </button>
                         </td>
                       </tr>
@@ -945,17 +942,17 @@ export default function AcademicsPage() {
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                      <th className="py-3 px-4">Mã khóa</th>
-                      <th className="py-3 px-4">Tên khóa</th>
-                      <th className="py-3 px-4">Thời gian tạo</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Mã khóa</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Tên khóa</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Thời gian tạo</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {cohorts.map((c) => (
                       <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{c.cohortCode}</td>
-                        <td className="py-3.5 px-4 font-semibold text-slate-800">{c.cohortName}</td>
-                        <td className="py-3.5 px-4 text-slate-400">
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900 text-center table-cell-center">{c.cohortCode}</td>
+                        <td className="py-3.5 px-4 font-semibold text-slate-800 text-center table-cell-center">{c.cohortName}</td>
+                        <td className="py-3.5 px-4 text-slate-400 text-center table-cell-center">
                           {c.createdAt ? new Date(c.createdAt).toLocaleDateString("vi-VN") : "—"}
                         </td>
                       </tr>
@@ -979,34 +976,31 @@ export default function AcademicsPage() {
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                      <th className="py-3 px-4">Mã lớp</th>
-                      <th className="py-3 px-4">Tên lớp</th>
-                      <th className="py-3 px-4">Khóa trực thuộc</th>
-                      <th className="py-3 px-4 text-right">Thao tác</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Mã lớp</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Tên lớp</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Khóa trực thuộc</th>
+                      <th className="py-3 px-4 text-center table-cell-center">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {classes.map((c) => (
                       <tr key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900">{c.classId}</td>
-                        <td className="py-3.5 px-4 font-semibold text-slate-800">{c.className}</td>
-                        <td className="py-3.5 px-4">
-                          <span className="px-2 py-0.5 rounded font-mono font-semibold bg-slate-100 text-slate-700">
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-900 text-center table-cell-center">{c.classId}</td>
+                        <td className="py-3.5 px-4 font-semibold text-slate-800 text-center table-cell-center">{c.className}</td>
+                        <td className="py-3.5 px-4 text-center table-cell-center">
+                          <TextLabel className="font-mono font-semibold text-slate-700">
                             {cohorts.find((co) => co.id === c.cohortId)?.cohortCode || "Chưa gán"}
-                          </span>
+                          </TextLabel>
                         </td>
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3.5 px-4 text-center table-cell-center">
                           {can("class.manage") && (
                             <button
                               type="button"
                               onClick={() => setDeleteTarget({ type: "classes", id: c.id, name: c.classId })}
-                              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                              className={`table-text-action ${plainTextClasses("p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer")}`}
                               title="Xóa lớp học"
-                            >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="3 6 5 6 21 6" />
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              </svg>
+                            >Xóa lớp học
+
                             </button>
                           )}
                         </td>
@@ -1064,12 +1058,12 @@ export default function AcademicsPage() {
                         <table className="w-full text-left text-xs">
                           <thead>
                             <tr className="bg-slate-50/30 border-y border-slate-100 text-slate-500 font-semibold uppercase text-[10px]">
-                              <th className="py-2.5 px-4">Khóa / CTĐT</th>
-                              <th className="py-2.5 px-4">Học kỳ / Năm học</th>
-                              <th className="py-2.5 px-4 text-center">Lộ trình</th>
-                              <th className="py-2.5 px-4 text-center">Phiên bản</th>
-                              <th className="py-2.5 px-4">Trạng thái</th>
-                              <th className="py-2.5 px-4 text-right">Thao tác</th>
+                              <th className="py-2.5 px-4 text-center table-cell-center">Khóa / CTĐT</th>
+                              <th className="py-2.5 px-4 text-center table-cell-center">Học kỳ / Năm học</th>
+                              <th className="py-2.5 px-4 text-center table-cell-center">Lộ trình</th>
+                              <th className="py-2.5 px-4 text-center table-cell-center">Phiên bản</th>
+                              <th className="py-2.5 px-4 text-center table-cell-center">Trạng thái</th>
+                              <th className="py-2.5 px-4 text-center table-cell-center">Thao tác</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
@@ -1083,44 +1077,44 @@ export default function AcademicsPage() {
                               return (a.curriculumSemesterNo || 0) - (b.curriculumSemesterNo || 0);
                             }).map((pl: ApiData) => (
                               <tr key={pl.id} className="hover:bg-slate-50/70 transition-colors">
-                                <td className="py-3 px-4 font-bold text-slate-900">
+                                <td className="py-3 px-4 font-bold text-slate-900 text-center table-cell-center">
                                   <div>{pl.cohortCode || "Khóa"}</div>
                                   <div className="text-[10px] text-slate-400 font-mono">{pl.programCode || "CTĐT"}</div>
                                 </td>
-                                <td className="py-3 px-4 text-slate-700 font-medium">
+                                <td className="py-3 px-4 text-slate-700 font-medium text-center table-cell-center">
                                   <div>{pl.termCode || "HK01"}</div>
                                   <div className="text-[10px] text-slate-400">{pl.academicYearCode || ""}</div>
                                 </td>
-                                <td className="py-3 px-4 text-center font-mono font-bold text-slate-800">
+                                <td className="py-3 px-4 text-center font-mono font-bold text-slate-800 table-cell-center">
                                   HK {pl.curriculumSemesterNo}
                                 </td>
-                                <td className="py-3 px-4 text-center font-mono">
+                                <td className="py-3 px-4 text-center font-mono table-cell-center">
                                   v{pl.version || 1}
                                 </td>
-                                <td className="py-3 px-4">
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    <span
-                                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${pl.status === "locked"
-                                        ? "bg-blue-50 text-blue-700 border border-blue-200"
+                                <td className="py-3 px-4 text-center table-cell-center">
+                                  <div className="flex flex-wrap items-center gap-1.5 justify-center">
+                                    <TextLabel
+                                      className={`inline-flex items-center    text-[10px] font-bold ${pl.status === "locked"
+                                        ? "bg-blue-50 text-blue-700  "
                                         : pl.status === "archived"
-                                          ? "bg-slate-100 text-slate-600 border border-slate-200"
-                                          : "bg-amber-50 text-amber-700 border border-amber-200"
+                                          ? "bg-slate-100 text-slate-600  "
+                                          : "bg-amber-50 text-amber-700  "
                                         }`}
                                     >
                                       {pl.status === "locked" ? "Đã khóa" : pl.status === "archived" ? "Lưu trữ" : "Bản nháp"}
-                                    </span>
+                                    </TextLabel>
                                     {pl.isCurrent && (
-                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                      <TextLabel className="inline-flex items-center text-[9px] font-bold text-emerald-700">
                                         Hiện hành
-                                      </span>
+                                      </TextLabel>
                                     )}
                                   </div>
                                 </td>
-                                <td className="py-3 px-4 text-right space-x-1 whitespace-nowrap">
+                                <td className="py-3 px-4 text-center space-x-1 whitespace-nowrap table-cell-center">
                                   <button
                                     type="button"
                                     onClick={() => handleViewPlanCourses(pl.id)}
-                                    className="px-2 py-1 text-[11px] font-semibold text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer"
+                                    className={`table-text-action ${plainTextClasses("px-2 py-1 text-[11px] font-semibold text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer")}`}
                                     title="Xem chi tiết học phần kế hoạch"
                                   >
                                     Xem học phần
@@ -1129,7 +1123,7 @@ export default function AcademicsPage() {
                                     <button
                                       type="button"
                                       onClick={() => handleLockPlan(pl.id)}
-                                      className="px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer"
+                                      className={`table-text-action ${plainTextClasses("px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer")}`}
                                       title="Khóa kế hoạch để tính toán"
                                     >
                                       Khóa
@@ -1139,7 +1133,7 @@ export default function AcademicsPage() {
                                     <button
                                       type="button"
                                       onClick={() => handleActivatePlan(pl.id)}
-                                      className="px-2 py-1 text-[11px] font-semibold text-purple-700 hover:bg-purple-50 rounded-md transition-colors cursor-pointer"
+                                      className={`table-text-action ${plainTextClasses("px-2 py-1 text-[11px] font-semibold text-purple-700 hover:bg-purple-50 rounded-md transition-colors cursor-pointer")}`}
                                       title="Kích hoạt làm kế hoạch hiện hành"
                                     >
                                       Kích hoạt
@@ -1149,7 +1143,7 @@ export default function AcademicsPage() {
                                     <button
                                       type="button"
                                       onClick={() => handleArchivePlan(pl.id)}
-                                      className="px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+                                      className={`table-text-action ${plainTextClasses("px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 rounded-md transition-colors cursor-pointer")}`}
                                       title="Lưu trữ kế hoạch"
                                     >
                                       Lưu trữ
@@ -1580,36 +1574,36 @@ export default function AcademicsPage() {
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold text-[10px] uppercase">
-                    <th className="py-2.5 px-3">Mã HP</th>
-                    <th className="py-2.5 px-3">Tên học phần</th>
-                    <th className="py-2.5 px-3 text-right">Số TC</th>
-                    <th className="py-2.5 px-3">Nhóm môn</th>
-                    <th className="py-2.5 px-3">Đăng ký</th>
+                    <th className="py-2.5 px-3 text-left table-cell-left">Mã HP</th>
+                    <th className="py-2.5 px-3 text-left table-cell-left">Tên học phần</th>
+                    <th className="py-2.5 px-3 text-center table-cell-center">Số TC</th>
+                    <th className="py-2.5 px-3 text-center table-cell-center">Nhóm môn</th>
+                    <th className="py-2.5 px-3 text-center table-cell-center">Đăng ký</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {selectedPlanDetail.courses?.map((c: ApiData) => (
                     <tr key={c.id || c.courseId} className="hover:bg-slate-50/60">
-                      <td className="py-2 px-3 font-mono font-bold text-slate-800">{c.courseCode}</td>
-                      <td className="py-2 px-3 font-medium text-slate-800">{c.courseName}</td>
-                      <td className="py-2 px-3 text-right font-mono font-bold text-emerald-600">
+                      <td className="py-2 px-3 font-mono font-bold text-slate-800 text-left table-cell-left">{c.courseCode}</td>
+                      <td className="py-2 px-3 font-medium text-slate-800 text-left table-cell-left">{c.courseName}</td>
+                      <td className="py-2 px-3 text-center font-mono font-bold text-emerald-600 table-cell-center">
                         {c.credits} TC
                       </td>
-                      <td className="py-2 px-3">
-                        <span
-                          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${c.requirementType === "mandatory"
+                      <td className="py-2 px-3 text-center table-cell-center">
+                        <TextLabel
+                          className={`inline-flex items-center    text-[10px] font-bold ${c.requirementType === "mandatory"
                             ? "bg-blue-50 text-blue-700"
                             : "bg-amber-50 text-amber-700"
                             }`}
                         >
                           {c.requirementType === "mandatory" ? "Bắt buộc" : "Tự chọn"}
-                        </span>
+                        </TextLabel>
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-2 px-3 text-center table-cell-center">
                         {c.isRegistrationRequired ? (
-                          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                          <TextLabel className="text-[10px] font-bold text-blue-600">
                             Bắt buộc
-                          </span>
+                          </TextLabel>
                         ) : (
                           <span className="text-[10px] text-slate-500">{c.choiceGroupCode ? "Chọn trong nhóm" : "Tùy chọn"}</span>
                         )}

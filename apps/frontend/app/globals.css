@@ -51,3 +51,67 @@ h1, h2, h3, h4, h5, h6 {
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Inline table actions use the same quiet text presentation as data labels. */
+.table-text-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.25rem 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-weight: 600;
+  cursor: pointer;
+  text-underline-offset: 0.2em;
+}
+
+.table-text-action:hover {
+  text-decoration: underline;
+}
+
+.table-text-action:focus-visible {
+  outline: 2px solid #4D7C0F;
+  outline-offset: 3px;
+}
+
+.table-text-action:disabled {
+  cursor: default;
+  opacity: 0.5;
+  text-decoration: none;
+}
+
+.text-filter {
+  padding: 0.375rem 0.5rem;
+}
+
+.text-filter[aria-pressed="true"] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+/* Keep headers and cells aligned, including block content and action groups. */
+th.table-cell-center,
+td.table-cell-center {
+  text-align: center;
+  vertical-align: middle;
+}
+
+th.table-cell-left,
+td.table-cell-left {
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table-cell-center > .flex {
+  justify-content: center;
+}
+
+.table-cell-center > .flex.flex-col {
+  align-items: center;
+}
+
+.table-cell-center > div {
+  margin-inline: auto;
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { useState, useEffect, useMemo, useCallback, use } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
@@ -355,12 +356,12 @@ export default function TrainingProgramDetailPage({
             >
               {program.programName}
             </h1>
-            <span className="font-mono text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+            <TextLabel className="font-mono text-xs font-bold text-emerald-700">
               {program.programCode}
-            </span>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+            </TextLabel>
+            <TextLabel className="text-[11px] font-semibold text-slate-600">
               {program.status === "archived" ? "Lưu trữ" : "Đang áp dụng"}
-            </span>
+            </TextLabel>
           </div>
           <p className="text-xs text-slate-500">
             Khung chương trình chi tiết & phân bổ học phần theo lộ trình đào tạo
@@ -426,9 +427,9 @@ export default function TrainingProgramDetailPage({
           style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
         >
           <span>Khung chương trình</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 font-bold text-slate-600">
+          <TextLabel className="text-xs font-bold text-slate-600">
             {allCourses.length}
-          </span>
+          </TextLabel>
         </button>
 
         <button
@@ -440,9 +441,9 @@ export default function TrainingProgramDetailPage({
           style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
         >
           <span>Kế hoạch đào tạo áp dụng</span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 font-bold text-slate-600">
+          <TextLabel className="text-xs font-bold text-slate-600">
             {plans.length}
-          </span>
+          </TextLabel>
         </button>
       </div>
 
@@ -451,26 +452,26 @@ export default function TrainingProgramDetailPage({
         <div className="space-y-6">
           {/* KPI Summary badges */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200">
+            <TextLabel className="inline-flex items-center gap-2 text-slate-700 text-xs font-semibold">
               <span>Tổng học phần:</span>
               <strong className="font-mono text-slate-900">{allCourses.length} môn</strong>
-            </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-200">
+            </TextLabel>
+            <TextLabel className="inline-flex items-center gap-2 text-blue-700 text-xs font-semibold">
               <span>Tổng tín chỉ:</span>
               <strong className="font-mono text-blue-900">{totalCredits} TC</strong>
-            </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
+            </TextLabel>
+            <TextLabel className="inline-flex items-center gap-2 text-emerald-700 text-xs font-semibold">
               <span>Bắt buộc:</span>
               <strong className="font-mono text-emerald-900">
                 {mandatoryCount} HP ({mandatoryCredits} TC)
               </strong>
-            </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200">
+            </TextLabel>
+            <TextLabel className="inline-flex items-center gap-2 text-amber-700 text-xs font-semibold">
               <span>Tự chọn:</span>
               <strong className="font-mono text-amber-900">
                 {electiveCount} HP ({electiveCredits} TC)
               </strong>
-            </div>
+            </TextLabel>
           </div>
 
           {/* Filter Bar */}
@@ -523,9 +524,9 @@ export default function TrainingProgramDetailPage({
                     >
                       {group.year}
                     </h2>
-                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                    <TextLabel className="text-xs font-semibold text-slate-600">
                       {group.terms.reduce((acc, t) => acc + t.courses.length, 0)} học phần
-                    </span>
+                    </TextLabel>
                   </div>
 
                   <div className="space-y-5">
@@ -546,83 +547,77 @@ export default function TrainingProgramDetailPage({
                                 {termBlock.courses.length} học phần
                               </span>
                             </div>
-                            <span className="text-xs font-bold font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                            <TextLabel className="text-xs font-bold font-mono text-emerald-700">
                               Tổng: {termCredits} tín chỉ
-                            </span>
+                            </TextLabel>
                           </div>
 
                           <div className="overflow-x-auto">
                             <table className="w-full text-left text-xs">
                               <thead>
                                 <tr className="border-b border-slate-100 text-slate-500 font-semibold uppercase text-[10px]">
-                                  <th className="py-2.5 px-4 w-32">Mã HP</th>
-                                  <th className="py-2.5 px-4">Tên học phần</th>
-                                  <th className="py-2.5 px-4 w-20 text-center">HK thứ</th>
-                                  <th className="py-2.5 px-4 w-20 text-right">Số TC</th>
-                                  <th className="py-2.5 px-4 w-28">Loại</th>
-                                  <th className="py-2.5 px-4 w-28">LT / TH</th>
-                                  <th className="py-2.5 px-4 w-36">Bộ môn</th>
-                                  <th className="py-2.5 px-4 w-32 text-right">Thao tác</th>
+                                  <th className="py-2.5 px-4 w-32 text-left table-cell-left">Mã HP</th>
+                                  <th className="py-2.5 px-4 text-left table-cell-left">Tên học phần</th>
+                                  <th className="py-2.5 px-4 w-20 text-center table-cell-center">HK thứ</th>
+                                  <th className="py-2.5 px-4 w-20 text-center table-cell-center">Số TC</th>
+                                  <th className="py-2.5 px-4 w-28 text-center table-cell-center">Loại</th>
+                                  <th className="py-2.5 px-4 w-28 text-center table-cell-center">LT / TH</th>
+                                  <th className="py-2.5 px-4 w-36 text-center table-cell-center">Bộ môn</th>
+                                  <th className="py-2.5 px-4 w-32 text-center table-cell-center">Thao tác</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
                                 {termBlock.courses.map((course) => (
                                   <tr key={course.id} className="hover:bg-slate-50/70 transition-colors">
-                                    <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                                    <td className="py-3 px-4 font-mono font-bold text-slate-900 text-left table-cell-left">
                                       {course.courseCode}
                                     </td>
-                                    <td className="py-3 px-4">
+                                    <td className="py-3 px-4 text-left table-cell-left">
                                       <div className="font-semibold text-slate-800">{course.courseName}</div>
                                       {course.note && (
                                         <div className="text-[11px] text-slate-400 mt-0.5">{course.note}</div>
                                       )}
                                     </td>
-                                    <td className="py-3 px-4 text-center font-mono font-semibold text-slate-700">
+                                    <td className="py-3 px-4 text-center font-mono font-semibold text-slate-700 table-cell-center">
                                       HK {course.semesterNo}
                                     </td>
-                                    <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600">
+                                    <td className="py-3 px-4 text-center font-mono font-bold text-emerald-600 table-cell-center">
                                       {course.credits} TC
                                     </td>
-                                    <td className="py-3 px-4">
-                                      <span
-                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${course.requirementType === "Bắt Buộc"
-                                          ? "bg-blue-50 text-blue-700 border border-blue-200"
-                                          : "bg-amber-50 text-amber-700 border border-amber-200"
+                                    <td className="py-3 px-4 text-center table-cell-center">
+                                      <TextLabel
+                                        className={`inline-flex items-center    text-[10px] font-bold ${course.requirementType === "Bắt Buộc"
+                                          ? "bg-blue-50 text-blue-700  "
+                                          : "bg-amber-50 text-amber-700  "
                                           }`}
                                       >
                                         {course.requirementType}
-                                      </span>
+                                      </TextLabel>
                                     </td>
-                                    <td className="py-3 px-4 text-slate-600 font-mono">
+                                    <td className="py-3 px-4 text-slate-600 font-mono text-center table-cell-center">
                                       {course.theoryHours ?? 45}h / {course.practiceHours ?? 0}h
                                     </td>
-                                    <td className="py-3 px-4 text-slate-600">
+                                    <td className="py-3 px-4 text-slate-600 text-center table-cell-center">
                                       {course.departmentCode || "—"}
                                     </td>
-                                    <td className="py-3 px-4 text-right space-x-1">
+                                    <td className="py-3 px-4 text-center space-x-1 table-cell-center">
                                       {can("academic_term.manage") && (
                                         <>
                                           <button
                                             type="button"
                                             onClick={() => handleOpenEdit(course)}
-                                            className="p-1.5 text-slate-400 hover:text-[var(--color-primary)] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                                            className={`table-text-action ${plainTextClasses("p-1.5 text-slate-400 hover:text-[var(--color-primary)] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer")}`}
                                             title="Sửa học phần"
-                                          >
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                            </svg>
+                                          >Sửa học phần
+
                                           </button>
                                           <button
                                             type="button"
                                             onClick={() => setDeleteTarget(course)}
-                                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                            className={`table-text-action ${plainTextClasses("p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer")}`}
                                             title="Xóa học phần khỏi CTĐT"
-                                          >
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                              <polyline points="3 6 5 6 21 6" />
-                                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                            </svg>
+                                          >Xóa học phần khỏi CTĐT
+
                                           </button>
                                         </>
                                       )}
@@ -659,12 +654,12 @@ export default function TrainingProgramDetailPage({
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[11px]">
-                  <th className="py-3 px-4">Khóa áp dụng</th>
-                  <th className="py-3 px-4">Học kỳ / Năm học</th>
-                  <th className="py-3 px-4">Lộ trình</th>
-                  <th className="py-3 px-4">Phiên bản</th>
-                  <th className="py-3 px-4">Trạng thái</th>
-                  <th className="py-3 px-4">TC Tự chọn yêu cầu</th>
+                  <th className="py-3 px-4 text-center table-cell-center">Khóa áp dụng</th>
+                  <th className="py-3 px-4 text-center table-cell-center">Học kỳ / Năm học</th>
+                  <th className="py-3 px-4 text-center table-cell-center">Lộ trình</th>
+                  <th className="py-3 px-4 text-center table-cell-center">Phiên bản</th>
+                  <th className="py-3 px-4 text-center table-cell-center">Trạng thái</th>
+                  <th className="py-3 px-4 text-center table-cell-center">TC Tự chọn yêu cầu</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -682,13 +677,13 @@ export default function TrainingProgramDetailPage({
                     return (a.curriculumSemesterNo || 0) - (b.curriculumSemesterNo || 0);
                   }).map((pl) => (
                     <tr key={pl.id} className="hover:bg-slate-50/70 transition-colors">
-                      <td className="py-3.5 px-4 font-bold text-slate-900">{pl.cohortCode || "Khóa"}</td>
-                      <td className="py-3.5 px-4 text-slate-700">{pl.termCode || "HK01"}</td>
-                      <td className="py-3.5 px-4 text-slate-600 font-medium">HK {pl.curriculumSemesterNo}</td>
-                      <td className="py-3.5 px-4 font-mono">v{pl.version}</td>
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${pl.status === "locked"
+                      <td className="py-3.5 px-4 font-bold text-slate-900 text-center table-cell-center">{pl.cohortCode || "Khóa"}</td>
+                      <td className="py-3.5 px-4 text-slate-700 text-center table-cell-center">{pl.termCode || "HK01"}</td>
+                      <td className="py-3.5 px-4 text-slate-600 font-medium text-center table-cell-center">HK {pl.curriculumSemesterNo}</td>
+                      <td className="py-3.5 px-4 font-mono text-center table-cell-center">v{pl.version}</td>
+                      <td className="py-3.5 px-4 text-center table-cell-center">
+                        <TextLabel
+                          className={`inline-flex items-center    text-[10px] font-semibold ${pl.status === "locked"
                             ? "bg-blue-100 text-blue-800"
                             : pl.status === "archived"
                               ? "bg-slate-100 text-slate-600"
@@ -696,9 +691,9 @@ export default function TrainingProgramDetailPage({
                             }`}
                         >
                           {pl.status === "locked" ? "Đã khóa" : pl.status === "archived" ? "Lưu trữ" : "Bản nháp"}
-                        </span>
+                        </TextLabel>
                       </td>
-                      <td className="py-3.5 px-4 font-mono font-bold text-slate-800">
+                      <td className="py-3.5 px-4 font-mono font-bold text-slate-800 text-center table-cell-center">
                         {pl.requiredElectiveCredits} TC
                       </td>
                     </tr>

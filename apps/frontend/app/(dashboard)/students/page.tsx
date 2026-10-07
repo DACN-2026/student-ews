@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel from "@/components/ui/TextLabel";
 import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
@@ -362,7 +363,7 @@ export default function StudentsPage() {
         <div>
           <div className="font-semibold text-slate-800">{r.fullName}</div>
           {r.classRoleId === 1 && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 mt-0.5">
+            <span className="block text-[10px] font-medium text-blue-700 mt-0.5">
               Lớp trưởng
             </span>
           )}
@@ -380,7 +381,7 @@ export default function StudentsPage() {
       title: "Giới tính",
       width: 100,
       render: (v) => (
-        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px]">
+        <span className="text-xs text-slate-700">
           {v || "—"}
         </span>
       ),
@@ -390,7 +391,7 @@ export default function StudentsPage() {
       title: "Lớp",
       width: 130,
       render: (v) => (
-        <span className="font-semibold text-slate-800 bg-slate-50 px-2 py-1 rounded-lg border border-slate-200">
+        <span className="text-xs font-medium text-slate-800">
           {v || "Chưa xếp lớp"}
         </span>
       ),
@@ -401,11 +402,7 @@ export default function StudentsPage() {
       width: 120,
       render: (v) => (
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-            v
-              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-              : "bg-slate-100 text-slate-500 border border-slate-200"
-          }`}
+          className={`text-xs font-medium ${v ? "text-emerald-800" : "text-slate-500"}`}
         >
           {v ? "Trong lớp" : "Đã rời lớp"}
         </span>
@@ -421,13 +418,13 @@ export default function StudentsPage() {
       key: "actions",
       title: "Thao tác",
       width: 180,
-      align: "right",
+      align: "center",
       render: (_, r) => (
-        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={() => router.push(`/students/${r.id}`)}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] transition-colors border border-[var(--color-primary)]/40 cursor-pointer"
+            className="table-text-action text-xs text-emerald-700 transition-colors"
           >
             Hồ sơ
           </button>
@@ -435,26 +432,20 @@ export default function StudentsPage() {
             <button
               type="button"
               onClick={() => handleOpenEdit(r)}
-              className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="table-text-action text-xs text-slate-600 hover:text-slate-900 transition-colors"
               title="Sửa thông tin"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
+              Sửa thông tin
             </button>
           )}
           {can("student.delete") && (
             <button
               type="button"
               onClick={() => setStudentToDelete(r)}
-              className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+              className="table-text-action text-xs text-red-700 hover:text-red-800 transition-colors"
               title="Xóa sinh viên"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
+              Xóa sinh viên
             </button>
           )}
         </div>
@@ -479,9 +470,9 @@ export default function StudentsPage() {
               {pageTitle}
             </h1>
             {scopeBadgeText && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <TextLabel className="inline-flex items-center text-xs font-medium text-emerald-700">
                 {scopeBadgeText}
-              </span>
+              </TextLabel>
             )}
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -655,11 +646,10 @@ export default function StudentsPage() {
           className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
         >
           <option value="all">Tất cả mức cảnh báo</option>
-          <option value="red">🔴 Nguy cơ cao (Đỏ)</option>
-          <option value="yellow">🟡 Cần lưu ý (Vàng)</option>
-          <option value="green">🟢 Bình thường</option>
-          <option value="partial">🔵 Đã đánh giá một phần</option>
-          <option value="insufficient">⚪ Chưa đủ dữ liệu</option>
+          <option value="red">Nguy cơ cao</option>
+          <option value="yellow">Cần lưu ý</option>
+          <option value="green">Bình thường</option>
+          <option value="insufficient">Chưa đủ dữ liệu</option>
         </select>}
       </FilterBar>
 

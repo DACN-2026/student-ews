@@ -1,3 +1,5 @@
+import type { AcademicDebtCalculation } from "./academic-debt";
+import { isConditionalCourse } from "../academic-course-rules";
 export const ACADEMIC_WARNING_CAPABILITY_STATUSES = ["AVAILABLE", "UNAVAILABLE", "UNVERIFIED"] as const;
 
 export type AcademicWarningCapabilityStatus = typeof ACADEMIC_WARNING_CAPABILITY_STATUSES[number];
@@ -21,8 +23,8 @@ export type AcademicWarningCapabilitySnapshot = Record<AcademicWarningCapability
 const CAPABILITY_DEFINITIONS: AcademicWarningCapabilitySnapshot = {
   FIRST_TERM_DETECTION: {
     status: "AVAILABLE",
-    reasonCode: "EARLIEST_MAIN_TERM_SUMMARY_AVAILABLE",
-    description: "The first main semester is derived from the student's earliest main-term summary in the same program.",
+    reasonCode: "ADMISSION_MAIN_TERM_SUMMARY_AVAILABLE",
+    description: "The first main semester requires source evidence in the cohort admission year; missing transfer history is unresolved.",
     evidence: ["student_term_summaries", "academic_terms", "academic_years"],
   },
   SUMMER_MAIN_TERM_MERGE_VERIFIED: {
@@ -51,11 +53,13 @@ const CAPABILITY_DEFINITIONS: AcademicWarningCapabilitySnapshot = {
   },
 };
 
-export function createAcademicWarningCapabilitySnapshot(): AcademicWarningCapabilitySnapshot {
+export function createAcademicWarningCapabilitySnapshot(options?: { debtVerified?: boolean }): AcademicWarningCapabilitySnapshot {
   return Object.fromEntries(
     Object.entries(CAPABILITY_DEFINITIONS).map(([name, capability]) => [
       name,
-      { ...capability, evidence: [...capability.evidence] },
+      name === "ACCUMULATED_DEBT_CREDIT_CALCULATION" && options?.debtVerified
+        ? { status: "AVAILABLE", reasonCode: "CUTOFF_CURRICULUM_DEBT_CALCULATION", description: "Nợ tại mốc xét sau đối chiếu nhóm lựa chọn của từng học kỳ; học lại đạt hoặc môn tự chọn cùng khối có tín chỉ đạt dư giải quyết nợ còn lại. Giữ toàn bộ lịch sử.", evidence: ["student_course_offerings", "student_course_grades", "K44 elective course lists", "2026–2027 teaching semester quotas", "assessment cutoff"] }
+        : { ...capability, evidence: [...capability.evidence] },
     ]),
   ) as AcademicWarningCapabilitySnapshot;
 }
@@ -92,6 +96,8 @@ export type AssessmentTermCourseAttempt = {
   hasFinalGrade: boolean;
   isPass: boolean | null;
   specialCode?: string | null;
+  courseCode?: string | null;
+  courseName?: string | null;
 };
 
 export type FailedCreditCalculation = {
@@ -115,8 +121,8 @@ function sameAttempt(left: AssessmentTermCourseAttempt, right: AssessmentTermCou
 
 /**
  * Calculate credits for one assessment term only. A failure is a final graded
- * outcome with isPass=false; missing, pending, and special outcomes remain
- * unresolved and therefore make the result partial instead of becoming fails.
+ * outcome with isPass=false (including VT). Conditional courses such as SHCD
+ * are excluded. Missing and pending academic outcomes keep the result partial.
  */
 export function calculateAssessmentTermFailedCredits(
   assessmentTermId: string,
@@ -127,7 +133,7 @@ export function calculateAssessmentTermFailedCredits(
   let duplicateRowsDiscarded = 0;
 
   for (const attempt of attempts) {
-    if (attempt.academicTermId !== assessmentTermId) continue;
+    if (attempt.academicTermId !== assessmentTermId || isConditionalCourse(attempt.courseCode, attempt.courseName)) continue;
     const existing = byOffering.get(attempt.offeringId);
     if (!existing) {
       byOffering.set(attempt.offeringId, attempt);
@@ -203,6 +209,7 @@ export function createQd600StudentCapabilityData(input: {
   assessmentTermId: string;
   attempts: AssessmentTermCourseAttempt[];
   isFirstMainSemester: boolean | null;
+  debt?: AcademicDebtCalculation;
 }) {
   return {
     usedForEvaluation: false as const,
@@ -213,6 +220,6 @@ export function createQd600StudentCapabilityData(input: {
     },
     yearLevelClassification: classifyQd600YearLevel(input.cumulativeCredits),
     failedCreditCalculation: calculateAssessmentTermFailedCredits(input.assessmentTermId, input.attempts),
-    accumulatedDebtCreditCalculation: unavailableAccumulatedDebtCreditCalculation(),
+    accumulatedDebtCreditCalculation: input.debt ?? unavailableAccumulatedDebtCreditCalculation(),
   };
 }

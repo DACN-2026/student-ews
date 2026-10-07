@@ -2,7 +2,9 @@ import crypto from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hasPermission, type Actor } from "@/lib/auth/types";
+import { normalizeWarningBusinessStatus } from "./academic-warning-rules";
 import { ApiError } from "@/lib/utils/api-error";
+import { loadWarningActionHistory } from "./warning-action-history";
 import {
   assertWarningActionTransition,
   parseWarningActionStatus,
@@ -122,7 +124,8 @@ async function scopedQueueRows(
       caseType: EARLY_WARNING_CASE_TYPE,
       ...(filters.caseId ? { id: filters.caseId } : {}),
       ...(filters.status ? { status: filters.status } : {}),
-      ...(filters.businessStatus ? { latestBusinessStatus: filters.businessStatus } : {}),
+      ...(filters.businessStatus ? { latestBusinessStatus: normalizeWarningBusinessStatus(filters.businessStatus) === "NORMAL"
+        ? { in: ["NORMAL", "PARTIAL_NO_RISK"] } : filters.businessStatus } : {}),
       ...(filters.overdue === true ? { status: { not: "RESOLVED" }, nextFollowUpAt: { lt: now } } : {}),
       ...(filters.overdue === false ? {
         OR: [{ status: "RESOLVED" }, { nextFollowUpAt: null }, { nextFollowUpAt: { gte: now } }],
@@ -224,7 +227,7 @@ async function scopedQueueRows(
         className: studentClass?.className || result?.sClassName || null,
         programCode: result?.sProgramCode || null,
       },
-      latestBusinessStatus: interventionCase.latestBusinessStatus,
+      latestBusinessStatus: normalizeWarningBusinessStatus(interventionCase.latestBusinessStatus),
       interventionStatus: interventionCase.status,
       latestWarningRunId: interventionCase.latestWarningRunId,
       latestWarningResultId: interventionCase.latestWarningResultId,
@@ -504,7 +507,7 @@ export class InterventionCasesService {
   static async getDetail(caseId: string, actor: Actor) {
     const [queueCase] = await scopedQueueRows(actor, { caseId });
     if (!queueCase) throw new ApiError("Intervention case not found", "NOT_FOUND", 404);
-    const [result, events] = await Promise.all([
+    const [result, history] = await Promise.all([
       queueCase.latestWarningResultId
         ? prisma.academicWarningStudentResult.findUnique({
             where: { id: queueCase.latestWarningResultId },
@@ -516,10 +519,7 @@ export class InterventionCasesService {
             },
           })
         : null,
-      prisma.warningActionEvent.findMany({
-        where: { warningActionId: caseId },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      }),
+      loadWarningActionHistory([caseId]),
     ]);
     const reasons = result
       ? await prisma.academicWarningReason.findMany({
@@ -527,25 +527,11 @@ export class InterventionCasesService {
           orderBy: [{ severity: "desc" }, { reasonCode: "asc" }],
         })
       : [];
-    const actorIds = [...new Set(events.flatMap((event) => event.actorUserId ? [event.actorUserId] : []))];
-    const actors = actorIds.length
-      ? await prisma.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, fullName: true } })
-      : [];
-    const actorById = new Map(actors.map((item) => [item.id, item.fullName]));
-    const history = events.map((event) => ({
-      id: event.id,
-      eventType: event.eventType,
-      actor: event.actorUserId ? { userId: event.actorUserId, displayName: actorById.get(event.actorUserId) || null } : null,
-      systemGenerated: event.systemGenerated,
-      sourceRunId: event.sourceRunId,
-      createdAt: event.createdAt,
-      details: event.details,
-    }));
     return {
       case: queueCase,
       currentWarning: result ? {
         resultId: result.id,
-        businessStatus: result.businessStatus,
+        businessStatus: normalizeWarningBusinessStatus(result.businessStatus),
         regulatoryCoverage: result.regulatoryCoverage,
         ruleResults: result.ruleResults,
         reasons: reasons.map((reason) => {

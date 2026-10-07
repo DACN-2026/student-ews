@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
@@ -16,6 +17,7 @@ import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
 import { toast } from "@/components/ui/Toast";
+import { formatHistoryDate, formatWarningHistoryEvent, type WarningHistoryEvent } from "@/lib/warning-history";
 
 // ────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -103,15 +105,7 @@ interface InterventionCaseDetail {
     ruleResults: ApiData;
     reasons: WarningReason[];
   } | null;
-  history: Array<{
-    id: string;
-    eventType: string;
-    actor: { userId: string; displayName: string | null } | null;
-    systemGenerated: boolean;
-    sourceRunId: string | null;
-    createdAt: string;
-    details: Record<string, ApiData>;
-  }>;
+  history: WarningHistoryEvent[];
   activities: Array<{
     eventId: string;
     interventionType: string | null;
@@ -210,20 +204,6 @@ const INTERVENTION_TYPE_LABELS: Record<string, string> = {
   OTHER: "Khác",
 };
 
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  CASE_CREATED: "Tạo hồ sơ can thiệp",
-  WARNING_DETECTED: "Phát hiện cảnh báo mới",
-  RISK_STATUS_CHANGED: "Thay đổi mức nguy cơ",
-  ASSIGNED: "Phân công người phụ trách",
-  REASSIGNED: "Đổi người phụ trách",
-  STATUS_CHANGED: "Thay đổi trạng thái",
-  NOTE_ADDED: "Thêm ghi chú",
-  INTERVENTION_RECORDED: "Ghi nhận can thiệp",
-  FOLLOW_UP_SCHEDULED: "Đặt lịch theo dõi",
-  CASE_RESOLVED: "Hoàn tất can thiệp",
-  CASE_REOPENED: "Mở lại can thiệp",
-};
-
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   OPEN: ["IN_PROGRESS"],
   IN_PROGRESS: ["RESOLVED"],
@@ -251,15 +231,15 @@ function BusinessStatusBadge({ status }: { status: string | null }) {
     ? "Dữ liệu SEWS cho thấy sinh viên đã chạm một tiêu chí định lượng trong chính sách đang đánh giá; cần cán bộ kiểm tra trước khi có kết luận học vụ."
     : undefined;
   return (
-    <span title={description} className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.bg} ${s.text} ${s.border}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+    <TextLabel title={description} className={`inline-flex items-center gap-1.5    text-xs font-medium  ${s.bg} ${s.text} ${s.border}`}>
+
       <span>{label}</span>
       {isVerify && (
         <span className="text-[10px] opacity-75 font-normal ml-0.5" title="Cần xác minh">
           (Cần xác minh)
         </span>
       )}
-    </span>
+    </TextLabel>
   );
 }
 
@@ -267,21 +247,18 @@ function InterventionStatusBadge({ status }: { status: string }) {
   const s = INTERVENTION_STATUS_STYLE[status] || INTERVENTION_STATUS_STYLE.OPEN;
   const label = INTERVENTION_STATUS_LABELS[status] || status;
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold border ${s.bg} ${s.text} ${s.border}`}>
+    <TextLabel className={`inline-flex items-center gap-1    text-[11px] font-semibold  ${s.bg} ${s.text} ${s.border}`}>
       {label}
-    </span>
+    </TextLabel>
   );
 }
 
 function OverdueBadge() {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-red-50 text-red-700 border border-red-200">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-        <circle cx="12" cy="12" r="10" />
-        <polyline points="12 6 12 12 16 14" />
-      </svg>
+    <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-700">
+
       Quá hạn theo dõi
-    </span>
+    </TextLabel>
   );
 }
 
@@ -352,7 +329,7 @@ const LEGAL_BASIS_INFO: Record<string, { title: string; summary: string }> = {
   QD600_FAILED_CREDIT_RATIO: {
     title: "Điều 18 – Quyết định 600/QĐ-ĐHĐL (Cảnh báo học tập)",
     summary:
-      "Quy chế quy định sinh viên bị cảnh báo học tập nếu tổng số tín chỉ của các học phần bị điểm F trong học kỳ vượt quá 50% số tín chỉ đã đăng ký học kỳ đó (hoặc từ 24 tín chỉ trở lên đối với học kỳ phụ).",
+      "Điều 18 quy định cảnh báo vào cuối học kỳ chính nếu tín chỉ không đạt vượt quá 50% tín chỉ đã đăng ký trong kỳ. Hệ thống loại SHCD và học phần điều kiện khỏi tỷ lệ học thuật; VT được tính là chưa đạt.",
   },
   QD600_TERM_GPA: {
     title: "Điều 18 – Quyết định 600/QĐ-ĐHĐL (Điểm trung bình học kỳ)",
@@ -384,6 +361,10 @@ const LEGAL_BASIS_INFO: Record<string, { title: string; summary: string }> = {
     summary:
       "Quy chế quy định sinh viên bị cảnh báo học tập nếu tổng số tín chỉ nợ đọng (các học phần bị điểm F chưa được học lại cải thiện hoặc học môn thay thế hợp lệ) vượt quá 24 tín chỉ.",
   },
+  ACCUMULATED_DEBT_CREDIT_RISK: {
+    title: "Ngưỡng theo dõi nợ tín chỉ của hệ thống",
+    summary: "Nợ tích lũy 13–18 tín chỉ: Cần chú ý; từ 19 tín chỉ: Nguy cơ cao. Đạt đủ nhóm lựa chọn của chính học kỳ thì không còn nợ các môn tự chọn trong nhóm đó. Bù nợ của học kỳ khác cần môn thuộc danh sách tự chọn trong cùng khối CTĐT K44 và có tín chỉ đạt dư so với kế hoạch học kỳ. Học hè đạt lại môn tương ứng cũng giải quyết nợ; lịch sử F/VT được giữ nguyên. Ngưỡng cảnh báo theo Điều 18 QĐ600 vẫn là trên 24 tín chỉ.",
+  },
   TRAINING_PROGRESS_CREDIT_DEFICIT: {
     title: "Quy định tiến độ đào tạo theo Khung CTĐT",
     summary:
@@ -399,6 +380,7 @@ function humanRuleName(code?: ApiData) {
   if (code === "QD600_CUMULATIVE_GPA_BY_YEAR") return "Điểm trung bình tích lũy theo năm học";
   if (code === "QD600_CUMULATIVE_GPA_NEAR_THRESHOLD") return "GPA tích lũy tiệm cận ngưỡng cảnh báo";
   if (code === "QD600_ACCUMULATED_DEBT_CREDITS") return "Tín chỉ nợ tích lũy";
+  if (code === "ACCUMULATED_DEBT_CREDIT_RISK") return "Mức theo dõi nợ tín chỉ tích lũy";
   if (code === "TRAINING_PROGRESS_CREDIT_DEFICIT") return "Tiến độ tín chỉ theo CTĐT";
   return "Tiêu chí quy chế";
 }
@@ -416,6 +398,7 @@ function getLegalInfo(reason: WarningReason | { ruleCode?: string; details?: Rec
   if (code.includes("TERM_GPA")) return LEGAL_BASIS_INFO.QD600_TERM_GPA;
   if (code.includes("NEAR_THRESHOLD")) return LEGAL_BASIS_INFO.QD600_CUMULATIVE_GPA_NEAR_THRESHOLD;
   if (code.includes("CUMULATIVE_GPA")) return LEGAL_BASIS_INFO.QD600_CUMULATIVE_GPA_BY_YEAR;
+  if (code.includes("ACCUMULATED_DEBT_RISK") || code === "ACCUMULATED_DEBT_CREDIT_RISK") return LEGAL_BASIS_INFO.ACCUMULATED_DEBT_CREDIT_RISK;
   if (code.includes("ACCUMULATED_DEBT")) return LEGAL_BASIS_INFO.QD600_ACCUMULATED_DEBT_CREDITS;
   if (code.includes("PROGRESS")) return LEGAL_BASIS_INFO.TRAINING_PROGRESS_CREDIT_DEFICIT;
   return {
@@ -426,6 +409,7 @@ function getLegalInfo(reason: WarningReason | { ruleCode?: string; details?: Rec
 
 function getLegalBasisLabel(reason: WarningReason): string {
   const code = String(reason.details?.ruleCode || reason.reasonCode || "");
+  if (code.includes("ACCUMULATED_DEBT_RISK") || code === "ACCUMULATED_DEBT_CREDIT_RISK") return "Ngưỡng theo dõi nợ tín chỉ của hệ thống";
   if (code.includes("PROGRESS")) return "Chuẩn tiến độ đào tạo của Trường";
   return "Điều 18 – Quyết định 600/QĐ-ĐHĐL";
 }
@@ -440,13 +424,14 @@ function formatThresholdDisplay(reason: WarningReason): string {
   const threshold = reason.thresholdValue;
   if (threshold === null || threshold === "") return "—";
   if (code.includes("CREDIT_RATIO")) return "> 50%";
-  if (code.includes("PROGRESS")) {
+  if (code.includes("PROGRESS") || code.includes("ACCUMULATED_DEBT_RISK") || code === "ACCUMULATED_DEBT_CREDIT_RISK") {
     const num = Number(threshold);
     return `từ ${num} tín chỉ`;
   }
   if (code.includes("GPA")) {
     return `< ${Number(threshold).toFixed(2)}`;
   }
+  if (code.includes("ACCUMULATED_DEBT")) return `> ${Number(threshold)} tín chỉ`;
   return formatReasonValue(reason, threshold);
 }
 
@@ -456,7 +441,7 @@ function getHumanReasonTitle(reason: WarningReason): string {
   if (code.includes("FIRST_TERM") || code.includes("TERM_GPA")) return "Điểm trung bình học kỳ (GPA) thấp";
   if (code.includes("CONSECUTIVE")) return "Điểm trung bình học kỳ (GPA) thấp 2 kỳ liên tiếp";
   if (code.includes("CUMULATIVE_GPA")) return "Điểm trung bình tích lũy (GPA) dưới chuẩn năm học";
-  if (code.includes("ACCUMULATED_DEBT")) return "Số tín chỉ nợ đọng vượt ngưỡng";
+  if (code.includes("ACCUMULATED_DEBT")) return `Nợ tín chỉ tích lũy ${reason.observedValue ?? "—"} tín chỉ`;
   if (code.includes("PROGRESS")) {
     const observed = reason.observedValue;
     return observed !== null && observed !== undefined && observed !== ""
@@ -631,7 +616,6 @@ export default function ReportsPage() {
 
   // Export state
   const [exporting, setExporting] = useState<"xlsx" | "pdf" | null>(null);
-  const [exportType, setExportType] = useState<"warnings" | "progress" | "conduct" | "support">("warnings");
   const [exportError, setExportError] = useState("");
 
   // Warning Run modal state
@@ -1036,7 +1020,7 @@ export default function ReportsPage() {
     try {
       setExporting(format);
       setExportError("");
-      const type = format === "pdf" ? "warnings" : exportType;
+      const type = "warnings";
       const params = new URLSearchParams({ format, type });
       if (selectedTermId) params.set("academicTermId", selectedTermId);
       const response = await apiFetch(`/api/v1/reports/export?${params.toString()}`);
@@ -1210,9 +1194,9 @@ export default function ReportsPage() {
             {scopeBadgeText && (
               <>
                 <span className="text-slate-300">•</span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 lowercase first-letter:uppercase">
+                <TextLabel className="inline-flex items-center text-xs font-medium text-emerald-700 lowercase first-letter:uppercase">
                   {scopeBadgeText}
-                </span>
+                </TextLabel>
               </>
             )}
           </div>
@@ -1270,9 +1254,9 @@ export default function ReportsPage() {
                     <span className="font-medium text-slate-700">QĐ 600/QĐ-ĐHĐL — Điều 18 + Tiến độ CTĐT</span>
                     <span className="text-slate-300">•</span>
                     <span className="font-semibold text-slate-600">Phạm vi:</span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                    <TextLabel className="inline-flex items-center text-[11px] font-medium text-slate-700">
                       {report.policy?.evaluationScope || "Đánh giá một phần"}
-                    </span>
+                    </TextLabel>
                   </div>
                   <p className="text-slate-500 text-[11px] leading-relaxed">
                     Mục tiêu: Phát hiện sớm sinh viên có nguy cơ học vụ hoặc chậm tiến độ tín chỉ để GVCN/CVHT can thiệp sớm.
@@ -1303,26 +1287,13 @@ export default function ReportsPage() {
                     onChange={(e) => setSelectedTermId(e.target.value)}
                     className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
                   >
-                    <option value="">Tự động: kết quả OFFICIAL gần nhất</option>
+                    <option value="">Kết quả gần nhất</option>
                     {(report.filterOptions?.terms || []).map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
                   </select>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="sr-only" htmlFor="report-export-type">Loại dữ liệu xuất</label>
-                  <select
-                    id="report-export-type"
-                    value={exportType}
-                    onChange={(e) => setExportType(e.target.value as typeof exportType)}
-                    disabled={Boolean(exporting)}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
-                  >
-                    <option value="warnings">Danh sách cảnh báo</option>
-                    <option value="progress">Tiến độ CTĐT</option>
-                    <option value="conduct">Kết quả rèn luyện</option>
-                    <option value="support">Nhật ký hỗ trợ</option>
-                  </select>
                   <button
                     type="button"
                     disabled={Boolean(exporting)}
@@ -1448,16 +1419,12 @@ export default function ReportsPage() {
 
                   {/* Small neutral notice for insufficient data */}
                   {insufficientCount > 0 && (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600 font-medium">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-400 shrink-0">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="16" x2="12" y2="12" />
-                        <line x1="12" y1="8" x2="12.01" y2="8" />
-                      </svg>
+                    <TextLabel className="inline-flex items-center gap-2 text-xs text-slate-600 font-medium">
+
                       <span>
                         <strong className="font-mono font-semibold text-slate-800">{insufficientCount}</strong> sinh viên chưa đủ dữ liệu để đánh giá
                       </span>
-                    </div>
+                    </TextLabel>
                   )}
                 </section>
               )}
@@ -1526,100 +1493,6 @@ export default function ReportsPage() {
                 </section>
               )}
 
-              {/* D. CLASS TABLE */}
-              {report.hasCompletedOfficialRun && report.classBreakdown.length > 0 && (
-                <section className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-                  <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-                    <div>
-                      <h2 className="font-bold text-slate-900 text-sm" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                        Cảnh báo theo lớp sinh viên
-                      </h2>
-                    </div>
-                    <span className="text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">
-                      {report.classBreakdown.length} lớp
-                    </span>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-semibold uppercase text-[11px]">
-                          <th className="px-4 py-3.5">Lớp</th>
-                          <th className="px-4 py-3.5 text-center">Đã đánh giá</th>
-                          <th className="px-4 py-3.5 text-center">Bình thường</th>
-                          <th className="px-4 py-3.5 text-center">Cần chú ý</th>
-                          <th className="px-4 py-3.5 text-center">Nguy cơ cao</th>
-                          <th className="px-4 py-3.5 text-center">Thiếu dữ liệu</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {report.classBreakdown.map((row) => {
-                          const classNormal = (row.normal || 0) + (row.partialNoRisk || 0);
-                          return (
-                            <tr key={row.classCode} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="px-4 py-3">
-                                <span className="font-semibold text-slate-800">{row.classCode}</span>
-                                <span className="text-[10px] text-slate-400 block">{row.className}</span>
-                              </td>
-                              <td className="px-4 py-3 text-center font-mono text-slate-700">
-                                {row.evaluated}/{row.totalStudents}
-                              </td>
-                              <td className="px-4 py-3 text-center font-mono text-emerald-700 font-medium">
-                                {classNormal}
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                {row.monitoring > 0 ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setQueueFilters((prev) => ({
-                                        ...prev,
-                                        classId: row.classCode,
-                                        businessStatus: "MONITORING",
-                                      }));
-                                      setActiveTab("queue");
-                                    }}
-                                    className="inline-block font-mono text-amber-700 font-bold hover:underline hover:bg-amber-50 px-2 py-0.5 rounded cursor-pointer transition"
-                                    title="Lọc sinh viên cần chú ý của lớp này"
-                                  >
-                                    {row.monitoring}
-                                  </button>
-                                ) : (
-                                  <span className="font-mono text-slate-400">0</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                {row.high > 0 ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setQueueFilters((prev) => ({
-                                        ...prev,
-                                        classId: row.classCode,
-                                        businessStatus: "HIGH_RISK",
-                                      }));
-                                      setActiveTab("queue");
-                                    }}
-                                    className="inline-block font-mono text-red-700 font-bold hover:underline hover:bg-red-50 px-2 py-0.5 rounded cursor-pointer transition"
-                                    title="Lọc sinh viên nguy cơ cao của lớp này"
-                                  >
-                                    {row.high}
-                                  </button>
-                                ) : (
-                                  <span className="font-mono text-slate-400">0</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-center font-mono text-slate-500">
-                                {row.insufficientData}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
-              )}
-
               {/* E. INTERVENTION SUMMARY ("Tình hình can thiệp") */}
               {!summaryLoading && summary && (
                 <section aria-label="Tình hình can thiệp" className="space-y-3 pt-2">
@@ -1639,7 +1512,6 @@ export default function ReportsPage() {
                       className="text-xs font-semibold text-[var(--color-primary)] hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <span>Đến danh sách can thiệp</span>
-                      <span>→</span>
                     </button>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -1710,40 +1582,40 @@ export default function ReportsPage() {
                         Can thiệp theo lớp
                       </h2>
                     </div>
-                    <span className="text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">
+                    <TextLabel className="text-xs font-semibold text-slate-600">
                       {summary.byClass.length} lớp
-                    </span>
+                    </TextLabel>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-semibold uppercase text-[11px]">
-                          <th className="px-4 py-3">Lớp</th>
-                          <th className="px-4 py-3 text-center">Chưa xử lý</th>
-                          <th className="px-4 py-3 text-center">Đang xử lý</th>
-                          <th className="px-4 py-3 text-center">Quá hạn</th>
-                          <th className="px-4 py-3 text-center">Nguy cơ cao</th>
+                          <th className="px-4 py-3 text-center table-cell-center">Lớp</th>
+                          <th className="px-4 py-3 text-center table-cell-center">Chưa xử lý</th>
+                          <th className="px-4 py-3 text-center table-cell-center">Đang xử lý</th>
+                          <th className="px-4 py-3 text-center table-cell-center">Quá hạn</th>
+                          <th className="px-4 py-3 text-center table-cell-center">Nguy cơ cao</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {summary.byClass.map((c) => (
                           <tr key={c.classId} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="px-4 py-3 font-semibold text-slate-800">{c.classCode || c.classId}</td>
-                            <td className="px-4 py-3 text-center">
-                              <span className={`inline-block min-w-6 rounded-full px-2 py-0.5 font-mono font-bold ${c.open > 0 ? "bg-blue-50 text-blue-700 border border-blue-200" : "text-slate-400"}`}>
+                            <td className="px-4 py-3 font-semibold text-slate-800 text-center table-cell-center">{c.classCode || c.classId}</td>
+                            <td className="px-4 py-3 text-center table-cell-center">
+                              <TextLabel className={`inline-block min-w-6    font-mono font-bold ${c.open > 0 ? "bg-blue-50 text-blue-700  " : "text-slate-400"}`}>
                                 {c.open}
-                              </span>
+                              </TextLabel>
                             </td>
-                            <td className="px-4 py-3 text-center font-mono text-slate-700">{c.inProgress}</td>
-                            <td className="px-4 py-3 text-center">
+                            <td className="px-4 py-3 text-center font-mono text-slate-700 table-cell-center">{c.inProgress}</td>
+                            <td className="px-4 py-3 text-center table-cell-center">
                               <span className={`font-mono font-bold ${c.overdue > 0 ? "text-red-600" : "text-slate-400"}`}>
                                 {c.overdue}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-center">
-                              <span className={`inline-block min-w-6 rounded-full px-2 py-0.5 font-mono font-bold ${c.highRisk > 0 ? "bg-red-50 text-red-700 border border-red-200" : "text-slate-400"}`}>
+                            <td className="px-4 py-3 text-center table-cell-center">
+                              <TextLabel className={`inline-block min-w-6    font-mono font-bold ${c.highRisk > 0 ? "bg-red-50 text-red-700  " : "text-slate-400"}`}>
                                 {c.highRisk}
-                              </span>
+                              </TextLabel>
                             </td>
                           </tr>
                         ))}
@@ -1771,9 +1643,9 @@ export default function ReportsPage() {
               setQueuePage(1);
             }}
             actions={activeQueueFilterCount > 0 ? (
-              <span className="rounded-lg bg-[var(--color-primary-light)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--color-primary)]">
+              <TextLabel className="text-[11px] font-semibold text-emerald-700">
                 {activeQueueFilterCount} bộ lọc đang dùng
-              </span>
+              </TextLabel>
             ) : undefined}
           >
             <select
@@ -1950,9 +1822,9 @@ export default function ReportsPage() {
               setHistoryPage(1);
             }}
             actions={activeHistoryFilterCount > 0 ? (
-              <span className="rounded-lg bg-[var(--color-primary-light)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--color-primary)]">
+              <TextLabel className="text-[11px] font-semibold text-emerald-700">
                 {activeHistoryFilterCount} bộ lọc đang dùng
-              </span>
+              </TextLabel>
             ) : undefined}
           >
             <select
@@ -2052,7 +1924,7 @@ export default function ReportsPage() {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); openDrawer(record.caseId); }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-xs transition cursor-pointer"
+                      className={`table-text-action ${plainTextClasses("px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-xs transition cursor-pointer")}`}
                     >
                       Xem lịch sử
                     </button>
@@ -2111,15 +1983,6 @@ export default function ReportsPage() {
               {drawerCase.overdue && <OverdueBadge />}
             </div>
 
-            {/* Class responsibility */}
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs">
-              <div>
-                <span className="text-slate-500">Phụ trách can thiệp: </span>
-                <span className="font-semibold text-slate-800">GVCN/CVHT đang quản lý lớp {drawerCase.student.classCode || "—"}</span>
-                <p className="mt-1 text-[11px] text-slate-500">Không cần Trưởng khoa phân công riêng cho từng hồ sơ cảnh báo.</p>
-              </div>
-            </div>
-
             {/* Follow-up */}
             {drawerCase.nextFollowUpAt && (
               <div className={`flex items-center gap-2 p-3 rounded-xl border text-xs ${drawerCase.overdue ? "bg-red-50 border-red-200 text-red-800" : "bg-blue-50 border-blue-200 text-blue-800"}`}>
@@ -2153,12 +2016,12 @@ export default function ReportsPage() {
                     Vì sao sinh viên này được cảnh báo?
                   </h3>
 
-                  {/* A. Nguy cơ học vụ (Theo quy chế đào tạo) */}
+                  {/* A. Nguy cơ học vụ */}
                   {academicReasons.length > 0 && (
                     <div className="space-y-2">
                       <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-red-600" />
-                        <span>A. Nguy cơ học vụ (Theo quy chế đào tạo)</span>
+                        <span>A. Nguy cơ học vụ</span>
                       </div>
                       <div className="space-y-2.5">
                         {academicReasons.map((reason) => (
@@ -2172,11 +2035,13 @@ export default function ReportsPage() {
                                   {getHumanReasonExplanation(reason)}
                                 </p>
                               </div>
-                              <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                                reason.thresholdBreached ? "bg-red-50 text-red-600 border border-red-200/60" : reason.nearThreshold ? "bg-amber-50 text-amber-600 border border-amber-200/60" : "bg-slate-50 text-slate-500 border border-slate-200/60"
+                              <TextLabel className={`shrink-0 text-[10px] font-bold    ${
+                                reason.thresholdBreached ? "bg-red-50 text-red-600  " : reason.nearThreshold ? "bg-amber-50 text-amber-600  " : "bg-slate-50 text-slate-500  "
                               }`}>
-                                {reason.thresholdBreached ? "Vượt ngưỡng" : reason.nearThreshold ? "Gần ngưỡng" : "Tham khảo"}
-                              </span>
+                                {reason.details?.ruleCode === "ACCUMULATED_DEBT_CREDIT_RISK"
+                                  ? reason.thresholdBreached ? "Nguy cơ cao" : "Cần chú ý"
+                                  : reason.thresholdBreached ? "Vượt ngưỡng" : reason.nearThreshold ? "Gần ngưỡng" : "Tham khảo"}
+                              </TextLabel>
                             </div>
 
                             {/* Metric boxes */}
@@ -2184,7 +2049,7 @@ export default function ReportsPage() {
                               <div className="grid grid-cols-2 gap-2 text-xs">
                                 <div className="rounded-lg bg-red-50/60 border border-red-100 p-2">
                                   <span className="text-[11px] text-red-700 block font-medium">
-                                    {isRatioRule(reason) ? "Không đạt" : "Điểm đạt được"}
+                                    {isRatioRule(reason) ? "Không đạt" : String(reason.details?.ruleCode || reason.reasonCode).includes("ACCUMULATED_DEBT") ? "Tín chỉ còn nợ" : "Điểm đạt được"}
                                   </span>
                                   <strong className="text-red-900 font-mono font-bold text-sm">
                                     {formatReasonValue(reason, reason.observedValue)}
@@ -2259,13 +2124,13 @@ export default function ReportsPage() {
                                     {getHumanReasonExplanation(reason)}
                                   </p>
                                 </div>
-                                <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                                <TextLabel className={`shrink-0 text-[10px] font-bold    ${
                                   isHighRisk
-                                    ? "bg-red-50 text-red-600 border border-red-200/60"
-                                    : "bg-amber-50 text-amber-600 border border-amber-200/60"
+                                    ? "bg-red-50 text-red-600  "
+                                    : "bg-amber-50 text-amber-600  "
                                 }`}>
                                   {isHighRisk ? "Nguy cơ cao" : "Cần chú ý"}
-                                </span>
+                                </TextLabel>
                               </div>
 
                               {/* Metric boxes */}
@@ -2473,41 +2338,21 @@ export default function ReportsPage() {
               ) : (
                 <ol className="space-y-0">
                   {[...drawerDetail.history].reverse().map((event, index) => {
-                    const isSystem = event.systemGenerated;
-                    const actorName = isSystem ? "Hệ thống" : (event.actor?.displayName || "Người dùng");
-                    const eventLabel = EVENT_TYPE_LABELS[event.eventType] || event.eventType;
-                    const details = event.details || {};
-                    let detailText = "";
-                    if (event.eventType === "INTERVENTION_RECORDED") {
-                      detailText = [
-                        INTERVENTION_TYPE_LABELS[details.interventionType as string] || "",
-                        details.content ? `"${String(details.content).slice(0, 100)}"` : "",
-                      ].filter(Boolean).join(" — ");
-                    } else if (event.eventType === "STATUS_CHANGED") {
-                      detailText = `${INTERVENTION_STATUS_LABELS[details.from as string] || details.from} → ${INTERVENTION_STATUS_LABELS[details.to as string] || details.to}`;
-                    } else if (event.eventType === "RISK_STATUS_CHANGED") {
-                      detailText = `${BUSINESS_STATUS_LABELS[details.from as string] || details.from} → ${BUSINESS_STATUS_LABELS[details.to as string] || details.to}`;
-                    } else if (event.eventType === "FOLLOW_UP_SCHEDULED") {
-                      detailText = details.nextFollowUpAt ? `Đặt lịch ${formatDateTime(details.nextFollowUpAt as string)}` : "Đã xóa lịch theo dõi";
-                    } else if (event.eventType === "ASSIGNED" || event.eventType === "REASSIGNED") {
-                      detailText = event.eventType === "ASSIGNED"
-                        ? "Đã phân công người phụ trách"
-                        : "Đã thay đổi người phụ trách";
-                    }
+                    const item = formatWarningHistoryEvent(event);
 
                     return (
                       <li key={event.id} className="relative grid grid-cols-[16px_1fr] gap-2.5 pb-4 last:pb-0">
                         {index < drawerDetail.history.length - 1 && <span className="absolute left-[7px] top-4 h-full w-px bg-slate-200" aria-hidden="true" />}
-                        <span className={`relative z-10 mt-1 h-4 w-4 rounded-full border-2 border-white shadow-sm ${isSystem ? "bg-slate-300" : "bg-[var(--color-primary)]"}`} aria-hidden="true" />
+                        <span className={`relative z-10 mt-1 h-4 w-4 rounded-full border-2 border-white shadow-sm ${item.color}`} aria-hidden="true" />
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center justify-between gap-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-semibold text-slate-700">{actorName}</span>
-                              <span className="text-[11px] text-slate-500">{eventLabel}</span>
+                              <span className="text-xs font-semibold text-slate-700">{item.actorName}</span>
+                              <span className="text-[11px] text-slate-500">{item.title}</span>
                             </div>
-                            <time className="text-[10px] text-slate-400 font-mono">{formatDateTime(event.createdAt)}</time>
+                            <time className="text-[10px] text-slate-400 font-mono">{formatHistoryDate(item.date)}</time>
                           </div>
-                          {detailText && <p className="mt-0.5 text-[11px] text-slate-500 leading-relaxed">{detailText}</p>}
+                          {item.detail && <p className="mt-0.5 text-[11px] text-slate-500 leading-relaxed">{item.detail}</p>}
                         </div>
                       </li>
                     );

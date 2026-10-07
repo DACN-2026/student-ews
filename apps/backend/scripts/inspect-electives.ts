@@ -7,32 +7,15 @@ async function main() {
     console.log("Student not found");
     return;
   }
-  console.log("=== STUDENT ===");
-  console.log("ID:", student.id, "Code:", student.sStudentId, "Name:", student.sFullName);
-  console.log("Program:", student.sStudyProgramId, "Cohort:", student.cohortId);
-
-  // Check latest graduation evaluation result for this student
-  const gradResult = await prisma.graduationStudentResult.findFirst({
-    where: { studentId: student.id },
-    orderBy: { createdAt: "desc" },
-    include: {
-      run: true,
-    }
+  const studentClass = await prisma.class.findFirst({ where: { classId: student.sClassStudentId ?? "" } });
+  const gradResult = await prisma.graduationEvaluationStudent.findFirst({
+    where: { studentId: student.id }, orderBy: { evaluatedAt: "desc" },
   });
-
-  if (gradResult) {
-    console.log("\n=== LATEST GRADUATION RESULT ===");
-    console.log("Run ID:", gradResult.runId);
-    console.log("Final Status:", gradResult.finalStatus);
-    console.log("Reasons:", gradResult.reasons);
-    console.log("Forecast summary:", gradResult.forecast);
-  }
-
   // Check rules configured for this cohort & program
   const rules = await prisma.graduationRule.findMany({
     where: {
       OR: [
-        { cohortId: student.cohortId },
+        { cohortId: studentClass?.cohortId },
         { cohortId: null }
       ]
     }
@@ -95,8 +78,10 @@ async function main() {
 
   // Let's run evaluateStudentGraduation from graduation-evaluations
   // Let's inspect how the forecast breakdown was computed
-  if (gradResult?.forecast) {
-    const fc = gradResult.forecast as any;
+  if (gradResult) {
+    const detail = await GraduationEvaluationsService.getStudent(gradResult.evaluationId, student.sStudentId);
+    const fc = detail?.forecast as any;
+    if (!fc) return;
     console.log("\n=== DETAILED FORECAST OBJECT ===");
     console.log("summary:", fc.summary);
     console.log("requirements.requiredCourses:", fc.requirements?.requiredCourses);

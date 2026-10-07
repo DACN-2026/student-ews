@@ -163,7 +163,7 @@ test("report auto-period remains the latest main term backed by persisted result
   assert.equal(selected?.label, "HK02 2025-2026");
 });
 
-test("persisted faculty overview keeps QD600 business statuses separate", () => {
+test("persisted faculty overview merges legacy partial no-risk into normal", () => {
   const rows = ["NORMAL", "PARTIAL_NO_RISK", "MONITORING", "HIGH_RISK", "VERIFY_REQUIRED", "INSUFFICIENT_DATA"].map((businessStatus, index) => ({
     studentId: `student-${index}`,
     maxSeverity: businessStatus === "HIGH_RISK" || businessStatus === "VERIFY_REQUIRED" ? "high" : "none",
@@ -172,8 +172,8 @@ test("persisted faculty overview keeps QD600 business statuses separate", () => 
     businessStatus,
   }));
   assert.deepEqual(summarizeWarningBusinessStatuses(rows), {
-    NORMAL: 1,
-    PARTIAL_NO_RISK: 1,
+    NORMAL: 2,
+    PARTIAL_NO_RISK: 0,
     MONITORING: 1,
     HIGH_RISK: 1,
     VERIFY_REQUIRED: 1,

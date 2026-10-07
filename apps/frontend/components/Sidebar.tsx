@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel from "@/components/ui/TextLabel";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore, type Role } from "@/stores/authStore";
@@ -314,9 +315,9 @@ export default function Sidebar({ collapsed, onToggle, onCloseMobile }: SidebarP
               <span className="w-2 h-2 rounded-full bg-[var(--color-green)] animate-pulse flex-shrink-0" />
               <span className="font-medium text-[11px]">Dữ liệu theo quyền được cấp</span>
             </div>
-            <span className="text-[10px] bg-white border border-[var(--color-border)] px-1.5 py-0.5 rounded font-mono">
+            <TextLabel className="text-[10px] font-mono">
               RBAC
-            </span>
+            </TextLabel>
           </div>
         ) : (
           <div className="flex justify-center" title="Dữ liệu theo quyền được cấp">

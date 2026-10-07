@@ -266,6 +266,7 @@ export interface StudentProgressCourseItem {
   status: CourseProgressStatus;
   timelineCategory?: CourseTimelineCategory | null;
   attemptCount?: number;
+  isCurrentlyStudying?: boolean;
   latestScore10?: number | null;
   latestScore4?: number | null;
   latestLetterCode?: string | null;
@@ -310,7 +311,7 @@ export interface StudentProgressSemesterItem {
   semesterLabel?: string;
   yearLabel?: string;
   requiredCredits: number;
-  plannedCredits?: number;
+  plannedCredits?: number | null;
   completedCredits: number;
   remainingCredits?: number;
   completionPercentage?: number;
@@ -319,7 +320,7 @@ export interface StudentProgressSemesterItem {
   noScoreCourses?: number;
   notCompletedCourses?: number;
   status?: string;
-  timelineType?: "PAST_COMPLETED" | "CURRENT_STUDYING" | "FUTURE_PLANNED";
+  timelineType?: "PAST_COMPLETED" | "CURRENT_STUDYING" | "CURRENT_PLAN" | "FUTURE_PLANNED";
   statusLabel?: string;
   isFullyCompleted?: boolean;
   isPastDue?: boolean;
@@ -336,6 +337,8 @@ export interface StudentTrainingProgressData {
     classCode?: string | null;
     className?: string | null;
     cohortCode?: string | null;
+    studyCohortCode?: string | null;
+    studyScheduleSource?: "CONFIGURED" | "REGISTRATION_SEQUENCE" | null;
     programCode?: string | null;
   };
   curriculum: {
@@ -371,13 +374,15 @@ export interface StudentTrainingProgressData {
     expectedYear?: number;
     expectedSemester?: number;
     expectedSemesterNo?: number;
+    studyingSemesterNos?: number[];
+    administrativeSemesterNo?: number;
     currentBenchmarkSemester?: number | null;
     benchmarkLabel?: string;
     latestCompletedSemester?: number;
     lastCompletedSemester?: number;
     lastFullyCompletedSemester?: number | null;
     progressGap?: number;
-    progressStatus?: "ON_TRACK" | "BEHIND";
+    progressStatus?: "ON_TRACK" | "BEHIND" | "UNKNOWN";
     isOnTrack: boolean;
     isBehind: boolean;
     isAhead: boolean;
@@ -424,6 +429,8 @@ export interface DepartmentProgressStudentItem {
   fullName: string;
   className: string;
   cohortCode: string;
+  studyCohortCode?: string | null;
+  studyScheduleSource?: "CONFIGURED" | "REGISTRATION_SEQUENCE" | null;
   programCode: string;
   benchmarkLabel: string;
   latestCompletedSemester: number;
@@ -434,7 +441,7 @@ export interface DepartmentProgressStudentItem {
   creditDifferenceText: string;
   missingRequiredCoursesCount: number;
   missingRequiredCredits: number;
-  progressStatus: "ON_TRACK" | "BEHIND";
+  progressStatus: "ON_TRACK" | "BEHIND" | "UNKNOWN";
   statusReason: string;
 }
 

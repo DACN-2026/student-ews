@@ -5,6 +5,12 @@ import {
 
 export type WarningDataStatus = "COMPLETE" | "PARTIAL" | "INSUFFICIENT";
 
+/** Legacy partial/no-risk results belong to the normal warning level.
+ * Rule coverage and missing-data evidence remain independent. */
+export function normalizeWarningBusinessStatus<T extends string | null | undefined>(status: T): T | "NORMAL" {
+  return status === "PARTIAL_NO_RISK" ? "NORMAL" : status;
+}
+
 export interface WarningStudentSource {
   id: string;
   classId: string | null;

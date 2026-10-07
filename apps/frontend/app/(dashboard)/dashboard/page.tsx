@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel from "@/components/ui/TextLabel";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -229,9 +230,9 @@ export default function DashboardPage() {
             {scopeBadgeText && (
               <>
                 <span className="text-xs text-slate-300">•</span>
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                <TextLabel className="inline-flex items-center text-[11px] font-semibold text-slate-700">
                   {scopeBadgeText}
-                </span>
+                </TextLabel>
               </>
             )}
           </div>
@@ -337,9 +338,9 @@ export default function DashboardPage() {
         </select>
 
         {isClassAdvisor && programs.length <= 1 ? (
-          <div className="inline-flex items-center px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700">
+          <TextLabel className="inline-flex items-center text-xs font-semibold text-slate-700">
             CTĐT: {programs[0]?.programName || programs[0]?.programCode || "Chính quy"}
-          </div>
+          </TextLabel>
         ) : (
           <select
             value={filters.programCode}
@@ -356,10 +357,10 @@ export default function DashboardPage() {
         )}
 
         {isClassAdvisor || classes.length <= 1 ? (
-          <div className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+          <TextLabel className="inline-flex items-center gap-1.5 text-emerald-800 text-xs font-bold">
+
             <span>Lớp: {classes[0]?.className || user?.className || "Lớp phụ trách"}</span>
-          </div>
+          </TextLabel>
         ) : (
           <select
             value={filters.classId}
@@ -520,9 +521,9 @@ export default function DashboardPage() {
               </h3>
               <p className="text-xs text-slate-500">Tỷ lệ xếp loại học lực toàn khoa</p>
             </div>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+            <TextLabel className="text-xs font-semibold text-slate-600">
               5 mức
-            </span>
+            </TextLabel>
           </div>
 
           <div className="h-[260px] w-full">
@@ -579,9 +580,9 @@ export default function DashboardPage() {
               </h3>
               <p className="text-xs text-slate-500">GPA học kỳ trung bình, tối đa 8 kỳ gần nhất theo phạm vi</p>
             </div>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+            <TextLabel className="text-xs font-semibold text-blue-700">
               Thang 4.0
-            </span>
+            </TextLabel>
           </div>
 
           <div className="h-[280px] w-full">
@@ -738,7 +739,7 @@ export default function DashboardPage() {
               </h3>
               <p className="text-xs text-slate-500">Chỉ tính điểm lastScore đã được công nhận trong học kỳ</p>
             </div>
-            <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-semibold text-violet-700">Thang 100</span>
+            <TextLabel className="text-xs font-semibold text-violet-700">Thang 100</TextLabel>
           </div>
 
           <div className="h-[250px] w-full">

@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel from "@/components/ui/TextLabel";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -49,9 +50,9 @@ export default function ForbiddenState({
         </div>
 
         {/* 403 Badge */}
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+        <TextLabel className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700">
           <span>Mã lỗi: 403 Forbidden</span>
-        </div>
+        </TextLabel>
 
         {/* Title & Description */}
         <div className="space-y-1.5">

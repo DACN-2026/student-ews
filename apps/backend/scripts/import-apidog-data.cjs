@@ -374,79 +374,23 @@ async function fetchSourceData() {
   };
 }
 
-function deduplicateCurricula(curricula, gradeRows) {
-  const gradeCountByCode = new Map();
-  for (const { grade } of gradeRows) {
-    const code = clean(grade.CurriculumID);
-    if (code) gradeCountByCode.set(code, (gradeCountByCode.get(code) || 0) + 1);
-  }
-
-  const byProgramAndName = new Map();
+function deduplicateCurricula(curricula) {
+  // A name is not an identity. Preserve all source codes, including alternatives.
+  const byProgramAndCode = new Map();
   for (const row of curricula) {
-    const program = clean(row.MaCTDT);
-    const name = clean(row.TenHP).toLowerCase().replace(/\s+/g, " ");
-    if (!program || !name) continue;
-    const key = `${program}|${name}`;
-    const list = byProgramAndName.get(key) || [];
-    list.push(row);
-    byProgramAndName.set(key, list);
-  }
-
-  const deduplicated = [];
-  const removed = [];
-
-  for (const rows of byProgramAndName.values()) {
-    if (rows.length === 1) {
-      deduplicated.push(rows[0]);
-      continue;
+    const key = `${clean(row.MaCTDT)}|${clean(row.MaHP)}`;
+    const previous = byProgramAndCode.get(key);
+    if (previous && JSON.stringify(previous) !== JSON.stringify(row)) {
+      throw new Error(`Conflicting curriculum rows for ${key}; reconcile source instead of overwriting`);
     }
-
-    // Sort to prioritize the best candidate:
-    // 1. Highest number of student grade records matching this course code
-    // 2. If tied, prefer later semester (avoids dump into HK1 for upper-year courses)
-    // 3. If tied, stable alphabetical by course code
-    rows.sort((a, b) => {
-      const countA = gradeCountByCode.get(clean(a.MaHP)) || 0;
-      const countB = gradeCountByCode.get(clean(b.MaHP)) || 0;
-      if (countA !== countB) return countB - countA;
-
-      const semA = Number(String(a.HocKy || "").replace(/\D/g, "")) || 1;
-      const semB = Number(String(b.HocKy || "").replace(/\D/g, "")) || 1;
-      if (semA !== semB) return semB - semA;
-
-      return clean(a.MaHP).localeCompare(clean(b.MaHP));
-    });
-
-    const chosen = rows[0];
-    deduplicated.push(chosen);
-    for (let i = 1; i < rows.length; i++) {
-      removed.push({
-        program: clean(chosen.MaCTDT),
-        courseName: clean(chosen.TenHP),
-        kept: {
-          code: clean(chosen.MaHP),
-          semester: clean(chosen.HocKy),
-          grades: gradeCountByCode.get(clean(chosen.MaHP)) || 0,
-        },
-        dropped: {
-          code: clean(rows[i].MaHP),
-          semester: clean(rows[i].HocKy),
-          grades: gradeCountByCode.get(clean(rows[i].MaHP)) || 0,
-        },
-      });
-    }
+    byProgramAndCode.set(key, row);
   }
+  return [...byProgramAndCode.values()];
+}
 
-  if (removed.length > 0) {
-    console.log(`Deduplicated ${removed.length} redundant curriculum course(s) within programs:`);
-    for (const item of removed) {
-      console.log(
-        ` - [${item.program}] "${item.courseName}": Kept ${item.kept.code} (${item.kept.semester}, ${item.kept.grades} grades), Dropped duplicate ${item.dropped.code} (${item.dropped.semester}, ${item.dropped.grades} grades)`,
-      );
-    }
-  }
-
-  return deduplicated;
+function isConditionalSourceCourse(code, name) {
+  return /^(?:QP\d|(?:25)?TC\d|SHCD)/i.test(clean(code)) ||
+    /giáo dục (?:thể chất|quốc phòng)|sinh hoạt công dân/i.test(clean(name));
 }
 
 async function createManyInChunks(model, data, size = 500) {
@@ -877,7 +821,11 @@ async function replaceBusinessData(prisma, source) {
       if (!studentId || !termId || !courseId) throw new Error(`Cannot resolve grade dependencies for ${studentCode}/${courseCode}`);
       const studyUnitId = clean(grade.StudyUnitID);
       const scheduleStudyUnitId = clean(grade.ScheduleStudyUnitID);
-      const offeringKey = `${studentId}|${termId}|${studyUnitId}|${scheduleStudyUnitId}`;
+      const offeringKey = `${studentId}|${termId}|${courseCode}|${studyUnitId}|${scheduleStudyUnitId}`;
+      const previous = offeringMap.get(offeringKey);
+      if (previous && JSON.stringify(previous.sourcePayload) !== JSON.stringify(grade)) {
+        throw new Error(`Conflicting source attempt for ${studentCode}/${item.yearCode}/${item.termCode}/${courseCode}; reconciliation required`);
+      }
       const offeringId = offeringMap.get(offeringKey)?.id || crypto.randomUUID();
       offeringMap.set(offeringKey, {
         id: offeringId,
@@ -951,7 +899,7 @@ async function replaceBusinessData(prisma, source) {
     for (const offering of offeringMap.values()) {
       const key = `${offering.studentId}|${clean(offering.sProgramCode)}|${offering.academicTermId}`;
       const summary = summaryMap.get(key);
-      if (summary) summary.registeredCredits += offering.sCredits;
+      if (summary && !isConditionalSourceCourse(offering.sCurriculumId, offering.sCourseName)) summary.registeredCredits += offering.sCredits;
     }
     const summaryRows = [...summaryMap.values()];
     await createManyInChunks(tx.studentCourseOffering, [...offeringMap.values()], 250);
@@ -1011,7 +959,7 @@ async function replaceBusinessData(prisma, source) {
     const cumulativeRows = [...latestSummary.values()].map(({ row }) => {
       const cumulativeRegisteredCredits = [...offeringMap.values()]
         .filter((offering) => {
-          if (offering.studentId !== row.studentId || clean(offering.sProgramCode) !== row.sProgramCode) return false;
+          if (isConditionalSourceCourse(offering.sCurriculumId, offering.sCourseName) || offering.studentId !== row.studentId || clean(offering.sProgramCode) !== row.sProgramCode) return false;
           const term = termRows.find((item) => item.id === offering.academicTermId);
           const year = yearRows.find((item) => item.id === offering.academicYearId);
           return `${year.sYearCode}|${term.sTermCode}` <= `${row._yearCode}|${row._termCode}`;

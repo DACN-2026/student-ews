@@ -8,6 +8,7 @@ import {
   evaluateAcademicWarning,
   evaluateSummerMonitoring,
   warningPresentationState,
+  normalizeWarningBusinessStatus,
 } from "../lib/services/academic-warning-rules";
 import {
   applyElectiveThreshold,
@@ -289,7 +290,7 @@ test("QD600 summer evaluation does not merge or treat summer as a main term", ()
 
 test("QD600 aggregation preserves partial coverage while prioritizing actionable states", () => {
   const noTrigger = evaluateQd600Fixture({ cumulativeGpa4: 2 });
-  assert.equal(noTrigger.businessStatus, "PARTIAL_NO_RISK");
+  assert.equal(noTrigger.businessStatus, "NORMAL");
   assert.deepEqual(noTrigger.regulatoryCoverage, {
     status: "PARTIAL",
     evaluatedRules: 3,
@@ -302,7 +303,7 @@ test("QD600 aggregation preserves partial coverage while prioritizing actionable
   assert.equal(breach.regulatoryCoverage.status, "PARTIAL");
 
   const contextual = evaluateQd600Fixture({ legacySignalCodes: ["REGISTRATION_BEHIND"] });
-  assert.equal(contextual.businessStatus, "PARTIAL_NO_RISK");
+  assert.equal(contextual.businessStatus, "NORMAL");
   assert.deepEqual(contextual.legacySignalContext, [{
     reasonCode: "REGISTRATION_BEHIND",
     sourceType: "OPERATIONAL_SIGNAL",
@@ -312,7 +313,7 @@ test("QD600 aggregation preserves partial coverage while prioritizing actionable
 test("early warning classifies the CTĐT credit deficit at the 0-3, 4-11, and 12+ boundaries", () => {
   for (const creditDeficit of [0, 3]) {
     const result = evaluateQd600Fixture({ creditDeficit });
-    assert.equal(result.businessStatus, "PARTIAL_NO_RISK");
+    assert.equal(result.businessStatus, "NORMAL");
     assert.equal(qd600Rule(result, "TRAINING_PROGRESS_CREDIT_DEFICIT").riskLevel, "GREEN");
   }
   for (const creditDeficit of [4, 11]) {
@@ -327,7 +328,7 @@ test("early warning classifies the CTĐT credit deficit at the 0-3, 4-11, and 12
   const incomplete = evaluateQd600Fixture({ creditDeficit: null, progressDataStatus: "PARTIAL" });
   const progressRule = qd600Rule(incomplete, "TRAINING_PROGRESS_CREDIT_DEFICIT");
   assert.equal(progressRule.evaluationStatus, "NOT_EVALUATED");
-  assert.notEqual(incomplete.businessStatus, "NORMAL");
+  assert.equal(incomplete.businessStatus, "NORMAL");
 
   const partialRed = evaluateQd600Fixture({ creditDeficit: 12, progressDataStatus: "PARTIAL" });
   const partialRedRule = qd600Rule(partialRed, "TRAINING_PROGRESS_CREDIT_DEFICIT");
@@ -336,7 +337,7 @@ test("early warning classifies the CTĐT credit deficit at the 0-3, 4-11, and 12
   assert.equal(partialRed.businessStatus, "HIGH_RISK");
 
   const partialGreen = evaluateQd600Fixture({ creditDeficit: 3, progressDataStatus: "PARTIAL" });
-  assert.equal(partialGreen.businessStatus, "PARTIAL_NO_RISK");
+  assert.equal(partialGreen.businessStatus, "NORMAL");
 });
 
 test("legacy evaluator signals carry semantic source metadata without becoming QD600 rules", () => {
@@ -568,6 +569,15 @@ test("AcademicWarningRun persists QD600 profile, student rules, coverage, and re
   let interventionCase: any = null;
   const interventionEvents: any[] = [];
   try {
+    cleanups.push(mockDelegateMethod(prisma.academicYear, "findFirst", async () => ({ id: IDS.courseA, sYearCode: "2026-2027" })));
+    cleanups.push(mockDelegateMethod(prisma.academicYear, "findUnique", async () => ({ id: IDS.courseA, sYearCode: "2026-2027" })));
+    cleanups.push(mockDelegateMethod(prisma.academicTerm, "findUnique", async () => ({ id: IDS.term, academicYearId: IDS.courseA, sTermOrder: 1 })));
+    cleanups.push(mockDelegateMethod(prisma.cohort, "findFirst", async () => null));
+    cleanups.push(mockDelegateMethod(prisma.graduationRule, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgramCourse, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma.course, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma.unscopedGradeRecord, "findMany", async () => []));
+
     cleanups.push(mockDelegateMethod(prisma.academicTerm, "findFirst", async () => ({
       id: IDS.term,
       sIsSummer: false,
@@ -1387,7 +1397,7 @@ test("grade import rejects missing year, term and source identifiers before pers
   await assert.rejects(() => GradesService.importGrades([{
     NamHoc: "2025-2026",
     DanhSachDiem: [{ HocKy: "HK01", DanhSachDiemHK: [{ StudentID: "", StudyProgramID: "A", CurriculumID: "HP", StudyUnitID: "", Credits: "3" }] }],
-  }]), /StudentID, CurriculumID, and StudyUnitID are required/);
+  }]), /StudentID and CurriculumID are required/);
 });
 
 test("admin and explicit grants authorize; unrelated grants do not", () => {
@@ -1783,7 +1793,7 @@ test("warning consumers share the persisted evaluator result instead of rebuildi
   assert.match(warningServiceSource, /evaluateSummerMonitoring/);
 });
 
-test("curriculum import deduplicates redundant courses by prioritizing real student grades and semesters", () => {
+test("curriculum import preserves distinct source codes even with identical names", () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { deduplicateCurricula } = require("../scripts/import-apidog-data.cjs");
   const curricula = [
@@ -1799,12 +1809,9 @@ test("curriculum import deduplicates redundant courses by prioritizing real stud
   ];
 
   const result = deduplicateCurricula(curricula, gradeRows);
-  assert.equal(result.length, 2);
-  const math = result.find((c: Record<string, unknown>) => c.TenHP === "Toán rời rạc");
-  assert.equal(math.MaHP, "20TN1202");
-  const mobile = result.find((c: Record<string, unknown>) => c.TenHP === "Phát triển ứng dụng di động");
-  assert.equal(mobile.MaHP, "20CT3132D");
-  assert.equal(mobile.HocKy, "Học kỳ 6");
+  assert.equal(result.length, 4);
+  assert.deepEqual(new Set(result.map((c: { MaHP: string }) => c.MaHP)), new Set(curricula.map((c) => c.MaHP)));
+
 });
 
 test("Training Progress: evaluates all semesters accurately without empty semesters for specialized programs", () => {
@@ -1944,7 +1951,8 @@ test("Training Progress TC04: Không có record -> NOT_COMPLETED", () => {
   });
   assert.equal(result.courseStatus.notCompleted.length, 1);
   assert.equal(result.courseStatus.notCompleted[0].status, "NOT_COMPLETED");
-  assert.equal(result.summary.completedCredits, 0);
+  assert.equal(result.summary.completedCredits, null);
+  assert.equal(result.scheduleProgress.progressStatus, "UNKNOWN");
 });
 
 test("Training Progress TC05: Học lại một môn 2 lần, lần sau PASS -> course completed -> tín chỉ chỉ cộng 1 lần", () => {
@@ -2039,7 +2047,7 @@ test("Training Progress TC09: Môn kỳ trước chưa hoàn thành -> PAST_DUE 
     curriculum: [
       { courseId: "c1", courseCode: "PAST_COURSE", courseName: "Môn kỳ 1", credits: 4, requirementType: "mandatory", semesterNo: 1 },
     ],
-    grades: [],
+    grades: [{ courseCode: "PAST_COURSE", isPass: false, scoreStatus: "graded", letterCode: "F" }],
     timeline: defaultTimeline, // expectedSemesterNo = 3
   });
   assert.equal(result.courseStatus.pastDue.length, 1);
@@ -2227,7 +2235,7 @@ test("Training Progress Ví dụ C: Kế hoạch 65 TC, đạt 68 TC nhưng thi�
     curriculum: [
       { courseId: "m1", courseCode: "M1_PASS", courseName: "HP đạt", credits: 62, requirementType: "mandatory", semesterNo: 1 },
       { courseId: "m2", courseCode: "M2_MISSED", courseName: "HP bắt buộc nợ", credits: 3, requirementType: "mandatory", semesterNo: 2 },
-      { courseId: "m5", courseCode: "AHEAD_ELEC", courseName: "Tự chọn học vượt", credits: 6, requirementType: "elective", semesterNo: 5 },
+      { courseId: "m5", courseCode: "AHEAD_ELEC", courseName: "Tự chọn học vượt", credits: 6, requirementType: "elective", semesterNo: 5, choiceGroupCode: "AHEAD:6" },
     ],
     grades: [
       { courseCode: "M1_PASS", isPass: true, notScore: false, scoreStatus: "graded" },
@@ -2353,12 +2361,11 @@ test("Training Progress TC16: Các môn GDTC và GDQP không tính vào số tí
   assert.equal(sem1?.timelineType, "PAST_COMPLETED");
 });
 
-test("Training Progress TC17: Số tín chỉ kế hoạch từng học kỳ (HK1..HK9) khớp 100% Kế hoạch giảng dạy NH 2026-2027 (PDF Mẫu 07/QLĐT)", () => {
-  // HK1 (K50 Năm 1 HK1): 13 TC học thuật (PDF Trang 1: Tổng cộng 13/13, BB 13, TC 0/0)
+test("Training Progress TC17: Academic semester quotas follow the teaching plan, with certificates separate", () => {
   assert.equal(getStandardSemesterPlannedCredits(1, "CQ25CT"), 13);
   assert.equal(getStandardSemesterPlannedCredits(1, "CQ22CT-PM"), 13);
 
-  // HK2 (K50 Năm 1 HK2): 10 TC bắt buộc + 6 TC tự chọn = 16 TC (PDF Trang 1: Tổng cộng 16/22, BB 10, TC 6/12)
+  // HK2: 10 compulsory + choose 6 elective credits, rather than all 9/12 offered.
   assert.equal(getStandardSemesterPlannedCredits(2, "CQ25CT"), 16);
   assert.equal(getStandardSemesterPlannedCredits(2, "CQ22CT-PM"), 16);
 
@@ -2388,6 +2395,16 @@ test("Training Progress TC17: Số tín chỉ kế hoạch từng học kỳ (HK
 
   // HK9 (K46 Năm 5 HK1 Tốt nghiệp): 8 TTNN + 10 ĐATN = 18 TC (PDF Trang 7: Tổng cộng 18/18)
   assert.equal(getStandardSemesterPlannedCredits(9, "CQ22CT-PM"), 18);
+  assert.equal(getStandardSemesterPlannedCredits(6, "CQ24CT"), 0);
+});
+
+test("legacy partial no-risk becomes normal without changing risk states or missing-data evidence", () => {
+  assert.equal(normalizeWarningBusinessStatus('PARTIAL_NO_RISK'),'NORMAL');
+  for(const status of ['NORMAL','MONITORING','HIGH_RISK','VERIFY_REQUIRED','INSUFFICIENT_DATA']) assert.equal(normalizeWarningBusinessStatus(status),status);
+  const result=evaluateQd600Fixture({cumulativeGpa4:2});
+  assert.equal(result.businessStatus,'NORMAL');
+  assert.equal(result.regulatoryCoverage.status,'PARTIAL');
+  assert.equal(qd600Rule(result,'QD600_ACCUMULATED_DEBT_CREDITS').evaluationStatus,'NOT_EVALUATED');
 });
 
 test("Proxy catalog permission policy splits GET vs mutating methods", () => {
@@ -3129,6 +3146,7 @@ test("Data Scope: ClassesService and GET /classes enforce scope and query param 
       },
     ]));
     cleanups.push(mockDelegateMethod(prisma.cohort, "findMany", async () => []));
+    cleanups.push(mockDelegateMethod(prisma.student, "count", async () => 0));
     cleanups.push(mockDelegateMethod(prisma.student, "groupBy", async () => []));
 
     // Request with query parameter searching for an unassigned class "ITK45B"

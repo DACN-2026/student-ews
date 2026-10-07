@@ -3,6 +3,7 @@ import test from "node:test";
 import { prisma } from "../lib/prisma";
 import { ApiError } from "../lib/utils/api-error";
 import { createQd600PolicyDefinition } from "../lib/services/academic-warning-policy";
+import { QD600_RULE_ENGINE_VERSION } from "../lib/services/academic-warning-qd600-rules";
 import { AcademicWarningsService } from "../lib/services/academic-warnings";
 import { InterventionCasesService } from "../lib/services/intervention-cases";
 import { assertCohortTrainingProgramPair } from "../lib/services/academic-warning-scope";
@@ -271,7 +272,9 @@ test("summer finalization never persists readiness or triggers early warning", a
   }
 });
 
-test("term orchestration skips an existing completed scope without creating another run", async () => {
+for (const currentVersion of [true, false]) {
+test(currentVersion ? "term orchestration reuses a completed scope from the current engine"
+  : "term orchestration recalculates a completed scope from an older engine", async () => {
   let createRunCalls = 0;
   const syncedRunIds: string[] = [];
   const definition = createQd600PolicyDefinition({ applicableCohortIds: [IDS.cohort] });
@@ -301,7 +304,7 @@ test("term orchestration skips an existing completed scope without creating anot
     mockMethod(prisma.academicWarningRun, "findMany", async () => [{
       id: IDS.run,
       status: "completed",
-      sourceSnapshot: { engineVersion: "academic-warning-qd600-article18-and-progress-v7" },
+      sourceSnapshot: { engineVersion: currentVersion ? QD600_RULE_ENGINE_VERSION : "academic-warning-qd600-article18-and-progress-v7" },
     }]),
     mockMethod(AcademicWarningsService, "createRun", async () => {
       createRunCalls += 1;
@@ -314,14 +317,15 @@ test("term orchestration skips an existing completed scope without creating anot
   ];
   try {
     const result = await AcademicWarningAutomationService.runForFinalizedMainTerm({ termId: IDS.term });
-    assert.equal(result.skipped, 1);
-    assert.equal(result.completed, 0);
-    assert.equal(createRunCalls, 0);
-    assert.deepEqual(syncedRunIds, [IDS.run]);
+    assert.equal(result.skipped, currentVersion ? 1 : 0);
+    assert.equal(result.completed, currentVersion ? 0 : 1);
+    assert.equal(createRunCalls, currentVersion ? 0 : 1);
+    assert.deepEqual(syncedRunIds, currentVersion ? [IDS.run] : []);
   } finally {
     cleanups.reverse().forEach((cleanup) => cleanup());
   }
 });
+}
 
 test("a scope with no active completed run is retried through the existing AcademicWarningRun service", async () => {
   let createRunCalls = 0;

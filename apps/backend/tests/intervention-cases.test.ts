@@ -13,6 +13,7 @@ import {
   isInterventionCaseOverdue,
   isInterventionTriggerStatus,
 } from "../lib/services/intervention-cases";
+import { loadWarningActionHistory } from "../lib/services/warning-action-history";
 
 const IDS = {
   term: "11111111-1111-4111-8111-111111111111",
@@ -106,8 +107,9 @@ function installMemoryDatabase(state: MemoryState) {
     },
   };
   const warningActionEvent = {
-    findMany: async ({ where }: any) => state.events.filter((row) => row.warningActionId === where.warningActionId)
-      .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime()),
+    findMany: async ({ where }: any) => state.events.filter((row) => typeof where.warningActionId === "string"
+      ? row.warningActionId === where.warningActionId : where.warningActionId.in.includes(row.warningActionId))
+      .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime() || left.id.localeCompare(right.id)),
     createMany: async ({ data, skipDuplicates }: any) => {
       for (const candidate of data) {
         if (skipDuplicates && candidate.idempotencyKey && state.events.some((event) => event.idempotencyKey === candidate.idempotencyKey)) continue;
@@ -138,7 +140,7 @@ function installMemoryDatabase(state: MemoryState) {
     [...state.runs.values()].filter((row) => !where.id?.in || where.id.in.includes(row.id)),
   ));
   cleanups.push(mockMethod(prisma.academicWarningStudentResult, "findMany", async ({ where }: any) =>
-    state.results.filter((row) => (!where.runId || row.runId === where.runId) && (
+    state.results.filter((row) => (!where.runId || (where.runId.in ? where.runId.in.includes(row.runId) : row.runId === where.runId)) && (
       !where.id?.in || where.id.in.includes(row.id)
     ) && (
       !where.businessStatus?.in || where.businessStatus.in.includes(row.businessStatus)
@@ -164,6 +166,8 @@ function installMemoryDatabase(state: MemoryState) {
   cleanups.push(mockMethod(prisma.user, "findMany", async ({ where }: any) =>
     state.users.filter((row) => !where.id?.in || where.id.in.includes(row.id)),
   ));
+  cleanups.push(mockMethod(prisma.academicTerm, "findMany", async () => [{ id: IDS.term, sTermCode: "HK02", academicYearId: "year" }]));
+  cleanups.push(mockMethod(prisma.academicYear, "findMany", async () => [{ id: "year", sYearCode: "2025-2026" }]));
   cleanups.push(mockMethod(prisma.user, "findFirst", async ({ where }: any) =>
     state.users.find((row) => row.id === where.id && row.isActive === where.isActive && row.deletedAt === where.deletedAt) ?? null,
   ));
@@ -616,6 +620,7 @@ test("case detail is scope-safe, chronological, and exposes warning evidence wit
     assert.equal(detail.currentWarning?.reasons[0].articleReference, "Điều 18");
     assert.equal(detail.activities[0].content, "Reminder");
     assert.equal(detail.history.at(-1)?.eventType, "INTERVENTION_RECORDED");
+    assert.deepEqual(detail.history, await loadWarningActionHistory([interventionCase.id]));
     assert.equal("sourceSnapshot" in detail, false);
     await assert.rejects(
       InterventionCasesService.getDetail(interventionCase.id, outsideAdvisor),
@@ -624,6 +629,32 @@ test("case detail is scope-safe, chronological, and exposes warning evidence wit
   } finally {
     cleanup();
   }
+});
+
+test("shared profile history preserves each event's source evidence and excludes other cases", async () => {
+  const state = createMemoryState();
+  const cleanup = installMemoryDatabase(state);
+  try {
+    addRun(state, "history-old", [{ studentId: IDS.studentA, status: "HIGH_RISK" }, { studentId: IDS.studentB, status: "MONITORING" }]);
+    state.results[0].termGpa4 = 0.82;
+    state.results[0].cumulativeGpa4 = 2;
+    state.results[0].reasonCount = 1;
+    await InterventionCasesService.syncInterventionCasesForRun("history-old");
+    addRun(state, "history-new", [{ studentId: IDS.studentA, status: "NORMAL" }]);
+    state.results.at(-1).termGpa4 = 3;
+    state.results.at(-1).reasonCount = 0;
+    await InterventionCasesService.syncInterventionCasesForRun("history-new");
+    const caseId = state.cases.find(item => item.studentId === IDS.studentA)!.id;
+    const before = JSON.stringify(state.events);
+    const shared = await loadWarningActionHistory([caseId]);
+    const detail = await InterventionCasesService.getDetail(caseId, adminActor);
+    assert.deepEqual(shared, detail.history);
+    assert.ok(shared.every(event => event.caseId === caseId));
+    assert.equal(shared.find(event => event.eventType === "WARNING_DETECTED")?.warningContext?.result?.termGpa4, 0.82);
+    assert.equal(shared.find(event => event.eventType === "RISK_STATUS_CHANGED")?.warningContext?.result?.termGpa4, 3);
+    assert.deepEqual(await loadWarningActionHistory([]), []);
+    assert.equal(JSON.stringify(state.events), before);
+  } finally { cleanup(); }
 });
 
 test("follow-up changes are historical and resolution never rewrites warning risk", async () => {

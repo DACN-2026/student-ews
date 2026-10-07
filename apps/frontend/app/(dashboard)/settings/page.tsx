@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel from "@/components/ui/TextLabel";
 import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
@@ -145,9 +146,9 @@ export default function SettingsPage() {
                   <label className="text-xs font-bold text-red-900 block">Ngưỡng GPA Học kỳ Sàn (Thang 4.0)</label>
                   <span className="text-[11px] text-red-700">GPA học kỳ &lt; ngưỡng này → Tạo tín hiệu cần theo dõi</span>
                 </div>
-                <span className="font-mono font-black text-lg text-red-600 bg-white border border-red-200 px-3 py-1 rounded-xl shadow-xs">
+                <TextLabel className="font-mono font-black text-lg text-red-600">
                   {termGpaThreshold.toFixed(2)}
-                </span>
+                </TextLabel>
               </div>
               <input
                 type="range"
@@ -172,9 +173,9 @@ export default function SettingsPage() {
                   <label className="text-xs font-bold text-amber-900 block">Ngưỡng GPA Tích lũy Sàn (Thang 4.0)</label>
                   <span className="text-[11px] text-amber-700">GPA tích lũy &lt; ngưỡng này → Tạo tín hiệu cần theo dõi</span>
                 </div>
-                <span className="font-mono font-black text-lg text-amber-600 bg-white border border-amber-200 px-3 py-1 rounded-xl shadow-xs">
+                <TextLabel className="font-mono font-black text-lg text-amber-600">
                   {cumulativeGpaThreshold.toFixed(2)}
-                </span>
+                </TextLabel>
               </div>
               <input
                 type="range"
@@ -227,9 +228,9 @@ export default function SettingsPage() {
                   <label className="text-xs font-bold text-emerald-900 block">Ngưỡng điểm rèn luyện (Thang 100)</label>
                   <span className="text-[11px] text-emerald-700">Điểm đã công nhận dưới ngưỡng → LOW_CONDUCT_SCORE</span>
                 </div>
-                <span className="font-mono font-black text-lg text-emerald-700 bg-white border border-emerald-200 px-3 py-1 rounded-xl shadow-xs">
+                <TextLabel className="font-mono font-black text-lg text-emerald-700">
                   {conductScoreThreshold}
-                </span>
+                </TextLabel>
               </div>
               <input
                 type="range"
@@ -279,11 +280,11 @@ export default function SettingsPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-slate-800">{p.name || p.policyName}</span>
-                    <span className={`px-2 py-0.2 rounded text-[10px] font-bold ${
+                    <TextLabel className={`px-2   text-[10px] font-bold ${
                       p.status === "active" ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"
                     }`}>
                       {p.status === "active" ? "Đang áp dụng" : "Lưu trữ"}
-                    </span>
+                    </TextLabel>
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1 font-mono">
                     GPA Kỳ: &lt;{Number(p.termGpaThreshold).toFixed(2)} • GPA Tích lũy: &lt;{Number(p.cumulativeGpaThreshold).toFixed(2)}

@@ -1,3 +1,6 @@
+import { loadProgramCurriculum } from "./program-curriculum";
+import { loadEquivalentCourseIds } from "./course-equivalence";
+import { isConditionalCourse, normalizeProgramCourseCode, normalizeCourseName } from "../academic-course-rules";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import crypto from "crypto";
@@ -132,10 +135,11 @@ export function evaluateProgress(
   courses: PlanCourse[],
   registrations: RegistrationSnapshot[],
   dataError: boolean,
+  equivalentCourseIds: Map<string, string[]> = new Map(),
 ): ProgressEvaluation {
   const byCourse = new Map<string, RegistrationSnapshot>();
   for (const r of registrations) {
-    byCourse.set(r.courseId, r);
+    for (const id of equivalentCourseIds.get(r.courseId) ?? [r.courseId]) byCourse.set(id, r);
   }
 
   const planCourseIds = new Set(courses.map((c) => c.courseId));
@@ -176,10 +180,10 @@ export function evaluateProgress(
 
     if (course.requirementType === "mandatory") {
       eval_.mandatoryRequiredCourses++;
-      eval_.mandatoryRequiredCredits += course.credits;
+      if (!isConditionalCourse(course.courseCode, course.courseName)) eval_.mandatoryRequiredCredits += course.credits;
       if (registered) {
         eval_.mandatoryRegisteredCourses++;
-        eval_.mandatoryRegisteredCredits += course.credits;
+        if (!isConditionalCourse(course.courseCode, course.courseName)) eval_.mandatoryRegisteredCredits += course.credits;
       } else {
         eval_.missingMandatoryCourses++;
       }
@@ -197,10 +201,10 @@ export function evaluateProgress(
           eval_.missingRequiredElectiveCourses++;
         }
       }
-      if (registered) {
+      if (registered && !isConditionalCourse(course.courseCode, course.courseName)) {
         eval_.registeredElectiveCredits += course.credits;
       }
-      eval_.requiredElectiveCredits += course.credits;
+      if (!isConditionalCourse(course.courseCode, course.courseName)) eval_.requiredElectiveCredits += course.credits;
     }
   }
 
@@ -235,10 +239,10 @@ export function evaluateProgress(
   // Outside-plan courses
   const outsideCourseIds = new Set<string>();
   for (const r of registrations) {
-    if (!planCourseIds.has(r.courseId) && !outsideCourseIds.has(r.courseId)) {
+    if (!(equivalentCourseIds.get(r.courseId) ?? [r.courseId]).some((id) => planCourseIds.has(id)) && !outsideCourseIds.has(r.courseId)) {
       outsideCourseIds.add(r.courseId);
       eval_.outsidePlanCourses++;
-      eval_.outsidePlanCredits += r.credits;
+      if (!isConditionalCourse(r.courseCode, r.courseName)) eval_.outsidePlanCredits += r.credits;
       eval_.courses.push({
         courseId: r.courseId,
         courseCode: r.courseCode,
@@ -329,7 +333,7 @@ export function evaluateCompletionPlan(
       if (course.isRegistrationRequired && !assumedPassed) {
         result.missingRequiredElectives++;
       }
-      if (assumedPassed) {
+      if (assumedPassed && !isConditionalCourse(course.courseCode, course.courseName)) {
         result.passedElectiveCredits += course.credits;
       }
     }
@@ -383,7 +387,7 @@ export function evaluateCompletionPlan(
     }
   }
   const pendingElectiveCredits = result.courses
-    .filter((course) => course.requirementType === "elective" && course.pendingResult)
+    .filter((course) => course.requirementType === "elective" && course.pendingResult && !isConditionalCourse(course.courseCode, course.courseName))
     .reduce((sum, course) => sum + course.credits, 0);
   if (!forecast && result.passedElectiveCredits + pendingElectiveCredits < result.requiredElectiveCredits) {
     pendingOnly = false;
@@ -506,6 +510,7 @@ async function loadPassingEvidence(
     ORDER BY o.student_id, o.course_id, y.s_year_code DESC, t.s_term_order DESC, o.id DESC
   `;
 
+  const equivalentCourseIds = await loadEquivalentCourseIds(programCode);
   const evidence = new Map<string, Map<string, PassingEvidence>>();
   for (const r of rows) {
     let byCourse = evidence.get(r.student_id);
@@ -513,8 +518,9 @@ async function loadPassingEvidence(
       byCourse = new Map();
       evidence.set(r.student_id, byCourse);
     }
-    if (byCourse.has(r.course_id)) continue; // take latest only
-    byCourse.set(r.course_id, {
+    for (const courseId of equivalentCourseIds.get(r.course_id) ?? [r.course_id]) {
+    if (byCourse.has(courseId)) continue; // take latest only
+    byCourse.set(courseId, {
       offeringId: r.offering_id,
       studentId: r.student_id,
       courseId: r.course_id,
@@ -523,6 +529,7 @@ async function loadPassingEvidence(
       termOrder: Number(r.s_term_order),
       scoreStatus: r.score_status,
     });
+    }
   }
   return evidence;
 }
@@ -562,18 +569,23 @@ async function loadCumulativeGPAs(
 async function loadCurrentTermRegistrations(
   studentIds: string[],
   academicTermId: string,
+  programCode?: string,
 ): Promise<Map<string, Set<string>>> {
   if (studentIds.length === 0) return new Map();
   const rows: Array<{ student_id: string; course_id: string }> = await prisma.$queryRaw`
-    SELECT DISTINCT student_id::text, course_id::text
-    FROM student_course_offerings
-    WHERE student_id = ANY(${studentIds}::uuid[])
-      AND academic_term_id = ${academicTermId}::uuid
+    SELECT DISTINCT o.student_id::text, o.course_id::text
+    FROM student_course_offerings o
+    LEFT JOIN student_course_grades g ON g.offering_id = o.id
+    WHERE o.student_id = ANY(${studentIds}::uuid[])
+      AND o.academic_term_id = ${academicTermId}::uuid
+      AND (g.not_score OR g.score_status = 'pending')
+      AND UPPER(COALESCE(g.special_code, g.letter_code, '')) <> 'VT'
   `;
+  const equivalentCourseIds = await loadEquivalentCourseIds(programCode);
   const registrations = new Map<string, Set<string>>();
   for (const row of rows) {
     const courses = registrations.get(row.student_id) || new Set<string>();
-    courses.add(row.course_id);
+    for (const id of equivalentCourseIds.get(row.course_id) ?? [row.course_id]) courses.add(id);
     registrations.set(row.student_id, courses);
   }
   return registrations;
@@ -642,41 +654,42 @@ async function validateCompletionCoverage(programId: string, plans: CompletionPl
   // Coverage is not applicable before the first plan becomes due. This is a
   // legitimate "no_due_plan" state, not corrupt curriculum data.
   if (!plannedSemesters.size) return { valid: true, issues: [] as string[] };
-  const requirements = await prisma.trainingProgramCourse.findMany({
-    where: { trainingProgramId: programId, sSemesterNo: { in: [...plannedSemesters] } },
-  });
-  const catalog = await prisma.course.findMany({
-    where: { id: { in: requirements.map((requirement) => requirement.courseId) }, deletedAt: null },
-  });
-  const catalogById = new Map(catalog.map((course) => [course.id, course]));
-  const requirementByCourse = new Map(requirements.map((requirement) => [requirement.courseId, requirement]));
+  const program = await prisma.trainingProgram.findUnique({where:{id:programId}});
+  const requirements = (await loadProgramCurriculum(programId)).filter((course) => plannedSemesters.has(course.semesterNo ?? 0));
+  const key = (code: string) => normalizeProgramCourseCode(code, program?.sProgramCode);
+  const requirementByCourse = new Map(requirements.map((requirement) => [key(requirement.courseCode), requirement]));
   const counts = new Map<string, number>();
   const issues: string[] = [];
   for (const plan of plans) {
     let electiveCredits = 0;
     for (const course of plan.courses) {
-      counts.set(course.courseId, (counts.get(course.courseId) || 0) + 1);
-      const expected = requirementByCourse.get(course.courseId);
+      // Certificate alternatives are independent of academic plan coverage.
+      if (isConditionalCourse(course.courseCode, course.courseName)) continue;
+      const candidates = requirements.filter((item) =>
+        normalizeCourseName(item.courseName) === normalizeCourseName(course.courseName) && item.credits === course.credits);
+      const expected = requirementByCourse.get(key(course.courseCode)) ?? (candidates.length === 1 ? candidates[0] : null);
       if (!expected) {
         issues.push(`Học phần không thuộc CTĐT nhưng có trong kế hoạch: ${course.courseCode}`);
         continue;
       }
-      const normalized = expected.sRequirementType.toLocaleLowerCase("vi");
+      const identity = key(expected.courseCode);
+      counts.set(identity, (counts.get(identity) || 0) + 1);
+      const normalized = expected.requirementType.toLocaleLowerCase("vi");
       const expectedType = normalized.includes("bắt") || normalized === "mandatory" ? "mandatory" : "elective";
       if (expectedType !== course.requirementType) issues.push(`Loại yêu cầu của học phần chưa khớp CTĐT: ${course.courseCode}`);
-      if (course.requirementType === "elective") electiveCredits += course.credits;
+      if (course.requirementType === "elective" && !isConditionalCourse(course.courseCode, course.courseName)) electiveCredits += course.credits;
     }
     if (electiveCredits < plan.requiredElective) {
       issues.push(`Học kỳ lộ trình ${plan.curriculumSemesterNo} chưa đủ tín chỉ tự chọn: ${electiveCredits}/${plan.requiredElective}`);
     }
   }
   for (const requirement of requirements) {
-    const course = catalogById.get(requirement.courseId);
-    const normalized = requirement.sRequirementType.toLocaleLowerCase("vi");
+    if (isConditionalCourse(requirement.courseCode, requirement.courseName)) continue;
+    const normalized = requirement.requirementType.toLocaleLowerCase("vi");
     const mandatory = normalized.includes("bắt") || normalized === "mandatory";
-    const count = counts.get(requirement.courseId) || 0;
-    if (mandatory && count === 0) issues.push(`Học phần bắt buộc chưa có trong kế hoạch: ${course?.sCourseCode || requirement.courseId}`);
-    if (count > 1) issues.push(`Học phần xuất hiện trong nhiều kế hoạch: ${course?.sCourseCode || requirement.courseId}`);
+    const count = counts.get(key(requirement.courseCode)) || 0;
+    if (mandatory && count === 0) issues.push(`Học phần bắt buộc chưa có trong kế hoạch: ${requirement.courseCode}`);
+    if (count > 1) issues.push(`Học phần xuất hiện trong nhiều kế hoạch: ${requirement.courseCode}`);
   }
   return { valid: issues.length === 0, issues: [...new Set(issues)].sort() };
 }
@@ -726,7 +739,7 @@ async function validatePlanForLock(planId: string) {
   }
 
   const electiveCreditsInPlan = planCourses
-    .filter((course) => course.requirementType === "elective")
+    .filter((course) => course.requirementType === "elective" && !isConditionalCourse(course.sCourseCode, course.sCourseName))
     .reduce((sum, course) => sum + course.sCredits, 0);
   if (electiveCreditsInPlan < plan.requiredElectiveCredits) {
     issues.push(`Danh mục tự chọn chỉ có ${electiveCreditsInPlan}/${plan.requiredElectiveCredits} tín chỉ yêu cầu.`);
@@ -1302,6 +1315,7 @@ export class TrainingProgressService {
     if (!program) throw new Error("Training program not found");
 
     // Load students
+    const equivalentCourseIds = await loadEquivalentCourseIds(program.sProgramCode);
     const students = await loadCalcStudents(program.sProgramCode, plan.cohortId);
     const allowedStudentIds = new Set(students.map((s) => s.id));
 
@@ -1349,7 +1363,7 @@ export class TrainingProgressService {
 
     for (const student of students) {
       const studentRegistrations = registrations.get(student.id) || [];
-      const evaluation = evaluateProgress(courses, studentRegistrations, student.dataError);
+      const evaluation = evaluateProgress(courses, studentRegistrations, student.dataError, equivalentCourseIds);
       applyElectiveThreshold(evaluation, plan.requiredElectiveCredits);
 
       if (evaluation.status === "pass") pass++;
@@ -2154,7 +2168,7 @@ export class TrainingProgressService {
       orderBy: { updatedAt: "desc" },
     });
     const currentRegistrations = currentTerm
-      ? await loadCurrentTermRegistrations(studentIds, currentTerm.id)
+      ? await loadCurrentTermRegistrations(studentIds, currentTerm.id, program.sProgramCode)
       : new Map<string, Set<string>>();
 
     // Create snapshot hash

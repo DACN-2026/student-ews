@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
       trainingProgramId: searchParams.get("trainingProgramId") || undefined,
       termId: searchParams.get("assessmentAcademicTermId") || searchParams.get("termId") || undefined,
       status: searchParams.get("status") || undefined,
+      latestPerScope: searchParams.get("latestPerScope") === "true",
     }, page, pageSize, await graduationEvaluationScopeWhere(auth.actor)));
   } catch (error) {
     return apiErrorResponse(error, "Failed to list graduation evaluations");

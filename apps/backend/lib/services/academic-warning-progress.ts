@@ -1,4 +1,7 @@
+import { loadSemesterCreditPlans } from "./semester-credit-plans";
+import { courseOutcome } from "../academic-course-rules";
 import { prisma } from "@/lib/prisma";
+import { inferStudentProgressCohort, studentProgressCohort } from "../student-progress-cohort";
 import {
   evaluateStudentTrainingProgress,
   isConditionalCourse,
@@ -66,6 +69,7 @@ export async function calculateAcademicWarningProgressSignals(input: {
       JOIN training_progress_plans p ON p.id = pc.plan_id
       WHERE p.cohort_id = ${input.cohortId}::uuid
         AND p.training_program_id = ${input.trainingProgramId}::uuid
+        AND p.is_current = true AND p.status = 'locked'
         AND pc.choice_group_code IS NOT NULL
     `,
     prisma.graduationRule.findMany({
@@ -251,8 +255,21 @@ export async function calculateAcademicWarningProgressSignals(input: {
     expectedSemester: benchmarkSemesterNo % 2 === 1 ? "HK1" : "HK2",
   };
 
+  const semesterPlans = await loadSemesterCreditPlans(input.cohortId, input.trainingProgramId);
+  const progressSchedules = await prisma.student.findMany({
+    where: { id: { in: studentIds } },
+    select: { id: true, progressCohortCode: true, progressCohortFromYear: true },
+  });
+  const scheduleByStudent = new Map(progressSchedules.map(student => [student.id, student]));
   for (const student of input.students) {
     const grades = gradesByStudent.get(student.id) || [];
+    const studyCohort = studentProgressCohort(scheduleByStudent.get(student.id) || {}, year.sYearCode) ||
+      inferStudentProgressCohort({administrativeCohortCode:cohort.sCohortCode,programCode:student.programCode || input.programCode,
+        currentAcademicYear:year.sYearCode,currentTermCode:term.sTermCode,curriculum,registrations:grades})?.cohortCode;
+    const studyTimeline = studyCohort ? StudentTrainingProgressService.determineTimeline(
+      studyCohort, null, year.sYearCode, term.sTermCode, term.sTermOrder,
+    ) : null;
+    const studyBenchmark = studyTimeline ? studyTimeline.expectedSemesterNo + 1 : benchmarkSemesterNo;
     const evaluation = evaluateStudentTrainingProgress({
       student: {
         id: student.id,
@@ -265,8 +282,15 @@ export async function calculateAcademicWarningProgressSignals(input: {
       },
       curriculum,
       grades,
-      timeline,
+      timeline: studyTimeline ? {
+        ...studyTimeline,
+        expectedSemesterNo: studyBenchmark,
+        expectedYear: Math.ceil(studyBenchmark / 2),
+        expectedSemester: studyBenchmark % 2 === 1 ? "HK1" : "HK2",
+        administrativeSemesterNo: benchmarkSemesterNo,
+      } : timeline,
       rules: { requiredTotalCredits, requiredElectiveCredits },
+      semesterPlans,
       lockTimeline: true,
     });
     const hasPending = grades.some((grade) => {
@@ -275,7 +299,7 @@ export async function calculateAcademicWarningProgressSignals(input: {
       const byName = curriculumByName.get(normalizeCourseName(grade.courseName)) || [];
       const matched = exact || (byName.length === 1 ? byName[0] : null);
       if (!matched || matched.isConditional) return false;
-      return grade.notScore === true || grade.scoreStatus === "pending" || grade.isPass == null;
+      return courseOutcome(grade) === "pending" || courseOutcome(grade) === "unknown";
     });
     // Tổng số tín chỉ toàn khóa chỉ phục vụ tính phần trăm hoàn thành và không
     // làm mất khả năng đối chiếu số tín chỉ lẽ ra phải đạt tại mốc học kỳ này.
@@ -284,14 +308,15 @@ export async function calculateAcademicWarningProgressSignals(input: {
     const configurationIncomplete = evaluation.warnings.some((warning) =>
       warning.includes("UNKNOWN_REQUIREMENT") || warning.includes("chưa có danh mục"),
     );
+    const progressUnknown = evaluation.scheduleProgress.progressStatus === "UNKNOWN";
     signals.set(student.id, {
       // Even when elective-group configuration is incomplete, the exact CTĐT
       // still provides a usable lower-bound gap from planned credits and
       // mandatory courses. Preserve it as PARTIAL evidence: it may raise a
       // yellow/red warning, but can never certify a student as green.
-      creditDeficit: hasPending ? null : evaluation.scheduleProgress.overdueCredits,
-      dataStatus: configurationIncomplete ? "PARTIAL" : hasPending ? "PARTIAL" : "COMPLETE",
-      reasonCode: hasPending
+      creditDeficit: hasPending || progressUnknown ? null : evaluation.scheduleProgress.overdueCredits,
+      dataStatus: configurationIncomplete || progressUnknown ? "PARTIAL" : hasPending ? "PARTIAL" : "COMPLETE",
+      reasonCode: progressUnknown ? "TRAINING_PROGRESS_EVIDENCE_INSUFFICIENT" : hasPending
         ? "TRAINING_PROGRESS_PENDING_RESULTS"
         : configurationIncomplete ? "TRAINING_PROGRESS_ELECTIVE_CONFIGURATION_PARTIAL" : null,
       sourceId: input.trainingProgramId,

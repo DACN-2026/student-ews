@@ -4,6 +4,7 @@ import { ApiError } from "@/lib/utils/api-error";
 import {
   warningDataStatusFromStored,
   warningPresentationState,
+  normalizeWarningBusinessStatus,
   type WarningDataStatus,
 } from "@/lib/services/academic-warning-rules";
 import { compareAcademicTerms } from "@/lib/academic-terms";
@@ -47,7 +48,7 @@ const numberOrNull = (value: unknown) => value == null ? null : Number(value);
 
 function persistedBusinessStatus(row: PersistedWarningRow, dataStatus: WarningDataStatus): PersistedBusinessStatus {
   if (["NORMAL", "PARTIAL_NO_RISK", "MONITORING", "HIGH_RISK", "VERIFY_REQUIRED", "INSUFFICIENT_DATA"].includes(row.businessStatus || "")) {
-    return row.businessStatus as PersistedBusinessStatus;
+    return normalizeWarningBusinessStatus(row.businessStatus) as PersistedBusinessStatus;
   }
   return warningPresentationState({ maxSeverity: row.maxSeverity, reasonCount: row.reasonCount, dataStatus });
 }
@@ -346,7 +347,7 @@ export class ReportsService {
       : warningStudents;
     const filtered = reportStudents
       .filter((student) => !filters.severity || student.severity === filters.severity)
-      .filter((student) => !filters.presentationState || student.presentationState === filters.presentationState)
+      .filter((student) => !filters.presentationState || student.presentationState === normalizeWarningBusinessStatus(filters.presentationState))
       .filter((student) => !filters.classCode || student.classCode === filters.classCode)
       .filter((student) => !search || `${student.studentCode} ${student.studentName}`.toLocaleLowerCase("vi-VN").includes(search))
       .sort((left, right) => severityOrder[left.severity] - severityOrder[right.severity]

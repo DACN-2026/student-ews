@@ -1,6 +1,11 @@
+import { loadSemesterCreditPlans } from "./semester-credit-plans";
+import { courseOutcome, isConditionalCourse, normalizeProgramCourseCode, curriculumElectiveGroup, isK44StandardProgram, K44_ELECTIVE_GROUPS, normalizeCourseCode, normalizeCourseName } from "../academic-course-rules";
+import { assessTeachingSemester, teachingSemesterCredits } from "../semester-teaching-requirements";
+export { COURSE_CODE_ALIASES, normalizeCourseCode, normalizeCourseName, isConditionalCourse } from "../academic-course-rules";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { studentIdWhere } from "@/lib/utils/is-uuid";
+import { inferStudentProgressCohort, studentProgressCohort } from "../student-progress-cohort";
 
 // ============================================================================
 // Types
@@ -46,6 +51,7 @@ export type CourseTimelineCategory =
   | "AHEAD";
 
 export type AssessedCourse = TrainingProgressCourse & {
+  isCurrentlyStudying: boolean;
   status: CourseProgressStatus;
   timelineCategory: CourseTimelineCategory | null;
   attemptCount: number;
@@ -75,7 +81,7 @@ export type SemesterProgress = {
   termNo: number;
   name: string;
   requiredCredits: number;
-  plannedCredits?: number;
+  plannedCredits?: number | null;
   mandatoryCredits?: number;
   electivePlannedCredits?: number;
   completionPercentage?: number;
@@ -86,7 +92,7 @@ export type SemesterProgress = {
   noScoreCourses: number;
   notCompletedCourses: number;
   status: "COMPLETED" | "INCOMPLETE" | "CURRENT_PLAN" | "FUTURE" | "UNKNOWN";
-  timelineType?: "PAST_COMPLETED" | "CURRENT_STUDYING" | "FUTURE_PLANNED";
+  timelineType?: "PAST_COMPLETED" | "CURRENT_STUDYING" | "CURRENT_PLAN" | "FUTURE_PLANNED";
   statusLabel?: string;
   courses: AssessedCourse[];
 };
@@ -99,6 +105,8 @@ export type StudentTrainingProgressOutput = {
     classCode: string | null;
     className: string | null;
     cohortCode: string | null;
+    studyCohortCode?: string | null;
+    studyScheduleSource?: "CONFIGURED" | "REGISTRATION_SEQUENCE" | null;
     programCode: string | null;
   };
   curriculum: {
@@ -125,10 +133,12 @@ export type StudentTrainingProgressOutput = {
     expectedYear: number;
     expectedSemester: string;
     expectedSemesterNo: number;
+    studyingSemesterNos: number[];
+    administrativeSemesterNo?: number;
     latestCompletedSemester: number;
     lastCompletedSemester: number;
     progressGap: number;
-    progressStatus: "ON_TRACK" | "BEHIND";
+    progressStatus: "ON_TRACK" | "BEHIND" | "UNKNOWN";
     isOnTrack: boolean;
     isBehind: boolean;
     isAhead: boolean;
@@ -166,68 +176,9 @@ export type StudentTrainingProgressOutput = {
 // Normalization & Aliases
 // ============================================================================
 
-export const COURSE_CODE_ALIASES: Readonly<Record<string, string>> = {};
-
-export function normalizeCourseCode(value: string | null | undefined): string {
-  const code = (value ?? "").normalize("NFKC").trim().replace(/\s+/g, "").toUpperCase();
-  return COURSE_CODE_ALIASES[code] ?? code;
-}
-
-export function normalizeCourseName(value: string | null | undefined): string {
-  return (value ?? "")
-    .normalize("NFKC")
-    .trim()
-    .replace(/\s+/g, " ")
-    .toLocaleLowerCase("vi");
-}
-
 export function isMandatory(reqType: string | null | undefined): boolean {
   const norm = (reqType ?? "").trim().toLocaleLowerCase("vi");
   return norm.includes("bắt") || norm === "mandatory" || norm === "compulsory";
-}
-
-/**
- * Check if a course is a conditional/prerequisite certificate course
- * (Giáo dục quốc phòng - an ninh, Giáo dục thể chất, Sinh hoạt công dân).
- * Căn cứ 2020_CTDT_K44.pdf (Trang 21) & 2026-Ke-hoach-giang-day-nh-26-27 (1).pdf:
- * Các học phần này là điều kiện tốt nghiệp, không tính vào số tín chỉ tích lũy trong kỳ.
- */
-export function isConditionalCourse(
-  courseCode?: string | null,
-  courseName?: string | null,
-): boolean {
-  const code = (courseCode || "").toUpperCase().trim();
-  const name = (courseName || "").toLowerCase().trim();
-
-  // Giáo dục quốc phòng và an ninh (QP...)
-  if (code.startsWith("QP") || name.includes("quốc phòng") || name.includes("an ninh")) {
-    return true;
-  }
-
-  // Giáo dục thể chất (TC... hoặc 25TC...)
-  if (
-    code.startsWith("TC") ||
-    code.startsWith("25TC") ||
-    name.includes("thể chất") ||
-    name.includes("điền kinh") ||
-    name.includes("bóng đá") ||
-    name.includes("bóng chuyền") ||
-    name.includes("bóng bàn") ||
-    name.includes("cầu lông") ||
-    name.includes("pickleball") ||
-    name.includes("bóng ném") ||
-    name.includes("võ tự vệ") ||
-    name.includes("võ karate")
-  ) {
-    return true;
-  }
-
-  // Sinh hoạt công dân
-  if (code.startsWith("SHCD") || name.includes("sinh hoạt công dân")) {
-    return true;
-  }
-
-  return false;
 }
 
 // ============================================================================
@@ -238,48 +189,7 @@ export function getStandardSemesterPlannedCredits(
   semesterNo: number,
   programCode?: string | null,
 ): number {
-  const code = (programCode || "").toUpperCase();
-  const isPM = code.includes("PM");
-  const isKHDL = code.includes("KHDL");
-  const isMMT = code.includes("MMT");
-
-  switch (semesterNo) {
-    case 1:
-      // K50 Năm 1 HK1: 13 TC học thuật bắt buộc (GDTC/GDQP là môn điều kiện trong ngoặc đơn, không tính vào số TC trong kỳ)
-      return 13;
-    case 2:
-      // K50 Năm 1 HK2: 4 học phần bắt buộc (10 TC) + SV chọn 6/12 TC tự chọn = 16 TC (PDF Trang 1: Tổng cộng 16/22)
-      return 16;
-    case 3:
-      // K49 Năm 2 HK1: 6 học phần bắt buộc (12 TC) + SV chọn 6/9 TC tự chọn = 18 TC (PDF Trang 2: Tổng cộng 18/21)
-      return 18;
-    case 4:
-      // K49 Năm 2 HK2: 4 học phần bắt buộc (13 TC) + SV chọn 3/9 TC tự chọn = 16 TC (PDF Trang 2: Tổng cộng 16/22)
-      return 16;
-    case 5:
-      // K48 Năm 3 HK1: 4 học phần bắt buộc (13 TC) + SV chọn 3/6 TC tự chọn = 16 TC (PDF Trang 3: Tổng cộng 16/19)
-      return 16;
-    case 6:
-      // K48 Năm 3 HK2: 3 học phần bắt buộc (10 TC) + 1 môn bổ trợ (3 TC) + tự chọn chuyên ngành
-      // - Chuyên ngành Kỹ thuật phần mềm (PM): 10 + 3 + 6 = 19 TC (PDF Trang 4: Tổng cộng 19/22)
-      // - Chuyên ngành Mạng máy tính (MMT): 10 + 3 + 4 = 17 TC (PDF Trang 3: Tổng cộng 17/25)
-      // - Chuyên ngành Khoa học dữ liệu (KHDL): 10 + 3 + 3 = 16 TC (PDF Trang 4: Tổng cộng 16/21)
-      if (isPM) return 19;
-      if (isKHDL) return 16;
-      if (isMMT) return 17;
-      return 17;
-    case 7:
-      // K47 Năm 4 HK1: 3 học phần bắt buộc (9 TC) + SV chọn 9/12 TC tự chọn ngành = 18 TC (PDF Trang 5: Tổng cộng 18/21)
-      return 18;
-    case 8:
-      // K47 Năm 4 HK2: 2 học phần bắt buộc (6 TC) + SV chọn 12/15-16 TC tự chọn ngành = 18 TC (PDF Trang 6: Tổng cộng 18/21 - 18/22)
-      return 18;
-    case 9:
-      // K46 Năm 5 HK1 (Tốt nghiệp): Thực tập nghề nghiệp (8 TC) + Đồ án tốt nghiệp (10 TC) = 18 TC (PDF Trang 7: Tổng cộng 18/18)
-      return 18;
-    default:
-      return 16;
-  }
+  return teachingSemesterCredits(semesterNo, programCode) ?? (isK44StandardProgram(programCode) ? 0 : 16);
 }
 
 // ============================================================================
@@ -304,6 +214,7 @@ export function evaluateStudentTrainingProgress(input: {
     expectedYear: number;
     expectedSemester: string;
     expectedSemesterNo: number;
+    administrativeSemesterNo?: number;
   };
   rules?: {
     requiredTotalCredits?: number | null;
@@ -314,6 +225,7 @@ export function evaluateStudentTrainingProgress(input: {
   /** Keep a historical/finalized assessment boundary fixed. */
   lockTimeline?: boolean;
 }): StudentTrainingProgressOutput {
+  const normalizeCourseCode = (code?: string | null) => normalizeProgramCourseCode(code, input.student.programCode);
   const warnings: string[] = [];
 
   // 1. Deduplicate curriculum courses (TC13)
@@ -325,6 +237,7 @@ export function evaluateStudentTrainingProgress(input: {
       if (existing.credits !== item.credits) {
         warnings.push(`Tín chỉ CTĐT không thống nhất cho học phần ${item.courseCode}: ${existing.credits} vs ${item.credits}`);
       }
+      if (item.semesterNo > existing.semesterNo) curriculumMap.set(normCode, item);
       continue;
     }
     curriculumMap.set(normCode, item);
@@ -380,47 +293,36 @@ export function evaluateStudentTrainingProgress(input: {
   }
 
   // 4. Assess each curriculum course (PASS / FAIL / NO_SCORE / NOT_COMPLETED, no double-count)
+  const isCurrentTermAttempt = (attempt: StudentGradeAttempt) =>
+    attempt.academicYear === input.timeline.currentAcademicYear &&
+    attempt.termCode?.trim().toUpperCase() === input.timeline.currentTermCode.trim().toUpperCase();
   const assessedCourses: AssessedCourse[] = deduplicatedCurriculum.map((course) => {
     const attempts = gradeAttemptsByCourse.get(course.courseId) || [];
-    const passingAttempt = attempts.find(
-      (a) => a.isPass === true && a.notScore !== true && a.scoreStatus === "graded",
-    );
-    const hasFail = attempts.some(
-      (a) =>
-        (a.isPass === false &&
-        a.notScore !== true &&
-        a.scoreStatus === "graded" &&
-        (a.score10 != null || a.score4 != null || Boolean(a.letterCode))) ||
-        (a.isPass === false && (a.scoreStatus === "special" || a.specialCode === "VT" || a.letterCode === "VT")),
-    );
-
-    // Active current semester attempt (enrolled in current term without final grade, or pending/notScore)
-    const hasActiveCurrentAttempt = attempts.some(
-      (a) =>
-        (a.notScore === true || a.scoreStatus === "pending") ||
-        (a.academicYear === input.timeline.currentAcademicYear &&
-         a.termCode === input.timeline.currentTermCode &&
-         a.isPass !== true &&
-         a.scoreStatus !== "special" &&
-         a.specialCode !== "VT" &&
-         a.letterCode !== "VT" &&
-         (a.score10 == null || a.letterCode == null)),
-    );
+    const passingAttempt = attempts.find((a) => courseOutcome(a) === "passed");
+    const hasFail = attempts.some((a) => courseOutcome(a) === "failed");
+    const hasPendingAttempt = attempts.some((a) => courseOutcome(a) === "pending");
+    const isCond = course.isConditional || isConditionalCourse(course.courseCode, course.courseName);
+    const isCurrentlyStudying = !isCond && attempts.some(attempt => {
+      if (!isCurrentTermAttempt(attempt)) return false;
+      const outcome = courseOutcome(attempt);
+      return outcome === "pending" || (outcome === "unknown" && attempt.score10 == null && attempt.score4 == null &&
+        !attempt.letterCode && !attempt.specialCode);
+    });
 
     let status: CourseProgressStatus;
     if (passingAttempt) {
       status = "PASSED"; // TC01, TC05
-    } else if (hasActiveCurrentAttempt) {
+    } else if (hasPendingAttempt || isCurrentlyStudying) {
       status = "NO_SCORE"; // In-progress / no final score yet
     } else if (hasFail) {
       status = "FAILED"; // TC02
     } else if (attempts.length > 0) {
-      status = "NO_SCORE"; // TC03
+      status = "NOT_COMPLETED";
+      warnings.push(`Kết quả học phần ${course.courseCode} chưa đủ dữ liệu để đối soát; không coi là đang chờ điểm.`);
     } else {
       status = "NOT_COMPLETED"; // TC04
     }
 
-    const isCond = course.isConditional || isConditionalCourse(course.courseCode, course.courseName);
     let requirementType: string;
     if (isCond) {
       requirementType = "conditional";
@@ -454,6 +356,7 @@ export function evaluateStudentTrainingProgress(input: {
       ...course,
       requirementType,
       isConditional: isCond,
+      isCurrentlyStudying,
       status,
       timelineCategory,
       attemptCount: attempts.length,
@@ -476,8 +379,9 @@ export function evaluateStudentTrainingProgress(input: {
 
   // 6. Elective groups calculation (TC06, TC07, TC08)
   const electiveGroupMap = new Map<string, AssessedCourse[]>();
+  if (isK44StandardProgram(input.student.programCode)) for (const code of K44_ELECTIVE_GROUPS) electiveGroupMap.set(code, []);
   for (const c of electiveCourses) {
-    const code = c.choiceGroupCode || "CHUNG";
+    const code = curriculumElectiveGroup(c.courseCode, input.student.programCode) ?? c.choiceGroupCode ?? "CHUNG";
     const list = electiveGroupMap.get(code) || [];
     list.push(c);
     electiveGroupMap.set(code, list);
@@ -509,7 +413,9 @@ export function evaluateStudentTrainingProgress(input: {
       status = passedCredits >= requiredCredits ? "PASS" : "FAIL";
     } else {
       hasUnknownElectiveRequirement = true;
-      creditedCredits = passedCredits;
+      // Keep the passing result visible, but do not count an unverified block
+      // toward the configured degree requirement.
+      creditedCredits = null;
       remainingCredits = null;
       extraCredits = 0;
       status = "UNKNOWN";
@@ -576,32 +482,12 @@ export function evaluateStudentTrainingProgress(input: {
     warnings.push("Chưa cấu hình tổng tín chỉ yêu cầu chính thức của CTĐT; tiến độ % được đặt là unknown.");
   }
 
-  // Detect studying semester from NO_SCORE courses if present:
-  // "Ở học kì mà có nhiều môn 'Chưa có điểm' thì đó là học kì 'đang theo học' của sinh viên đó"
-  const semNoScoreCounts = new Map<number, number>();
-  for (const c of assessedCourses) {
-    if (c.status === "NO_SCORE") {
-      semNoScoreCounts.set(c.semesterNo, (semNoScoreCounts.get(c.semesterNo) || 0) + 1);
-    }
-  }
-
-  let effectiveSemesterNo = input.timeline.expectedSemesterNo;
-  let effectiveYear = input.timeline.expectedYear;
-  let effectiveSemester = input.timeline.expectedSemester;
-
-  if (!input.lockTimeline && semNoScoreCounts.size > 0) {
-    let maxCount = 0;
-    let bestSem = effectiveSemesterNo;
-    for (const [sNo, count] of semNoScoreCounts.entries()) {
-      if (count > maxCount || (count === maxCount && sNo > bestSem)) {
-        maxCount = count;
-        bestSem = sNo;
-      }
-    }
-    effectiveSemesterNo = bestSem;
-    effectiveYear = Math.ceil(bestSem / 2);
-    effectiveSemester = bestSem % 2 === 1 ? "HK1" : "HK2";
-  }
+  // The configured or evidence-supported study schedule/current term is
+  // authoritative. Retaking an old course alone never moves the landmark.
+  const effectiveSemesterNo = input.timeline.expectedSemesterNo;
+  const effectiveYear = input.timeline.expectedYear;
+  const effectiveSemester = input.timeline.expectedSemester;
+  const studyingSemesterNos = [...new Set(assessedCourses.filter(course => course.isCurrentlyStudying).map(course => course.semesterNo))].sort((a, b) => a - b);
 
   // Recalculate timelineCategory for all courses based on effectiveSemesterNo
   for (const course of assessedCourses) {
@@ -637,11 +523,16 @@ export function evaluateStudentTrainingProgress(input: {
     completedSemestersToDate.push(s);
   }
 
+  const usesK44Milestones = isK44StandardProgram(input.student.programCode) && input.rules?.requiredTotalCredits === 150;
   const getPlannedCreditsForSemester = (s: number, sCourses: AssessedCourse[]): number => {
     if (input.semesterPlans?.has(s)) {
       return input.semesterPlans.get(s)!;
     }
+    const confirmed = assessTeachingSemester(s, input.student.programCode, sCourses);
+    if (confirmed && (usesK44Milestones || confirmed.curriculumConfirmed)) return confirmed.plannedCredits;
     const sAcademicCourses = sCourses.filter((c) => !c.isConditional && c.requirementType !== "conditional");
+    // An unassigned specialization has no confirmed semester quota.
+    if (usesK44Milestones) return sAcademicCourses.filter((c) => c.requirementType === "mandatory").reduce((sum, c) => sum + c.credits, 0);
     const sCredits = sAcademicCourses.reduce((sum, c) => sum + c.credits, 0);
     if (sCredits === 0) return 0;
     const standard = getStandardSemesterPlannedCredits(s, input.student.programCode);
@@ -664,6 +555,24 @@ export function evaluateStudentTrainingProgress(input: {
 
     const sPlanElective = Math.max(0, sPlannedCredits - sMandatoryCredits);
     expectedElectiveCredits += sPlanElective;
+  }
+
+  // A yearly plan describes that cohort/year only. Historical credit milestones
+  // cannot be obtained by adding the 2026 plan to guessed earlier yearly plans.
+  // For the confirmed K44 standard, require compulsory courses already due and
+  // each elective block once its last catalogued option is due. This keeps the
+  // complete-program milestone within 104 + 46, including the final 18 credits.
+  if (usesK44Milestones) {
+    expectedElectiveCredits = electiveGroups.reduce((sum, group) => {
+      if (group.requiredCredits === null || !group.courses.length) return sum;
+      const deadline = Math.max(...group.courses.map((course) => course.semesterNo));
+      return deadline < effectiveSemesterNo ? sum + group.requiredCredits : sum;
+    }, 0);
+    expectedCreditsToDate = mandatoryCourses.filter((course) => course.semesterNo < effectiveSemesterNo)
+      .reduce((sum, course) => sum + course.credits, 0) + expectedElectiveCredits;
+    if (completedSemestersToDate.some((semester) => !input.semesterPlans?.has(semester))) {
+      warnings.push("Các kỳ chưa có kế hoạch năm học được đối chiếu học phần bắt buộc và mốc tối thiểu của từng khối tự chọn trong CTĐT; không suy định mức kỳ cũ từ kế hoạch 2026–2027.");
+    }
   }
 
   // Earned credits to date: student's actual accumulated academic credits
@@ -697,13 +606,14 @@ export function evaluateStudentTrainingProgress(input: {
   const isCreditDeficient = earnedCreditsToDate < expectedCreditsToDate;
   const isElectiveDeficient = expectedElectiveCredits > 0 && earnedElectiveCredits < expectedElectiveCredits;
 
-  const progressStatus: "ON_TRACK" | "BEHIND" =
+  const progressStatus: "ON_TRACK" | "BEHIND" | "UNKNOWN" =
+    (!deduplicatedCurriculum.length || !input.grades.length) ? "UNKNOWN" :
     (!isMissingMandatory && !isCreditDeficient && !isElectiveDeficient)
-      ? "ON_TRACK"
+      ? (hasUnknownElectiveRequirement ? "UNKNOWN" : "ON_TRACK")
       : "BEHIND";
 
   // Status reason
-  let statusReason = "Đúng tiến độ đào tạo";
+  let statusReason = progressStatus === "UNKNOWN" ? "Chưa đủ dữ liệu hoặc yêu cầu CTĐT để xác nhận tiến độ; cần đối soát." : "Đúng tiến độ đào tạo";
   if (progressStatus === "BEHIND") {
     const reasons: string[] = [];
     if (isCreditDeficient) {
@@ -716,7 +626,7 @@ export function evaluateStudentTrainingProgress(input: {
       reasons.push(`Thiếu ${expectedElectiveCredits - earnedElectiveCredits} TC tự chọn`);
     }
     statusReason = reasons.join(" • ");
-  } else if (creditDifference > 0) {
+  } else if (progressStatus === "ON_TRACK" && creditDifference > 0) {
     statusReason = `Đúng tiến độ (Học vượt +${creditDifference} TC)`;
   }
 
@@ -731,11 +641,10 @@ export function evaluateStudentTrainingProgress(input: {
     : 0;
 
   // Ahead credits
-  const aheadCredits = aheadCourses.reduce((sum, c) => sum + c.credits, 0);
-  const currentPlanCredits = assessedCourses
-    .filter((c) => c.timelineCategory === "CURRENT_PLAN")
-    .reduce((sum, c) => sum + c.credits, 0);
+  const aheadCredits = aheadCourses.filter((c) => !c.isConditional).reduce((sum, c) => sum + c.credits, 0);
+  const currentPlanCredits = getPlannedCreditsForSemester(effectiveSemesterNo, assessedCourses.filter((c) => c.semesterNo === effectiveSemesterNo));
 
+  if (progressStatus === "UNKNOWN") creditDifferenceText = "Chưa đủ dữ liệu";
   const isOnTrack = progressStatus === "ON_TRACK";
   const isBehind = progressStatus === "BEHIND";
   const isAhead = aheadCredits > 0 || creditDifference > 0;
@@ -761,11 +670,13 @@ export function evaluateStudentTrainingProgress(input: {
       .reduce((sum, c) => sum + c.credits, 0);
 
     // Kế hoạch tín chỉ chuẩn theo Kế hoạch giảng dạy NH 2026-2027 (Mẫu 07/QLĐT) hoặc CTĐT (không tính GDTC/GDQP)
+    const reference = assessTeachingSemester(s, input.student.programCode, sCourses);
+    const teaching = reference && (usesK44Milestones || reference.curriculumConfirmed) ? reference : null;
     const sPlannedCredits = getPlannedCreditsForSemester(s, sCourses);
 
     const sRequiredCredits = sPlannedCredits;
-    const sRemainingCredits = Math.max(0, sPlannedCredits - sCompletedCredits);
-    const sCompletionPercentage = sPlannedCredits > 0 ? Math.round((sCompletedCredits / sPlannedCredits) * 100) : 0;
+    const sRemainingCredits = teaching ? teaching.remainingCredits : Math.max(sMandatory.filter((course) => course.status !== "PASSED").reduce((sum, course) => sum + course.credits, 0), sPlannedCredits - sCompletedCredits);
+    const sCompletionPercentage = sPlannedCredits > 0 ? Math.max(0, Math.min(100, Math.round(((sPlannedCredits - sRemainingCredits) / sPlannedCredits) * 100))) : 0;
 
     const sCompletedCount = sCourses.filter((c) => c.status === "PASSED").length;
     const sFailedCount = sAcademicCourses.filter((c) => c.status === "FAILED").length;
@@ -773,32 +684,44 @@ export function evaluateStudentTrainingProgress(input: {
     const sNotCompletedCount = sCourses.filter((c) => c.status === "NOT_COMPLETED").length;
 
     let sStatus: "COMPLETED" | "INCOMPLETE" | "CURRENT_PLAN" | "FUTURE" | "UNKNOWN";
-    let timelineType: "PAST_COMPLETED" | "CURRENT_STUDYING" | "FUTURE_PLANNED";
+    let timelineType: "PAST_COMPLETED" | "CURRENT_STUDYING" | "CURRENT_PLAN" | "FUTURE_PLANNED";
     let statusLabel: string;
 
-    const allMandatoryPassed = sMandatory.length === 0 || sMandatory.every((c) => c.status === "PASSED");
+    const allMandatoryPassed = teaching ? teaching.missingMandatoryCredits === 0 : sMandatory.length === 0 || sMandatory.every((c) => c.status === "PASSED");
+    const semesterNeedsReconciliation = usesK44Milestones && (!teaching || !teaching.curriculumConfirmed);
 
     if (s < effectiveSemesterNo) {
       timelineType = "PAST_COMPLETED";
-      if (allMandatoryPassed && sCompletedCredits >= sPlannedCredits) {
+      if (semesterNeedsReconciliation) {
+        sStatus = "UNKNOWN";
+        statusLabel = "Cần đối soát";
+      } else if (allMandatoryPassed && sRemainingCredits === 0 && sCompletedCredits >= sPlannedCredits) {
         sStatus = "COMPLETED";
         statusLabel = sCompletedCredits > sPlannedCredits ? `Đạt kỳ (+${sCompletedCredits - sPlannedCredits} TC)` : "Đạt kỳ";
       } else {
         sStatus = "INCOMPLETE";
-        if (!allMandatoryPassed || sFailedCount > 0) {
-          statusLabel = "Nợ môn";
+        if (!allMandatoryPassed) {
+          statusLabel = "Nợ môn bắt buộc";
         } else {
-          statusLabel = `Thiếu ${sRemainingCredits} TC`;
+          statusLabel = `Thiếu ${sRemainingCredits} TC tự chọn`;
         }
       }
     } else if (s === effectiveSemesterNo) {
-      timelineType = "CURRENT_STUDYING";
+      timelineType = "CURRENT_PLAN";
       sStatus = "CURRENT_PLAN";
-      statusLabel = "Đang theo học";
+      const hasCurrentRegistration = sAcademicCourses.some(course => (gradeAttemptsByCourse.get(course.courseId) || []).some(isCurrentTermAttempt));
+      statusLabel = hasCurrentRegistration ? "Đã có kết quả" : "Chưa đăng ký";
     } else {
       timelineType = "FUTURE_PLANNED";
       sStatus = "FUTURE";
       statusLabel = sCompletedCount > 0 ? `Học trước (+${sCompletedCredits} TC)` : "Kế hoạch";
+    }
+
+    // Display actual study activity independently of the cohort benchmark.
+    // Keep sStatus and all overdue-credit calculations at the original milestone.
+    if (studyingSemesterNos.includes(s)) {
+      timelineType = "CURRENT_STUDYING";
+      statusLabel = "Đang theo học";
     }
 
     if (sStatus === "COMPLETED" && consecutivePass) {
@@ -816,8 +739,9 @@ export function evaluateStudentTrainingProgress(input: {
       termNo,
       name: `Năm ${yearStudy} - HK${termNo}`,
       requiredCredits: sRequiredCredits,
-      plannedCredits: sPlannedCredits,
+      plannedCredits: usesK44Milestones && !teaching && !input.semesterPlans?.has(s) ? null : sPlannedCredits,
       mandatoryCredits: sMandatoryRequiredCredits,
+      electivePlannedCredits: teaching?.electiveCredits ?? Math.max(0, sPlannedCredits - sMandatoryRequiredCredits),
       completionPercentage: sCompletionPercentage,
       completedCredits: sCompletedCredits,
       remainingCredits: sRemainingCredits,
@@ -833,6 +757,8 @@ export function evaluateStudentTrainingProgress(input: {
   }
 
   const progressGap = Math.max(0, (effectiveSemesterNo - 1) - lastCompletedSemester);
+  const unconfirmedPastSemesters = semesters.filter((semester) => semester.status === "UNKNOWN").map((semester) => `HK${semester.semesterNo}`);
+  if (unconfirmedPastSemesters.length) warnings.push(`Chưa đủ danh mục học phần hoặc chuyên ngành để xác nhận ${unconfirmedPastSemesters.join(", ")}; không đánh dấu các kỳ này đã đạt.`);
 
   return {
     student: {
@@ -853,9 +779,9 @@ export function evaluateStudentTrainingProgress(input: {
     },
     summary: {
       requiredCredits,
-      completedCredits,
-      remainingCredits,
-      progressPercent,
+      completedCredits: input.grades.length ? completedCredits : null,
+      remainingCredits: input.grades.length ? remainingCredits : null,
+      progressPercent: input.grades.length ? progressPercent : null,
       completedCourses: completedCourses.length,
       failedCourses: failedCourses.length,
       noScoreCourses: noScoreCourses.length,
@@ -868,6 +794,8 @@ export function evaluateStudentTrainingProgress(input: {
       expectedYear: effectiveYear,
       expectedSemester: effectiveSemester,
       expectedSemesterNo: effectiveSemesterNo,
+      studyingSemesterNos,
+      administrativeSemesterNo: input.timeline.administrativeSemesterNo,
       latestCompletedSemester: effectiveSemesterNo > 1 ? effectiveSemesterNo - 1 : 0,
       lastCompletedSemester,
       progressGap,
@@ -1063,13 +991,14 @@ export class StudentTrainingProgressService {
       };
     }
 
-    const timeline = this.determineTimeline(
+    const administrativeTimeline = this.determineTimeline(
       cohort?.sCohortCode,
       cohort?.sCohortName,
       currentYearCode,
       currentTermCode,
       currentTermOrder,
     );
+    const configuredStudyCohort = studentProgressCohort(student, currentYearCode);
 
     // 3. Resolve Training Program (CTĐT) & Rules (cached per programCode + cohortId)
     const programCode = student.sStudyProgramId || "";
@@ -1145,11 +1074,11 @@ export class StudentTrainingProgressService {
             const minSpecializedSemester = nonSem1Semesters.length > 0 ? Math.min(...nonSem1Semesters) : 5;
 
             const baseCourseMap = new Map(
-              baseCourses.map((c) => [normalizeCourseCode(c.s_course_code), c])
+              baseCourses.map((c) => [normalizeProgramCourseCode(c.s_course_code, programCode), c])
             );
 
             rawCurriculumCourses = rawCurriculumCourses.map((c) => {
-              const base = baseCourseMap.get(normalizeCourseCode(c.s_course_code));
+              const base = baseCourseMap.get(normalizeProgramCourseCode(c.s_course_code, programCode));
               if (c.s_semester_no === 1 && base && base.s_semester_no > 1 && base.s_semester_no < minSpecializedSemester) {
                 return { ...c, s_semester_no: base.s_semester_no };
               }
@@ -1157,10 +1086,10 @@ export class StudentTrainingProgressService {
             });
 
             const existingCodes = new Set(
-              rawCurriculumCourses.map((c) => normalizeCourseCode(c.s_course_code))
+              rawCurriculumCourses.map((c) => normalizeProgramCourseCode(c.s_course_code, programCode))
             );
             for (const baseCourse of baseCourses) {
-              const normCode = normalizeCourseCode(baseCourse.s_course_code);
+              const normCode = normalizeProgramCourseCode(baseCourse.s_course_code, programCode);
               if (!existingCodes.has(normCode) && baseCourse.s_semester_no < minSpecializedSemester) {
                 rawCurriculumCourses.push(baseCourse);
                 existingCodes.add(normCode);
@@ -1173,7 +1102,7 @@ export class StudentTrainingProgressService {
       let choiceGroupsFromPlans: Array<{ sCourseCode: string; choiceGroupCode: string | null }> = [];
       if (program && cohort) {
         const planIds = (await prisma.trainingProgressPlan.findMany({
-          where: { cohortId: cohort.id, trainingProgramId: program.id },
+          where: { cohortId: cohort.id, trainingProgramId: program.id, status: "locked", isCurrent: true },
           select: { id: true },
         })).map((p) => p.id);
         if (planIds.length > 0) {
@@ -1212,6 +1141,7 @@ export class StudentTrainingProgressService {
             trainingProgramId: program.id,
             status: "active",
             ruleCode: { in: ["TOTAL_CREDITS", "ELECTIVE_CREDITS"] },
+            OR: [{ cohortId: cohort?.id ?? null }, { cohortId: null }],
           },
         });
         for (const rule of rules) {
@@ -1226,10 +1156,7 @@ export class StudentTrainingProgressService {
         }
       }
 
-      // Standard semester planned credits are sourced directly from the official Dalat University
-      // Teaching Plan (2026-Ke-hoach-giang-day-nh-26-27 (1).pdf - Mẫu 07/QLĐT) via getStandardSemesterPlannedCredits.
-      // Individual training_progress_plans only define requiredElectiveCredits thresholds for specific offerings,
-      // not total semester plan overrides.
+      if (program && cohort) semesterPlansMap = await loadSemesterCreditPlans(cohort.id, program.id);
 
       this.programConfigCache.set(configCacheKey, {
         timestamp: Date.now(),
@@ -1266,6 +1193,8 @@ export class StudentTrainingProgressService {
       JOIN academic_terms t ON t.id = o.academic_term_id
       JOIN academic_years y ON y.id = t.academic_year_id
       WHERE o.student_id = ${student.id}::uuid
+        AND (y.s_year_code < ${currentYearCode} OR
+          (y.s_year_code = ${currentYearCode} AND t.s_term_order <= ${currentTermOrder}))
       ORDER BY y.s_year_code, t.s_term_order, o.s_curriculum_id
     `;
 
@@ -1291,28 +1220,15 @@ export class StudentTrainingProgressService {
         scoreStatus: r.score_status,
       }));
 
-    // Detect student's actual active semester based on enrolled courses in the current academic term
-    const currentOfferings = offerings.filter(
-      (o) =>
-        o.s_year_code === timeline.currentAcademicYear &&
-        o.s_term_code === timeline.currentTermCode,
-    );
-    if (currentOfferings.length > 0) {
-      const activeSemesters = currentOfferings
-        .map((o) => {
-          const norm = normalizeCourseCode(o.s_curriculum_id);
-          const found = curriculum.find((c) => normalizeCourseCode(c.courseCode) === norm);
-          return found?.semesterNo;
-        })
-        .filter((s): s is number => typeof s === "number" && s > 0);
-
-      if (activeSemesters.length > 0) {
-        const activeSemesterNo = Math.max(...activeSemesters);
-        timeline.expectedSemesterNo = activeSemesterNo;
-        timeline.expectedYear = Math.ceil(activeSemesterNo / 2);
-        timeline.expectedSemester = activeSemesterNo % 2 === 1 ? "HK1" : "HK2";
-      }
-    }
+    const inferredSchedule = configuredStudyCohort ? null : inferStudentProgressCohort({
+      administrativeCohortCode: cohort?.sCohortCode ?? null, programCode,
+      currentAcademicYear: currentYearCode, currentTermCode, curriculum, registrations: grades,
+    });
+    const studyCohortCode = configuredStudyCohort || inferredSchedule?.cohortCode || null;
+    const timeline = {
+      ...(studyCohortCode ? this.determineTimeline(studyCohortCode, null, currentYearCode, currentTermCode, currentTermOrder) : administrativeTimeline),
+      administrativeSemesterNo: administrativeTimeline.expectedSemesterNo,
+    };
 
     // 5. Run Pure Engine
 
@@ -1336,10 +1252,18 @@ export class StudentTrainingProgressService {
       semesterPlans: semesterPlansMap,
     });
 
+    const reconciliation = await prisma.unscopedGradeRecord.findMany({ where: { studentId: student.id }, select: { reason: true, sCourseCode: true } });
+    if (!grades.length) result.warnings.push("API chưa có bảng điểm trong phạm vi CTĐT của sinh viên; chưa đủ dữ liệu để xác nhận các học phần đã hoàn thành.");
+    if (reconciliation.some((row) => row.reason === "API_PROGRAM_SCOPE_CONFLICT")) result.warnings.push("API mã CTĐT chung trả rỗng, hai mã chuyên ngành trả cùng ba đăng ký chưa có điểm. Cần đối soát phạm vi nguồn; chưa tự gán chuyên ngành hoặc tích lũy tín chỉ.");
+    if (reconciliation.some((row) => row.reason !== "API_PROGRAM_SCOPE_CONFLICT")) result.warnings.push("Có lượt học thiếu phạm vi học kỳ cần đối soát; chưa tính vào kết quả tại mốc xét.");
+
     if (program) {
       result.curriculum.programId = program.id;
       result.curriculum.programName = program.sProgramName;
     }
+
+    result.student.studyCohortCode = studyCohortCode;
+    result.student.studyScheduleSource = configuredStudyCohort ? "CONFIGURED" : inferredSchedule ? "REGISTRATION_SEQUENCE" : null;
 
     return result;
   }
@@ -1475,6 +1399,8 @@ export class StudentTrainingProgressService {
                 fullName: res.student.fullName,
                 className: res.student.className || res.student.classCode || "—",
                 cohortCode: res.student.cohortCode || "—",
+                studyCohortCode: res.student.studyCohortCode,
+                studyScheduleSource: res.student.studyScheduleSource,
                 programCode: res.curriculum.programCode || res.student.programCode || "—",
                 benchmarkLabel,
                 latestCompletedSemester: semNo,
@@ -1519,6 +1445,7 @@ export class StudentTrainingProgressService {
 
     const onTrackCount = onTrackList.length;
     const behindCount = behindList.length;
+    const unknownCount = evaluatedList.filter((item) => item.progressStatus === "UNKNOWN").length;
     const onTrackPercentage = totalStudents > 0 ? Math.round((onTrackCount / totalStudents) * 100) : 0;
     const behindPercentage = totalStudents > 0 ? Math.round((behindCount / totalStudents) * 100) : 0;
 
@@ -1534,6 +1461,7 @@ export class StudentTrainingProgressService {
       totalStudents,
       onTrackCount,
       behindCount,
+      unknownCount,
       onTrackPercentage,
       behindPercentage,
       avgDeficitCredits,
@@ -1574,6 +1502,8 @@ export interface DepartmentProgressStudentItem {
   fullName: string;
   className: string;
   cohortCode: string;
+  studyCohortCode?: string | null;
+  studyScheduleSource?: "CONFIGURED" | "REGISTRATION_SEQUENCE" | null;
   programCode: string;
   benchmarkLabel: string;
   latestCompletedSemester: number;
@@ -1584,7 +1514,7 @@ export interface DepartmentProgressStudentItem {
   creditDifferenceText: string;
   missingRequiredCoursesCount: number;
   missingRequiredCredits: number;
-  progressStatus: "ON_TRACK" | "BEHIND";
+  progressStatus: "ON_TRACK" | "BEHIND" | "UNKNOWN";
   statusReason: string;
 }
 
@@ -1593,6 +1523,7 @@ export interface DepartmentProgressOverviewResult {
     totalStudents: number;
     onTrackCount: number;
     behindCount: number;
+    unknownCount?: number;
     onTrackPercentage: number;
     behindPercentage: number;
     avgDeficitCredits: number;

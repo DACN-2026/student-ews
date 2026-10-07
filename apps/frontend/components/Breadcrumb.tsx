@@ -1,5 +1,6 @@
 "use client";
 
+import TextLabel from "@/components/ui/TextLabel";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -99,12 +100,12 @@ export default function Breadcrumb() {
           </svg>
 
           {item.isLast ? (
-            <span
-              className="font-semibold text-[var(--color-text)] px-1.5 py-0.5 rounded bg-[var(--color-surface2)]"
+            <TextLabel
+              className="font-semibold text-[var(--color-text)]"
               style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
             >
               {item.label}
-            </span>
+            </TextLabel>
           ) : (
             <Link
               href={item.href}

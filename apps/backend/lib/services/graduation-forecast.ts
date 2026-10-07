@@ -1,14 +1,5 @@
-/** Course matching rules live here. Add verified code aliases only; never strip suffixes speculatively. */
-export const COURSE_CODE_ALIASES: Readonly<Record<string, string>> = {};
-
-export function normalizeCourseCode(value: string | null | undefined): string {
-  const code = (value ?? "").normalize("NFKC").trim().replace(/\s+/g, "").toUpperCase();
-  return COURSE_CODE_ALIASES[code] ?? code;
-}
-
-export function normalizeCourseName(value: string | null | undefined): string {
-  return (value ?? "").normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("vi");
-}
+import { courseOutcome, isConditionalCourse, normalizeProgramCourseCode, curriculumElectiveGroup, isK44StandardProgram, K44_ELECTIVE_GROUPS, normalizeCourseName } from "../academic-course-rules";
+export { COURSE_CODE_ALIASES, normalizeCourseCode, normalizeCourseName } from "../academic-course-rules";
 
 export type ForecastCourse = {
   courseId: string;
@@ -27,6 +18,7 @@ export type ForecastGrade = {
   score10?: number | null;
   score4?: number | null;
   letterGrade?: string | null;
+  specialCode?: string | null;
 };
 export type ForecastSchedule = {
   courseId?: string | null;
@@ -41,6 +33,7 @@ export type ForecastSchedule = {
 type CourseState = "passed" | "failed" | "no_score" | "not_completed";
 
 export function buildGraduationForecast(input: {
+  programCode?: string | null;
   courses: ForecastCourse[];
   grades: ForecastGrade[];
   schedule?: ForecastSchedule[];
@@ -48,13 +41,16 @@ export function buildGraduationForecast(input: {
   requiredTotalCredits?: number | null;
   requiredCompulsoryCredits?: number | null;
 }) {
+  const normalizeCourseCode = (code?: string | null) => normalizeProgramCourseCode(code, input.programCode);
   const warnings: string[] = [];
   const courses = new Map<string, ForecastCourse>();
   for (const course of input.courses) {
+    if (isConditionalCourse(course.courseCode, course.courseName)) continue;
     const key = normalizeCourseCode(course.courseCode) || `id:${course.courseId}`;
     const existing = courses.get(key);
     if (existing) {
       if (existing.credits !== course.credits) warnings.push(`Tín chỉ CTĐT không thống nhất: ${course.courseCode}`);
+      if ((course.semesterNo ?? 0) > (existing.semesterNo ?? 0)) courses.set(key, course);
       continue;
     }
     courses.set(key, course);
@@ -99,10 +95,10 @@ export function buildGraduationForecast(input: {
   }
   const assessed = allCourses.map((course) => {
     const attempts = gradeMap.get(course.courseId) ?? [];
-    const hasPass = attempts.some((grade) => grade.isPassed === true && grade.notScore !== true && grade.scoreStatus === "graded");
-    const hasFail = attempts.some((grade) => grade.isPassed === false && grade.notScore !== true && grade.scoreStatus === "graded" &&
-      (grade.score10 != null || grade.score4 != null || Boolean(grade.letterGrade)));
-    const state: CourseState = hasPass ? "passed" : hasFail ? "failed" : attempts.length ? "no_score" : "not_completed";
+    const hasPass = attempts.some((grade) => courseOutcome(grade) === "passed");
+    const hasFail = attempts.some((grade) => courseOutcome(grade) === "failed");
+    if (attempts.some((grade) => courseOutcome(grade) === "unknown")) warnings.push(`Kết quả học phần ${course.courseCode} chưa đủ dữ liệu để đối soát; không coi là đang chờ điểm.`);
+    const state: CourseState = hasPass ? "passed" : hasFail ? "failed" : attempts.some((grade) => courseOutcome(grade) === "pending") ? "no_score" : "not_completed";
     return { ...course, state, schedule: scheduleMap.get(course.courseId) ?? null };
   });
   const mandatory = assessed.filter((course) => /bắt buộc|mandatory/i.test(course.requirementType));
@@ -118,8 +114,9 @@ export function buildGraduationForecast(input: {
   if (validElectiveLimit === null) warnings.push("CTĐT không cung cấp mức tín chỉ tự chọn tối thiểu; cần cấu hình quy tắc cho chương trình này.");
   const missingRequiredCourses = mandatory.filter((course) => course.state !== "passed");
   const groups = new Map<string, typeof elective>();
+  if (isK44StandardProgram(input.programCode)) for (const code of K44_ELECTIVE_GROUPS) groups.set(code, []);
   for (const course of elective) {
-    const code = course.schedule?.choiceGroupCode;
+    const code = curriculumElectiveGroup(course.courseCode, input.programCode) ?? course.schedule?.choiceGroupCode;
     if (code) groups.set(code, [...(groups.get(code) ?? []), course]);
   }
   const electiveGroups = [...groups].map(([code, options]) => {
@@ -147,7 +144,7 @@ export function buildGraduationForecast(input: {
   if (validElectiveLimit !== null && configuredGroupMinimum > validElectiveLimit) {
     warnings.push("Tổng mức tối thiểu của các nhóm tự chọn vượt ngưỡng tự chọn toàn CTĐT; cần đối soát cấu hình.");
   }
-  const ungroupedPassed = elective.filter((course) => course.state === "passed" && !course.schedule?.choiceGroupCode)
+  const ungroupedPassed = elective.filter((course) => course.state === "passed" && !(curriculumElectiveGroup(course.courseCode, input.programCode) ?? course.schedule?.choiceGroupCode))
     .reduce((sum, course) => sum + course.credits, 0);
   const qualifiedElectiveCredits = ungroupedPassed + electiveGroups.reduce((sum, group) => sum + (group.creditedCredits ?? group.passedCredits), 0);
   const groupDeficit = electiveGroups.reduce((sum, group) => sum + (group.remainingCredits ?? 0), 0);
@@ -164,8 +161,8 @@ export function buildGraduationForecast(input: {
     (validTotalLimit === null || (validElectiveLimit !== null && requiredMandatoryCredits + Math.min(availableElectiveCredits, validElectiveLimit) >= validTotalLimit));
   if (!coverageValid) warnings.push("Danh mục CTĐT hiện lưu không đủ học phần/tín chỉ để đáp ứng ngưỡng đã cấu hình; cần bổ sung hoặc đối soát CTĐT.");
   const requiredCredits = unknown.length || allCourses.length === 0 ? null : validTotalLimit;
-  const completedCredits = requiredCredits === null || creditedElectiveCredits === null || !coverageValid || electiveGroups.some((group) => group.requiredCredits === null) ? null : Math.min(completedMandatoryCredits + creditedElectiveCredits, requiredCredits);
-  const remainingCredits = requiredCredits === null || completedCredits === null ? null : Math.max(0, requiredCredits - completedCredits);
+  const completedCredits = requiredCredits === null || creditedElectiveCredits === null || electiveGroups.some((group) => group.requiredCredits === null) ? null : Math.min(completedMandatoryCredits + creditedElectiveCredits, requiredCredits);
+  const remainingCredits = requiredCredits === null || completedCredits === null || !coverageValid ? null : Math.max(0, requiredCredits - completedCredits);
 
   const curriculumComplete = (requiredCredits === null || creditedElectiveCredits === null || !coverageValid || electiveGroups.some((g) => g.status === "UNKNOWN"))
     ? null

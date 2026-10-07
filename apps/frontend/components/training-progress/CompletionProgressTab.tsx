@@ -1,22 +1,8 @@
 "use client";
 
+import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  CircleAlert,
-  FileCheck2,
-  Inbox,
-  Info,
-  LoaderCircle,
-  Play,
-  RefreshCw,
-  Search,
-  Sparkles,
-  X,
-  XCircle,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, CircleAlert, Inbox, Info, LoaderCircle, Play, RefreshCw, Search, Sparkles, X, XCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import Modal from "@/components/ui/Modal";
@@ -472,13 +458,13 @@ export default function CompletionProgressTab() {
                       : "border-slate-200/80 bg-slate-50/70 hover:border-slate-300 hover:bg-white text-slate-700"
                   }`}
                 >
-                  <span
-                    className={`inline-flex rounded-lg px-2 py-0.5 font-mono text-xs font-bold shadow-2xs ${
+                  <TextLabel
+                    className={`inline-flex    font-mono text-xs font-bold  ${
                       isSelected ? "bg-slate-900 text-white" : "bg-slate-200 text-slate-800"
                     }`}
                   >
                     Khóa {run.cohortCode || "?"}
-                  </span>
+                  </TextLabel>
 
                   <span className="text-xs font-bold text-slate-900">
                     {run.programCode || run.programName || "CTĐT"}
@@ -488,20 +474,16 @@ export default function CompletionProgressTab() {
 
                   <div className="flex items-center gap-2 text-xs">
                     <span className="font-mono font-bold text-slate-800">{totalStud} SV</span>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                    <TextLabel
+                      className={`inline-flex items-center gap-1    text-[10px] font-semibold ${
                         completeRate >= 70
                           ? "bg-emerald-100/70 text-emerald-800"
                           : "bg-amber-100/70 text-amber-800"
                       }`}
                     >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          completeRate >= 70 ? "bg-emerald-500" : "bg-amber-500"
-                        }`}
-                      />
+
                       {completeRate}% hoàn thành
-                    </span>
+                    </TextLabel>
                   </div>
                 </button>
               );
@@ -517,15 +499,15 @@ export default function CompletionProgressTab() {
           <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex rounded-md bg-slate-900 px-2.5 py-0.5 font-mono text-xs font-bold text-white">
+                <TextLabel className="inline-flex font-mono text-xs font-bold text-slate-700">
                   Khóa {activeRun.cohortCode}
-                </span>
+                </TextLabel>
                 <h3 className="text-base font-bold text-slate-900">
                   Tiến độ tích lũy CTĐT • {activeRun.programName}
                 </h3>
-                <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-mono text-xs font-bold text-slate-700">
+                <TextLabel className="font-mono text-xs font-bold text-slate-700">
                   {activeRun.assessmentAcademicYear} ({activeRun.assessmentTermCode})
-                </span>
+                </TextLabel>
               </div>
               <p className="mt-1 text-xs text-slate-500">
                 Đánh giá hoàn thành CTĐT tính đến mốc đánh giá hiện tại
@@ -534,36 +516,36 @@ export default function CompletionProgressTab() {
 
             {/* Compact KPI Pills in header */}
             <div className="flex flex-wrap items-center gap-1.5">
-              <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700">
+              <TextLabel className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
                 <span className="text-slate-500 font-normal">Tổng:</span>
                 <strong className="font-mono font-bold text-slate-900">{studentCounts.total}</strong> SV
-              </div>
-              <div className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-1 text-xs font-medium text-emerald-800">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              </TextLabel>
+              <TextLabel className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-800">
+
                 <span>Hoàn thành học phần:</span>
                 <strong className="font-mono font-bold text-emerald-900">{studentCounts.completed}</strong>
                 <span className="text-[11px] opacity-75">
                   ({studentCounts.total ? Math.round((studentCounts.completed / studentCounts.total) * 100) : 0}%)
                 </span>
-              </div>
-              <div className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/70 px-3 py-1 text-xs font-medium text-red-800">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+              </TextLabel>
+              <TextLabel className="inline-flex items-center gap-1.5 text-xs font-medium text-red-800">
+
                 <span>Nợ môn:</span>
                 <strong className="font-mono font-bold text-red-900">{studentCounts.incomplete}</strong>
-              </div>
+              </TextLabel>
               {studentCounts.pending > 0 && (
-                <div className="inline-flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-1 text-xs font-medium text-amber-800">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                <TextLabel className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800">
+
                   <span>Chờ điểm:</span>
                   <strong className="font-mono font-bold text-amber-900">{studentCounts.pending}</strong>
-                </div>
+                </TextLabel>
               )}
               {studentCounts.review > 0 && (
-                <div className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                <TextLabel className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+
                   <span>Cần đối soát:</span>
                   <strong className="font-mono font-bold text-slate-900">{studentCounts.review}</strong>
-                </div>
+                </TextLabel>
               )}
             </div>
           </div>
@@ -602,67 +584,67 @@ export default function CompletionProgressTab() {
 
               {/* Status tabs */}
               <div className="flex flex-wrap items-center gap-1.5">
-                <button
+                <button aria-pressed={Boolean(!studentStatus)}
                   type="button"
                   onClick={() => setStudentStatus("")}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`table-text-action text-filter ${plainTextClasses(`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                     !studentStatus
                       ? "bg-slate-900 text-white shadow-xs"
                       : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                  }`}
+                  }`)}`}
                 >
                   Tất cả ({studentCounts.total})
                 </button>
 
-                <button
+                <button aria-pressed={Boolean(studentStatus === "completed")}
                   type="button"
                   onClick={() => setStudentStatus("completed")}
-                  className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`table-text-action text-filter ${plainTextClasses(`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                     studentStatus === "completed"
                       ? "bg-emerald-600 text-white shadow-xs"
                       : "border border-emerald-200 bg-emerald-50/60 text-emerald-800 hover:bg-emerald-100"
-                  }`}
+                  }`)}`}
                 >
-                  <CheckCircle2 size={12} />
+
                   Hoàn thành ({studentCounts.completed})
                 </button>
 
-                <button
+                <button aria-pressed={Boolean(studentStatus === "incomplete")}
                   type="button"
                   onClick={() => setStudentStatus("incomplete")}
-                  className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                  className={`table-text-action text-filter ${plainTextClasses(`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                     studentStatus === "incomplete"
                       ? "bg-red-600 text-white shadow-xs"
                       : "border border-red-200 bg-red-50/60 text-red-800 hover:bg-red-100"
-                  }`}
+                  }`)}`}
                 >
-                  <XCircle size={12} />
+
                   Chưa hoàn thành ({studentCounts.incomplete})
                 </button>
                 {studentCounts.pending > 0 && (
-                  <button
+                  <button aria-pressed={Boolean(studentStatus === "pending_result")}
                     type="button"
                     onClick={() => setStudentStatus("pending_result")}
-                    className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`table-text-action text-filter ${plainTextClasses(`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                       studentStatus === "pending_result"
                         ? "bg-amber-600 text-white shadow-xs"
                         : "border border-amber-200 bg-amber-50/60 text-amber-800 hover:bg-amber-100"
-                    }`}
+                    }`)}`}
                   >
-                    <CircleAlert size={12} /> Chờ điểm ({studentCounts.pending})
+                     Chờ điểm ({studentCounts.pending})
                   </button>
                 )}
                 {studentCounts.review > 0 && (
-                  <button
+                  <button aria-pressed={Boolean(studentStatus === "cannot_determine")}
                     type="button"
                     onClick={() => setStudentStatus("cannot_determine")}
-                    className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                    className={`table-text-action text-filter ${plainTextClasses(`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                       studentStatus === "cannot_determine"
                         ? "bg-slate-700 text-white shadow-xs"
                         : "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
-                    }`}
+                    }`)}`}
                   >
-                    <AlertTriangle size={12} /> Đối soát ({studentCounts.review})
+                     Đối soát ({studentCounts.review})
                   </button>
                 )}
               </div>
@@ -687,11 +669,11 @@ export default function CompletionProgressTab() {
                 <table className="w-full min-w-[820px] text-left text-xs">
                   <thead className="sticky top-0 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500 shadow-2xs">
                     <tr>
-                      <th className="px-4 py-3">Sinh viên</th>
-                      <th className="px-4 py-3">Hoàn thành CTĐT</th>
-                      <th className="px-4 py-3">Điểm GPA tích lũy</th>
-                      <th className="px-4 py-3">Tiến độ tích lũy học phần</th>
-                      <th className="px-4 py-3 text-right">Chi tiết môn học</th>
+                      <th className="px-4 py-3 text-left table-cell-left">Sinh viên</th>
+                      <th className="px-4 py-3 text-center table-cell-center">Hoàn thành CTĐT</th>
+                      <th className="px-4 py-3 text-center table-cell-center">Điểm GPA tích lũy</th>
+                      <th className="px-4 py-3 text-center table-cell-center">Tiến độ tích lũy học phần</th>
+                      <th className="px-4 py-3 text-center table-cell-center">Chi tiết môn học</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -716,7 +698,7 @@ export default function CompletionProgressTab() {
                         return (
                           <tr key={student.studentId} className="transition-colors hover:bg-slate-50/70">
                             {/* Student Info */}
-                            <td className="px-4 py-3.5">
+                            <td className="px-4 py-3.5 text-left table-cell-left">
                               <p className="font-bold text-slate-900">{student.studentName}</p>
                               <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-slate-500">
                                 <span>{student.studentId}</span>
@@ -730,13 +712,13 @@ export default function CompletionProgressTab() {
                             </td>
 
                             {/* Conclusion */}
-                            <td className="px-4 py-3.5">
-                              <span
-                                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${meta.badgeClass}`}
+                            <td className="px-4 py-3.5 text-center table-cell-center">
+                              <TextLabel
+                                className={`inline-flex items-center gap-1.5     text-[11px] font-bold ${meta.badgeClass}`}
                               >
-                                <span className={`h-1.5 w-1.5 rounded-full ${meta.dotClass}`} />
+
                                 {meta.label}
-                              </span>
+                              </TextLabel>
                               {student.pendingResultCourses > 0 && (
                                 <p className="mt-1 text-[11px] font-semibold text-amber-700">
                                   ⏳ {student.pendingResultCourses} môn chờ điểm thi
@@ -745,7 +727,7 @@ export default function CompletionProgressTab() {
                             </td>
 
                             {/* GPA */}
-                            <td className="px-4 py-3.5 font-mono text-slate-800">
+                            <td className="px-4 py-3.5 font-mono text-slate-800 text-center table-cell-center">
                               <p className="font-bold">
                                 Hệ 4:{" "}
                                 <span
@@ -766,7 +748,7 @@ export default function CompletionProgressTab() {
                             </td>
 
                             {/* Plans progress */}
-                            <td className="px-4 py-3.5 text-slate-700">
+                            <td className="px-4 py-3.5 text-slate-700 text-center table-cell-center">
                               <p className="font-semibold text-slate-900">
                                 Đạt {student.allPlansPassed} / {student.allPlansTotal} học kỳ
                               </p>
@@ -781,13 +763,13 @@ export default function CompletionProgressTab() {
                             </td>
 
                             {/* Action */}
-                            <td className="px-4 py-3.5 text-right">
+                            <td className="px-4 py-3.5 text-center table-cell-center">
                               <button
                                 type="button"
                                 onClick={() => void openStudent(student.studentId)}
-                                className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/60 px-3 text-xs font-bold text-blue-700 transition hover:bg-blue-100 shadow-2xs"
+                                className={`table-text-action ${plainTextClasses("inline-flex h-8 items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/60 px-3 text-xs font-bold text-blue-700 transition hover:bg-blue-100 shadow-2xs")}`}
                               >
-                                <FileCheck2 size={14} />
+
                                 Cây yêu cầu
                               </button>
                             </td>
@@ -1135,24 +1117,23 @@ function RequirementTree({ student }: { student: CompletionStudentDetail }) {
             <section key={plan.id} className="overflow-hidden rounded-2xl border border-slate-200">
               <header className="flex items-center justify-between bg-slate-50 px-4 py-3 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <span className="inline-flex rounded-lg bg-white border border-slate-200 px-2 py-0.5 font-mono text-xs font-bold text-slate-800">
+                  <TextLabel className="inline-flex font-mono text-xs font-bold text-slate-800">
                     Học kỳ {plan.curriculumSemesterNo}
-                  </span>
+                  </TextLabel>
                   <span className="text-xs text-slate-500">
                     Bản chuẩn v{plan.planVersion}
                     {plan.isDue ? " • Đã đến hạn" : " • Chưa đến hạn"}
                   </span>
                 </div>
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
+                <TextLabel
+                  className={`inline-flex items-center gap-1     text-[11px] font-bold ${
                     plan.isPass
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                      : "border-red-200 bg-red-50 text-red-800"
+                      ? "border-emerald-200  text-emerald-800"
+                      : "border-red-200  text-red-800"
                   }`}
                 >
-                  {plan.isPass ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
                   {plan.isPass ? "Đạt học kỳ này" : "Chưa hoàn thành"}
-                </span>
+                </TextLabel>
               </header>
 
               <div className="divide-y divide-slate-100">
