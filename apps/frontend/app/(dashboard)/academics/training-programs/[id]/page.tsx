@@ -1,6 +1,8 @@
 "use client";
 
-import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
+import TableAction from "@/components/ui/TableAction";
+import { Pencil, Trash2 } from "lucide-react";
+import TextLabel from "@/components/ui/TextLabel";
 import { useState, useEffect, useMemo, useCallback, use } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
@@ -603,22 +605,18 @@ export default function TrainingProgramDetailPage({
                                     <td className="py-3 px-4 text-center space-x-1 table-cell-center">
                                       {can("academic_term.manage") && (
                                         <>
-                                          <button
-                                            type="button"
+                                          <TableAction
+                                            icon={Pencil}
+                                            label="Sửa học phần"
+                                            tone="emerald"
                                             onClick={() => handleOpenEdit(course)}
-                                            className={`table-text-action ${plainTextClasses("p-1.5 text-slate-400 hover:text-[var(--color-primary)] hover:bg-slate-100 rounded-lg transition-colors cursor-pointer")}`}
-                                            title="Sửa học phần"
-                                          >Sửa học phần
-
-                                          </button>
-                                          <button
-                                            type="button"
+                                          />
+                                          <TableAction
+                                            icon={Trash2}
+                                            label="Xóa học phần khỏi CTĐT"
+                                            tone="red"
                                             onClick={() => setDeleteTarget(course)}
-                                            className={`table-text-action ${plainTextClasses("p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer")}`}
-                                            title="Xóa học phần khỏi CTĐT"
-                                          >Xóa học phần khỏi CTĐT
-
-                                          </button>
+                                          />
                                         </>
                                       )}
                                     </td>

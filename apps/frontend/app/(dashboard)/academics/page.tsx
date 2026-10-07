@@ -1,6 +1,8 @@
 "use client";
 
-import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
+import TableAction from "@/components/ui/TableAction";
+import { Trash2, CheckCheck, BookOpen, Eye, LockKeyhole, CircleCheck, Archive } from "lucide-react";
+import TextLabel from "@/components/ui/TextLabel";
 import { Fragment, useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
@@ -678,14 +680,12 @@ export default function AcademicsPage() {
                         </td>
                         <td className="py-3.5 px-4 text-center table-cell-center">
                           {can("academic_term.manage") && (
-                            <button
-                              type="button"
+                            <TableAction
+                              icon={Trash2}
+                              label="Xóa năm học"
+                              tone="red"
                               onClick={() => setDeleteTarget({ type: "academic-years", id: y.id, name: y.sYearCode || y.yearCode })}
-                              className={`table-text-action ${plainTextClasses("p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer")}`}
-                              title="Xóa năm học"
-                            >Xóa năm học
-
-                            </button>
+                            />
                           )}
                         </td>
                       </tr>
@@ -793,16 +793,14 @@ export default function AcademicsPage() {
                               </td>
                               <td className="py-3.5 px-4 text-center table-cell-center">
                                 {can("academic_term.manage") && !(t.isSummer || t.bIsSummer) && (
-                                  <button
-                                    type="button"
+                                  <TableAction
+                                    icon={CheckCheck}
+                                    label={finalizingTermId === t.id ? "Đang xử lý..." : t.gradesFinalizedAt ? "Chạy lại an toàn" : "Xác nhận đã chốt điểm"}
+                                    tone="emerald"
                                     disabled={finalizingTermId === t.id}
                                     onClick={() => void handleFinalizeTermGrades(t)}
-                                    className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                  >
-                                    {finalizingTermId === t.id
-                                      ? "Đang xử lý..."
-                                      : t.gradesFinalizedAt ? "Chạy lại an toàn" : "Xác nhận đã chốt điểm"}
-                                  </button>
+                                    loading={finalizingTermId === t.id}
+                                  />
                                 )}
                               </td>
                             </tr>
@@ -913,13 +911,12 @@ export default function AcademicsPage() {
                         </td>
                         <td className="py-3.5 px-4 font-mono font-bold text-blue-600 text-center table-cell-center">{p.courseCount || 42} học phần</td>
                         <td className="py-3.5 px-4 text-center table-cell-center">
-                          <button
-                            type="button"
+                          <TableAction
+                            icon={BookOpen}
+                            label="Xem khung môn"
+                            tone="emerald"
                             onClick={() => router.push(`/academics/training-programs/${p.id}`)}
-                            className={`table-text-action ${plainTextClasses("inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-[var(--color-primary)] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer")}`}
-                          >
-                            <span>Xem khung môn</span>
-                          </button>
+                          />
                         </td>
                       </tr>
                     ))}
@@ -994,14 +991,12 @@ export default function AcademicsPage() {
                         </td>
                         <td className="py-3.5 px-4 text-center table-cell-center">
                           {can("class.manage") && (
-                            <button
-                              type="button"
+                            <TableAction
+                              icon={Trash2}
+                              label="Xóa lớp học"
+                              tone="red"
                               onClick={() => setDeleteTarget({ type: "classes", id: c.id, name: c.classId })}
-                              className={`table-text-action ${plainTextClasses("p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer")}`}
-                              title="Xóa lớp học"
-                            >Xóa lớp học
-
-                            </button>
+                            />
                           )}
                         </td>
                       </tr>
@@ -1111,43 +1106,34 @@ export default function AcademicsPage() {
                                   </div>
                                 </td>
                                 <td className="py-3 px-4 text-center space-x-1 whitespace-nowrap table-cell-center">
-                                  <button
-                                    type="button"
+                                  <TableAction
+                                    icon={Eye}
+                                    label="Xem chi tiết học phần kế hoạch"
+                                    tone="blue"
                                     onClick={() => handleViewPlanCourses(pl.id)}
-                                    className={`table-text-action ${plainTextClasses("px-2 py-1 text-[11px] font-semibold text-blue-600 hover:bg-blue-50 rounded-md transition-colors cursor-pointer")}`}
-                                    title="Xem chi tiết học phần kế hoạch"
-                                  >
-                                    Xem học phần
-                                  </button>
+                                  />
                                   {can("progress.plan.manage") && pl.status === "draft" && (
-                                    <button
-                                      type="button"
+                                    <TableAction
+                                      icon={LockKeyhole}
+                                      label="Khóa kế hoạch để tính toán"
+                                      tone="emerald"
                                       onClick={() => handleLockPlan(pl.id)}
-                                      className={`table-text-action ${plainTextClasses("px-2 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-50 rounded-md transition-colors cursor-pointer")}`}
-                                      title="Khóa kế hoạch để tính toán"
-                                    >
-                                      Khóa
-                                    </button>
+                                    />
                                   )}
                                   {can("progress.plan.manage") && pl.status === "locked" && !pl.isCurrent && (
-                                    <button
-                                      type="button"
+                                    <TableAction
+                                      icon={CircleCheck}
+                                      label="Kích hoạt làm kế hoạch hiện hành"
+                                      tone="violet"
                                       onClick={() => handleActivatePlan(pl.id)}
-                                      className={`table-text-action ${plainTextClasses("px-2 py-1 text-[11px] font-semibold text-purple-700 hover:bg-purple-50 rounded-md transition-colors cursor-pointer")}`}
-                                      title="Kích hoạt làm kế hoạch hiện hành"
-                                    >
-                                      Kích hoạt
-                                    </button>
+                                    />
                                   )}
                                   {can("progress.plan.manage") && pl.status !== "archived" && (
-                                    <button
-                                      type="button"
+                                    <TableAction
+                                      icon={Archive}
+                                      label="Lưu trữ kế hoạch"
                                       onClick={() => handleArchivePlan(pl.id)}
-                                      className={`table-text-action ${plainTextClasses("px-2 py-1 text-[11px] font-semibold text-slate-500 hover:bg-slate-100 rounded-md transition-colors cursor-pointer")}`}
-                                      title="Lưu trữ kế hoạch"
-                                    >
-                                      Lưu trữ
-                                    </button>
+                                    />
                                   )}
                                 </td>
                               </tr>

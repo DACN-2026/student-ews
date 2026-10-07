@@ -1,5 +1,7 @@
 "use client";
 
+import TableAction from "@/components/ui/TableAction";
+import { UserRound, Pencil, Trash2 } from "lucide-react";
 import TextLabel from "@/components/ui/TextLabel";
 import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api-client";
@@ -421,32 +423,26 @@ export default function StudentsPage() {
       align: "center",
       render: (_, r) => (
         <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
+          <TableAction
+            icon={UserRound}
+            label="Hồ sơ"
+            tone="emerald"
             onClick={() => router.push(`/students/${r.id}`)}
-            className="table-text-action text-xs text-emerald-700 transition-colors"
-          >
-            Hồ sơ
-          </button>
+          />
           {can("student.update") && (
-            <button
-              type="button"
+            <TableAction
+              icon={Pencil}
+              label="Sửa thông tin"
               onClick={() => handleOpenEdit(r)}
-              className="table-text-action text-xs text-slate-600 hover:text-slate-900 transition-colors"
-              title="Sửa thông tin"
-            >
-              Sửa thông tin
-            </button>
+            />
           )}
           {can("student.delete") && (
-            <button
-              type="button"
+            <TableAction
+              icon={Trash2}
+              label="Xóa sinh viên"
+              tone="red"
               onClick={() => setStudentToDelete(r)}
-              className="table-text-action text-xs text-red-700 hover:text-red-800 transition-colors"
-              title="Xóa sinh viên"
-            >
-              Xóa sinh viên
-            </button>
+            />
           )}
         </div>
       ),

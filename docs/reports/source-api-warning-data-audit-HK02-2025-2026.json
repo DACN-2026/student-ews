@@ -1,0 +1,1116 @@
+{
+  "checkedAt": "2026-10-07T12:33:15.034Z",
+  "period": "HK02 (2025-2026)",
+  "sourceEndpoint": "LayBangDiemSinhVien",
+  "summary": {
+    "studentsChecked": 35,
+    "matchingStudents": 35,
+    "differenceCount": 0,
+    "apiGradeRows": 949,
+    "systemGradeRows": 949,
+    "apiTargetTermRows": 0,
+    "systemTargetTermRows": 0
+  },
+  "students": [
+    {
+      "studentCode": "2347A019",
+      "studentName": "Trương Xuân Thắng",
+      "classCode": "ITK47A",
+      "programCode": "CQ23CT-MMT",
+      "apiGradeRows": 58,
+      "systemGradeRows": 58,
+      "apiSummaryRows": 6,
+      "systemSummaryRows": 6,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2023-2024",
+          "term": "HK01",
+          "rows": 9
+        },
+        {
+          "year": "2023-2024",
+          "term": "HK02",
+          "rows": 7
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 17
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 12
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK03",
+          "rows": 6
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2347A036",
+      "studentName": "Đoàn Thị Bình",
+      "classCode": "ITK47A",
+      "programCode": "CQ23CT-PM",
+      "apiGradeRows": 60,
+      "systemGradeRows": 60,
+      "apiSummaryRows": 6,
+      "systemSummaryRows": 6,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2023-2024",
+          "term": "HK01",
+          "rows": 9
+        },
+        {
+          "year": "2023-2024",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 17
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "rows": 8
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2347A052",
+      "studentName": "Trương Anh Minh",
+      "classCode": "ITK47A",
+      "programCode": "CQ23CT",
+      "apiGradeRows": 0,
+      "systemGradeRows": 0,
+      "apiSummaryRows": 0,
+      "systemSummaryRows": 0,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [],
+      "differences": []
+    },
+    {
+      "studentCode": "2347A065",
+      "studentName": "Trương Quang Tuấn",
+      "classCode": "ITK47A",
+      "programCode": "CQ23CT",
+      "apiGradeRows": 53,
+      "systemGradeRows": 53,
+      "apiSummaryRows": 6,
+      "systemSummaryRows": 6,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2023-2024",
+          "term": "HK01",
+          "rows": 9
+        },
+        {
+          "year": "2023-2024",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK03",
+          "rows": 3
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 13
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2347B045",
+      "studentName": "Dương Minh Trung",
+      "classCode": "ITK47B",
+      "programCode": "CQ23CT",
+      "apiGradeRows": 44,
+      "systemGradeRows": 44,
+      "apiSummaryRows": 5,
+      "systemSummaryRows": 5,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2023-2024",
+          "term": "HK01",
+          "rows": 9
+        },
+        {
+          "year": "2023-2024",
+          "term": "HK02",
+          "rows": 5
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 7
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2347B047",
+      "studentName": "Thái Anh Hạnh",
+      "classCode": "ITK47B",
+      "programCode": "CQ23CT",
+      "apiGradeRows": 47,
+      "systemGradeRows": 47,
+      "apiSummaryRows": 5,
+      "systemSummaryRows": 5,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2023-2024",
+          "term": "HK01",
+          "rows": 9
+        },
+        {
+          "year": "2023-2024",
+          "term": "HK02",
+          "rows": 5
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 17
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 10
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2347C040",
+      "studentName": "Đỗ Thúy Tài",
+      "classCode": "ITK47C",
+      "programCode": "CQ23CT",
+      "apiGradeRows": 50,
+      "systemGradeRows": 50,
+      "apiSummaryRows": 5,
+      "systemSummaryRows": 5,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2023-2024",
+          "term": "HK01",
+          "rows": 9
+        },
+        {
+          "year": "2023-2024",
+          "term": "HK02",
+          "rows": 7
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 5
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 13
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2347C046",
+      "studentName": "Lâm Tuấn Trang",
+      "classCode": "ITK47C",
+      "programCode": "CQ23CT",
+      "apiGradeRows": 44,
+      "systemGradeRows": 44,
+      "apiSummaryRows": 5,
+      "systemSummaryRows": 5,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2023-2024",
+          "term": "HK01",
+          "rows": 9
+        },
+        {
+          "year": "2023-2024",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 17
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 5
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448A001",
+      "studentName": "Lý Ngọc Tùng",
+      "classCode": "ITK48A",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 29,
+      "systemGradeRows": 29,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448A009",
+      "studentName": "Trương Thị Hải",
+      "classCode": "ITK48A",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 29,
+      "systemGradeRows": 29,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448A010",
+      "studentName": "Đinh Xuân Tuấn",
+      "classCode": "ITK48A",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 37,
+      "systemGradeRows": 37,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 15
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448A024",
+      "studentName": "Vũ Thúy Sơn",
+      "classCode": "ITK48A",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 37,
+      "systemGradeRows": 37,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 15
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448A030",
+      "studentName": "Cao Xuân Chi",
+      "classCode": "ITK48A",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 29,
+      "systemGradeRows": 29,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448A051",
+      "studentName": "Hoàng Hoàng Việt",
+      "classCode": "ITK48A",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 29,
+      "systemGradeRows": 29,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448A056",
+      "studentName": "Hán Tuấn An",
+      "classCode": "ITK48A",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 29,
+      "systemGradeRows": 29,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448B004",
+      "studentName": "Lâm Thúy An",
+      "classCode": "ITK48B",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 29,
+      "systemGradeRows": 29,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448B022",
+      "studentName": "Trịnh Tuấn Khanh",
+      "classCode": "ITK48B",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 29,
+      "systemGradeRows": 29,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448B026",
+      "studentName": "Đoàn Mai Vỹ",
+      "classCode": "ITK48B",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 29,
+      "systemGradeRows": 29,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448B033",
+      "studentName": "Đoàn Đức Lâm",
+      "classCode": "ITK48B",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 30,
+      "systemGradeRows": 30,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 7
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2448B048",
+      "studentName": "Cao Hoàng Phong",
+      "classCode": "ITK48B",
+      "programCode": "CQ24CT",
+      "apiGradeRows": 29,
+      "systemGradeRows": 29,
+      "apiSummaryRows": 3,
+      "systemSummaryRows": 3,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2024-2025",
+          "term": "HK01",
+          "rows": 16
+        },
+        {
+          "year": "2024-2025",
+          "term": "HK02",
+          "rows": 6
+        },
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 7
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549A010",
+      "studentName": "Trương Hương Lâm",
+      "classCode": "ITK49A",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549A014",
+      "studentName": "Cheng Văn Hải",
+      "classCode": "ITK49A",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549A038",
+      "studentName": "Cheng Đức Nghĩa",
+      "classCode": "ITK49A",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549A053",
+      "studentName": "Đỗ Thị Bảo",
+      "classCode": "ITK49A",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549A065",
+      "studentName": "Trọng Thị Minh",
+      "classCode": "ITK49A",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549B008",
+      "studentName": "Đoàn Văn Nam",
+      "classCode": "ITK49B",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549B020",
+      "studentName": "Phạm Tuấn Sơn",
+      "classCode": "ITK49B",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549B025",
+      "studentName": "Phùng Thị Vỹ",
+      "classCode": "ITK49B",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549B035",
+      "studentName": "Ngô Quang Bình",
+      "classCode": "ITK49B",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 23,
+      "systemGradeRows": 23,
+      "apiSummaryRows": 2,
+      "systemSummaryRows": 2,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "rows": 9
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549B062",
+      "studentName": "Bùi Thị Thanh",
+      "classCode": "ITK49B",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549C036",
+      "studentName": "Hoàng Văn Nghĩa",
+      "classCode": "ITK49C",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549C047",
+      "studentName": "Bùi Xuân Thắng",
+      "classCode": "ITK49C",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549C057",
+      "studentName": "Lưu Thị Phúc",
+      "classCode": "ITK49C",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 23,
+      "systemGradeRows": 23,
+      "apiSummaryRows": 2,
+      "systemSummaryRows": 2,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "rows": 9
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549C063",
+      "studentName": "Phan Hương Tài",
+      "classCode": "ITK49C",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    },
+    {
+      "studentCode": "2549C068",
+      "studentName": "Võ Hữu Huy",
+      "classCode": "ITK49C",
+      "programCode": "CQ25CT",
+      "apiGradeRows": 14,
+      "systemGradeRows": 14,
+      "apiSummaryRows": 1,
+      "systemSummaryRows": 1,
+      "apiTargetTermRows": 0,
+      "systemTargetTermRows": 0,
+      "unscopedApiRows": 0,
+      "apiPeriods": [
+        {
+          "year": "2025-2026",
+          "term": "HK01",
+          "rows": 14
+        }
+      ],
+      "differences": []
+    }
+  ],
+  "knownProgramVariants": [
+    {
+      "studentCode": "2347A052",
+      "requestedProgramCode": "CQ23CT-PM",
+      "rows": [
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "sourceProgramCode": "CQ23CT-PM",
+          "courseCode": "20CT1101",
+          "courseName": "Nhập môn ngành CNTT",
+          "credits": 3,
+          "notScore": true,
+          "isPass": false,
+          "score10": null,
+          "score4": null
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "sourceProgramCode": "CQ23CT-PM",
+          "courseCode": "20CT1102",
+          "courseName": "Nguyên lý lập trình cấu trúc",
+          "credits": 4,
+          "notScore": true,
+          "isPass": false,
+          "score10": null,
+          "score4": null
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "sourceProgramCode": "CQ23CT-PM",
+          "courseCode": "20LH0001",
+          "courseName": "Pháp luật đại cương",
+          "credits": 3,
+          "notScore": true,
+          "isPass": false,
+          "score10": null,
+          "score4": null
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A052",
+      "requestedProgramCode": "CQ23CT-MMT",
+      "rows": [
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "sourceProgramCode": "CQ23CT-MMT",
+          "courseCode": "20CT1101",
+          "courseName": "Nhập môn ngành CNTT",
+          "credits": 3,
+          "notScore": true,
+          "isPass": false,
+          "score10": null,
+          "score4": null
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "sourceProgramCode": "CQ23CT-MMT",
+          "courseCode": "20CT1102",
+          "courseName": "Nguyên lý lập trình cấu trúc",
+          "credits": 4,
+          "notScore": true,
+          "isPass": false,
+          "score10": null,
+          "score4": null
+        },
+        {
+          "year": "2026-2027",
+          "term": "HK01",
+          "sourceProgramCode": "CQ23CT-MMT",
+          "courseCode": "20LH0001",
+          "courseName": "Pháp luật đại cương",
+          "credits": 3,
+          "notScore": true,
+          "isPass": false,
+          "score10": null,
+          "score4": null
+        }
+      ]
+    }
+  ]
+}

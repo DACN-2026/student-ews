@@ -1,8 +1,9 @@
 "use client";
 
+import TableAction from "@/components/ui/TableAction";
 import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronDown, CircleAlert, Inbox, Info, LoaderCircle, Play, RefreshCw, Search, Sparkles, X, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, CircleAlert, Inbox, Info, LoaderCircle, Play, RefreshCw, Search, Sparkles, X, XCircle, ListTree } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import Modal from "@/components/ui/Modal";
@@ -764,14 +765,12 @@ export default function CompletionProgressTab() {
 
                             {/* Action */}
                             <td className="px-4 py-3.5 text-center table-cell-center">
-                              <button
-                                type="button"
+                              <TableAction
+                                icon={ListTree}
+                                label="Cây yêu cầu"
+                                tone="blue"
                                 onClick={() => void openStudent(student.studentId)}
-                                className={`table-text-action ${plainTextClasses("inline-flex h-8 items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/60 px-3 text-xs font-bold text-blue-700 transition hover:bg-blue-100 shadow-2xs")}`}
-                              >
-
-                                Cây yêu cầu
-                              </button>
+                              />
                             </td>
                           </tr>
                         );

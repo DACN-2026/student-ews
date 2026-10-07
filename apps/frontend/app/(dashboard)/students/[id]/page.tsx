@@ -1,6 +1,8 @@
 "use client";
 
-import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
+import TableAction from "@/components/ui/TableAction";
+import { FileText } from "lucide-react";
+import TextLabel from "@/components/ui/TextLabel";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -904,13 +906,12 @@ export default function StudentDetailPage() {
                       </td>
                       <td className="py-3 px-3 text-slate-600 max-w-xs truncate text-center table-cell-center">{d.reason || d.fullText || d.sFullText || "—"}</td>
                       <td className="py-3 px-3 text-center table-cell-center">
-                        <button
-                          type="button"
+                        <TableAction
+                          icon={FileText}
+                          label="Xem toàn văn quyết định"
+                          tone="emerald"
                           onClick={() => setSelectedDecisionDetail(d)}
-                          className={`table-text-action ${plainTextClasses("px-2.5 py-1 text-xs font-semibold text-[var(--color-primary)] hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer")}`}
-                        >
-                          Toàn văn →
-                        </button>
+                        />
                       </td>
                     </tr>
                   ))
@@ -1041,6 +1042,7 @@ export default function StudentDetailPage() {
             studentId={studentId}
             showStudentHeader={false}
             view="transcript"
+            termGradeSummaries={summariesData?.terms || []}
           />
         </div>
       )}

@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { AlertCircle, ChevronDown, ChevronRight, Layers, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { semesterProgressDisplay } from "@/lib/semester-progress-display";
+import { semesterGradeSummary, type StudentTermGradeSummary } from "@/lib/semester-grade-summary";
 import type {
   CourseProgressStatus,
   CourseTimelineCategory,
@@ -17,6 +18,7 @@ interface Props {
   onRefresh?: () => void;
   showStudentHeader?: boolean;
   view?: "progress" | "transcript";
+  termGradeSummaries?: StudentTermGradeSummary[];
 }
 
 export default function StudentProgressDetail({
@@ -25,6 +27,7 @@ export default function StudentProgressDetail({
   onRefresh,
   showStudentHeader = true,
   view = "progress",
+  termGradeSummaries = [],
 }: Props) {
   const [fetchedData, setFetchedData] = useState<StudentTrainingProgressData | null>(null);
   const data = initialData || fetchedData;
@@ -458,6 +461,7 @@ export default function StudentProgressDetail({
         <div className="space-y-3">
           {semesters.map((sem) => {
             const isExpanded = expandedSemesters[sem.semesterNo] ?? false;
+            const gradeSummary = view === "transcript" ? semesterGradeSummary(sem, data, termGradeSummaries) : undefined;
             const display = semesterProgressDisplay(sem);
             const semPlannedCredits = display.plannedCredits;
             const semCompPercentage =
@@ -731,6 +735,32 @@ export default function StudentProgressDetail({
                             ))
                           )}
                         </tbody>
+                        {view === "transcript" && (
+                          <tfoot>
+                            <tr className="border-t border-slate-200 bg-slate-50/80">
+                              <th scope="row" colSpan={2} className="px-3 py-3 text-left font-semibold text-slate-700">
+                                Tổng kết học kỳ
+                              </th>
+                              <td colSpan={7} className="px-3 py-3">
+                                <dl className="grid grid-cols-2 gap-x-4 gap-y-3 lg:grid-cols-4">
+                                  {[
+                                    { label: "Điểm hệ 10", value: gradeSummary?.gpa10 },
+                                    { label: "Điểm hệ 4", value: gradeSummary?.gpa4 },
+                                    { label: "Điểm hệ 10 tích lũy", value: gradeSummary?.cumulativeGpa10 },
+                                    { label: "Điểm hệ 4 tích lũy", value: gradeSummary?.cumulativeGpa4 },
+                                  ].map(({ label, value }) => (
+                                    <div key={label} className="text-center">
+                                      <dt className="text-[11px] font-medium text-slate-500">{label}</dt>
+                                      <dd className="mt-1 font-mono text-sm font-bold text-slate-900">
+                                        {value != null && Number.isFinite(value) ? value.toFixed(2) : "—"}
+                                      </dd>
+                                    </div>
+                                  ))}
+                                </dl>
+                              </td>
+                            </tr>
+                          </tfoot>
+                        )}
                       </table>
                     </div>
                   </div>

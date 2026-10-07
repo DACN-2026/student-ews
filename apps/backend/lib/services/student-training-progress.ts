@@ -523,7 +523,11 @@ export function evaluateStudentTrainingProgress(input: {
     completedSemestersToDate.push(s);
   }
 
-  const usesK44Milestones = isK44StandardProgram(input.student.programCode) && input.rules?.requiredTotalCredits === 150;
+  // The verified elective blocks still govern the milestone when the degree's
+  // total-credit rule has not been configured. Summing semester quotas while
+  // capping earned credits by those blocks creates a fictitious credit deficit.
+  const usesK44Milestones = isK44StandardProgram(input.student.programCode) &&
+    (input.rules?.requiredTotalCredits == null || input.rules.requiredTotalCredits === 150);
   const getPlannedCreditsForSemester = (s: number, sCourses: AssessedCourse[]): number => {
     if (input.semesterPlans?.has(s)) {
       return input.semesterPlans.get(s)!;
@@ -556,6 +560,7 @@ export function evaluateStudentTrainingProgress(input: {
     const sPlanElective = Math.max(0, sPlannedCredits - sMandatoryCredits);
     expectedElectiveCredits += sPlanElective;
   }
+  const semesterPlannedCreditsToDate = expectedCreditsToDate;
 
   // A yearly plan describes that cohort/year only. Historical credit milestones
   // cannot be obtained by adding the 2026 plan to guessed earlier yearly plans.
@@ -575,10 +580,29 @@ export function evaluateStudentTrainingProgress(input: {
     }
   }
 
-  // Earned credits to date: student's actual accumulated academic credits
-  // (completed academic mandatory courses + credited elective courses)
-  const earnedCreditsToDate = completedMandatoryCredits + overallCreditedElectives;
+  // Degree eligibility uses capped elective blocks. The visible comparison
+  // instead uses the same semester plans and uncapped academic credits as the
+  // semester tables, so a passed extra option remains visible as a surplus.
+  const requiredRecognizedCreditsToDate = expectedCreditsToDate;
+  const recognizedCreditsToDate = completedMandatoryCredits + overallCreditedElectives;
+  const hasConfirmedSemesterPlans = completedSemestersToDate.every((semester) =>
+    input.semesterPlans?.has(semester) || assessTeachingSemester(
+      semester, input.student.programCode, assessedCourses.filter((course) => course.semesterNo === semester),
+    )?.curriculumConfirmed,
+  );
+  if (usesK44Milestones && hasConfirmedSemesterPlans) expectedCreditsToDate = semesterPlannedCreditsToDate;
+  const earnedCreditsToDate = completedCourses
+    .filter((course) => !course.isConditional && course.requirementType !== "conditional")
+    .reduce((sum, course) => sum + course.credits, 0);
   const earnedElectiveCredits = overallCreditedElectives;
+  const electiveCreditDeficit = usesK44Milestones
+    ? electiveGroups.reduce((sum, group) => {
+        if (!group.courses.length || group.requiredCredits === null) return sum;
+        const deadline = Math.max(...group.courses.map((course) => course.semesterNo));
+        return deadline < effectiveSemesterNo ? sum + (group.remainingCredits ?? 0) : sum;
+      }, 0)
+    : Math.max(0, expectedElectiveCredits - earnedElectiveCredits);
+  const recognizedCreditDeficit = Math.max(0, requiredRecognizedCreditsToDate - recognizedCreditsToDate);
 
   // Expected academic mandatory courses to date (must have been passed, excluding GDTC/GDQP)
   const expectedRequiredCourses = assessedCourses.filter(
@@ -603,8 +627,8 @@ export function evaluateStudentTrainingProgress(input: {
 
   // Evaluate Progress Status: ONLY 2 levels: ON_TRACK | BEHIND
   const isMissingMandatory = missingRequiredCoursesCount > 0;
-  const isCreditDeficient = earnedCreditsToDate < expectedCreditsToDate;
-  const isElectiveDeficient = expectedElectiveCredits > 0 && earnedElectiveCredits < expectedElectiveCredits;
+  const isCreditDeficient = recognizedCreditDeficit > 0;
+  const isElectiveDeficient = electiveCreditDeficit > 0;
 
   const progressStatus: "ON_TRACK" | "BEHIND" | "UNKNOWN" =
     (!deduplicatedCurriculum.length || !input.grades.length) ? "UNKNOWN" :
@@ -617,13 +641,13 @@ export function evaluateStudentTrainingProgress(input: {
   if (progressStatus === "BEHIND") {
     const reasons: string[] = [];
     if (isCreditDeficient) {
-      reasons.push(`Chậm ${Math.abs(creditDifference)} TC`);
+      reasons.push(usesK44Milestones ? `Thiếu ${recognizedCreditDeficit} TC theo yêu cầu CTĐT` : `Chậm ${recognizedCreditDeficit} TC`);
     }
     if (isMissingMandatory) {
       reasons.push(`Nợ ${missingRequiredCoursesCount} học phần bắt buộc (${missingRequiredCredits} TC)`);
     }
     if (isElectiveDeficient) {
-      reasons.push(`Thiếu ${expectedElectiveCredits - earnedElectiveCredits} TC tự chọn`);
+      reasons.push(`Thiếu ${electiveCreditDeficit} TC tự chọn`);
     }
     statusReason = reasons.join(" • ");
   } else if (progressStatus === "ON_TRACK" && creditDifference > 0) {
@@ -635,8 +659,8 @@ export function evaluateStudentTrainingProgress(input: {
   // or net credit difference behind the expected milestone (excluding redundant elective retakes).
   const overdueCredits = progressStatus === "BEHIND"
     ? Math.max(
-        missingRequiredCredits + Math.max(0, expectedElectiveCredits - earnedElectiveCredits),
-        Math.max(0, -creditDifference),
+        missingRequiredCredits + electiveCreditDeficit,
+        recognizedCreditDeficit,
       )
     : 0;
 

@@ -151,6 +151,61 @@ test("K44 final-term landmark is 132 academic credits, never a hybrid 155-credit
   assert.equal(result.scheduleProgress.currentPlanCredits,18);
 });
 
+test("missing degree-total configuration cannot create a two-credit deficit after every elective block is satisfied", () => {
+  const curriculum = [
+    { courseId: "mandatory", courseCode: "M", courseName: "Academic compulsory", credits: 86, requirementType: "mandatory", semesterNo: 8 },
+    { courseId: "final", courseCode: "FINAL", courseName: "Final semester", credits: 18, requirementType: "mandatory", semesterNo: 9 },
+    ...[["20CT1103", 9, 3], ["20QT0001", 9, 4], ["20CT4104D", 28, 8], ["20CT3107D", 6, 6]].map(([code, credits, semesterNo]) => ({
+      courseId: String(code), courseCode: String(code), courseName: String(code), credits: Number(credits), requirementType: "elective", semesterNo: Number(semesterNo),
+    })),
+  ];
+  const input = {
+    student: { id: "s", studentCode: "s", fullName: "Test", classCode: null, cohortCode: "K46", programCode: "CQ22CT-PM" },
+    curriculum,
+    grades: curriculum.filter(course => course.semesterNo < 9).map(course => ({ courseCode: course.courseCode, isPass: true, scoreStatus: "graded" })),
+    timeline: { currentAcademicYear: "2026-2027", currentTermCode: "HK01", expectedYear: 5, expectedSemester: "HK1", expectedSemesterNo: 9 },
+    semesterPlans: new Map([[1, 13], [2, 16], [3, 18], [4, 16], [5, 16], [6, 19], [7, 18], [8, 18], [9, 18]]),
+  };
+  const result = evaluateStudentTrainingProgress(input);
+  assert.equal([...input.semesterPlans].filter(([semester]) => semester < 9).reduce((sum, [, credits]) => sum + credits, 0), 134);
+  assert.equal(result.summary.requiredCredits, null);
+  assert.equal(result.scheduleProgress.expectedCreditsToDate, 134);
+  assert.equal(result.scheduleProgress.earnedCreditsToDate, 138);
+  assert.equal(result.scheduleProgress.expectedElectiveCredits, 46);
+  assert.equal(result.scheduleProgress.creditDifference, 4);
+  assert.equal(result.scheduleProgress.creditDifferenceText, "Học vượt +4 TC");
+  assert.equal(result.scheduleProgress.isAhead, true);
+  assert.equal(result.summary.completedCredits, 132);
+  assert.equal(result.scheduleProgress.overdueCredits, 0);
+  assert.equal(result.scheduleProgress.progressStatus, "ON_TRACK");
+
+  // Surplus in another block must never conceal a real elective shortfall.
+  const missingElective = evaluateStudentTrainingProgress({ ...input, grades: input.grades.filter(grade => grade.courseCode !== "20CT3107D") });
+  assert.equal(missingElective.scheduleProgress.progressStatus, "BEHIND");
+  assert.equal(missingElective.scheduleProgress.creditDifference, -2);
+  assert.equal(missingElective.scheduleProgress.overdueCredits, 6);
+  const missingMandatory = evaluateStudentTrainingProgress({ ...input, grades: input.grades.filter(grade => grade.courseCode !== "M") });
+  assert.equal(missingMandatory.scheduleProgress.progressStatus, "BEHIND");
+  assert.equal(missingMandatory.scheduleProgress.missingRequiredCredits, 86);
+
+  const surplusWithMissingBlock = evaluateStudentTrainingProgress({
+    ...input,
+    curriculum: input.curriculum.map(course => course.courseCode === "20QT0001" ? { ...course, credits: 15 } : course),
+    grades: input.grades.filter(grade => grade.courseCode !== "20CT3107D"),
+  });
+  assert.equal(surplusWithMissingBlock.scheduleProgress.creditDifference, 4);
+  assert.equal(surplusWithMissingBlock.scheduleProgress.progressStatus, "BEHIND");
+  assert.equal(surplusWithMissingBlock.scheduleProgress.overdueCredits, 6);
+
+  const retakesAndPending = evaluateStudentTrainingProgress({
+    ...input,
+    curriculum: [...input.curriculum, { courseId: "qp", courseCode: "QP2101D", courseName: "GDQP", credits: 3, requirementType: "conditional", semesterNo: 1 }],
+    grades: [...input.grades, input.grades[0], { courseCode: "QP2101D", isPass: true, scoreStatus: "graded" }, { courseCode: "FINAL", isPass: false, scoreStatus: "pending" }],
+  });
+  assert.equal(retakesAndPending.scheduleProgress.earnedCreditsToDate, 138);
+  assert.equal(retakesAndPending.scheduleProgress.creditDifference, 4);
+});
+
 test("GDQP requires all four distinct parts, accepts PDF/API credit differences and retakes cannot fill a missing part", () => {
   const attempts = [pass("QP2101D", 3), pass("QP2102D", 2), pass("QP2103D", 1.5), pass("QP2104D", 2)];
   assert.equal(assessCertificateRequirements(attempts).defense.status, "PASSED");

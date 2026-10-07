@@ -1,8 +1,9 @@
 "use client";
 
+import TableAction from "@/components/ui/TableAction";
 import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, CircleHelp, Clock, Download, FileCheck2, Filter, GraduationCap, Info, LoaderCircle, Play, RefreshCw, Search, ShieldAlert, Users, X } from "lucide-react";
+import { AlertTriangle, Check, CircleHelp, Clock, Download, FileCheck2, Filter, GraduationCap, Info, LoaderCircle, Play, RefreshCw, Search, ShieldAlert, Users, X, FileSpreadsheet, Eye } from "lucide-react";
 import { studyTimeline } from "@/lib/academic-timeline";
 import { apiFetch } from "@/lib/api-client";
 import Modal from "@/components/ui/Modal";
@@ -1078,24 +1079,19 @@ export default function GraduationForecastPage() {
                             {/* Thao tác */}
                             <td className="px-4 py-3.5 text-center table-cell-center" onClick={(e) => e.stopPropagation()}>
                               <div className="flex items-center justify-center gap-1.5">
-                                <button
-                                  type="button"
+                                <TableAction
+                                  icon={FileSpreadsheet}
+                                  label="Bảng điểm"
+                                  tone="lime"
                                   disabled={studentLoading}
                                   onClick={() => void openStudent(student, "transcript")}
-                                  className={`table-text-action ${plainTextClasses("inline-flex items-center gap-1.5 rounded-xl border border-lime-300 bg-lime-50/60 px-2.5 py-1 text-xs font-bold text-lime-800 shadow-2xs hover:bg-lime-100 cursor-pointer disabled:opacity-50")}`}
-                                >
-
-                                  Bảng điểm
-                                </button>
-                                <button
-                                  type="button"
+                                />
+                                <TableAction
+                                  icon={Eye}
+                                  label="Xem chi tiết"
                                   disabled={studentLoading}
                                   onClick={() => void openStudent(student, "summary")}
-                                  className={`table-text-action ${plainTextClasses("inline-flex items-center rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer")}`}
-                                  title="Xem chi tiết"
-                                >Xem chi tiết
-
-                                </button>
+                                />
                               </div>
                             </td>
                           </tr>

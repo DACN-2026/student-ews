@@ -1,9 +1,10 @@
 "use client";
 
-import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
+import TableAction from "@/components/ui/TableAction";
+import TextLabel from "@/components/ui/TextLabel";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Clock, Filter, RefreshCw, RotateCcw, Search, User, Users, X } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Clock, Filter, RefreshCw, RotateCcw, Search, User, Users, X, Eye } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import StudentProgressDetail from "./StudentProgressDetail";
@@ -791,14 +792,11 @@ export default function StudentProgressLookupTab() {
 
                         {/* Action */}
                         <td className="py-3 px-3.5 text-center whitespace-nowrap table-cell-center" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            type="button"
+                          <TableAction
+                            icon={Eye}
+                            label="Chi tiết"
                             onClick={() => setSelectedStudent(st)}
-                            className={`table-text-action ${plainTextClasses("inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 transition cursor-pointer shadow-2xs")}`}
-                          >
-                            <span>Chi tiết</span>
-
-                          </button>
+                          />
                         </td>
                       </tr>
                     );

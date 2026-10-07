@@ -2310,11 +2310,11 @@ test("Training Progress TC16: Các môn GDTC và GDQP không tính vào số tí
   const result = evaluateStudentTrainingProgress({
     student: defaultStudent,
     curriculum: [
-      // HK1 Academic courses (13 TC)
-      { courseId: "c1", courseCode: "TRIET", courseName: "Triết học Mác - Lênin", credits: 3, requirementType: "mandatory", semesterNo: 1 },
-      { courseId: "c2", courseCode: "DSTT", courseName: "Đại số tuyến tính", credits: 3, requirementType: "mandatory", semesterNo: 1 },
-      { courseId: "c3", courseCode: "GT1", courseName: "Giải tích 1", credits: 3, requirementType: "mandatory", semesterNo: 1 },
-      { courseId: "c4", courseCode: "NMTH", courseName: "Nhập môn tin học", credits: 4, requirementType: "mandatory", semesterNo: 1 },
+      // Confirmed HK1 academic catalog (13 TC), independent of certificates.
+      { courseId: "c1", courseCode: "LC1101D", courseName: "Triết học Mác - Lênin", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "c2", courseCode: "20CT1101", courseName: "Nhập môn ngành CNTT", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "c3", courseCode: "20LH0001", courseName: "Pháp luật đại cương", credits: 3, requirementType: "mandatory", semesterNo: 1 },
+      { courseId: "c4", courseCode: "20CT1102", courseName: "Nguyên lý lập trình cấu trúc", credits: 4, requirementType: "mandatory", semesterNo: 1 },
       // HK1 Conditional courses (GDTC & GDQP)
       { courseId: "tc1", courseCode: "TC1001D", courseName: "Giáo dục thể chất 1", credits: 1, requirementType: "mandatory", semesterNo: 1 },
       { courseId: "qp1", courseCode: "QP2101D", courseName: "GDQP-AN 1: Đường lối quốc phòng", credits: 3, requirementType: "mandatory", semesterNo: 1 },
@@ -2325,10 +2325,10 @@ test("Training Progress TC16: Các môn GDTC và GDQP không tính vào số tí
     grades: [
       // Student only took & passed the 4 academic courses in HK1 (13 TC)
       // Did NOT take TC1001D or QP courses yet
-      { courseCode: "TRIET", isPass: true, notScore: false, scoreStatus: "graded" },
-      { courseCode: "DSTT", isPass: true, notScore: false, scoreStatus: "graded" },
-      { courseCode: "GT1", isPass: true, notScore: false, scoreStatus: "graded" },
-      { courseCode: "NMTH", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "LC1101D", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "20CT1101", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "20LH0001", isPass: true, notScore: false, scoreStatus: "graded" },
+      { courseCode: "20CT1102", isPass: true, notScore: false, scoreStatus: "graded" },
     ],
     timeline: {
       currentAcademicYear: "2026-2027",

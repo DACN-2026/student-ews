@@ -1,5 +1,7 @@
 "use client";
 
+import TableAction from "@/components/ui/TableAction";
+import { Pencil, ShieldCheck, Eye, UserRoundCog, UserRoundMinus } from "lucide-react";
 import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { useState, useEffect, useMemo } from "react";
 import { apiFetch } from "@/lib/api-client";
@@ -1429,8 +1431,9 @@ export default function RbacPage() {
 
                               {/* Thao tác */}
                               <td className="py-3.5 px-4 text-center table-cell-center">
-                                <button
-                                  type="button"
+                                <TableAction
+                                  icon={Pencil}
+                                  label="Sửa tài khoản"
                                   onClick={() => {
                                     setEditingUser(u);
                                     setEditUserForm({
@@ -1442,10 +1445,7 @@ export default function RbacPage() {
                                     });
                                     setShowEditUserModal(true);
                                   }}
-                                  className={`table-text-action ${plainTextClasses("px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-xl transition-colors cursor-pointer")}`}
-                                >
-                                  Sửa tài khoản
-                                </button>
+                                />
                               </td>
                             </tr>
                           );
@@ -1571,13 +1571,12 @@ export default function RbacPage() {
                               </TextLabel>
                             </td>
                             <td className="py-3.5 px-4 text-center table-cell-center">
-                              <button
-                                type="button"
+                              <TableAction
+                                icon={ShieldCheck}
+                                label={isAdmin ? "Xem chi tiết quyền" : "Tùy chỉnh quyền"}
+                                tone="emerald"
                                 onClick={() => handleOpenRolePermissions(r)}
-                                className="px-3.5 py-1.5 text-xs font-semibold text-[var(--color-primary)] hover:bg-[var(--color-primary-light)] border border-[var(--color-primary)]/40 rounded-xl transition-all cursor-pointer shadow-2xs hover:shadow-xs"
-                              >
-                                {isAdmin ? "Xem chi tiết quyền →" : "Tùy chỉnh quyền →"}
-                              </button>
+                              />
                             </td>
                           </tr>
                         );
@@ -1687,27 +1686,23 @@ export default function RbacPage() {
                               {/* Thao tác */}
                               <td className="py-3.5 px-4 text-center table-cell-center">
                                 <div className="flex items-center justify-center gap-1.5">
-                                  <button
-                                    type="button"
+                                  <TableAction
+                                    icon={Eye}
+                                    label="Xem chi tiết"
                                     onClick={() => setViewingAdvisor({ ...adv, matchedUser, matchedClass })}
-                                    className={`table-text-action ${plainTextClasses("px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer")}`}
-                                  >
-                                    Xem chi tiết
-                                  </button>
-                                  <button
-                                    type="button"
+                                  />
+                                  <TableAction
+                                    icon={UserRoundCog}
+                                    label="Thay đổi phân công"
+                                    tone="blue"
                                     onClick={() => handleOpenAssignModal(adv)}
-                                    className={`table-text-action ${plainTextClasses("px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors cursor-pointer")}`}
-                                  >
-                                    Thay đổi
-                                  </button>
-                                  <button
-                                    type="button"
+                                  />
+                                  <TableAction
+                                    icon={UserRoundMinus}
+                                    label="Thu hồi phân công"
+                                    tone="red"
                                     onClick={() => setRevokeTarget({ ...adv, matchedUser, displayName, displayClassCode })}
-                                    className={`table-text-action ${plainTextClasses("px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors cursor-pointer")}`}
-                                  >
-                                    Thu hồi phân công
-                                  </button>
+                                  />
                                 </div>
                               </td>
                             </tr>

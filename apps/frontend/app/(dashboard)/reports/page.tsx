@@ -1,6 +1,8 @@
 "use client";
 
-import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
+import TableAction from "@/components/ui/TableAction";
+import { ClipboardPen, Eye, History, Play, type LucideIcon } from "lucide-react";
+import TextLabel from "@/components/ui/TextLabel";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
@@ -500,14 +502,14 @@ function formatReasonValue(reason: WarningReason, value: string | number | null)
   return numeric.toLocaleString("vi-VN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function getActionCTA(status: string): { label: string; className: string } {
+function getActionCTA(status: string): { label: string; icon: LucideIcon; tone: "emerald" | "slate" } {
   switch (status) {
-    case "OPEN": return { label: "Xử lý", className: "bg-[var(--color-primary)] text-white hover:opacity-90" };
+    case "OPEN": return { label: "Xử lý", icon: ClipboardPen, tone: "emerald" };
     case "IN_PROGRESS":
-    case "REOPENED": return { label: "Tiếp tục", className: "bg-[var(--color-primary)] text-white hover:opacity-90" };
-    case "ESCALATED": return { label: "Xem", className: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50" };
-    case "RESOLVED": return { label: "Xem lịch sử", className: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50" };
-    default: return { label: "Xem", className: "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50" };
+    case "REOPENED": return { label: "Tiếp tục", icon: Play, tone: "emerald" };
+    case "ESCALATED": return { label: "Xem", icon: Eye, tone: "slate" };
+    case "RESOLVED": return { label: "Xem lịch sử", icon: History, tone: "slate" };
+    default: return { label: "Xem", icon: Eye, tone: "slate" };
   }
 }
 
@@ -1784,13 +1786,12 @@ export default function ReportsPage() {
                   render: (_, record) => {
                     const cta = getActionCTA(record.interventionStatus);
                     return (
-                      <button
-                        type="button"
+                      <TableAction
+                        icon={cta.icon}
+                        label={cta.label}
+                        tone={cta.tone}
                         onClick={(e) => { e.stopPropagation(); openDrawer(record.caseId); }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition cursor-pointer ${cta.className}`}
-                      >
-                        {cta.label}
-                      </button>
+                      />
                     );
                   },
                 },
@@ -1921,13 +1922,11 @@ export default function ReportsPage() {
                   title: "Thao tác",
                   align: "center",
                   render: (_, record) => (
-                    <button
-                      type="button"
+                    <TableAction
+                      icon={History}
+                      label="Xem lịch sử"
                       onClick={(e) => { e.stopPropagation(); openDrawer(record.caseId); }}
-                      className={`table-text-action ${plainTextClasses("px-3 py-1.5 rounded-lg text-xs font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 shadow-xs transition cursor-pointer")}`}
-                    >
-                      Xem lịch sử
-                    </button>
+                    />
                   ),
                 },
               ] as Column<InterventionCaseItem & Record<string, ApiData>>[]}
