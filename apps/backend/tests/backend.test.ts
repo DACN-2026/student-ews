@@ -646,7 +646,7 @@ test("AcademicWarningRun persists QD600 profile, student rules, coverage, and re
         update: async ({ data }: any) => ({ id: IDS.term, executionProfile: runCreateData.executionProfile, ...data }),
       },
       warningAction: {
-        findFirst: async () => interventionCase,
+        findFirst: async ({ where }: any) => where.status === "RESOLVED" ? null : interventionCase,
         findUnique: async () => null,
         create: async ({ data }: any) => {
           interventionCase = { id: IDS.plan, ...data };
@@ -1151,6 +1151,7 @@ test("graduation forecast groups only configured elective minima and schedules m
     ],
   });
   assert.equal(forecast.electiveGroups[0].remainingCredits, 3);
+  assert.deepEqual(forecast.electiveGroups[0].courseIds, ["e1", "e2"]);
   assert.deepEqual(forecast.graduationRequirements.map((course) => course.courseCode), ["F"]);
   assert.deepEqual(forecast.remainingBySemester[0].courses.map((course) => course.courseCode), ["F"]);
 });
@@ -1164,6 +1165,8 @@ test("elective credits from an overfilled group cannot cover another group's sho
   assert.equal(forecast.requirements.electives.passedCredits, 12);
   assert.equal(forecast.requirements.electives.completedCredits, 9);
   assert.equal(forecast.requirements.electives.remainingCredits, 3);
+  assert.deepEqual(forecast.electiveGroups.find((group) => group.code === "A:6")?.courseIds, ["A1"]);
+  assert.deepEqual(forecast.electiveGroups.find((group) => group.code === "B:6")?.courseIds, ["B1", "B2", "B3"]);
 });
 
 test("incomplete curriculum coverage does not publish a precise remaining total", () => {

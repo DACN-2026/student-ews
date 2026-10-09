@@ -1,6 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import 'tailwindcss';
 
+.loading-skeleton {
+  background: linear-gradient(100deg, #f1f5f9 20%, #e2e8f0 45%, #f1f5f9 70%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.7s ease-in-out infinite;
+}
+@keyframes loading-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@keyframes loading-progress { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
+.loading-progress { animation: loading-progress 1.3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .loading-skeleton, .loading-progress { animation: none; background: #e2e8f0; }
+  .animate-spin, .animate-pulse { animation: none !important; }
+}
+
 @theme {
   --color-bg: #F9FAFB;
   --color-surface: #FFFFFF;

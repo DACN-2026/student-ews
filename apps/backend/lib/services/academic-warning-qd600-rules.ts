@@ -10,7 +10,7 @@ import {
 } from "@/lib/services/academic-warning-policy";
 
 export const QD600_EXECUTION_PROFILE = "QD600_PARTIAL_REGULATORY" as const;
-export const QD600_RULE_ENGINE_VERSION = "academic-warning-qd600-article18-and-progress-v11" as const;
+export const QD600_RULE_ENGINE_VERSION = "academic-warning-qd600-article18-and-progress-v12" as const;
 
 export type Qd600RuleCode =
   | "QD600_FAILED_CREDIT_RATIO"
@@ -57,6 +57,10 @@ export type Qd600RuleEvaluation = {
   riskLevel?: "GREEN" | "YELLOW" | "RED";
   expectedCredits?: number | null;
   earnedCredits?: number | null;
+  latestCompletedSemester?: number;
+  progressStatus?: "ON_TRACK" | "BEHIND" | "UNKNOWN";
+  missingRequiredCredits?: number;
+  missingRequiredCourses?: Array<{ courseCode: string; courseName: string; credits: number; semesterNo: number }>;
 };
 
 export type Qd600NormalizedCapabilityData = {
@@ -88,6 +92,10 @@ export type Qd600EvaluationInput = {
     runId: string;
     expectedCreditsToDate?: number | null;
     earnedCreditsToDate?: number | null;
+    latestCompletedSemester?: number;
+    progressStatus?: "ON_TRACK" | "BEHIND" | "UNKNOWN";
+    missingRequiredCredits?: number;
+    missingRequiredCourses?: Array<{ courseCode: string; courseName: string; credits: number; semesterNo: number }>;
   } | null;
   legacySignalCodes?: LegacySignalCode[];
 };
@@ -236,7 +244,10 @@ export function evaluateTrainingProgressCreditDeficit(input: Qd600EvaluationInpu
   }
 
   const gap = Math.max(0, progress.creditDeficit);
-  const riskLevel = gap >= 12 ? "RED" : gap >= 4 ? "YELLOW" : "GREEN";
+  const missingRequiredCredits = progress.missingRequiredCredits ?? 0;
+  const missingRequiredCount = progress.missingRequiredCourses?.length ?? 0;
+  const riskLevel = Math.max(gap, missingRequiredCredits) >= 12 ? "RED"
+    : gap >= 4 || missingRequiredCount > 0 ? "YELLOW" : "GREEN";
   return {
     ruleCode: "TRAINING_PROGRESS_CREDIT_DEFICIT",
     sourceType: "OPERATIONAL",
@@ -253,17 +264,18 @@ export function evaluateTrainingProgressCreditDeficit(input: Qd600EvaluationInpu
       : riskLevel === "YELLOW"
         ? "TRAINING_PROGRESS_DEFICIT_YELLOW"
         : null,
-    explanation: (riskLevel === "RED"
-      ? `Thiếu ${gap} tín chỉ so với tiến độ CTĐT (mức Đỏ từ 12 tín chỉ).`
-      : riskLevel === "YELLOW"
-        ? `Thiếu ${gap} tín chỉ so với tiến độ CTĐT (mức Vàng từ 4 đến 11 tín chỉ).`
-        : `Thiếu ${gap} tín chỉ so với tiến độ CTĐT (mức Xanh từ 0 đến 3 tín chỉ).`)
+    explanation: `Thiếu ${gap} tín chỉ so với kế hoạch${progress.latestCompletedSemester != null ? ` đến hết học kỳ ${progress.latestCompletedSemester}` : " đến mốc"}.`
+      + (missingRequiredCount > 0 ? ` Còn ${missingRequiredCount} học phần bắt buộc chưa hoàn thành (${missingRequiredCredits} TC); tín chỉ tự chọn dư không thay thế các học phần này.` : "")
       + (progress.dataStatus === "PARTIAL" ? " Số liệu nhóm tự chọn chưa hoàn chỉnh; các tiêu chí chưa đủ dữ liệu được ghi rõ trong chi tiết đánh giá." : ""),
     regulatorySource: null,
     articleRef: null,
     riskLevel,
     expectedCredits: progress.expectedCreditsToDate ?? null,
     earnedCredits: progress.earnedCreditsToDate ?? null,
+    latestCompletedSemester: progress.latestCompletedSemester,
+    progressStatus: progress.progressStatus,
+    missingRequiredCredits,
+    missingRequiredCourses: progress.missingRequiredCourses,
   };
 }
 

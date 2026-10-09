@@ -1,3 +1,4 @@
+import { compareStudentOrder } from "../student-list-order";
 import { monitoredStudentWhere } from "../student-monitoring-scope";
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
@@ -116,7 +117,8 @@ export async function workbookBuffer(table: ExportTable) {
   workbook.creator = "SEWS";
   workbook.created = new Date();
   const sheet = workbook.addWorksheet(table.sheetName.slice(0, 31));
-  sheet.columns = table.columns.map((column) => ({ ...column, width: column.width || 18 }));
+  sheet.columns = table.columns.map((column) => ({ key: column.key, width: column.width || 18 }));
+  sheet.getRow(4).values = table.columns.map(column => column.header);
   sheet.addRows(table.rows);
   styleWorksheet(sheet, table);
 
@@ -510,6 +512,10 @@ export class ExportService {
         : type === "conduct"
           ? await conductTable(filters, studentScope)
           : await supportTable(filters, studentScope);
+    table.rows.sort((left, right) => compareStudentOrder(
+      { classCode: String(left.classCode || ""), fullName: String(left.studentName || ""), studentCode: String(left.studentCode || "") },
+      { classCode: String(right.classCode || ""), fullName: String(right.studentName || ""), studentCode: String(right.studentCode || "") },
+    ));
     const body = format === "xlsx" ? await workbookBuffer(table) : await reportPdfBuffer(table);
     return {
       body,

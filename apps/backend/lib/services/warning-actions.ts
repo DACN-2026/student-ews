@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { Actor } from "@/lib/auth/types";
 import { ApiError } from "@/lib/utils/api-error";
+import { EARLY_WARNING_CASE_TYPE, SUPERSEDED_EARLY_WARNING_CASE_TYPE } from "@/lib/services/warning-case-types";
 
 export const WARNING_ACTION_STATUSES = [
   "OPEN",
@@ -140,7 +141,7 @@ export class WarningActionsService {
     }
     const current = await prisma.warningAction.findUnique({ where: { id } });
     if (!current) throw new ApiError("Warning action not found", "NOT_FOUND", 404);
-    if (current.caseType === "EARLY_WARNING_CASE") {
+    if (current.caseType === EARLY_WARNING_CASE_TYPE || current.caseType === SUPERSEDED_EARLY_WARNING_CASE_TYPE) {
       throw new ApiError(
         "Early-warning intervention cases must use the intervention workflow API",
         "INTERVENTION_CASE_API_REQUIRED",

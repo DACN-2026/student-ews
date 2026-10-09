@@ -1,3 +1,4 @@
+import { compareStudentOrder } from "../student-list-order";
 import { monitoredStudentWhere } from "../student-monitoring-scope";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -43,6 +44,7 @@ type WarningStudent = {
   dataStatus: WarningDataStatus;
   presentationState: PersistedBusinessStatus;
   hasPersistedResult: boolean;
+  assessmentIssue: string | null;
 };
 
 const numberOrNull = (value: unknown) => value == null ? null : Number(value);
@@ -138,6 +140,7 @@ export class ReportsService {
       programCode?: string;
       presentationState?: WarningStudent["presentationState"];
       includeAllStates?: boolean;
+      assessmentStatus?: "unassessed";
       page?: number;
       pageSize?: number;
     } = {},
@@ -284,6 +287,13 @@ export class ReportsService {
     }
     const resolvedCounts = new Map<string, number>();
     for (const action of actions) resolvedCounts.set(action.studentId, (resolvedCounts.get(action.studentId) || 0) + 1);
+    const missingResultIds = students.filter((student) => !resultByStudent.has(student.id)).map((student) => student.id);
+    const missingResultSummaries = filters.assessmentStatus === "unassessed" && selectedTerm && missingResultIds.length
+      ? await prisma.studentTermSummary.findMany({
+          where: { studentId: { in: missingResultIds }, academicTermId: selectedTerm.id },
+          select: { studentId: true, sProgramCode: true },
+        })
+      : [];
 
     const evaluatedStudents: WarningStudent[] = students.map((student) => {
       const result = resultByStudent.get(student.id);
@@ -313,6 +323,12 @@ export class ReportsService {
         dataStatus,
         presentationState,
         hasPersistedResult: Boolean(result),
+        assessmentIssue: result
+          ? presentationState === "INSUFFICIENT_DATA" ? "Kết quả đã lưu nhưng chưa đủ dữ liệu để phân loại nguy cơ." : null
+          : filters.assessmentStatus === "unassessed" && selectedTerm &&
+              !missingResultSummaries.some((summary) => summary.studentId === student.id && summary.sProgramCode === student.sStudyProgramId)
+            ? "Chưa có bảng tổng hợp điểm của học kỳ này theo chương trình đào tạo."
+            : "Chưa có kết quả đánh giá chính thức của học kỳ này.",
       };
     });
     const warningStudents = evaluatedStudents.filter((student) => student.severity !== "none");
@@ -342,8 +358,9 @@ export class ReportsService {
       };
     }).filter((item) => item.totalStudents > 0);
     const search = filters.search?.trim().toLocaleLowerCase("vi-VN") || "";
-    const severityOrder: Record<WarningLevel, number> = { high: 0, medium: 1, none: 2 };
-    const reportStudents = filters.includeAllStates
+    const reportStudents = filters.assessmentStatus === "unassessed"
+      ? evaluatedStudents.filter((student) => !student.assessed)
+      : filters.includeAllStates
       ? evaluatedStudents.filter((student) => student.hasPersistedResult)
       : warningStudents;
     const filtered = reportStudents
@@ -351,9 +368,10 @@ export class ReportsService {
       .filter((student) => !filters.presentationState || student.presentationState === normalizeWarningBusinessStatus(filters.presentationState))
       .filter((student) => !filters.classCode || student.classCode === filters.classCode)
       .filter((student) => !search || `${student.studentCode} ${student.studentName}`.toLocaleLowerCase("vi-VN").includes(search))
-      .sort((left, right) => severityOrder[left.severity] - severityOrder[right.severity]
-        || left.classCode.localeCompare(right.classCode)
-        || left.studentCode.localeCompare(right.studentCode));
+      .sort((left, right) => compareStudentOrder(
+        { id: left.studentId, classCode: left.classCode, fullName: left.studentName, studentCode: left.studentCode },
+        { id: right.studentId, classCode: right.classCode, fullName: right.studentName, studentCode: right.studentCode },
+      ));
     const offset = (page - 1) * pageSize;
     const counts = summarizePersistedWarningResults([...resultByStudent.values()]);
     const businessStatusCounts = summarizeWarningBusinessStatuses([...resultByStudent.values()]);

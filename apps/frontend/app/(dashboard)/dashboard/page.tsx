@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingState from "@/components/ui/LoadingState";
+
 import TextLabel from "@/components/ui/TextLabel";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -8,7 +10,7 @@ import {
   ResponsiveContainer, Line, PieChart, Pie, Cell, ComposedChart, Scatter,
 } from "recharts";
 import FilterBar from "@/components/ui/FilterBar";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, invalidateApiCache } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 
 interface FilterState {
@@ -215,6 +217,8 @@ export default function DashboardPage() {
   const summerTermOptions = termOptions.filter((term: ApiData) => term.isSummer);
   const summerContext = summaryData?.summerContext;
 
+  if (!summaryData && !summaryError) return <div className="mx-auto max-w-7xl p-4 sm:p-6"><LoadingState variant="page" label="Đang tải thống kê tổng quan…" /><div className="mt-5"><LoadingState variant="chart" label="Đang tải biểu đồ…" /></div></div>;
+
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
@@ -385,7 +389,7 @@ export default function DashboardPage() {
           </div>
           <button
             type="button"
-            onClick={() => setSummaryReload((value) => value + 1)}
+            onClick={() => { invalidateApiCache(); setSummaryReload((value) => value + 1); }}
             className="w-fit rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
           >
             Thử lại

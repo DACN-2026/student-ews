@@ -1,10 +1,12 @@
 "use client";
 
+import LoadingState, { TableSkeletonRows } from "@/components/ui/LoadingState";
+
 import TableAction from "@/components/ui/TableAction";
 import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, ChevronDown, CircleAlert, Inbox, Info, LoaderCircle, Play, RefreshCw, Search, Sparkles, X, XCircle, ListTree } from "lucide-react";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, invalidateApiCache } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import Modal from "@/components/ui/Modal";
 import { toast } from "@/components/ui/Toast";
@@ -384,7 +386,7 @@ export default function CompletionProgressTab() {
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             type="button"
-            onClick={() => void loadRuns(true)}
+            onClick={() => { invalidateApiCache(); void loadRuns(true); }}
             disabled={refreshing}
             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 shadow-2xs"
           >
@@ -420,7 +422,7 @@ export default function CompletionProgressTab() {
 
       {/* Horizontal Run/Cohort Segmented Bar */}
       {loading ? (
-        <div className="h-14 animate-pulse rounded-2xl border border-slate-200 bg-white p-3 shadow-xs" />
+        <LoadingState variant="cards" label="Đang tải tiến độ hoàn thành…" />
       ) : runs.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
           <Inbox size={40} className="mx-auto text-slate-300" />
@@ -679,12 +681,7 @@ export default function CompletionProgressTab() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {studentsLoading ? (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-16 text-center text-slate-500">
-                          <LoaderCircle size={20} className="mr-2 inline animate-spin text-lime-600" />
-                          Đang tải danh sách sinh viên...
-                        </td>
-                      </tr>
+                      <TableSkeletonRows columns={5} />
                     ) : visibleStudents.length ? (
                       visibleStudents.map((student) => {
                         const meta =
@@ -955,10 +952,7 @@ export default function CompletionProgressTab() {
         maxWidth="4xl"
       >
         {studentLoading && !selectedStudent ? (
-          <div className="flex min-h-48 items-center justify-center gap-2 text-sm text-slate-500">
-            <LoaderCircle size={20} className="animate-spin text-lime-600" />
-            Đang tổng hợp tiến độ đào tạo sinh viên...
-          </div>
+          <LoadingState variant="detail" label="Đang tổng hợp tiến độ sinh viên…" />
         ) : (
           selectedStudent && (
             <div className="py-2">

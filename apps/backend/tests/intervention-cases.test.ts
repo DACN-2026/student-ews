@@ -14,6 +14,7 @@ import {
   isInterventionTriggerStatus,
 } from "../lib/services/intervention-cases";
 import { loadWarningActionHistory } from "../lib/services/warning-action-history";
+import { SUPERSEDED_EARLY_WARNING_CASE_TYPE } from "../lib/services/warning-case-types";
 
 const IDS = {
   term: "11111111-1111-4111-8111-111111111111",
@@ -58,10 +59,13 @@ function matchesCase(row: any, where: any) {
   if (where.id !== undefined && row.id !== where.id) return false;
   if (where.studentId !== undefined && row.studentId !== where.studentId) return false;
   if (where.caseType !== undefined && row.caseType !== where.caseType) return false;
+  if (where.latestWarningRunId !== undefined && row.latestWarningRunId !== where.latestWarningRunId) return false;
+  if (where.resolvedAt?.gte && !(row.resolvedAt && row.resolvedAt >= where.resolvedAt.gte)) return false;
   if (typeof where.status === "string" && row.status !== where.status) return false;
   if (where.status?.in && !where.status.in.includes(row.status)) return false;
   if (where.status?.not && row.status === where.status.not) return false;
-  if (where.latestBusinessStatus !== undefined && row.latestBusinessStatus !== where.latestBusinessStatus) return false;
+  if (typeof where.latestBusinessStatus === "string" && row.latestBusinessStatus !== where.latestBusinessStatus) return false;
+  if (where.latestBusinessStatus?.in && !where.latestBusinessStatus.in.includes(row.latestBusinessStatus)) return false;
   if (typeof where.assignedUserId === "string" && row.assignedUserId !== where.assignedUserId) return false;
   if (where.assignedUserId === null && row.assignedUserId !== null) return false;
   if (where.assignedUserId?.not === null && row.assignedUserId === null) return false;
@@ -319,7 +323,7 @@ test("a future risk after resolution creates a new stable episode", async () => 
     addRun(state, "run-old", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
     await InterventionCasesService.syncInterventionCasesForRun("run-old");
     state.cases[0].status = "RESOLVED";
-    state.cases[0].resolvedAt = new Date();
+    state.cases[0].resolvedAt = new Date("2026-09-01T09:00:00.000Z");
     addRun(state, "run-new", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
     await InterventionCasesService.syncInterventionCasesForRun("run-new");
     assert.equal(state.cases.length, 2);
@@ -328,6 +332,56 @@ test("a future risk after resolution creates a new stable episode", async () => 
   } finally {
     cleanup();
   }
+});
+
+test("historical reconciliation preserves resolution after an episode consumed multiple runs", async () => {
+  const state = createMemoryState();
+  const cleanup = installMemoryDatabase(state);
+  try {
+    addRun(state, "run-first", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    addRun(state, "run-next", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    await InterventionCasesService.syncInterventionCasesForRun("run-first");
+    await InterventionCasesService.syncInterventionCasesForRun("run-next");
+    await InterventionCasesService.recordIntervention(state.cases[0].id, {
+      interventionType: "CONTACT", occurredAt: "2026-09-02T10:00:00.000Z", content: "Followed up with student",
+    }, adminActor);
+    await InterventionCasesService.transitionStatus(state.cases[0].id, "RESOLVED", adminActor);
+    const before = structuredClone({ cases: state.cases, events: state.events });
+    // A third historical result had never created its own episode. Replaying
+    // it after completion reproduced the duplicate OPEN case seen in the UI.
+    addRun(state, "run-backfill", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    for (let pass = 0; pass < 2; pass++) {
+      for (const id of ["run-first", "run-next", "run-backfill"]) {
+        const result = await InterventionCasesService.syncInterventionCasesForRun(id);
+        assert.equal(result.createdCases, 0);
+        assert.equal(result.updatedCases, 0);
+      }
+    }
+    assert.deepEqual({ cases: state.cases, events: state.events }, before);
+    const detail = await InterventionCasesService.getDetail(state.cases[0].id, adminActor);
+    assert.equal(detail.case.interventionStatus, "RESOLVED");
+    assert.equal(detail.activities.length, 1);
+  } finally { cleanup(); }
+});
+
+test("old risk runs cannot regress an active episode or reopen a resolved episode with a legacy missing timestamp", async () => {
+  const state = createMemoryState();
+  const cleanup = installMemoryDatabase(state);
+  try {
+    addRun(state, "run-first", [{ studentId: IDS.studentA, status: "MONITORING" }]);
+    addRun(state, "run-latest", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    await InterventionCasesService.syncInterventionCasesForRun("run-first");
+    await InterventionCasesService.syncInterventionCasesForRun("run-latest");
+    const before = structuredClone({ cases: state.cases, events: state.events });
+    await InterventionCasesService.syncInterventionCasesForRun("run-first");
+    assert.deepEqual({ cases: state.cases, events: state.events }, before);
+    state.cases[0].status = "RESOLVED";
+    state.cases[0].resolvedAt = null;
+    const result = await InterventionCasesService.syncInterventionCasesForRun("run-latest");
+    assert.equal(result.createdCases, 0);
+    assert.equal(state.cases.length, 1);
+    assert.equal(state.cases[0].status, "RESOLVED");
+  } finally { cleanup(); }
 });
 
 test("state machine accepts required paths and rejects arbitrary status jumps", () => {
@@ -376,6 +430,29 @@ test("first intervention starts work, appends immutable history, and schedules f
   } finally {
     cleanup();
   }
+});
+
+test("optional notes record an activity, start work and preserve the existing follow-up date", async () => {
+  const state = createMemoryState();
+  const cleanup = installMemoryDatabase(state);
+  try {
+    addRun(state, "run-optional-note", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    await InterventionCasesService.syncInterventionCasesForRun("run-optional-note");
+    const caseId = state.cases[0].id;
+    state.cases[0].nextFollowUpAt = new Date("2026-10-20T03:00:00Z");
+    const occurredAt = "2026-10-09T01:12:00Z";
+    for (const note of [undefined, null, "   ", "  Gặp sinh viên\nThống nhất học lại  "]) {
+      await InterventionCasesService.recordIntervention(caseId, { interventionType: "DIRECT_COUNSELING", occurredAt, note }, adminActor);
+    }
+    assert.equal(state.cases[0].status, "IN_PROGRESS");
+    assert.equal(state.cases[0].nextFollowUpAt.toISOString(), "2026-10-20T03:00:00.000Z");
+    const detail = await InterventionCasesService.getDetail(caseId, adminActor);
+    assert.equal(detail.activities.length, 4);
+    assert.deepEqual(detail.activities.map(a => a.note), [null, null, null, "Gặp sinh viên\nThống nhất học lại"]);
+    assert.ok(detail.activities.every(a => a.content === null && a.result === null && a.occurredAt === "2026-10-09T01:12:00.000Z"));
+    assert.equal(state.events.filter(e => e.eventType === "STATUS_CHANGED").length, 1);
+    assert.equal(state.events.filter(e => e.eventType === "FOLLOW_UP_SCHEDULED").length, 0);
+  } finally { cleanup(); }
 });
 
 test("a persisted NORMAL result updates risk state but never resolves an active case", async () => {
@@ -499,8 +576,8 @@ test("migration preserves legacy rows and enforces one active early-warning case
 
   const warningSource = fs.readFileSync(path.join(process.cwd(), "lib/services/academic-warnings.ts"), "utf8");
   const legacyRouteSource = fs.readFileSync(path.join(process.cwd(), "app/api/v1/academic-warnings/actions/route.ts"), "utf8");
-  assert.match(warningSource, /caseType: \{ not: EARLY_WARNING_CASE_TYPE \}/);
-  assert.match(legacyRouteSource, /caseType: \{ not: "EARLY_WARNING_CASE" \}/);
+  assert.match(warningSource, /caseType: \{ notIn: \[EARLY_WARNING_CASE_TYPE, SUPERSEDED_EARLY_WARNING_CASE_TYPE\] \}/);
+  assert.match(legacyRouteSource, /caseType: \{ notIn: \[EARLY_WARNING_CASE_TYPE, SUPERSEDED_EARLY_WARNING_CASE_TYPE\] \}/);
 });
 
 test("legacy WarningAction mutation cannot bypass intervention history guards", async () => {
@@ -513,6 +590,14 @@ test("legacy WarningAction mutation cannot bypass intervention history guards", 
       WarningActionsService.update(state.cases[0].id, { note: "bypass" }, adminActor),
       (error: unknown) => error instanceof ApiError && error.code === "INTERVENTION_CASE_API_REQUIRED" && error.status === 409,
     );
+    state.cases[0].caseType = SUPERSEDED_EARLY_WARNING_CASE_TYPE;
+    await assert.rejects(
+      WarningActionsService.update(state.cases[0].id, { status: "IN_PROGRESS" }, adminActor),
+      (error: unknown) => error instanceof ApiError && error.code === "INTERVENTION_CASE_API_REQUIRED",
+    );
+    assert.equal((await InterventionCasesService.list({ page: 1, pageSize: 20 }, adminActor)).total, 0);
+    assert.equal((await InterventionCasesService.summary(adminActor)).total, 0);
+    assert.equal(state.events.length, 2);
   } finally {
     cleanup();
   }
@@ -578,6 +663,35 @@ test("work queue enforces advisor, faculty, and admin scopes before filtering an
   } finally {
     cleanup();
   }
+});
+
+test("summary aligns with a selected term and separates students, cases, other terms, and unlinked history", async () => {
+  const state = createMemoryState();
+  const cleanup = installMemoryDatabase(state);
+  try {
+    addRun(state, "current-term-risk", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    addRun(state, "previous-term-risk", [{ studentId: IDS.studentB, status: "MONITORING" }]);
+    state.runs.get("previous-term-risk").assessmentAcademicTermId = "previous-term";
+    await InterventionCasesService.syncInterventionCasesForRun("current-term-risk");
+    await InterventionCasesService.syncInterventionCasesForRun("previous-term-risk");
+    state.cases.push({ ...state.cases[0], id: "resolved-history", status: "RESOLVED", latestWarningResultId: "deleted-result", latestWarningRunId: "deleted-run" });
+    const current = await InterventionCasesService.summary(adminActor, { academicTermId: IDS.term });
+    assert.equal(current.total, 1);
+    assert.equal(current.studentCount, 1);
+    assert.equal(current.open, 1);
+    assert.equal(current.resolved, 0);
+    assert.deepEqual(current.allPeriods, { total: 3, studentCount: 2, otherPeriodCases: 1, otherPeriodStudents: 1, unlinkedCases: 1 });
+    const global = await InterventionCasesService.summary(adminActor);
+    assert.equal(global.total, 3);
+    assert.equal(global.studentCount, 2);
+    assert.equal((await InterventionCasesService.list({ page: 1, pageSize: 20, academicTermId: IDS.term }, adminActor)).total, current.total);
+    const [a, b] = state.cases;
+    a.status = "REOPENED";
+    b.status = "ESCALATED";
+    assert.equal((await InterventionCasesService.list({ page: 1, pageSize: 20, status: "ACTIVE_PROCESSING" }, adminActor)).total, 2);
+    a.latestBusinessStatus = "VERIFY_REQUIRED";
+    assert.equal((await InterventionCasesService.list({ page: 1, pageSize: 20, academicTermId: IDS.term, businessStatus: "HIGH_RISK_OR_VERIFY" }, adminActor)).total, 1);
+  } finally { cleanup(); }
 });
 
 test("case detail is scope-safe, chronological, and exposes warning evidence without raw run snapshot", async () => {

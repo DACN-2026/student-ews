@@ -1,0 +1,173 @@
+{
+  "student": {
+    "id": "e36890f2-e16e-40b0-83d9-2e4889419a4f",
+    "code": "2246B024",
+    "name": "Phan Anh Minh",
+    "class": "ITK46B"
+  },
+  "cases": [
+    {
+      "id": "144ac3ea-4356-49bd-8877-bedbd16b9353",
+      "sourcePeriod": "HK02 (2025-2026)",
+      "currentPeriod": null,
+      "status": "RESOLVED",
+      "createdAt": "2026-09-29T02:25:53.601Z",
+      "resolvedAt": "2026-09-30T05:51:39.849Z",
+      "sourceRunExists": true,
+      "sourceResultExists": true,
+      "latestRunExists": false,
+      "latestResultExists": false
+    },
+    {
+      "id": "e956f279-1849-4d0d-8507-be079682b9a0",
+      "sourcePeriod": "HK01 (2023-2024)",
+      "currentPeriod": "HK02 (2025-2026)",
+      "status": "OPEN",
+      "createdAt": "2026-09-30T08:07:46.915Z",
+      "resolvedAt": null,
+      "sourceRunExists": true,
+      "sourceResultExists": true,
+      "latestRunExists": true,
+      "latestResultExists": true
+    }
+  ],
+  "statusEvents": [
+    {
+      "caseId": "144ac3ea-4356-49bd-8877-bedbd16b9353",
+      "event": "CASE_CREATED",
+      "createdAt": "2026-09-29T02:25:53.602Z",
+      "sourceRunId": "35881d75-c96f-4670-9dd9-e0a0a4e3c6c4",
+      "systemGenerated": true,
+      "details": {
+        "status": "OPEN",
+        "episodeKey": "e36890f2-e16e-40b0-83d9-2e4889419a4f:EARLY_WARNING_CASE:35881d75-c96f-4670-9dd9-e0a0a4e3c6c4"
+      }
+    },
+    {
+      "caseId": "144ac3ea-4356-49bd-8877-bedbd16b9353",
+      "event": "STATUS_CHANGED",
+      "createdAt": "2026-09-30T05:51:27.381Z",
+      "sourceRunId": null,
+      "systemGenerated": false,
+      "details": {
+        "to": "IN_PROGRESS",
+        "from": "OPEN"
+      }
+    },
+    {
+      "caseId": "144ac3ea-4356-49bd-8877-bedbd16b9353",
+      "event": "STATUS_CHANGED",
+      "createdAt": "2026-09-30T05:51:39.854Z",
+      "sourceRunId": null,
+      "systemGenerated": false,
+      "details": {
+        "to": "RESOLVED",
+        "from": "IN_PROGRESS"
+      }
+    },
+    {
+      "caseId": "144ac3ea-4356-49bd-8877-bedbd16b9353",
+      "event": "CASE_RESOLVED",
+      "createdAt": "2026-09-30T05:51:39.856Z",
+      "sourceRunId": null,
+      "systemGenerated": false,
+      "details": {
+        "to": "RESOLVED",
+        "from": "IN_PROGRESS"
+      }
+    },
+    {
+      "caseId": "e956f279-1849-4d0d-8507-be079682b9a0",
+      "event": "CASE_CREATED",
+      "createdAt": "2026-09-30T08:07:46.916Z",
+      "sourceRunId": "2e186c9a-7432-45af-876a-2cb7e207a888",
+      "systemGenerated": true,
+      "details": {
+        "status": "OPEN",
+        "episodeKey": "e36890f2-e16e-40b0-83d9-2e4889419a4f:EARLY_WARNING_CASE:2e186c9a-7432-45af-876a-2cb7e207a888"
+      }
+    }
+  ],
+  "a019": {
+    "checkedAt": "2026-10-08T23:48:06.533Z",
+    "classes": [
+      {
+        "term": "HK01",
+        "credits": 12,
+        "gpa4": 1.08,
+        "gpa10": 3.73,
+        "rank": "Yếu"
+      },
+      {
+        "term": "HK02",
+        "credits": 14,
+        "gpa4": 0.64,
+        "gpa10": 2.29,
+        "rank": "Kém"
+      },
+      {
+        "term": "HK03",
+        "credits": null,
+        "gpa4": null,
+        "gpa10": null,
+        "rank": "KXL"
+      }
+    ],
+    "personalPeriods": [
+      {
+        "year": "2023-2024",
+        "term": "HK01",
+        "rowTermCodes": [
+          "HK01"
+        ],
+        "rowCount": 9,
+        "gpa4": "1.77"
+      },
+      {
+        "year": "2023-2024",
+        "term": "HK02",
+        "rowTermCodes": [
+          "HK02"
+        ],
+        "rowCount": 7,
+        "gpa4": "1.84"
+      },
+      {
+        "year": "2024-2025",
+        "term": "HK01",
+        "rowTermCodes": [
+          "HK01"
+        ],
+        "rowCount": 17,
+        "gpa4": "0.17"
+      },
+      {
+        "year": "2025-2026",
+        "term": "HK01",
+        "rowTermCodes": [
+          "HK01"
+        ],
+        "rowCount": 12,
+        "gpa4": "1.08"
+      },
+      {
+        "year": "2025-2026",
+        "term": "HK03",
+        "rowTermCodes": [
+          "HK03"
+        ],
+        "rowCount": 6,
+        "gpa4": "0.64"
+      },
+      {
+        "year": "2026-2027",
+        "term": "HK01",
+        "rowTermCodes": [
+          "HK01"
+        ],
+        "rowCount": 7,
+        "gpa4": null
+      }
+    ]
+  }
+}

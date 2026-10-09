@@ -14,8 +14,13 @@ export async function GET(req: NextRequest) {
     if (severity && !["high", "medium"].includes(severity)) {
       return errorResponse("severity must be high or medium", "INVALID_FILTER", 400);
     }
+    const assessmentStatus = req.nextUrl.searchParams.get("assessmentStatus") || undefined;
+    if (assessmentStatus && assessmentStatus !== "unassessed") {
+      return errorResponse("assessmentStatus must be unassessed", "INVALID_FILTER", 400);
+    }
     const report = await ReportsService.academicWarningStudents({
       severity,
+      assessmentStatus: assessmentStatus === "unassessed" ? assessmentStatus : undefined,
       classCode: req.nextUrl.searchParams.get("classCode") || undefined,
       search: req.nextUrl.searchParams.get("search") || undefined,
       academicTermId: req.nextUrl.searchParams.get("academicTermId") || undefined,

@@ -5,11 +5,13 @@ import { useState, useEffect } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import ForbiddenState from "@/components/ui/ForbiddenState";
+import LoadingState from "@/components/ui/LoadingState";
 
 export default function SettingsPage() {
   const { can, status } = useAuthStore();
   const canManagePolicy = can("academic_warning.policy.manage");
   const [policies, setPolicies] = useState<ApiData[]>([]);
+  const [policyLoading, setPolicyLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -40,7 +42,7 @@ export default function SettingsPage() {
       } catch (err) {
         console.error("Load policies error:", err);
       } finally {
-        // The form remains usable with defaults if policy loading fails.
+        setPolicyLoading(false);
       }
     }
     loadPolicies();
@@ -96,6 +98,8 @@ export default function SettingsPage() {
       />
     );
   }
+
+  if (policyLoading) return <div className="mx-auto max-w-7xl p-4 sm:p-6"><LoadingState variant="page" label="Đang tải cấu hình cảnh báo…" /></div>;
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">

@@ -6,6 +6,7 @@ import { errorResponse, jsonResponse } from "@/lib/utils/api-response";
 import { studentIdWhere } from "@/lib/utils/is-uuid";
 import { requireStudentPermission, requireWarningRunPermission, studentScopeWhere } from "@/lib/auth/data-scope";
 import { WarningActionsService } from "@/lib/services/warning-actions";
+import { EARLY_WARNING_CASE_TYPE, SUPERSEDED_EARLY_WARNING_CASE_TYPE } from "@/lib/services/warning-case-types";
 
 export async function GET(req: NextRequest) {
   try {
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
     const actions = await prisma.warningAction.findMany({
       where: {
         studentId: { in: accessibleStudents.map((student) => student.id) },
-        OR: [{ caseType: null }, { caseType: { not: "EARLY_WARNING_CASE" } }],
+        OR: [{ caseType: null }, { caseType: { notIn: [EARLY_WARNING_CASE_TYPE, SUPERSEDED_EARLY_WARNING_CASE_TYPE] } }],
         ...(studentId ? { studentId } : {}),
         ...(runId ? { runId } : {}),
       },

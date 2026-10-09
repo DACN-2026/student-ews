@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingState from "@/components/ui/LoadingState";
+
 import TableAction from "@/components/ui/TableAction";
 import { Trash2, CheckCheck, BookOpen, Eye, LockKeyhole, CircleCheck, Archive } from "lucide-react";
 import TextLabel from "@/components/ui/TextLabel";
@@ -621,13 +623,7 @@ export default function AcademicsPage() {
 
       {/* Loading state */}
       {loading || activeTab === "terms" && termsLoading ? (
-        <div className="py-16 text-center text-slate-400 text-xs font-medium">
-          <svg className="animate-spin h-6 w-6 text-[var(--color-primary)] mx-auto mb-2" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          <span>Đang tải danh mục đào tạo...</span>
-        </div>
+        <LoadingState label="Đang tải danh mục đào tạo…" />
       ) : (
         <>
           {/* TAB 1: NĂM HỌC (Years) */}
@@ -1495,7 +1491,7 @@ export default function AcademicsPage() {
         maxWidth="2xl"
       >
         {planCoursesLoading ? (
-          <div className="p-8 text-center text-slate-400 text-xs">Đang tải dữ liệu học phần...</div>
+          <LoadingState variant="detail" label="Đang tải học phần…" />
         ) : selectedPlanDetail ? (
           <div className="space-y-4">
             {/* Meta Context */}

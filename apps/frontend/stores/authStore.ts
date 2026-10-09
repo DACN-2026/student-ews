@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, setApiCacheScope } from "@/lib/api-client";
 
 export type Role =
   | "SYSTEM_ADMIN"
@@ -176,6 +176,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   status: "idle",
 
   async login(param) {
+    setApiCacheScope("");
     set({ status: "loading" });
     const res = await fetch("/api/v1/auth/login", {
       method: "POST",
@@ -191,6 +192,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   async logout() {
+    setApiCacheScope("");
     await fetch("/api/v1/auth/logout", { method: "POST", keepalive: true }).catch(() => undefined);
     set({
       user: null,
@@ -214,6 +216,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Fallback
     }
 
+    setApiCacheScope("");
     set({ status: "anonymous", isAuthenticated: false, user: null });
   },
 
@@ -260,6 +263,7 @@ interface SessionPayload {
 }
 
 function applySession(data: SessionPayload, set: StoreSetter) {
+  setApiCacheScope(JSON.stringify([data.user.id, [...(data.actor?.grants || [])].map((grant) => `${grant.role}:${grant.scope}:${grant.permission}`).sort(), [...(data.permissions || [])].sort(), [...(data.scopes || [])].sort()]));
   const grants = data.actor?.grants || [];
   const permissions = new Set<string>();
 

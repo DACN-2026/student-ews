@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useRef } from "react";
+import { lockBodyScroll } from "./body-scroll-lock";
 
 interface ModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export default function Modal({
   footer,
 }: ModalProps) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
 
@@ -42,28 +44,52 @@ export default function Modal({
   }, [onClose]);
 
   useEffect(() => {
+    if (!isOpen) return;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const unlockBody = lockBodyScroll();
+    const scrollableAncestors: { element: HTMLElement; overflow: string }[] = [];
+    let ancestor = dialogRef.current?.parentElement;
+    while (ancestor && ancestor !== document.body) {
+      if (/(auto|scroll)/.test(window.getComputedStyle(ancestor).overflowY)) {
+        scrollableAncestors.push({ element: ancestor, overflow: ancestor.style.overflow });
+        ancestor.style.overflow = "hidden";
+      }
+      ancestor = ancestor.parentElement;
+    }
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
+      if (e.key === "Escape") {
         onCloseRef.current();
       }
+      if (e.key === "Tab" && dialogRef.current) {
+        const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+        )).filter((element) => element.getClientRects().length > 0);
+        const first = focusable[0];
+        const last = focusable.at(-1);
+        if (e.shiftKey && (document.activeElement === first || !dialogRef.current.contains(document.activeElement))) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !dialogRef.current.contains(document.activeElement))) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
     };
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKeyDown);
-      window.requestAnimationFrame(() => closeButtonRef.current?.focus());
-    }
+    window.addEventListener("keydown", handleKeyDown);
+    const focusFrame = window.requestAnimationFrame(() => closeButtonRef.current?.focus());
     return () => {
-      document.body.style.overflow = "unset";
+      window.cancelAnimationFrame(focusFrame);
+      unlockBody();
+      scrollableAncestors.forEach(({ element, overflow }) => { element.style.overflow = overflow; });
       window.removeEventListener("keydown", handleKeyDown);
-      previouslyFocused?.focus();
+      previouslyFocused?.focus({ preventScroll: true });
     };
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden p-4 sm:p-6">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 transition-opacity animate-in fade-in duration-200"
@@ -73,15 +99,16 @@ export default function Modal({
 
       {/* Modal Dialog */}
       <div
-        className={`relative w-full ${maxWidthMap[maxWidth]} bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-10 transition-all transform animate-in zoom-in-95 duration-200`}
+        ref={dialogRef}
+        className={`relative flex max-h-[calc(100dvh-2rem)] w-full flex-col sm:max-h-[calc(100dvh-3rem)] ${maxWidthMap[maxWidth]} bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-10 transition-all transform animate-in zoom-in-95 duration-200`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-5 sm:p-6 border-b border-slate-100 bg-slate-50/50">
-          <div>
+        <div className="flex shrink-0 items-start justify-between gap-3 p-5 sm:p-6 border-b border-slate-100 bg-slate-50/50">
+          <div className="min-w-0">
             <h3
               id={titleId}
               className="text-lg font-bold text-slate-900 tracking-tight"
@@ -99,7 +126,7 @@ export default function Modal({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+            className="shrink-0 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600"
             aria-label="Đóng"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -110,13 +137,13 @@ export default function Modal({
         </div>
 
         {/* Body */}
-        <div className="p-5 sm:p-6 max-h-[calc(85vh-130px)] overflow-y-auto">
+        <div data-modal-scroll-container className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6 [scrollbar-gutter:stable] [--modal-scroll-padding:1.25rem] sm:[--modal-scroll-padding:1.5rem]">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-3 p-4 sm:px-6 border-t border-slate-100 bg-slate-50/60">
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-3 p-4 sm:px-6 border-t border-slate-100 bg-slate-50/60">
             {footer}
           </div>
         )}

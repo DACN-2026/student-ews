@@ -1,0 +1,56 @@
+@media (width < 768px) {
+  .detail :global(.forecast-table),
+  .detail :global(.forecast-table) > tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .detail :global(.forecast-table) > thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .detail :global(.forecast-table) > tbody > tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .detail :global(.forecast-table) > tbody > tr > td {
+    min-width: 0;
+    padding: 0.25rem 0;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .detail :global(.forecast-table) > tbody > tr > td[data-label]::before {
+    display: block;
+    margin-bottom: 0.125rem;
+    content: attr(data-label);
+    font-family: "Be Vietnam Pro", sans-serif;
+    font-size: 0.625rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: #64748b;
+  }
+
+  .detail :global(.forecast-table) > tbody > tr > td[data-label="Mã HP"],
+  .detail :global(.forecast-table) > tbody > tr > td[data-label^="Tên học phần"],
+  .detail :global(.forecast-table) > tbody > tr > td[data-label="Tên môn học"],
+  .detail :global(.forecast-table) > tbody > tr > td[data-label="Khuyến nghị xử lý"],
+  .detail :global(.forecast-table) > tbody > tr > td[colspan] {
+    grid-column: 1 / -1;
+  }
+
+  .detail :global(.forecast-table) > tbody > tr > td[data-label="Mã HP"]::before {
+    display: none;
+  }
+}

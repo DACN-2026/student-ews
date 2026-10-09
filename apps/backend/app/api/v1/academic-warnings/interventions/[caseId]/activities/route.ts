@@ -18,13 +18,16 @@ export async function POST(req: NextRequest, { params }: Params) {
     const body = await readJsonBody<{
       interventionType?: string;
       occurredAt?: string;
-      content?: string;
+      content?: string | null;
       result?: string | null;
       note?: string | null;
       nextFollowUpAt?: string | null;
     }>(req, 128 * 1024);
-    if (typeof body.interventionType !== "string" || typeof body.occurredAt !== "string" || typeof body.content !== "string") {
-      return errorResponse("interventionType, occurredAt, and content are required", "INVALID_REQUEST", 400);
+    if (typeof body.interventionType !== "string" || typeof body.occurredAt !== "string") {
+      return errorResponse("interventionType and occurredAt are required", "INVALID_REQUEST", 400);
+    }
+    if ([body.content, body.note, body.result].some(value => value != null && typeof value !== "string")) {
+      return errorResponse("content, note, and result must be strings when provided", "INVALID_REQUEST", 400);
     }
     const updated = await InterventionCasesService.recordIntervention(caseId, {
       interventionType: body.interventionType,

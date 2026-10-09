@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildStudentWarningTimeline, formatWarningHistoryEvent, type WarningHistoryEvent } from "../../frontend/lib/warning-history";
+import { buildStudentWarningTimeline, formatWarningHistoryEvent, interventionHistoryDetails, type WarningHistoryEvent } from "../../frontend/lib/warning-history";
 
 const event = (id: string, eventType: string, details: Record<string, unknown>, sourceRunId: string | null = "old-run"): WarningHistoryEvent => ({
   id, caseId: "case", eventType, details, sourceRunId, actor: null, systemGenerated: true, createdAt: "2026-10-07T05:11:03Z",
@@ -38,4 +38,18 @@ test("intervention and warning events retain the same actor, full content, time 
   assert.equal(timeline[0].date, recorded.createdAt);
   assert.ok(timeline[0].detail.includes("Thống nhất kế hoạch · Theo dõi tuần sau"));
   assert.ok(timeline[1].detail.includes("HK02 2025-2026 · 1 nguyên nhân · GPA kỳ 0 · GPA tích lũy 2"));
+});
+
+test("support journal distinguishes actual occurrence from recording time and preserves old and optional notes", () => {
+  const recorded = event("help", "INTERVENTION_RECORDED", {
+    interventionType: "CONTACT", occurredAt: "2026-10-06T02:30:00Z", note: "Ghi chú\nDòng thứ hai",
+  }, null);
+  assert.deepEqual(interventionHistoryDetails(recorded), {
+    typeLabel: "Liên hệ sinh viên", occurredAt: "2026-10-06T02:30:00Z", note: "Ghi chú\nDòng thứ hai", legacyResult: "", legacyFollowUpAt: "",
+  });
+  assert.equal(interventionHistoryDetails(event("blank", "INTERVENTION_RECORDED", { interventionType: "REMINDER", note: null })).note, "");
+  const legacy = interventionHistoryDetails(event("old", "INTERVENTION_RECORDED", { interventionType: "DIRECT_COUNSELING", content: "Nội dung trước đây", note: "Ghi chú cũ", result: "Kết quả cũ", occurredAt: "invalid" }));
+  assert.equal(legacy.note, "Nội dung trước đây\nGhi chú cũ");
+  assert.equal(legacy.legacyResult, "Kết quả cũ");
+  assert.equal(legacy.occurredAt, "2026-10-07T05:11:03Z");
 });

@@ -7,9 +7,13 @@ import type { Actor } from "../lib/auth/types";
 import { ApiError } from "../lib/utils/api-error";
 import { InterventionCasesService } from "../lib/services/intervention-cases";
 import { AcademicWarningAutomationService } from "../lib/services/academic-warning-automation";
+import { AcademicWarningEvidenceService } from "../lib/services/academic-warning-evidence";
+import { ReportsService } from "../lib/services/reports";
+import { GET as getWarningReport } from "../app/api/v1/reports/academic-warnings/route";
 import { GET as listInterventions } from "../app/api/v1/academic-warnings/interventions/route";
 import { GET as summarizeInterventions } from "../app/api/v1/academic-warnings/interventions/summary/route";
 import { GET as getIntervention } from "../app/api/v1/academic-warnings/interventions/[caseId]/route";
+import { GET as getInterventionEvidence } from "../app/api/v1/academic-warnings/interventions/[caseId]/evidence/route";
 import { PATCH as patchInterventionStatus } from "../app/api/v1/academic-warnings/interventions/[caseId]/status/route";
 import { POST as postInterventionActivity } from "../app/api/v1/academic-warnings/interventions/[caseId]/activities/route";
 import { PATCH as patchInterventionFollowUp } from "../app/api/v1/academic-warnings/interventions/[caseId]/follow-up/route";
@@ -54,6 +58,7 @@ function installActor(actor: Actor) {
 test("intervention route permission matrix is narrow and validates case UUID segments", () => {
   assert.equal(requiredPermission("/api/v1/academic-warnings/interventions", "GET"), "academic_warning.read");
   assert.equal(requiredPermission(`/api/v1/academic-warnings/interventions/${CASE_ID}`, "GET"), "academic_warning.read");
+  assert.equal(requiredPermission(`/api/v1/academic-warnings/interventions/${CASE_ID}/evidence`, "GET"), "academic_warning.read");
   assert.equal(requiredPermission(`/api/v1/academic-warnings/interventions/${CASE_ID}/activities`, "POST"), "academic_warning.action.create");
   assert.equal(requiredPermission(`/api/v1/academic-warnings/interventions/${CASE_ID}/status`, "PATCH"), "academic_warning.action.update");
   assert.equal(requiredPermission(`/api/v1/academic-warnings/interventions/${CASE_ID}/follow-up`, "PATCH"), "academic_warning.action.update");
@@ -182,6 +187,37 @@ test("work queue list and summary require academic_warning.read and pass scoped 
   }
 });
 
+test("report coverage and intervention summary validate filters and retain warning permission", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "warning-counts-api-secret-32-characters";
+  const actor: Actor = { userId: ADVISOR_ID, username: "admin", fullName: "Admin", grants: [{ role: "admin", scope: "system", permission: "academic_warning.read" }] };
+  const reports: Array<Record<string, unknown>> = [];
+  const summaries: Array<Record<string, unknown>> = [];
+  const cleanups = [
+    installActor(actor),
+    mockMethod(prisma.academicTerm, "findFirst", async ({ where }: { where: { id: string } }) => where.id === CASE_ID ? { id: CASE_ID } : null),
+    mockMethod(ReportsService, "academicWarningStudents", async (filters: Record<string, unknown>) => { reports.push(filters); return { items: [], total: 0 }; }),
+    mockMethod(InterventionCasesService, "summary", async (_actor: Actor, filters: Record<string, unknown>) => { summaries.push(filters); return { total: 0 }; }),
+  ];
+  try {
+    assert.equal((await getWarningReport(await requestFor(actor, `http://backend/api/v1/reports/academic-warnings?assessmentStatus=unassessed&academicTermId=${CASE_ID}`))).status, 200);
+    assert.equal(reports[0].assessmentStatus, "unassessed");
+    assert.equal(reports[0].academicTermId, CASE_ID);
+    assert.equal((await getWarningReport(await requestFor(actor, "http://backend/api/v1/reports/academic-warnings?assessmentStatus=anything"))).status, 400);
+    assert.equal(reports.length, 1);
+    assert.equal((await summarizeInterventions(await requestFor(actor, "http://backend/api/v1/academic-warnings/interventions/summary?academicTermId=invalid"))).status, 400);
+    assert.equal((await summarizeInterventions(await requestFor(actor, `http://backend/api/v1/academic-warnings/interventions/summary?academicTermId=${ADVISOR_ID}`))).status, 400);
+    assert.equal((await summarizeInterventions(await requestFor(actor, `http://backend/api/v1/academic-warnings/interventions/summary?academicTermId=${CASE_ID}`))).status, 200);
+    assert.deepEqual(summaries, [{ academicTermId: CASE_ID }]);
+    actor.grants = [{ role: "class_advisor", scope: "assigned_classes", permission: "student.read" }];
+    assert.equal((await getWarningReport(await requestFor(actor, "http://backend/api/v1/reports/academic-warnings?assessmentStatus=unassessed"))).status, 403);
+  } finally {
+    cleanups.reverse().forEach((cleanup) => cleanup());
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
+
 test("student.read alone cannot access intervention list or sensitive detail", async () => {
   const previousSecret = process.env.JWT_SECRET;
   process.env.JWT_SECRET = "intervention-api-denied-secret-32-characters";
@@ -200,8 +236,34 @@ test("student.read alone cannot access intervention list or sensitive detail", a
     );
     assert.equal(listResponse.status, 403);
     assert.equal(detailResponse.status, 403);
+    const evidenceResponse = await getInterventionEvidence(
+      await requestFor(actor, `http://backend:3001/api/v1/academic-warnings/interventions/${CASE_ID}/evidence`),
+      { params: Promise.resolve({ caseId: CASE_ID }) },
+    );
+    assert.equal(evidenceResponse.status, 403);
   } finally {
     cleanup();
+    if (previousSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = previousSecret;
+  }
+});
+
+test("evidence validates the pinned result id and forwards it without caching the response", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "warning-evidence-api-pinned-secret";
+  const actor: Actor = { userId: ADVISOR_ID, username: "advisor.read", fullName: "Advisor", grants: [{ role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.read" }] };
+  const calls: Array<[string, string, string | null | undefined]> = [];
+  const cleanups = [installActor(actor), mockMethod(AcademicWarningEvidenceService, "getForCase", async (caseId: string, currentActor: Actor, resultId?: string | null) => { calls.push([caseId, currentActor.userId, resultId]); return { context: { resultId } }; })];
+  try {
+    const invalid = await getInterventionEvidence(await requestFor(actor, `http://backend:3001/api/v1/academic-warnings/interventions/${CASE_ID}/evidence?resultId=invalid`), { params: Promise.resolve({ caseId: CASE_ID }) });
+    assert.equal(invalid.status, 400);
+    assert.equal(calls.length, 0);
+    const valid = await getInterventionEvidence(await requestFor(actor, `http://backend:3001/api/v1/academic-warnings/interventions/${CASE_ID}/evidence?resultId=${ADVISOR_ID}`), { params: Promise.resolve({ caseId: CASE_ID }) });
+    assert.equal(valid.status, 200);
+    assert.equal(valid.headers.get("cache-control"), "private, no-store");
+    assert.deepEqual(calls, [[CASE_ID, ADVISOR_ID, ADVISOR_ID]]);
+  } finally {
+    cleanups.reverse().forEach((cleanup) => cleanup());
     if (previousSecret === undefined) delete process.env.JWT_SECRET;
     else process.env.JWT_SECRET = previousSecret;
   }
@@ -267,6 +329,24 @@ test("detail, status, activity, and follow-up routes delegate to guarded core se
     if (previousSecret === undefined) delete process.env.JWT_SECRET;
     else process.env.JWT_SECRET = previousSecret;
   }
+});
+
+test("activity API accepts missing or empty notes and validates required time and optional text", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "optional-intervention-note-secret";
+  const actor: Actor = { userId: ADVISOR_ID, username: "advisor.note", fullName: "Advisor", grants: [{ role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.action.create" }] };
+  const calls: any[] = [];
+  const cleanups = [installActor(actor), mockMethod(InterventionCasesService, "recordIntervention", async (_id: string, data: any) => { calls.push(data); return { id: CASE_ID, status: "IN_PROGRESS", nextFollowUpAt: null, updatedAt: new Date() }; })];
+  const base = { interventionType: "CONTACT", occurredAt: "2026-10-09T01:12:00Z" };
+  const post = async (body: unknown) => postInterventionActivity(await requestFor(actor, `http://backend:3001/api/v1/academic-warnings/interventions/${CASE_ID}/activities`, { method: "POST", body: JSON.stringify(body) }), { params: Promise.resolve({ caseId: CASE_ID }) });
+  try {
+    for (const body of [base, { ...base, note: null }, { ...base, note: "" }, { ...base, note: "Ghi chú\nHai dòng" }]) assert.equal((await post(body)).status, 201);
+    assert.equal(calls.length, 4);
+    assert.equal(calls[3].note, "Ghi chú\nHai dòng");
+    assert.ok(calls.every(data => data.content === undefined && data.result === undefined && data.nextFollowUpAt === undefined));
+    for (const body of [{ ...base, occurredAt: undefined }, { ...base, interventionType: undefined }, { ...base, note: 1 }, { ...base, content: {} }]) assert.equal((await post(body)).status, 400);
+    assert.equal(calls.length, 4);
+  } finally { cleanups.reverse().forEach(cleanup => cleanup()); if (previousSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previousSecret; }
 });
 
 test("invalid transitions preserve 409 and assignment requires the dedicated permission", async () => {

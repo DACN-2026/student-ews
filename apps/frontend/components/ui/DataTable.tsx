@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { LoadingIndicator, TableSkeletonRows } from "./LoadingState";
 
 const identityColumns = new Set([
   "student", "studentCode", "studentId", "studentName", "fullName", "courseCode", "courseName",
@@ -48,7 +49,8 @@ export default function DataTable<T extends Record<string, ApiData>>({
   const totalPages = pagination ? Math.ceil(pagination.total / pagination.pageSize) : 1;
 
   return (
-    <div className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
+    <div aria-busy={loading} className="bg-white border border-slate-200/90 rounded-2xl shadow-xs overflow-hidden">
+      {loading && data.length > 0 && <div className="border-b border-slate-100 px-4 py-2"><LoadingIndicator label="Đang cập nhật danh sách…" /></div>}
       <div className="overflow-x-auto scrollbar-thin">
         <table className="w-full text-center text-xs border-collapse">
           <thead>
@@ -64,17 +66,9 @@ export default function DataTable<T extends Record<string, ApiData>>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
-            {loading ? (
-              Array.from({ length: 5 }).map((_, rIdx) => (
-                <tr key={`skel-${rIdx}`} className="animate-pulse">
-                  {columns.map((col, cIdx) => (
-                    <td key={`skel-${rIdx}-${cIdx}`} className={`py-4 px-4 ${columnAlignment(col)}`}>
-                      <div className="h-4 bg-slate-200/70 rounded-md w-3/4" />
-                    </td>
-                  ))}
-                </tr>
-              ))
+          <tbody inert={loading && data.length > 0} className="divide-y divide-slate-100">
+            {loading && data.length === 0 ? (
+              <TableSkeletonRows columns={columns.length} />
             ) : data.length === 0 ? (
               <tr>
                 <td
@@ -98,7 +92,7 @@ export default function DataTable<T extends Record<string, ApiData>>({
                 return (
                   <tr
                     key={key}
-                    onClick={() => onRowClick && onRowClick(record)}
+                    onClick={() => { if (!loading) onRowClick?.(record); }}
                     className={`hover:bg-slate-50/80 transition-colors ${
                       onRowClick ? "cursor-pointer" : ""
                     } ${extraClass}`}

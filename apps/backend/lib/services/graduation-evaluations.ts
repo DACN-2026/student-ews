@@ -1,3 +1,4 @@
+import { orderedStudentResultPage } from "../student-list-order";
 import { monitoredStudentResultWhere } from "../student-monitoring-scope";
 import { loadProgramCurriculum } from "./program-curriculum";
 import { k44ElectiveAlternatives } from "../k44-elective-blocks";
@@ -1082,18 +1083,16 @@ export class GraduationEvaluationsService {
       ...monitoringScope,
       ...(allowedClassIds != null ? { classId: { in: allowedClassIds } } : {}),
     };
-    const [total, items, statuses, classes] = await Promise.all([
-      prisma.graduationEvaluationStudent.count({ where }),
-      prisma.graduationEvaluationStudent.findMany({
-        where,
-        omit: { gradeSnapshot: true },
-        orderBy: [{ sStudentId: "asc" }, { id: "asc" }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
+    const [studentPage, statuses, classes] = await Promise.all([
+      orderedStudentResultPage(
+        () => prisma.graduationEvaluationStudent.findMany({ where, select: { id: true, sStudentId: true, sStudentName: true, sClassName: true } }),
+        ids => prisma.graduationEvaluationStudent.findMany({ where: { AND: [where, { id: { in: ids } }] }, omit: { gradeSnapshot: true } }),
+        page, pageSize,
+      ),
       prisma.graduationEvaluationStudent.groupBy({ by: ["finalStatus"], where: scopeWhere, _count: { _all: true } }),
       prisma.graduationEvaluationStudent.groupBy({ by: ["classId", "sClassName"], where: classWhere, _count: { _all: true }, orderBy: { sClassName: "asc" } }),
     ]);
+    const { total, items } = studentPage;
     return {
       statusCounts: Object.fromEntries([["all", statuses.reduce((sum, group) => sum + group._count._all, 0)], ...statuses.map((group) => [group.finalStatus, group._count._all])]),
       classes: classes.map((group) => ({ classId: group.classId, className: group.sClassName, count: group._count._all })),

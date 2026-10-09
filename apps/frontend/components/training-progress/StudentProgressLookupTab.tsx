@@ -1,15 +1,17 @@
 "use client";
 
+import LoadingState from "@/components/ui/LoadingState";
+
 import TableAction from "@/components/ui/TableAction";
 import TextLabel from "@/components/ui/TextLabel";
 import Modal from "@/components/ui/Modal";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Clock, Filter, RefreshCw, RotateCcw, Search, User, Users, X, Eye } from "lucide-react";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, invalidateApiCache } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import dynamic from "next/dynamic";
-const StudentProgressDetail = dynamic(() => import("./StudentProgressDetail"), { loading: () => <p role="status" className="p-6 text-sm text-slate-500">Đang tải chi tiết tiến độ...</p> });
+const StudentProgressDetail = dynamic(() => import("./StudentProgressDetail"), { loading: () => <LoadingState variant="detail" label="Đang tải chi tiết tiến độ…" /> });
 import type {
   CohortOption,
   DepartmentProgressOverviewResult,
@@ -311,7 +313,7 @@ export default function StudentProgressLookupTab() {
         <div role={summaryError ? "alert" : "status"} className="flex items-center justify-between gap-3 text-xs text-slate-500">
           <span>{summaryError || (summaryLoading ? "Đang tính thống kê toàn phạm vi..." : "Đang tải dữ liệu thống kê...")}</span>
           {summaryError && (
-            <button type="button" onClick={() => void loadSummary()} disabled={loading || summaryLoading}
+            <button type="button" onClick={() => { invalidateApiCache(); void loadSummary(); }} disabled={loading || summaryLoading}
               className="rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold disabled:opacity-50">
               Thử lại thống kê
             </button>
@@ -661,11 +663,7 @@ export default function StudentProgressLookupTab() {
 
         {/* Table or Empty/Loading States */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-14 text-slate-400">
-            <RefreshCw size={24} className="animate-spin text-emerald-600 mb-2.5" />
-            <span className="text-xs font-semibold text-slate-600">Đang tải và đánh giá tiến độ sinh viên...</span>
-            <span className="text-[11px] text-slate-400 mt-0.5">Hệ thống đang đối soát dữ liệu với chuẩn CTĐT</span>
-          </div>
+          <div className="p-4"><LoadingState label="Đang tải và đối chiếu tiến độ sinh viên…" /></div>
         ) : students.length === 0 ? (
           <div className="p-14 text-center text-slate-400">
             <User size={38} className="mx-auto text-slate-300 mb-2.5" />

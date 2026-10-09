@@ -20,6 +20,7 @@
   "GET /academic-warnings/interventions",
   "GET /academic-warnings/interventions/summary",
   "GET /academic-warnings/interventions/{param}",
+  "GET /academic-warnings/interventions/{param}/evidence",
   "GET /academic-warnings/policies",
   "GET /academic-warnings/runs",
   "GET /academic-warnings/runs/{param}",

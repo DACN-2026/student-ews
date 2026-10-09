@@ -1,0 +1,93 @@
+{
+  "appliedAt": "2026-10-09T01:01:03.955Z",
+  "repairs": [
+    {
+      "duplicateId": "a31be558-0e9e-4e36-9a81-8cd2a2fce45c",
+      "canonicalId": "6831a1e2-fbf1-49b3-be46-36858a903581",
+      "studentId": "d0fcd6bd-5bfb-4c05-bfef-9772df46e417",
+      "original": {
+        "id": "a31be558-0e9e-4e36-9a81-8cd2a2fce45c",
+        "studentId": "d0fcd6bd-5bfb-4c05-bfef-9772df46e417",
+        "runId": "f1a6c47d-b3eb-4581-a8ab-2f57ecbdecdc",
+        "actionType": "EARLY_WARNING_INTERVENTION",
+        "note": "System-created intervention case from a persisted academic warning result.",
+        "actorId": null,
+        "actorName": "SYSTEM",
+        "assignedUserId": null,
+        "dueDate": null,
+        "resolvedAt": null,
+        "status": "OPEN",
+        "statusHistory": [],
+        "caseType": "EARLY_WARNING_CASE",
+        "episodeKey": "d0fcd6bd-5bfb-4c05-bfef-9772df46e417:EARLY_WARNING_CASE:f1a6c47d-b3eb-4581-a8ab-2f57ecbdecdc",
+        "sourceWarningRunId": "f1a6c47d-b3eb-4581-a8ab-2f57ecbdecdc",
+        "sourceWarningResultId": "0fccc80e-b6cd-4304-9182-584b45fd8437",
+        "latestWarningRunId": "027b85e3-f318-423a-b749-d7d86cf5b391",
+        "latestWarningResultId": "54cc8b05-85a2-49e6-8979-3136583d74a0",
+        "latestBusinessStatus": "HIGH_RISK",
+        "lastDetectedAt": "2026-10-08T19:54:32.202Z",
+        "nextFollowUpAt": null,
+        "createdAt": "2026-10-09T00:52:52.946Z",
+        "updatedAt": "2026-10-08T19:54:32.202Z"
+      },
+      "events": [
+        {
+          "id": "23903744-2b20-4f14-beb0-9705576f48df",
+          "warningActionId": "a31be558-0e9e-4e36-9a81-8cd2a2fce45c",
+          "eventType": "CASE_CREATED",
+          "actorUserId": null,
+          "systemGenerated": true,
+          "sourceRunId": "f1a6c47d-b3eb-4581-a8ab-2f57ecbdecdc",
+          "idempotencyKey": "a31be558-0e9e-4e36-9a81-8cd2a2fce45c:f1a6c47d-b3eb-4581-a8ab-2f57ecbdecdc:CASE_CREATED",
+          "details": {
+            "status": "OPEN",
+            "episodeKey": "d0fcd6bd-5bfb-4c05-bfef-9772df46e417:EARLY_WARNING_CASE:f1a6c47d-b3eb-4581-a8ab-2f57ecbdecdc"
+          },
+          "createdAt": "2026-10-09T00:52:52.947Z"
+        },
+        {
+          "id": "98a2a7f5-0a43-40fc-94fa-9ab86378ee4b",
+          "warningActionId": "a31be558-0e9e-4e36-9a81-8cd2a2fce45c",
+          "eventType": "WARNING_DETECTED",
+          "actorUserId": null,
+          "systemGenerated": true,
+          "sourceRunId": "f1a6c47d-b3eb-4581-a8ab-2f57ecbdecdc",
+          "idempotencyKey": "a31be558-0e9e-4e36-9a81-8cd2a2fce45c:f1a6c47d-b3eb-4581-a8ab-2f57ecbdecdc:WARNING_DETECTED",
+          "details": {
+            "businessStatus": "HIGH_RISK",
+            "warningResultId": "0fccc80e-b6cd-4304-9182-584b45fd8437"
+          },
+          "createdAt": "2026-10-09T00:52:52.947Z"
+        },
+        {
+          "id": "f49182b0-d3ad-4498-a966-d823a5a2d8dd",
+          "warningActionId": "a31be558-0e9e-4e36-9a81-8cd2a2fce45c",
+          "eventType": "WARNING_DETECTED",
+          "actorUserId": null,
+          "systemGenerated": true,
+          "sourceRunId": "8d85bc3c-152d-4ea8-bf67-1aedcaac4ff3",
+          "idempotencyKey": "a31be558-0e9e-4e36-9a81-8cd2a2fce45c:8d85bc3c-152d-4ea8-bf67-1aedcaac4ff3:WARNING_DETECTED",
+          "details": {
+            "businessStatus": "HIGH_RISK",
+            "warningResultId": "6b087db0-a006-4383-9cfb-216b0e793f31"
+          },
+          "createdAt": "2026-10-09T00:52:54.273Z"
+        },
+        {
+          "id": "e9f34e03-99c4-4d1b-a4d3-8ff21e63d665",
+          "warningActionId": "a31be558-0e9e-4e36-9a81-8cd2a2fce45c",
+          "eventType": "WARNING_DETECTED",
+          "actorUserId": null,
+          "systemGenerated": true,
+          "sourceRunId": "027b85e3-f318-423a-b749-d7d86cf5b391",
+          "idempotencyKey": "a31be558-0e9e-4e36-9a81-8cd2a2fce45c:027b85e3-f318-423a-b749-d7d86cf5b391:WARNING_DETECTED",
+          "details": {
+            "businessStatus": "HIGH_RISK",
+            "warningResultId": "54cc8b05-85a2-49e6-8979-3136583d74a0"
+          },
+          "createdAt": "2026-10-09T00:52:55.445Z"
+        }
+      ]
+    }
+  ]
+}

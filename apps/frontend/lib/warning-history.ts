@@ -45,6 +45,20 @@ export function formatHistoryDate(value: string) {
   });
 }
 
+/** Keep older activity fields readable while new activities use one optional note. */
+export function interventionHistoryDetails(event: WarningHistoryEvent) {
+  const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
+  const details = event.details || {};
+  const occurredAt = text(details.occurredAt);
+  return {
+    typeLabel: label(TYPE_LABELS, details.interventionType),
+    occurredAt: occurredAt && !Number.isNaN(Date.parse(occurredAt)) ? occurredAt : event.createdAt,
+    note: [...new Set([text(details.content), text(details.note)].filter(Boolean))].join("\n"),
+    legacyResult: text(details.result),
+    legacyFollowUpAt: text(details.nextFollowUpAt),
+  };
+}
+
 /** Both timelines use the same event ID, recorded timestamp, actor and text. */
 export function formatWarningHistoryEvent(event: WarningHistoryEvent) {
   const details = event.details || {};

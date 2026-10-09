@@ -1,3 +1,4 @@
+import { compareStudentOrder } from "../student-list-order";
 import { monitoredStudentResultWhere } from "../student-monitoring-scope";
 import crypto from "node:crypto";
 import { Prisma } from "@prisma/client";
@@ -12,7 +13,8 @@ import {
   type WarningActionStatus,
 } from "@/lib/services/warning-actions";
 
-export const EARLY_WARNING_CASE_TYPE = "EARLY_WARNING_CASE" as const;
+import { EARLY_WARNING_CASE_TYPE } from "@/lib/services/warning-case-types";
+export { EARLY_WARNING_CASE_TYPE } from "@/lib/services/warning-case-types";
 export const ACTIVE_INTERVENTION_STATUSES = ["OPEN", "IN_PROGRESS", "ESCALATED", "REOPENED"] as const;
 export const INTERVENTION_TRIGGER_STATUSES = ["MONITORING", "HIGH_RISK", "VERIFY_REQUIRED"] as const;
 export const INTERVENTION_TYPES = [
@@ -101,18 +103,13 @@ function jsonObject(value: Prisma.JsonValue): Prisma.JsonObject {
   return value !== null && !Array.isArray(value) && typeof value === "object" ? value : {};
 }
 
-function queuePriority(status: string, businessStatus: string | null, overdue: boolean) {
-  const risk = businessStatus === "VERIFY_REQUIRED" ? 0 : businessStatus === "HIGH_RISK" ? 1 : 2;
-  const intervention = status === "OPEN" ? 0 : status === "REOPENED" ? 1 : status === "IN_PROGRESS" ? 2 : status === "ESCALATED" ? 3 : 4;
-  return [risk, overdue ? 0 : 1, intervention] as const;
-}
 
 async function scopedQueueRows(
   actor: Actor,
   filters: Omit<InterventionQueueFilters, "page" | "pageSize"> & { caseId?: string } = {},
 ) {
-  const statuses = ["OPEN", "IN_PROGRESS", "RESOLVED", "ESCALATED", "REOPENED"];
-  const businessStatuses = ["NORMAL", "PARTIAL_NO_RISK", "MONITORING", "HIGH_RISK", "VERIFY_REQUIRED", "INSUFFICIENT_DATA"];
+  const statuses = ["OPEN", "IN_PROGRESS", "RESOLVED", "ESCALATED", "REOPENED", "ACTIVE_PROCESSING"];
+  const businessStatuses = ["NORMAL", "PARTIAL_NO_RISK", "MONITORING", "HIGH_RISK", "VERIFY_REQUIRED", "INSUFFICIENT_DATA", "HIGH_RISK_OR_VERIFY"];
   if (filters.status && !statuses.includes(filters.status)) {
     throw new ApiError(`status must be one of: ${statuses.join(", ")}`, "INVALID_STATUS", 400);
   }
@@ -125,9 +122,10 @@ async function scopedQueueRows(
       caseType: EARLY_WARNING_CASE_TYPE,
       ...await monitoredStudentResultWhere(),
       ...(filters.caseId ? { id: filters.caseId } : {}),
-      ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.status ? { status: filters.status === "ACTIVE_PROCESSING" ? { in: ["IN_PROGRESS", "ESCALATED", "REOPENED"] } : filters.status } : {}),
       ...(filters.businessStatus ? { latestBusinessStatus: normalizeWarningBusinessStatus(filters.businessStatus) === "NORMAL"
-        ? { in: ["NORMAL", "PARTIAL_NO_RISK"] } : filters.businessStatus } : {}),
+        ? { in: ["NORMAL", "PARTIAL_NO_RISK"] } : filters.businessStatus === "HIGH_RISK_OR_VERIFY"
+          ? { in: ["HIGH_RISK", "VERIFY_REQUIRED"] } : filters.businessStatus } : {}),
       ...(filters.overdue === true ? { status: { not: "RESOLVED" }, nextFollowUpAt: { lt: now } } : {}),
       ...(filters.overdue === false ? {
         OR: [{ status: "RESOLVED" }, { nextFollowUpAt: null }, { nextFollowUpAt: { gte: now } }],
@@ -314,6 +312,23 @@ async function syncPersistedResult(
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       return await prisma.$transaction(async (tx) => {
+        // Reconciliation replays old OFFICIAL runs. A resolved episode already
+        // covers its latest result and every run completed before resolution;
+        // replaying those runs must not create another OPEN case or overwrite
+        // a later episode. Only a genuinely subsequent detection starts one.
+        const resolvedEpisode = await tx.warningAction.findFirst({
+          where: {
+            studentId: result.studentId,
+            caseType: EARLY_WARNING_CASE_TYPE,
+            status: "RESOLVED",
+            OR: [
+              { latestWarningRunId: run.id },
+              { resolvedAt: { gte: detectedAt } },
+            ],
+          },
+          select: { id: true },
+        });
+        if (resolvedEpisode) return "unchanged" as const;
         const activeCase = await tx.warningAction.findFirst({ where: activeWhere });
         const shouldCreate = isInterventionTriggerStatus(result.businessStatus);
 
@@ -374,6 +389,7 @@ async function syncPersistedResult(
         }
 
         if (activeCase.latestWarningRunId === run.id) return "unchanged" as const;
+        if (activeCase.lastDetectedAt && activeCase.lastDetectedAt > detectedAt) return "unchanged" as const;
         const previousBusinessStatus = activeCase.latestBusinessStatus;
         await tx.warningAction.update({
           where: { id: activeCase.id },
@@ -428,15 +444,10 @@ export class InterventionCasesService {
     const rows = filters.businessStatus || filters.status === "RESOLVED"
       ? scopedRows
       : scopedRows.filter((row) => isInterventionTriggerStatus(row.latestBusinessStatus));
-    rows.sort((left, right) => {
-      const leftPriority = queuePriority(left.interventionStatus, left.latestBusinessStatus, left.overdue);
-      const rightPriority = queuePriority(right.interventionStatus, right.latestBusinessStatus, right.overdue);
-      for (let index = 0; index < leftPriority.length; index++) {
-        if (leftPriority[index] !== rightPriority[index]) return leftPriority[index] - rightPriority[index];
-      }
-      const detected = (right.lastDetectedAt?.getTime() || 0) - (left.lastDetectedAt?.getTime() || 0);
-      return detected || left.caseId.localeCompare(right.caseId);
-    });
+    rows.sort((left, right) => compareStudentOrder(
+      { id: left.caseId, classCode: left.student.classCode, fullName: left.student.fullName, studentCode: left.student.studentCode },
+      { id: right.caseId, classCode: right.student.classCode, fullName: right.student.fullName, studentCode: right.student.studentCode },
+    ));
     const total = rows.length;
     const skip = (filters.page - 1) * filters.pageSize;
     return {
@@ -448,9 +459,15 @@ export class InterventionCasesService {
     };
   }
 
-  static async summary(actor: Actor) {
-    const rows = (await scopedQueueRows(actor))
+  static async summary(actor: Actor, filters: { academicTermId?: string } = {}) {
+    const allRows = (await scopedQueueRows(actor))
       .filter((row) => isInterventionTriggerStatus(row.latestBusinessStatus));
+    const rows = filters.academicTermId
+      ? allRows.filter((row) => row.assessmentAcademicTermId === filters.academicTermId)
+      : allRows;
+    const otherPeriodRows = filters.academicTermId
+      ? allRows.filter((row) => row.assessmentAcademicTermId && row.assessmentAcademicTermId !== filters.academicTermId)
+      : [];
     const counts = {
       open: 0,
       inProgress: 0,
@@ -500,6 +517,15 @@ export class InterventionCasesService {
     return {
       ...counts,
       total: rows.length,
+      studentCount: new Set(rows.map((row) => row.student.id)).size,
+      academicTermId: filters.academicTermId || null,
+      allPeriods: {
+        total: allRows.length,
+        studentCount: new Set(allRows.map((row) => row.student.id)).size,
+        otherPeriodCases: otherPeriodRows.length,
+        otherPeriodStudents: new Set(otherPeriodRows.map((row) => row.student.id)).size,
+        unlinkedCases: allRows.filter((row) => !row.assessmentAcademicTermId).length,
+      },
       ...(actorHasRole(actor, "faculty_manager") ? {
         byClass: [...byClass.values()].sort((left, right) => (left.classCode || "").localeCompare(right.classCode || "")),
       } : {}),
@@ -676,7 +702,7 @@ export class InterventionCasesService {
   static async recordIntervention(caseId: string, data: {
     interventionType: string;
     occurredAt: Date | string;
-    content: string;
+    content?: string | null;
     result?: string | null;
     note?: string | null;
     nextFollowUpAt?: Date | string | null;
@@ -686,8 +712,7 @@ export class InterventionCasesService {
     if (!INTERVENTION_TYPES.includes(interventionType)) {
       throw new ApiError(`interventionType must be one of: ${INTERVENTION_TYPES.join(", ")}`, "INVALID_INTERVENTION_TYPE", 400);
     }
-    const content = data.content.trim();
-    if (!content) throw new ApiError("content is required", "INVALID_REQUEST", 400);
+    const content = data.content?.trim() || null;
     const occurredAt = parseDateTime(data.occurredAt, "occurredAt");
     const nextFollowUpAt = data.nextFollowUpAt == null
       ? data.nextFollowUpAt

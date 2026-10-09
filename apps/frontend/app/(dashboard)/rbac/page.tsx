@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingState from "@/components/ui/LoadingState";
+
 import TableAction from "@/components/ui/TableAction";
 import { Pencil, ShieldCheck, Eye, UserRoundCog, UserRoundMinus } from "lucide-react";
 import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
@@ -1287,10 +1289,7 @@ export default function RbacPage() {
       />
 
       {loading ? (
-        <div className="py-20 text-center text-slate-400 text-xs flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 border-2 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin" />
-          <span>Đang tải danh sách người dùng và cấu hình phân quyền...</span>
-        </div>
+        <LoadingState label="Đang tải tài khoản và phân quyền…" />
       ) : (
         <>
           {/* TAB 1: USERS */}

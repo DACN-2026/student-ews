@@ -1,3 +1,4 @@
+import { orderedStudentResultPage } from "../student-list-order";
 import { monitoredStudentWhere, departedStudentIds } from "../student-monitoring-scope";
 import { loadSemesterCreditPlans } from "./semester-credit-plans";
 import { courseOutcome, isConditionalCourse, normalizeProgramCourseCode, curriculumElectiveGroup, isK44StandardProgram, K44_ELECTIVE_GROUPS, normalizeCourseCode, normalizeCourseName } from "../academic-course-rules";
@@ -943,6 +944,7 @@ export class StudentTrainingProgressService {
 
     studentIdentifier: string,
     allowedClassIds?: string[] | null,
+    assessment?: { academicYear: string; termCode: string; termOrder: number },
   ): Promise<StudentTrainingProgressOutput | null> {
     // 1. Load Student with class & cohort
     const student = await prisma.student.findFirst({
@@ -982,7 +984,11 @@ export class StudentTrainingProgressService {
     let currentTermCode = "HK01";
     let currentTermOrder = 1;
 
-    if (
+    if (assessment) {
+      currentYearCode = assessment.academicYear;
+      currentTermCode = assessment.termCode;
+      currentTermOrder = assessment.termOrder;
+    } else if (
       this.academicContextCache &&
       Date.now() - this.academicContextCache.timestamp < this.CONFIG_CACHE_TTL
     ) {
@@ -1247,9 +1253,18 @@ export class StudentTrainingProgressService {
       currentAcademicYear: currentYearCode, currentTermCode, curriculum, registrations: grades,
     });
     const studyCohortCode = configuredStudyCohort || inferredSchedule?.cohortCode || null;
+    const studyTimeline = studyCohortCode
+      ? this.determineTimeline(studyCohortCode, null, currentYearCode, currentTermCode, currentTermOrder)
+      : administrativeTimeline;
+    // A finalized assessment includes that semester; the live screen includes
+    // only semesters preceding the current one. Both use the same evaluator.
+    const expectedSemesterNo = studyTimeline.expectedSemesterNo + (assessment ? 1 : 0);
     const timeline = {
-      ...(studyCohortCode ? this.determineTimeline(studyCohortCode, null, currentYearCode, currentTermCode, currentTermOrder) : administrativeTimeline),
-      administrativeSemesterNo: administrativeTimeline.expectedSemesterNo,
+      ...studyTimeline,
+      expectedSemesterNo,
+      expectedYear: Math.ceil(expectedSemesterNo / 2),
+      expectedSemester: expectedSemesterNo % 2 === 1 ? "HK1" : "HK2",
+      administrativeSemesterNo: administrativeTimeline.expectedSemesterNo + (assessment ? 1 : 0),
     };
 
     // 5. Run Pure Engine
@@ -1402,18 +1417,11 @@ export class StudentTrainingProgressService {
         scopeTotal = await prisma.student.count({ where });
         safeLazyPage = Math.min(page, Math.max(1, Math.ceil(scopeTotal / pageSize)));
       }
-      const students = await prisma.student.findMany({
-        where,
-        select: {
-          id: true,
-          sStudentId: true,
-          sFullName: true,
-          sClassStudentId: true,
-          sStudyProgramId: true,
-        },
-        orderBy: [{ sStudentId: "asc" }, { id: "asc" }],
-        ...(lazyPage ? { skip: (safeLazyPage - 1) * pageSize, take: pageSize } : {}),
-      });
+      const { items: students } = await orderedStudentResultPage(
+        () => prisma.student.findMany({ where, select: { id: true, sStudentId: true, sFullName: true, sLastName: true, sClassStudentId: true } }),
+        ids => prisma.student.findMany({ where: { AND: [where, { id: { in: ids } }] }, select: { id: true, sStudentId: true, sFullName: true, sClassStudentId: true, sStudyProgramId: true } }),
+        lazyPage ? safeLazyPage : 1, lazyPage ? pageSize : Number.MAX_SAFE_INTEGER,
+      );
 
       // Concurrently evaluate in batches of 25
       const allEvaluations: DepartmentProgressStudentItem[] = [];

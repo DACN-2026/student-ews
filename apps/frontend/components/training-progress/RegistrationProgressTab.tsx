@@ -1,9 +1,11 @@
 "use client";
 
+import LoadingState, { TableSkeletonRows } from "@/components/ui/LoadingState";
+
 import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookOpen, ChevronDown, ChevronRight, CircleAlert, Inbox, LoaderCircle, Play, RefreshCw, Search, X } from "lucide-react";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, invalidateApiCache } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { toast } from "@/components/ui/Toast";
@@ -361,7 +363,7 @@ export default function RegistrationProgressTab() {
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             type="button"
-            onClick={() => void loadData(true)}
+            onClick={() => { invalidateApiCache(); void loadData(true); }}
             disabled={refreshing}
             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 shadow-2xs"
           >
@@ -386,7 +388,7 @@ export default function RegistrationProgressTab() {
 
       {/* Horizontal Cohort Segmented Bar */}
       {loading ? (
-        <div className="h-14 animate-pulse rounded-2xl border border-slate-200 bg-white p-3 shadow-xs" />
+        <LoadingState variant="cards" label="Đang tải tiến độ đăng ký…" />
       ) : cohortCards.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-xs">
           <Inbox size={40} className="mx-auto text-slate-300" />
@@ -639,12 +641,7 @@ export default function RegistrationProgressTab() {
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {runStudentsLoading ? (
-                        <tr>
-                          <td colSpan={5} className="px-4 py-16 text-center text-slate-500">
-                            <LoaderCircle size={20} className="mr-2 inline animate-spin text-lime-600" />
-                            Đang tải kết quả sinh viên Khóa {activeCard.cohortCode}...
-                          </td>
-                        </tr>
+                        <TableSkeletonRows columns={5} />
                       ) : visibleStudents.length ? (
                         visibleStudents.map((student) => {
                           const isMandatoryMissing =
@@ -860,9 +857,7 @@ export default function RegistrationProgressTab() {
             {/* Course list */}
             <div className="flex-1 overflow-y-auto">
               {studentDetailLoading ? (
-                <div className="flex items-center justify-center py-20 text-slate-400">
-                  <LoaderCircle size={24} className="animate-spin text-lime-500" />
-                </div>
+                <div className="p-4"><LoadingState variant="detail" label="Đang tải chi tiết học phần…" /></div>
               ) : studentDetail && studentDetail.courses.length > 0 ? (
                 <div className="divide-y divide-slate-50">
                   {/* Group courses */}

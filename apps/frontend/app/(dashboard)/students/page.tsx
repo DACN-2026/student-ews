@@ -550,7 +550,7 @@ export default function StudentsPage() {
         }}
         actions={
           <span className="text-xs text-slate-500 font-medium">
-            Tổng cộng: <strong className="font-semibold text-slate-900">{total}</strong> sinh viên
+            {loading && students.length === 0 ? "Đang tải số lượng sinh viên…" : <>Tổng cộng: <strong className="font-semibold text-slate-900">{total}</strong> sinh viên</>}
           </span>
         }
       >

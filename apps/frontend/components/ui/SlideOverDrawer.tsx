@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect, useId, useRef } from "react";
+import { lockBodyScroll } from "./body-scroll-lock";
 
 interface SlideOverDrawerProps {
   isOpen: boolean;
+  suspended?: boolean;
   onClose: () => void;
   title: string;
   subtitle?: string;
@@ -26,6 +28,7 @@ const widthClasses = {
 
 export default function SlideOverDrawer({
   isOpen,
+  suspended = false,
   onClose,
   title,
   subtitle,
@@ -35,36 +38,68 @@ export default function SlideOverDrawer({
   footer,
 }: SlideOverDrawerProps) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
+  const wasSuspended = useRef(false);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
 
   useEffect(() => {
+    if (suspended) { wasSuspended.current = true; return; }
+    if (!isOpen) { wasSuspended.current = false; return; }
+    const resuming = wasSuspended.current;
+    wasSuspended.current = false;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!resuming) returnFocusRef.current = previouslyFocused;
+    const unlockBody = lockBodyScroll();
+    const dialog = dialogRef.current;
+    const scrollableAncestors: { element: HTMLElement; overflow: string }[] = [];
+    let ancestor = dialogRef.current?.parentElement;
+    while (ancestor && ancestor !== document.body) {
+      if (/(auto|scroll)/.test(window.getComputedStyle(ancestor).overflowY)) {
+        scrollableAncestors.push({ element: ancestor, overflow: ancestor.style.overflow });
+        ancestor.style.overflow = "hidden";
+      }
+      ancestor = ancestor.parentElement;
+    }
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
+      if (e.key === "Escape") {
         onCloseRef.current();
       }
+      if (e.key === "Tab" && dialogRef.current) {
+        const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+        )).filter((element) => element.getClientRects().length > 0);
+        const first = focusable[0];
+        const last = focusable.at(-1);
+        if (e.shiftKey && (document.activeElement === first || !dialogRef.current.contains(document.activeElement))) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !dialogRef.current.contains(document.activeElement))) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
     };
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-      window.addEventListener("keydown", handleKeyDown);
-      window.requestAnimationFrame(() => closeButtonRef.current?.focus());
-    }
+    window.addEventListener("keydown", handleKeyDown);
+    const focusFrame = window.requestAnimationFrame(() => { if (!resuming) closeButtonRef.current?.focus(); });
     return () => {
-      document.body.style.overflow = "unset";
+      window.cancelAnimationFrame(focusFrame);
+      unlockBody();
+      scrollableAncestors.forEach(({ element, overflow }) => { element.style.overflow = overflow; });
       window.removeEventListener("keydown", handleKeyDown);
-      previouslyFocused?.focus();
+      if (!dialog?.closest("[inert]")) returnFocusRef.current?.focus({ preventScroll: true });
     };
-  }, [isOpen]);
+  }, [isOpen, suspended]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div className="fixed inset-0 z-50 overflow-hidden" inert={suspended} aria-hidden={suspended || undefined}>
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 transition-opacity animate-in fade-in duration-300"
@@ -74,15 +109,16 @@ export default function SlideOverDrawer({
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
         <div
-          className={`w-screen ${widthClasses[width]} bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform animate-in slide-in-from-right duration-300 ease-out`}
+          ref={dialogRef}
+          className={`min-h-0 w-screen ${widthClasses[width]} bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform animate-in slide-in-from-right duration-300 ease-out`}
           onClick={(e) => e.stopPropagation()}
           role="dialog"
-          aria-modal="true"
+          aria-modal={suspended ? undefined : true}
           aria-labelledby={titleId}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
-            <div>
+          <div className="flex shrink-0 items-start justify-between gap-3 px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+            <div className="min-w-0">
               <h2
                 id={titleId}
                 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight"
@@ -95,13 +131,13 @@ export default function SlideOverDrawer({
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               {extra}
               <button
                 ref={closeButtonRef}
                 type="button"
                 onClick={onClose}
-                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer"
+                className="shrink-0 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600"
                 aria-label="Đóng bảng chi tiết can thiệp"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -113,13 +149,13 @@ export default function SlideOverDrawer({
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+          <div data-modal-scroll-container className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6 space-y-6 [scrollbar-gutter:stable]">
             {children}
           </div>
 
           {/* Optional Footer */}
           {footer && (
-            <div className="px-6 py-3.5 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-3">
+            <div className="shrink-0 px-6 py-3.5 border-t border-slate-100 bg-slate-50/80 flex flex-wrap items-center justify-end gap-3">
               {footer}
             </div>
           )}

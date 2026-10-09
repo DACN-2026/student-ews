@@ -1,10 +1,12 @@
 "use client";
 
+import LoadingState from "@/components/ui/LoadingState";
+
 import TableAction from "@/components/ui/TableAction";
 import { FileText } from "lucide-react";
 import TextLabel from "@/components/ui/TextLabel";
 import { useState, useEffect, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Scatter,
 } from "recharts";
@@ -15,8 +17,9 @@ import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
 import { apiFetch } from "@/lib/api-client";
 import dynamic from "next/dynamic";
-const StudentProgressDetail = dynamic(() => import("@/components/training-progress/StudentProgressDetail"), { loading: () => <p role="status" className="p-6 text-sm text-slate-500">Đang tải bảng điểm...</p> });
-import { buildStudentWarningTimeline, formatHistoryDate } from "@/lib/warning-history";
+const StudentProgressDetail = dynamic(() => import("@/components/training-progress/StudentProgressDetail"), { loading: () => <LoadingState variant="detail" label="Đang tải bảng điểm…" /> });
+import StudentWarningWorkspace from "@/components/warnings/StudentWarningWorkspace";
+import { isMainConductTerm, studentWarningEndpoint } from "@/lib/student-warning-view";
 
 type ActiveTab = "overview" | "conduct" | "grades" | "decisions" | "fee_policies" | "registrations" | "warnings";
 
@@ -91,12 +94,14 @@ const conductApprovalStyle = (code: ConductRecord["approval"]["code"]) => {
 };
 
 export default function StudentDetailPage() {
-  const { can, status, user } = useAuthStore();
+  const { can, status } = useAuthStore();
   const params = useParams();
   const studentId = params?.id as string;
   const router = useRouter();
+  const requestedWarnings = useSearchParams().get("tab") === "warnings";
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>("overview");
+  const [activeTab, setActiveTab] = useState<ActiveTab>(requestedWarnings ? "warnings" : "overview");
+  const [warningWorkspaceOpened, setWarningWorkspaceOpened] = useState(requestedWarnings);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [student, setStudent] = useState<ApiData>(null);
@@ -160,6 +165,8 @@ export default function StudentDetailPage() {
   useEffect(() => {
     const controller = new AbortController();
     loadedResources.current.clear();
+    setWarningWorkspaceOpened(requestedWarnings);
+    setActiveTab(requestedWarnings ? "warnings" : "overview");
     setStudent(null);
     setDashboardData(null);
     setWarningData(null);
@@ -189,7 +196,7 @@ export default function StudentDetailPage() {
     }
     if (studentId) void loadProfile();
     return () => controller.abort();
-  }, [studentId]);
+  }, [studentId, requestedWarnings]);
 
   useEffect(() => {
     if (!student || student.id !== studentId && student.studentId !== studentId && student.studentCode !== studentId) return;
@@ -197,7 +204,7 @@ export default function StudentDetailPage() {
     const needed = activeTab === "overview"
       ? ["dashboard", "grades/summary", "decisions", "conduct", ...(canReadWarnings ? ["warnings"] : [])]
       : activeTab === "grades" ? ["grades", "grades/summary"]
-      : activeTab === "warnings" ? (canReadWarnings ? ["warnings"] : [])
+      : activeTab === "warnings" ? (canReadWarnings ? ["warnings", "decisions", "grades/summary", "conduct"] : [])
       : [activeTab === "fee_policies" ? "fee-policies" : activeTab];
     const missing = needed.filter((resource) => !loadedResources.current.has(resource));
     if (!missing.length) { setTabLoading(false); return; }
@@ -206,7 +213,7 @@ export default function StudentDetailPage() {
     async function loadResource(resource: string) {
       try {
         const endpoint = resource === "warnings"
-          ? `/api/v1/academic-warnings/students/${studentId}`
+          ? studentWarningEndpoint(studentId)
           : `/api/v1/students/${studentId}/${resource}${resource === "registrations" ? "?pageSize=100" : ""}`;
         const response = await apiFetch(endpoint, { signal: controller.signal });
         if (!response.ok) throw new Error(`Không thể tải ${resource}`);
@@ -266,9 +273,10 @@ export default function StudentDetailPage() {
             if (!interventionResponse.ok) throw new Error("Không thể tải hồ sơ can thiệp hiện tại");
             const interventions = await interventionResponse.json();
             if (controller.signal.aborted) return;
-            setActiveInterventionCase((interventions.items || []).find((item: ApiData) =>
+            const studentCases = (interventions.items || []).filter((item: ApiData) => item.student?.id === student.id);
+            setActiveInterventionCase(studentCases.find((item: ApiData) =>
               item.student?.id === student.id && ["OPEN", "IN_PROGRESS", "ESCALATED", "REOPENED"].includes(item.interventionStatus),
-            ) || null);
+            ) || studentCases[0] || null);
           }
         }
         loadedResources.current.add(resource);
@@ -291,17 +299,7 @@ export default function StudentDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="p-12 text-center text-slate-400">
-        <div className="inline-flex items-center gap-2 text-sm font-medium">
-          <svg className="animate-spin h-5 w-5 text-[var(--color-primary)]" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
-          <span>Đang tải hồ sơ sinh viên {studentId}...</span>
-        </div>
-      </div>
-    );
+    return <div className="mx-auto max-w-7xl p-4 sm:p-6"><LoadingState variant="page" label={`Đang tải hồ sơ sinh viên ${studentId}…`} /></div>;
   }
 
   if (!student) {
@@ -325,7 +323,9 @@ export default function StudentDetailPage() {
   const sProgram = student?.program?.code || student?.studyProgramId || dashboardData?.student?.programCode || "Chưa xác định";
   const cumulative = summariesData?.cumulative || student?.cumulative || dashboardData?.cumulative;
   const latestTerm = (summariesData?.terms || []).at(-1);
-  const conductItems = conductData?.items || [];
+  const conductItems = (conductData?.items || []).filter(isMainConductTerm);
+  const approvedConductCount = conductItems.filter(record => record.approval.code === "approved").length;
+  const pendingConductCount = conductItems.filter(record => ["pending", "pending_evaluation"].includes(record.approval.code)).length;
   const latestConduct = conductItems
     .filter((record) => record.scores.recognized != null)
     .at(-1);
@@ -350,40 +350,6 @@ export default function StudentDetailPage() {
       cumGpa4: t.isSummer ? null : t.cumulativeGpa4,
     }));
 
-  const unifiedTimeline = [
-    ...buildStudentWarningTimeline(warningData?.interventionHistory || [], warningData?.warningHistory || []),
-    ...decisionsData.map((item: ApiData) => ({
-      id: `decision-${item.id}`,
-      date: item.signDate || item.createdAt,
-      kind: "Quyết định",
-      actorName: "",
-      title: item.decisionName || "Quyết định học vụ",
-      detail: `Số ${item.decisionNumber || "chưa cập nhật"}${item.termId ? ` · ${item.termId} ${item.yearStudy || ""}` : ""}`,
-      color: item.isAcademicWarning ? "bg-purple-500" : "bg-blue-500",
-    })),
-    ...(warningData?.warningActions || []).map((item: ApiData) => ({
-      id: `action-${item.id}`,
-      date: item.createdAt,
-      kind: "Hỗ trợ",
-      actorName: "",
-      title: `${item.actionType} · ${item.status}`,
-      detail: `${item.actorName || "Cán bộ phụ trách"}: ${item.note}`,
-      color: item.status === "RESOLVED" ? "bg-emerald-500" : item.status === "ESCALATED" ? "bg-red-500" : "bg-sky-500",
-    })),
-  ].filter((item) => item.date).sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime() || right.id.localeCompare(left.id));
-  const interventionStatusLabels: Record<string, string> = {
-    OPEN: "Chưa xử lý",
-    IN_PROGRESS: "Đang xử lý",
-    ESCALATED: "Đã chuyển cấp",
-    REOPENED: "Đang xử lý lại",
-  };
-  const canUpdateCurrentIntervention = Boolean(
-    activeInterventionCase &&
-    (user?.role === "SYSTEM_ADMIN" || (
-      user?.role === "CLASS_ADVISOR"
-    )) &&
-    can(["academic_warning.action.create", "academic_warning.action.update"]),
-  );
   const warningPresentationLabel = warningData?.presentationState === "VERIFY_REQUIRED"
     ? "Chạm ngưỡng cần xác minh"
     : warningData?.presentationState === "HIGH_RISK"
@@ -395,9 +361,9 @@ export default function StudentDetailPage() {
           : "Bình thường";
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
       {/* Top Breadcrumb / Back Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={() => router.push("/students")}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
@@ -408,33 +374,30 @@ export default function StudentDetailPage() {
           <span>Quay lại Danh sách Sinh viên</span>
         </button>
 
-        <div className="flex items-center gap-2">
-          {can("report.export") && (
-            <button type="button" disabled={profileExporting} onClick={() => void exportProfilePdf()} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50">
-              {profileExporting ? "Đang tạo PDF..." : "Xuất PDF hồ sơ"}
-            </button>
-          )}
-          <TextLabel className="text-xs font-mono text-slate-700">
-            MSSV: <strong>{sCode}</strong>
-          </TextLabel>
-        </div>
+        {can("report.export") && (
+          <button type="button" disabled={profileExporting} onClick={() => void exportProfilePdf()} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50">
+            {profileExporting ? "Đang tạo PDF..." : "Xuất PDF hồ sơ"}
+          </button>
+        )}
       </div>
 
       {/* Header Profile Card */}
       <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           <div
             className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[var(--color-primary)] to-lime-500 flex items-center justify-center text-white text-2xl font-black shadow-md flex-shrink-0"
             style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}
           >
             {sName.split(" ").pop()?.charAt(0) || "S"}
           </div>
-          <div>
-            <div className="flex items-center gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
               <h1 className="text-2xl font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 {sName}
               </h1>
-              {canReadWarnings && <WarningBadge level={warningData?.warningLevel || "insufficient"} label={warningPresentationLabel} />}
+              <span className="shrink-0 whitespace-nowrap text-xs font-medium text-slate-500">
+                MSSV: <strong className="font-mono font-semibold text-slate-800">{sCode}</strong>
+              </span>
             </div>
             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 font-medium">
               <span>Lớp: <strong className="text-slate-800">{sClass}</strong></span>
@@ -507,12 +470,12 @@ export default function StudentDetailPage() {
           ...(canReadWarnings ? [{
             id: "warnings",
             label: "7. Cảnh báo học vụ",
-            badge: (warningData?.warningHistory?.length || (warningData?.warningLevel && warningData.warningLevel !== "green")) ? "!" : undefined,
+            badge: ["HIGH_RISK", "VERIFY_REQUIRED", "MONITORING"].includes(warningData?.presentationState) ? "!" : undefined,
           }] : []),
         ].map((t) => (
           <button
             key={t.id}
-            onClick={() => setActiveTab(t.id as ActiveTab)}
+            onClick={() => { setActiveTab(t.id as ActiveTab); if (t.id === "warnings") setWarningWorkspaceOpened(true); }}
             className={`flex items-center gap-2 px-4 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
               activeTab === t.id
                 ? "border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary-light)]/40 rounded-t-xl"
@@ -530,7 +493,7 @@ export default function StudentDetailPage() {
         ))}
       </div>
 
-      {tabLoading && <p role="status" className="text-sm text-slate-500">Đang tải dữ liệu tab...</p>}
+      {tabLoading && <LoadingState variant="detail" label="Đang tải dữ liệu tab…" />}
       {loadIssues.length > 0 && !tabLoading && <button type="button" onClick={() => setTabRetry((value) => value + 1)} className="text-sm font-semibold text-emerald-700">Thử tải lại dữ liệu</button>}
       {/* Tab Content Areas */}
 
@@ -777,11 +740,11 @@ export default function StudentDetailPage() {
               <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-lime-200 pt-4 text-xs">
                 <div>
                   <dt className="text-lime-700">Đã công nhận</dt>
-                  <dd className="mt-1 font-mono text-xl font-black text-lime-900">{conductData?.approved ?? 0}</dd>
+                  <dd className="mt-1 font-mono text-xl font-black text-lime-900">{approvedConductCount}</dd>
                 </div>
                 <div>
                   <dt className="text-lime-700">Đang chờ</dt>
-                  <dd className="mt-1 font-mono text-xl font-black text-lime-900">{conductData?.pending ?? 0}</dd>
+                  <dd className="mt-1 font-mono text-xl font-black text-lime-900">{pendingConductCount}</dd>
                 </div>
               </dl>
             </div>
@@ -1053,268 +1016,16 @@ export default function StudentDetailPage() {
       )}
 
       {/* 7. TAB CẢNH BÁO HỌC VỤ & CAN THIỆP */}
-      {activeTab === "warnings" && !tabLoading && canReadWarnings && (
-        <div className="space-y-6">
-          {/* Top Banner & Quick Status */}
-          <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-            warningData?.warningLevel === "red"
-              ? "bg-red-50/80 border-red-200"
-              : warningData?.warningLevel === "yellow"
-              ? "bg-amber-50/80 border-amber-200"
-              : warningData?.warningLevel === "insufficient"
-              ? "bg-slate-50/80 border-slate-200"
-              : "bg-emerald-50/80 border-emerald-200"
-          }`}>
-            <div className="flex items-start gap-3.5">
-              <div className="mt-0.5">
-                <WarningBadge level={warningData?.warningLevel || "insufficient"} label={warningPresentationLabel} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                  {warningData?.presentationState === "VERIFY_REQUIRED"
-                    ? "Chạm ngưỡng cần xác minh"
-                    : warningData?.presentationState === "HIGH_RISK"
-                    ? "Sinh viên có mức nguy cơ cao"
-                    : warningData?.presentationState === "MONITORING"
-                    ? "Sinh viên cần được theo dõi"
-                    : warningData?.presentationState === "INSUFFICIENT_DATA"
-                    ? "Chưa đủ dữ liệu để kết luận trạng thái cảnh báo"
-                    : "Chưa ghi nhận tín hiệu cảnh báo theo tiêu chí hiện tại"}
-                </h3>
-                <p className="text-xs text-slate-600 mt-0.5">
-                  {warningData?.presentationState === "VERIFY_REQUIRED"
-                    ? "Dữ liệu SEWS cho thấy sinh viên đã chạm một tiêu chí định lượng trong chính sách đang đánh giá; cần cán bộ kiểm tra trước khi có kết luận học vụ."
-                    : warningData?.presentationState === "HIGH_RISK"
-                    ? "Cần khẩn trương liên hệ, tư vấn lộ trình học tập và ghi nhận hành động hỗ trợ."
-                    : warningData?.presentationState === "MONITORING"
-                    ? "Sinh viên thiếu 4–11 tín chỉ so với tiến độ CTĐT hoặc đang tiến gần ngưỡng Điều 18; cố vấn học tập cần theo dõi và hỗ trợ."
-                    : warningData?.presentationState === "INSUFFICIENT_DATA"
-                    ? "Chưa đủ dữ liệu điểm hoặc cấu hình CTĐT để kết luận; trạng thái này không được xem là bình thường."
-                    : "Chưa ghi nhận tín hiệu cảnh báo theo dữ liệu hiện có. Các tiêu chí chưa đủ dữ liệu được ghi rõ trong chi tiết đánh giá."}
-                </p>
-              </div>
-            </div>
-
-          </div>
-
-          {activeInterventionCase && (
-            <section className="rounded-2xl border border-[var(--color-primary)]/30 bg-[var(--color-primary-light)]/40 p-5" aria-labelledby="current-intervention-title">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-primary)]">Can thiệp hiện tại</p>
-                  <h3 id="current-intervention-title" className="mt-1 text-sm font-bold text-slate-900">
-                    {interventionStatusLabels[activeInterventionCase.interventionStatus] || "Đang theo dõi"}
-                  </h3>
-                  <dl className="mt-2 grid gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-2">
-                    <div><dt className="inline text-slate-500">Phụ trách can thiệp: </dt><dd className="inline font-semibold text-slate-800">GVCN/CVHT lớp {sClass}</dd></div>
-                    <div><dt className="inline text-slate-500">Theo dõi tiếp: </dt><dd className="inline font-semibold text-slate-800">{activeInterventionCase.nextFollowUpAt ? new Date(activeInterventionCase.nextFollowUpAt).toLocaleString("vi-VN") : "Chưa đặt lịch"}</dd></div>
-                  </dl>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => router.push(`/reports?tab=queue&caseId=${encodeURIComponent(String(activeInterventionCase.caseId))}`)}
-                  className="shrink-0 rounded-xl bg-[var(--color-primary)] px-4 py-2 text-xs font-semibold text-white shadow-xs transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-2"
-                >
-                  {canUpdateCurrentIntervention ? "Xem / cập nhật can thiệp" : "Xem can thiệp"}
-                </button>
-              </div>
-            </section>
-          )}
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs" aria-labelledby="student-unified-timeline">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h3 id="student-unified-timeline" className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>Dòng thời gian hồ sơ hợp nhất</h3>
-                <p className="mt-0.5 text-xs text-slate-500">Cảnh báo, quyết định học vụ và hành động hỗ trợ theo cùng một trục thời gian.</p>
-              </div>
-              <TextLabel className="text-[11px] font-semibold text-slate-600">{unifiedTimeline.length} sự kiện</TextLabel>
-            </div>
-            {!unifiedTimeline.length ? (
-              <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-xs text-slate-500">Chưa có sự kiện để hiển thị.</div>
-            ) : (
-              <ol className="mt-5 space-y-0">
-                {unifiedTimeline.map((item, index) => (
-                  <li key={item.id} className="relative grid grid-cols-[18px_1fr] gap-3 pb-5 last:pb-0">
-                    {index < unifiedTimeline.length - 1 && <span className="absolute left-[8px] top-4 h-full w-px bg-slate-200" aria-hidden="true" />}
-                    <span className={`relative z-10 mt-1 h-[18px] w-[18px] rounded-full border-4 border-white shadow-sm ${item.color}`} aria-hidden="true" />
-                    <div className="min-w-0 rounded-xl border border-slate-100 bg-slate-50/70 px-3.5 py-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <TextLabel className="text-[10px] font-bold uppercase tracking-wide text-slate-500">{item.kind}</TextLabel>
-                          <strong className="text-xs text-slate-900">{item.title}</strong>
-                          {item.actorName && <span className="text-[11px] text-slate-500">{item.actorName}</span>}
-                        </div>
-                        <time className="font-mono text-[10px] text-slate-400">{formatHistoryDate(item.date)}</time>
-                      </div>
-                      <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{item.detail}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
-
-          {/* Metric Overview Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Số lần bị cảnh báo</span>
-              <span className="text-2xl font-bold font-mono text-slate-900 mt-1 block">
-                {warningData?.warningHistory?.length || 0}
-              </span>
-              <span className="text-[11px] text-slate-500">Đợt quét hệ thống</span>
-            </div>
-
-            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Quyết định cảnh báo</span>
-              <span className="text-2xl font-bold font-mono text-purple-700 mt-1 block">
-                {warningData?.warningInfo?.academicWarningDecisions || 0}
-              </span>
-              <span className="text-[11px] text-slate-500">Văn bản ban hành</span>
-            </div>
-
-            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">GPA kỳ gần nhất</span>
-              <span className="text-2xl font-bold font-mono text-red-600 mt-1 block">
-                {warningData?.warningInfo?.termGpa4 !== null && warningData?.warningInfo?.termGpa4 !== undefined
-                  ? Number(warningData.warningInfo.termGpa4).toFixed(2)
-                  : "—"}
-              </span>
-              <span className="text-[11px] text-slate-500">Thang điểm 4.0</span>
-            </div>
-
-            <div className="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block">Lượt đã can thiệp</span>
-              <span className="text-2xl font-bold font-mono text-emerald-600 mt-1 block">
-                {warningData?.warningActions?.length || 0}
-              </span>
-              <span className="text-[11px] text-slate-500">Buổi tư vấn / Gặp gỡ</span>
-            </div>
-          </div>
-
-          {/* Detailed Reasons / Triggers */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                Các nguyên nhân kích hoạt cảnh báo gần nhất
-              </h3>
-              <span className="text-xs text-slate-400">
-                {warningData?.warningReasons?.length || 0} tiêu chí vi phạm
-              </span>
-            </div>
-
-            {(!warningData?.warningReasons || warningData.warningReasons.length === 0) ? (
-              <div className="py-8 text-center text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                Sinh viên không có nguyên nhân cảnh báo vi phạm học vụ nào trong đợt quét gần nhất.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {warningData.warningReasons.map((r: ApiData, idx: number) => (
-                  <div key={idx} className="p-3.5 rounded-xl border border-red-200 bg-red-50/50 space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-red-900 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-red-600" />
-                        {r.title || r.reasonCode}
-                      </span>
-                      <TextLabel className="text-[10px] font-bold text-red-800">
-                        {r.severity === "high" ? "Mức cao" : "Mức TB"}
-                      </TextLabel>
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed">
-                      {r.reasonCode === "LOW_TERM_GPA"
-                        ? `Điểm GPA học kỳ của sinh viên chưa đạt chuẩn tối thiểu (đạt ${r.details?.gpa4 ?? warningData?.warningInfo?.termGpa4 ?? "—"}).`
-                        : r.reasonCode === "LOW_CUMULATIVE_GPA"
-                        ? `Điểm GPA tích lũy toàn khóa chưa đạt chuẩn (đạt ${r.details?.gpa4 ?? warningData?.warningInfo?.cumulativeGpa4 ?? "—"}).`
-                        : r.reasonCode === "REGISTRATION_BEHIND"
-                        ? "Sinh viên không đăng ký đủ số tín chỉ tối thiểu theo kế hoạch học kỳ."
-                        : r.reasonCode === "PROGRAM_PROGRESS_BEHIND"
-                        ? "Sinh viên bị chậm hoặc nợ các học phần tiên quyết theo tiến độ CTĐT."
-                        : r.reasonCode === "TRAINING_PROGRESS_DEFICIT_YELLOW" || r.reasonCode === "TRAINING_PROGRESS_DEFICIT_RED"
-                        ? `Sinh viên đang thiếu ${r.details?.observedValue ?? "—"} tín chỉ so với tiến độ CTĐT của khóa.`
-                        : r.reasonCode === "FAILED_CREDIT_RATIO_THRESHOLD_BREACHED"
-                        ? "Tỷ lệ tín chỉ không đạt trong học kỳ vượt quá 50% tổng tín chỉ sinh viên thực tế đã đăng ký."
-                        : r.reasonCode === "TERM_GPA_THRESHOLD_BREACHED"
-                        ? `GPA học kỳ (${r.details?.observedValue ?? "—"}) thấp hơn ngưỡng Điều 18.`
-                        : r.reasonCode === "CUMULATIVE_GPA_THRESHOLD_BREACHED"
-                        ? `GPA tích lũy (${r.details?.observedValue ?? "—"}) thấp hơn ngưỡng theo trình độ năm học.`
-                        : "Phát hiện tín hiệu bất thường trong hồ sơ học vụ."}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Intervention Log & Timeline */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
-            <div className="p-4 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
-                  Nhật ký hỗ trợ trước đây
-                </h3>
-                <p className="text-xs text-slate-500">Dữ liệu lịch sử từ workflow hỗ trợ cũ; cập nhật case hiện tại tại module Cảnh báo học tập.</p>
-              </div>
-            </div>
-
-            <div className="p-5">
-              {(!warningData?.warningActions || warningData.warningActions.length === 0) ? (
-                <div className="py-8 text-center text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                  Chưa có nhật ký can thiệp nào được ghi nhận cho sinh viên này.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {warningData.warningActions.map((act: ApiData) => (
-                    <div key={act.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-start justify-between gap-3">
-                      <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <TextLabel className={`px-2.5   text-[11px] font-bold ${
-                            act.actionType === "MEETING"
-                              ? "bg-blue-100 text-blue-800"
-                              : act.actionType === "NOTIFY_EMAIL"
-                              ? "bg-orange-100 text-orange-800"
-                              : act.actionType === "SCHEDULE_MEETING"
-                              ? "bg-purple-100 text-purple-800"
-                              : "bg-emerald-100 text-emerald-800"
-                          }`}>
-                            {act.actionType === "MEETING"
-                              ? "Gặp trực tiếp"
-                              : act.actionType === "NOTIFY_EMAIL"
-                              ? "Đã gửi email (ghi nhận)"
-                              : act.actionType === "SCHEDULE_MEETING"
-                              ? "Lịch hẹn (ghi nhận)"
-                              : "Tư vấn học vụ"}
-                          </TextLabel>
-                          <TextLabel className={`px-2   text-[10px] font-bold  ${
-                            act.status === "RESOLVED"
-                              ? "bg-emerald-50 text-emerald-700 "
-                              : act.status === "ESCALATED"
-                              ? "bg-red-50 text-red-700 "
-                              : "bg-amber-50 text-amber-700 "
-                          }`}>
-                            {act.status === "RESOLVED" ? "Đã giải quyết" : act.status === "ESCALATED" ? "Báo cấp trên (Escalated)" : "Đang theo dõi"}
-                          </TextLabel>
-                          <span className="text-[11px] text-slate-400">
-                            • {act.actorName || "Cán bộ phụ trách"} • {act.createdAt ? new Date(act.createdAt).toLocaleString("vi-VN") : "—"}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-700 leading-relaxed pt-1 whitespace-pre-wrap">
-                          {act.note}
-                        </p>
-                        {(Array.isArray(act.statusHistory) ? act.statusHistory : [])
-                          .filter((event: ApiData) => event.event === "note_added")
-                          .map((event: ApiData, index: number) => (
-                            <div key={`${act.id}-note-${index}`} className="mt-2 border-l-2 border-slate-200 pl-3 text-xs text-slate-600">
-                              <span className="font-semibold text-slate-700">{event.actorName || "Cán bộ phụ trách"}</span>
-                              {event.changedAt ? ` · ${new Date(event.changedAt).toLocaleString("vi-VN")}` : ""}
-                              <p className="mt-1 whitespace-pre-wrap">{event.note}</p>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+      {warningWorkspaceOpened && canReadWarnings && (
+        <div hidden={activeTab !== "warnings" || tabLoading}>
+        <StudentWarningWorkspace
+          key={student.id}
+          student={{ id: student.id, fullName: sName, studentCode: sCode, classCode: sClass, programCode: sProgram }}
+          warning={warningData}
+          interventionCase={activeInterventionCase}
+          decisions={decisionsData}
+          onUpdated={(warning, interventionCase) => { setWarningData(warning); setActiveInterventionCase(interventionCase); }}
+        />
         </div>
       )}
 

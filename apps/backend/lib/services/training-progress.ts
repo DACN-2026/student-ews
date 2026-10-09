@@ -1,3 +1,4 @@
+import { orderedStudentResultPage } from "../student-list-order";
 import { monitoredStudentResultWhere } from "../student-monitoring-scope";
 import { loadProgramCurriculum } from "./program-curriculum";
 import { loadEquivalentCourseIds } from "./course-equivalence";
@@ -1668,15 +1669,11 @@ export class TrainingProgressService {
     if (allowedClassIds !== undefined && allowedClassIds !== null) where.classId = { in: allowedClassIds };
     if (classId) where.classId = allowedClassIds && !allowedClassIds.includes(classId) ? { in: [] } : classId;
 
-    const [total, results] = await Promise.all([
-      prisma.trainingProgressStudentResult.count({ where }),
-      prisma.trainingProgressStudentResult.findMany({
-        where,
-        orderBy: { sStudentId: "asc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-    ]);
+    const { total, items: results } = await orderedStudentResultPage(
+      () => prisma.trainingProgressStudentResult.findMany({ where, select: { id: true, sStudentId: true, sStudentName: true, sClassStudentId: true } }),
+      ids => prisma.trainingProgressStudentResult.findMany({ where: { AND: [where, { id: { in: ids } }] } }),
+      page, pageSize,
+    );
 
     return {
       items: results.map((r) => ({
@@ -2524,15 +2521,11 @@ export class TrainingProgressService {
     if (allowedClassIds !== undefined && allowedClassIds !== null) where.classId = { in: allowedClassIds };
     if (classId) where.classId = allowedClassIds && !allowedClassIds.includes(classId) ? { in: [] } : classId;
 
-    const [total, results] = await Promise.all([
-      prisma.trainingProgressCompletionStudentResult.count({ where }),
-      prisma.trainingProgressCompletionStudentResult.findMany({
-        where,
-        orderBy: { sStudentId: "asc" },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-    ]);
+    const { total, items: results } = await orderedStudentResultPage(
+      () => prisma.trainingProgressCompletionStudentResult.findMany({ where, select: { id: true, sStudentId: true, sStudentName: true, sClassStudentId: true } }),
+      ids => prisma.trainingProgressCompletionStudentResult.findMany({ where: { AND: [where, { id: { in: ids } }] } }),
+      page, pageSize,
+    );
 
     return {
       items: results.map((r) => ({

@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { evaluateStudentTrainingProgress, type StudentGradeAttempt, type TrainingProgressCourse } from "../lib/services/student-training-progress";
 import { semesterMilestoneCredits } from "../../frontend/lib/semester-progress-display";
+import { academicWarningProgressSignal } from "../lib/services/academic-warning-progress";
+import { evaluateTrainingProgressCreditDeficit } from "../lib/services/academic-warning-qd600-rules";
+import { createQd600PolicyDefinition } from "../lib/services/academic-warning-policy";
+import { createAcademicWarningCapabilitySnapshot, createQd600StudentCapabilityData } from "../lib/services/academic-warning-capabilities";
 
 // Semester rows from the reported 2246A001 progress screen.
 const rows: Array<[number, string, number, string, boolean]> = [
@@ -99,4 +103,69 @@ test("a failed old course reduces earned credit without changing the semester pl
   assert.deepEqual(semesterMilestoneCredits(result.semesters,6), {
     expectedCreditsToDate:98, earnedCreditsToDate:103, creditDifference:5,
   });
+});
+
+function warningRule(result: ReturnType<typeof evaluateStudentTrainingProgress>) {
+  const signal = academicWarningProgressSignal(result, "program");
+  return evaluateTrainingProgressCreditDeficit({
+    policyDefinition: createQd600PolicyDefinition(),
+    capabilities: createAcademicWarningCapabilitySnapshot(),
+    capabilityData: createQd600StudentCapabilityData({ cumulativeCredits: 103, assessmentTermId: "term", attempts: [], isFirstMainSemester: false }),
+    termGpa4: null, cumulativeGpa4: null, termKind: "MAIN",
+    trainingProgress: { ...signal, runId: signal.sourceId },
+  });
+}
+
+test("warnings show the same 134 planned / 103 earned / 31 missing milestone, keeping six mandatory debts separate", () => {
+  const planned = [13,16,18,16,16,19,18,18];
+  const earned = [13,16,21,22,16,0,15,0];
+  const missing: Array<[string, number, number]> = [
+    ["20CT3132D",3,6], ["20CT3101D",3,6], ["20CT3103D",4,6],
+    ["20CT3203",3,7], ["20CT4101D",3,8], ["20CT4102D",3,8],
+  ];
+  const passed = earned.flatMap((credits, n) => credits ? [{ courseId:`P${n}`, courseCode:`P${n}`, courseName:`P${n}`, credits, semesterNo:n+1, requirementType:"mandatory" }] : []);
+  const result = evaluateStudentTrainingProgress({
+    ...input, student:{...input.student,programCode:"TEST"},
+    curriculum:[...passed,...missing.map(([courseCode,credits,semesterNo])=>({courseId:courseCode,courseCode,courseName:courseCode,credits,semesterNo,requirementType:"mandatory"}))],
+    grades:passed.map(course=>({courseCode:course.courseCode,isPass:true,scoreStatus:"graded"})),
+    timeline:{...input.timeline,expectedYear:5,expectedSemesterNo:9},
+    semesterPlans:new Map(planned.map((credits,n)=>[n+1,credits])),
+  });
+  const signal = academicWarningProgressSignal(result,"program");
+  const display = semesterMilestoneCredits(result.semesters,8);
+  assert.deepEqual(display,{expectedCreditsToDate:134,earnedCreditsToDate:103,creditDifference:-31});
+  assert.equal(signal.expectedCreditsToDate,display.expectedCreditsToDate);
+  assert.equal(signal.earnedCreditsToDate,display.earnedCreditsToDate);
+  assert.equal(signal.creditDeficit,31);
+  assert.equal(signal.latestCompletedSemester,8);
+  assert.equal(signal.missingRequiredCourses?.length,6);
+  assert.equal(signal.missingRequiredCredits,19);
+  assert.equal(warningRule(result).riskLevel,"RED");
+});
+
+test("extra electives cannot hide mandatory debt or be reported as missing milestone credits", () => {
+  const result = evaluateStudentTrainingProgress({
+    ...input,
+    grades:[...grades.filter(grade=>grade.courseCode!=="20CT1102"),{courseCode:"20CT1102",isPass:false,letterCode:"F",scoreStatus:"graded"}],
+  });
+  assert.equal(result.scheduleProgress.creditDifference,5);
+  const rule = warningRule(result);
+  assert.equal(rule.observedValue,0);
+  assert.equal(rule.expectedCredits,98);
+  assert.equal(rule.earnedCredits,103);
+  assert.equal(rule.missingRequiredCredits,4);
+  assert.equal(rule.riskLevel,"YELLOW");
+  assert.equal(rule.isNearThreshold,true);
+});
+
+test("a pending assessment remains unevaluated while its semester credit breakdown is preserved", () => {
+  const result = evaluateStudentTrainingProgress({
+    ...input, grades:[...grades,{courseCode:"20CT3202",scoreStatus:"pending",notScore:true,academicYear:"2026-2027",termCode:"HK01"}],
+  });
+  const signal = academicWarningProgressSignal(result,"program");
+  assert.equal(signal.creditDeficit,null);
+  assert.equal(signal.reasonCode,"TRAINING_PROGRESS_PENDING_RESULTS");
+  assert.equal(signal.expectedCreditsToDate,98);
+  assert.equal(signal.earnedCreditsToDate,107);
+  assert.equal(warningRule(result).evaluationStatus,"NOT_EVALUATED");
 });

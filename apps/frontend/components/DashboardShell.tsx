@@ -6,13 +6,15 @@ import Header from "@/components/Header";
 import Breadcrumb from "@/components/Breadcrumb";
 import ToastContainer from "@/components/ui/Toast";
 import { useAuthStore } from "@/stores/authStore";
+import LoadingState from "@/components/ui/LoadingState";
+import NetworkActivity from "@/components/ui/NetworkActivity";
 
 export default function DashboardShell({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { bootstrap } = useAuthStore();
+  const { bootstrap, status } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -55,9 +57,12 @@ export default function DashboardShell({
         </div>
 
         {/* Content Body */}
-        <main className="flex-1 overflow-y-auto bg-[var(--color-bg)]">
-          {children}
+        <div className="relative min-h-0 flex-1">
+          <NetworkActivity />
+        <main className="h-full overflow-y-auto bg-[var(--color-bg)]">
+          {status === "idle" || status === "loading" ? <div className="mx-auto max-w-7xl p-4 sm:p-6"><LoadingState variant="page" label="Đang tải phiên làm việc…" /></div> : children}
         </main>
+        </div>
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import { GraduationEvaluationsService } from "../lib/services/graduation-evaluat
 import { TrainingProgressService } from "../lib/services/training-progress";
 import { AcademicWarningsService } from "../lib/services/academic-warnings";
 
-type TestWhere = { OR?: unknown[]; AND?: { sIsInClass?: boolean }[]; studentId?: { notIn: string[] } };
+type TestWhere = { OR?: unknown[]; AND?: TestWhere[]; sIsInClass?: boolean; id?: { in: string[] }; studentId?: { notIn: string[] } };
 type TestQuery = { where: TestWhere };
 
 function replace(target: object, method: string, implementation: unknown) {
@@ -27,8 +27,11 @@ test("progress summary updates immediately when a student leaves or rejoins, whi
   const cleanup = [
     replace(prisma.student, "findMany", async ({ where }: TestQuery) => {
       if (where.OR && !where.AND) return departed ? [{ id: "departed" }] : [];
-      const monitored = where.AND?.some((clause) => clause.sIsInClass === true);
-      return students.filter(student => !monitored || !departed || student.id !== "departed");
+      const matches = (student: typeof students[number], clause: TestWhere): boolean =>
+        (!clause.sIsInClass || !departed || student.id !== "departed")
+        && (!clause.id || clause.id.in.includes(student.id))
+        && (!clause.AND || clause.AND.every(part => matches(student, part)));
+      return students.filter(student => matches(student, where));
     }),
     replace(prisma.student, "count", async () => 2),
     replace(prisma, "$queryRaw", async () => students.map(student => ({ id: student.id }))),

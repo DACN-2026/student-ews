@@ -130,6 +130,7 @@ export function buildGraduationForecast(input: {
     return {
       code,
       groupCode: code,
+      courseIds: options.map((course) => course.courseId),
       requiredCredits: required,
       passedCredits: passed,
       earnedCredits: passed,

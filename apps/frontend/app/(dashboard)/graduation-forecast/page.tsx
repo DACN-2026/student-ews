@@ -1,14 +1,16 @@
 "use client";
 
+import LoadingState, { LoadingIndicator, TableSkeletonRows } from "@/components/ui/LoadingState";
+
 import TableAction from "@/components/ui/TableAction";
 import TextLabel, { plainTextClasses } from "@/components/ui/TextLabel";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, CircleHelp, Clock, Download, FileCheck2, Filter, GraduationCap, Info, LoaderCircle, Play, RefreshCw, Search, ShieldAlert, Users, X, FileSpreadsheet, Eye } from "lucide-react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, Check, CircleHelp, Clock, Download, FileCheck2, Filter, GraduationCap, Info, Play, RefreshCw, Search, ShieldAlert, Users, X, FileSpreadsheet, Eye } from "lucide-react";
 import { studyTimeline } from "@/lib/academic-timeline";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, invalidateApiCache } from "@/lib/api-client";
 import Modal from "@/components/ui/Modal";
 import dynamic from "next/dynamic";
-const ForecastDetail = dynamic(() => import("@/components/graduation/ForecastDetail"), { loading: () => <p role="status" className="p-6 text-sm text-slate-500">Đang tải chi tiết tốt nghiệp...</p> });
+const ForecastDetail = dynamic(() => import("@/components/graduation/ForecastDetail"), { loading: () => <LoadingState variant="detail" label="Đang tải chi tiết tốt nghiệp…" /> });
 import { toast } from "@/components/ui/Toast";
 import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
@@ -184,6 +186,10 @@ export default function GraduationForecastPage() {
   // Student Detail Modal
   const [selectedStudent, setSelectedStudent] = useState<ApiData | null>(null);
   const [studentLoading, setStudentLoading] = useState(false);
+  const [studentError, setStudentError] = useState("");
+  const studentRequestRef = useRef<AbortController | null>(null);
+  useEffect(() => () => studentRequestRef.current?.abort(), []);
+  const closeStudent = () => { studentRequestRef.current?.abort(); setSelectedStudent(null); setStudentLoading(false); };
   const [studentModalTab, setStudentModalTab] = useState<"summary" | "transcript">("summary");
 
   // New evaluation run modal
@@ -298,17 +304,22 @@ export default function GraduationForecastPage() {
 
   const openStudent = async (student: ApiData, defaultTab: "summary" | "transcript" = "summary") => {
     if (!selectedRun) return;
+    studentRequestRef.current?.abort();
+    const controller = new AbortController();
+    studentRequestRef.current = controller;
+    setSelectedStudent({ student });
+    setStudentError("");
     setStudentLoading(true);
     setStudentModalTab(defaultTab);
     try {
-      const response = await apiFetch(`/api/v1/graduation-evaluations/${selectedRun.id}/students/${student.studentId}`);
+      const response = await apiFetch(`/api/v1/graduation-evaluations/${selectedRun.id}/students/${student.studentId}`, { signal: controller.signal });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error?.message || "Không thể tải chi tiết sinh viên.");
-      setSelectedStudent(data);
+      if (!controller.signal.aborted) setSelectedStudent(data);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Không thể tải chi tiết sinh viên.");
+      if (!controller.signal.aborted) setStudentError(error instanceof Error ? error.message : "Không thể tải chi tiết sinh viên.");
     } finally {
-      setStudentLoading(false);
+      if (!controller.signal.aborted) setStudentLoading(false);
     }
   };
 
@@ -495,7 +506,7 @@ export default function GraduationForecastPage() {
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
-            onClick={() => void loadInitial()}
+            onClick={() => { invalidateApiCache(); void loadInitial(); }}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-lime-500 cursor-pointer"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -611,17 +622,14 @@ export default function GraduationForecastPage() {
         )}
 
         {loading ? (
-          <div className="flex h-32 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm text-slate-500">
-            <LoaderCircle size={20} className="mr-2 animate-spin text-lime-600" />
-            Đang tải các đợt xét tốt nghiệp...
-          </div>
+          <LoadingState variant="cards" label="Đang tải các đợt xét tốt nghiệp…" />
         ) : loadError ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-sm text-rose-800">
             <AlertTriangle className="mx-auto mb-2 text-rose-600" size={24} />
             <p className="font-semibold">{loadError}</p>
             <button
               type="button"
-              onClick={() => void loadInitial()}
+              onClick={() => { invalidateApiCache(); void loadInitial(); }}
               className="mt-3 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 cursor-pointer"
             >
               Thử lại
@@ -736,7 +744,7 @@ export default function GraduationForecastPage() {
                   </button>
                 </div>
               ) : !statisticsReady && (
-                <p role="status" className="text-xs text-slate-500">Đang tải thống kê đợt đánh giá...</p>
+                <LoadingIndicator label="Đang tải thống kê đợt đánh giá…" />
               )}
               {/* THẺ TỔNG QUAN 4 CHỈ SỐ: TỔNG SV, ĐỦ YÊU CẦU, ĐANG HOÀN THIỆN, CÒN THIẾU (INTERACTIVE: BẤM ĐỂ LỌC) */}
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -963,12 +971,7 @@ export default function GraduationForecastPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {studentsLoading ? (
-                      <tr>
-                        <td colSpan={6} className="py-16 text-center text-slate-500">
-                          <LoaderCircle size={22} className="mx-auto mb-2 animate-spin text-lime-600" />
-                          Đang tải danh sách sinh viên...
-                        </td>
-                      </tr>
+                        <TableSkeletonRows columns={6} />
                     ) : filteredStudents.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="py-16 text-center text-slate-500">
@@ -1089,7 +1092,7 @@ export default function GraduationForecastPage() {
       {/* 4. MODAL CHI TIẾT ĐIỀU KIỆN TỐT NGHIỆP */}
       <Modal
         isOpen={Boolean(selectedStudent)}
-        onClose={() => setSelectedStudent(null)}
+        onClose={closeStudent}
         title={
           selectedStudent ? (
             <div className="flex flex-wrap items-center gap-2">
@@ -1132,9 +1135,20 @@ export default function GraduationForecastPage() {
           })() : undefined
         }
         maxWidth="6xl"
+        footer={
+          <button
+            type="button"
+            onClick={closeStudent}
+            className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600"
+          >
+            Đóng
+          </button>
+        }
       >
         {(() => {
           if (!selectedStudent) return null;
+          if (studentLoading) return <LoadingState variant="detail" label="Đang tải chi tiết sinh viên…" />;
+          if (studentError) return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p>{studentError}</p><button type="button" onClick={() => void openStudent(selectedStudent.student, studentModalTab)} className="mt-2 font-semibold underline cursor-pointer">Thử lại</button></div>;
           const { grades: rawGrades = [], forecast } = selectedStudent;
           const cleanGrades = (rawGrades || []).filter((g: ApiData) => {
             const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
@@ -1154,7 +1168,6 @@ export default function GraduationForecastPage() {
               student={selectedStudent.student}
               grades={grades}
               initialTab={studentModalTab}
-              onClose={() => setSelectedStudent(null)}
             />
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-slate-600">

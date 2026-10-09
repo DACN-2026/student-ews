@@ -1,5 +1,7 @@
 "use client";
 
+import LoadingState from "@/components/ui/LoadingState";
+
 import TextLabel from "@/components/ui/TextLabel";
 import React, { useCallback, useEffect, useState } from "react";
 import { AlertCircle, ChevronDown, ChevronRight, Layers, RefreshCw } from "lucide-react";
@@ -58,7 +60,7 @@ export default function StudentProgressDetail({
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch(`/api/v1/students/${encodeURIComponent(studentId)}/training-progress`);
+      const res = await apiFetch(`/api/v1/students/${encodeURIComponent(studentId)}/training-progress`, { cache: "reload" });
       if (!res.ok) {
         const errJson = await res.json().catch(() => null);
         throw new Error(
@@ -160,13 +162,7 @@ export default function StudentProgressDetail({
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-slate-500 bg-white rounded-2xl border border-slate-200">
-        <RefreshCw className="animate-spin text-lime-600 mb-3" size={28} />
-        <p className="text-sm font-medium">Đang tính toán tiến độ đào tạo theo chuẩn CTĐT...</p>
-        <span className="text-xs text-slate-400 mt-1">Hệ thống đang đối chiếu học phần và nhóm tự chọn</span>
-      </div>
-    );
+    return <LoadingState variant="detail" label="Đang đối chiếu tiến độ và học phần…" />;
   }
 
   if (error) {

@@ -1,3 +1,4 @@
+import { orderedStudentResultPage } from "../student-list-order";
 import { monitoredStudentResultWhere } from "../student-monitoring-scope";
 import { academicOfferingPredicate } from "../academic-course-sql";
 import { loadAcademicDebt } from "./academic-debt";
@@ -46,6 +47,7 @@ import {
   type Qd600RuleEvaluation,
 } from "@/lib/services/academic-warning-qd600-rules";
 import { EARLY_WARNING_CASE_TYPE, InterventionCasesService } from "@/lib/services/intervention-cases";
+import { SUPERSEDED_EARLY_WARNING_CASE_TYPE } from "@/lib/services/warning-case-types";
 import { loadWarningActionHistory } from "./warning-action-history";
 import { assertCohortTrainingProgramPair } from "@/lib/services/academic-warning-scope";
 import { calculateAcademicWarningProgressSignals } from "@/lib/services/academic-warning-progress";
@@ -181,7 +183,8 @@ export function projectQd600EvaluationForPersistence(result: Qd600EvaluationResu
     if (rule.ruleCode === "QD600_TERM_GPA") return "Điểm trung bình học kỳ (GPA) thấp";
     if (rule.ruleCode === "QD600_ACCUMULATED_DEBT_CREDITS" || rule.ruleCode === "ACCUMULATED_DEBT_CREDIT_RISK") return `Nợ tín chỉ tích lũy ${rule.observedValue ?? 0} tín chỉ`;
     if (rule.ruleCode === "TRAINING_PROGRESS_CREDIT_DEFICIT") {
-      return `Chậm tiến độ học tập ${rule.observedValue ?? 0} tín chỉ`;
+      return rule.observedValue ? `Chậm tiến độ học tập ${rule.observedValue} tín chỉ`
+        : "Chưa hoàn thành học phần bắt buộc đến mốc";
     }
     return "Điểm GPA tích lũy tiệm cận mức nguy cơ";
   };
@@ -1236,6 +1239,10 @@ export class AcademicWarningsService {
                 runId: ctx.trainingProgressSignals.get(student.id)!.sourceId,
                 expectedCreditsToDate: ctx.trainingProgressSignals.get(student.id)?.expectedCreditsToDate ?? null,
                 earnedCreditsToDate: ctx.trainingProgressSignals.get(student.id)?.earnedCreditsToDate ?? null,
+                latestCompletedSemester: ctx.trainingProgressSignals.get(student.id)?.latestCompletedSemester,
+                progressStatus: ctx.trainingProgressSignals.get(student.id)?.progressStatus,
+                missingRequiredCredits: ctx.trainingProgressSignals.get(student.id)?.missingRequiredCredits,
+                missingRequiredCourses: ctx.trainingProgressSignals.get(student.id)?.missingRequiredCourses,
               }
             : null,
         }));
@@ -1616,15 +1623,11 @@ export class AcademicWarningsService {
     if (registrationStatus) where.registrationStatus = registrationStatus;
     if (scheduleStatus) where.scheduleStatus = scheduleStatus;
 
-    const [total, results] = await Promise.all([
-      prisma.academicWarningStudentResult.count({ where }),
-      prisma.academicWarningStudentResult.findMany({
-        where,
-        orderBy: [{ maxSeverity: "asc" }, { sStudentId: "asc" }],
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-    ]);
+    const { total, items: results } = await orderedStudentResultPage(
+      () => prisma.academicWarningStudentResult.findMany({ where, select: { id: true, sStudentId: true, sStudentName: true, sClassName: true } }),
+      ids => prisma.academicWarningStudentResult.findMany({ where: { AND: [where, { id: { in: ids } }] } }),
+      page, pageSize,
+    );
 
     return {
       items: results.map((r) => ({
@@ -1720,7 +1723,7 @@ export class AcademicWarningsService {
       prisma.warningAction.findMany({
         where: {
           studentId: student.id,
-          OR: [{ caseType: null }, { caseType: { not: EARLY_WARNING_CASE_TYPE } }],
+          OR: [{ caseType: null }, { caseType: { notIn: [EARLY_WARNING_CASE_TYPE, SUPERSEDED_EARLY_WARNING_CASE_TYPE] } }],
         },
         orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       }),

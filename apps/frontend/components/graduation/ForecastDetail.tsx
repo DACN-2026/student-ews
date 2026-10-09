@@ -1,9 +1,10 @@
 "use client";
 
 import TextLabel from "@/components/ui/TextLabel";
+import styles from "./ForecastDetail.module.css";
 import ElectiveAlternatives, { type ElectiveReplacementGroup } from "./ElectiveAlternatives";
 import { studyTimeline } from "@/lib/academic-timeline";
-import { Fragment, useId, useMemo, useState } from "react";
+import { Fragment, useId, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Award, BookOpen, CheckCircle2, ChevronDown, ChevronUp, Clock, GraduationCap, Info, Search, Shield, Sparkles, TrendingUp } from "lucide-react";
 
 export type Course = {
@@ -77,6 +78,7 @@ export type Forecast = {
   electiveGroups: {
     code: string;
     groupCode?: string;
+    courseIds?: string[];
     requiredCredits: number | null;
     passedCredits: number;
     earnedCredits?: number;
@@ -146,6 +148,14 @@ const STANDARD_CERTS: Record<
     desc: "Điểm trung bình tích lũy toàn khóa đạt tối thiểu từ 2.00 / 4.00",
     advice: "Cần duy trì điểm trung bình tích lũy để đủ điều kiện xếp loại tốt nghiệp.",
   },
+};
+
+// Tên khối trong CTĐT K44, cùng nguồn với backend/lib/k44-elective-blocks.ts.
+const K44_ELECTIVE_GROUP_NAMES: Record<string, string> = {
+  A6: "Toán học, Tin học, Khoa học tự nhiên",
+  A7: "Khoa học xã hội và Nhân văn",
+  B2: "Kiến thức chuyên ngành",
+  B3: "Kiến thức bổ trợ",
 };
 
 type ActionItem = {
@@ -293,20 +303,12 @@ export default function ForecastDetail({
     return allElectiveCourses.length > 0 ? allElectiveCourses : derivedElectivesFromGrades;
   }, [allElectiveCourses, derivedElectivesFromGrades]);
 
-  const passedElectives = useMemo(
-    () => effectiveElectiveCourses.filter((c) => c.state === "passed"),
-    [effectiveElectiveCourses],
-  );
   const pendingElectives = useMemo(
     () => effectiveElectiveCourses.filter((c) => c.state === "no_score"),
     [effectiveElectiveCourses],
   );
   const failedElectives = useMemo(
     () => effectiveElectiveCourses.filter((c) => c.state === "failed"),
-    [effectiveElectiveCourses],
-  );
-  const takenElectives = useMemo(
-    () => effectiveElectiveCourses.filter((c) => c.state !== "not_completed"),
     [effectiveElectiveCourses],
   );
 
@@ -513,8 +515,9 @@ export default function ForecastDetail({
   ]);
 
   // Tab State
-  type MainTab = "action" | "enrolled" | "plan" | "curriculum";
+  type MainTab = "action" | "enrolled" | "plan" | "curriculum" | "outcomes";
   const [activeMainTab, setActiveMainTab] = useState<MainTab>(() => {
+    if (initialTab === "action") return "action";
     if (initialTab === "transcript") return "curriculum";
     if (initialTab === "enrolled") return "enrolled";
     if (initialTab === "plan") return "plan";
@@ -524,11 +527,31 @@ export default function ForecastDetail({
   });
 
   // Sub-tabs in "Chi tiết CTĐT"
-  type CurriculumSubTab = "mandatory" | "electives" | "outcomes" | "transcript";
+  type CurriculumSubTab = "mandatory" | "electives" | "transcript";
   const [curriculumSubTab, setCurriculumSubTab] = useState<CurriculumSubTab>(() => {
     if (initialTab === "transcript") return "transcript";
     return "mandatory";
   });
+
+  const tabSectionRef = useRef<HTMLElement>(null);
+  const scrollToTabSection = () => {
+    window.requestAnimationFrame(() => {
+      const section = tabSectionRef.current;
+      const scrollContainer = section?.closest<HTMLElement>("[data-modal-scroll-container]");
+      if (!section || !scrollContainer) return;
+      const top = scrollContainer.scrollTop + section.getBoundingClientRect().top - scrollContainer.getBoundingClientRect().top;
+      scrollContainer.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+    });
+  };
+  const selectMainTab = (tab: MainTab) => {
+    setActiveMainTab(tab);
+    setExpandedElectiveId(null);
+    scrollToTabSection();
+  };
+  const selectCurriculumTab = (tab: CurriculumSubTab) => {
+    setCurriculumSubTab(tab);
+    scrollToTabSection();
+  };
 
   // State for sub-views
   const [showTechnicalAudit, setShowTechnicalAudit] = useState(false);
@@ -569,15 +592,59 @@ export default function ForecastDetail({
   }, [allMandatoryCourses, mandatoryFilter, mandatorySearch]);
 
   // Filters inside "HP tự chọn" sub-tab
-  const [electiveFilter, setElectiveFilter] = useState<"taken" | "pending" | "failed" | "all">("taken");
+  const [electiveFilter, setElectiveFilter] = useState<"taken" | "pending" | "failed" | "unregistered" | "all">("taken");
   const [electiveSearch, setElectiveSearch] = useState("");
+  const [electiveGroupCode, setElectiveGroupCode] = useState<string | null>(null);
+  const electiveListId = useId();
+  const electiveListHeadingRef = useRef<HTMLHeadingElement>(null);
+  const electiveGroupsRef = useRef<HTMLElement>(null);
+  const selectedElectiveGroup = forecast.electiveGroups.find((group) => group.code === electiveGroupCode);
+  const electiveGroupName = (group: Forecast["electiveGroups"][number]) => {
+    const blockCode = (group.groupCode || group.code).replace(/:\d+$/, "");
+    return forecast.electiveReplacementGroups?.find((item) => item.block === blockCode)?.blockName
+      || (/^CQ2[2-5]CT(?:-(?:PM|MMT|KHDL))?$/i.test(programCode || "") ? K44_ELECTIVE_GROUP_NAMES[blockCode] : undefined)
+      || `Nhóm tự chọn ${blockCode}`;
+  };
+  const groupElectives = useMemo(() => {
+    if (!selectedElectiveGroup) return effectiveElectiveCourses;
+    const courseIds = new Set(selectedElectiveGroup.courseIds || []);
+    return effectiveElectiveCourses.filter((course) => courseIds.has(course.courseId));
+  }, [effectiveElectiveCourses, selectedElectiveGroup]);
+  const groupTakenElectives = groupElectives.filter((course) => course.state !== "not_completed");
+  const groupFailedElectives = groupElectives.filter((course) => course.state === "failed");
+  const groupUnregisteredElectives = groupElectives.filter((course) => course.state === "not_completed");
+  const scrollToElectiveSection = (target: HTMLElement | null, onlyIfNeeded = false) => {
+    const container = target?.closest<HTMLElement>("[data-modal-scroll-container]");
+    if (!target || !container) return;
+    const targetRect = target.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    const navigation = container.querySelector<HTMLElement>('nav[aria-label="Nội dung chi tiết tốt nghiệp"]');
+    const navigationHeight = navigation?.getBoundingClientRect().height || 0;
+    if (!onlyIfNeeded || targetRect.top < containerRect.top + navigationHeight + 12 || targetRect.top > containerRect.bottom - 160) {
+      container.scrollTo({ top: Math.max(0, container.scrollTop + targetRect.top - containerRect.top - navigationHeight - 12), behavior: "auto" });
+    }
+  };
+  const selectElectiveGroup = (code: string | null) => {
+    setElectiveGroupCode(code);
+    setElectiveFilter("all");
+    setElectiveSearch("");
+    window.requestAnimationFrame(() => {
+      if (code) {
+        scrollToElectiveSection(electiveListHeadingRef.current, true);
+        electiveListHeadingRef.current?.focus({ preventScroll: true });
+      } else {
+        scrollToElectiveSection(electiveGroupsRef.current);
+        electiveGroupsRef.current?.querySelector<HTMLButtonElement>("button")?.focus({ preventScroll: true });
+      }
+    });
+  };
 
   const displayedElectives = useMemo(() => {
-    let list: Course[] = [];
-    if (electiveFilter === "taken") list = takenElectives;
-    else if (electiveFilter === "pending") list = pendingElectives;
-    else if (electiveFilter === "failed") list = failedElectives;
-    else list = effectiveElectiveCourses;
+    let list = groupElectives;
+    if (electiveFilter === "taken") list = list.filter((course) => course.state !== "not_completed");
+    else if (electiveFilter === "pending") list = list.filter((course) => course.state === "no_score");
+    else if (electiveFilter === "failed") list = list.filter((course) => course.state === "failed");
+    else if (electiveFilter === "unregistered") list = list.filter((course) => course.state === "not_completed");
 
     if (electiveSearch.trim()) {
       const q = electiveSearch.toLowerCase();
@@ -588,7 +655,7 @@ export default function ForecastDetail({
       );
     }
     return list;
-  }, [electiveFilter, takenElectives, pendingElectives, failedElectives, effectiveElectiveCourses, electiveSearch]);
+  }, [electiveFilter, groupElectives, electiveSearch]);
 
   // Filters inside "Bảng điểm" sub-tab
   const [transcriptSearch, setTranscriptSearch] = useState("");
@@ -634,13 +701,13 @@ export default function ForecastDetail({
   }, [grades, transcriptTermFilter, transcriptStatusFilter, failedGrades, pendingGrades, transcriptSearch]);
 
   return (
-    <div className="space-y-4 text-xs sm:text-sm text-slate-800">
+    <div className={`${styles.detail} min-w-0 space-y-4 text-xs sm:text-sm text-slate-800`}>
       {/* ============================================================ */}
       {/* 1. SUMMARY ĐẦU MODAL — GỌN GÀNG, KHÔNG CARD MÀU NỔI, KHÔNG GRADIENT */}
       {/* ============================================================ */}
       <div className="rounded-xl border border-slate-200 bg-white p-3 sm:p-3.5">
         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-2.5">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="font-semibold text-slate-900 text-xs">
               {isOngoingStudent ? "Rà soát yêu cầu CTĐT" : "Dự kiến kết quả xét tốt nghiệp"}
             </span>
@@ -669,8 +736,9 @@ export default function ForecastDetail({
         {/* Hàng summary đơn giản với dividers */}
         <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
           {/* Cần xử lý */}
-          <div
-            onClick={() => setActiveMainTab("action")}
+          <button
+            type="button"
+            onClick={() => selectMainTab("action")}
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 transition cursor-pointer ${
               actionCount > 0
                 ? "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100/70"
@@ -681,48 +749,52 @@ export default function ForecastDetail({
             <strong className={`font-mono font-bold ${actionCount > 0 ? "text-amber-800" : "text-slate-800"}`}>
               {actionCount}
             </strong>
-          </div>
+          </button>
 
           <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
           {/* Đang học */}
-          <div
-            onClick={() => setActiveMainTab("enrolled")}
+          <button
+            type="button"
+            onClick={() => selectMainTab("enrolled")}
             className="flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1 text-sky-900 border border-sky-200 hover:bg-sky-100/70 transition cursor-pointer"
           >
             <span className="text-sky-700">Đang học:</span>
             <strong className="font-mono font-bold text-sky-900">{forecast.noScoreCourses.length} môn</strong>
-          </div>
+          </button>
 
           <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
           {/* Kế hoạch tiếp theo */}
-          <div
-            onClick={() => setActiveMainTab("plan")}
+          <button
+            type="button"
+            onClick={() => selectMainTab("plan")}
             className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1 text-slate-700 border border-slate-200 hover:bg-slate-100 transition cursor-pointer"
           >
             <span className="text-slate-500">Kế hoạch:</span>
             <strong className="font-mono font-bold text-slate-800">
               {futureMandatoryCourses.length > 0 ? `${futureMandatoryCourses.length} môn` : "Theo lộ trình"}
             </strong>
-          </div>
+          </button>
 
           <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
           {/* Tự chọn */}
-          <div
+          <button
+            type="button"
             onClick={() => {
-              setActiveMainTab("curriculum");
+              selectMainTab("curriculum");
               setCurriculumSubTab("electives");
             }}
             className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1 text-slate-700 border border-slate-200 hover:bg-slate-100 transition cursor-pointer"
           >
-            <span className="text-slate-500">Tự chọn:</span>
+            <span className="text-slate-500">Tự chọn được tính:</span>
             <strong className="font-mono font-bold text-slate-800">
-              {requirements.electives.passedCredits || 0}
-              {requirements.electives.requiredCredits ? ` / ${requirements.electives.requiredCredits} TC` : " TC"}
+              {requirements.electives.completedCredits == null
+                ? "Chưa xác định"
+                : `${requirements.electives.completedCredits}${requirements.electives.requiredCredits != null ? ` / ${requirements.electives.requiredCredits}` : ""} TC`}
             </strong>
-          </div>
+          </button>
 
           {/* Nếu là sinh viên năm cuối: hiển thị thêm Tín chỉ tích lũy */}
           {!isOngoingStudent && (
@@ -763,11 +835,13 @@ export default function ForecastDetail({
       {/* 2. KHUYẾN NGHỊ — RÚT GỌN THÀNH DANH SÁCH NGẮN, KHÔNG CARD TO */}
       {/* ============================================================ */}
       {shortRecommendations.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-3 sm:px-4 sm:py-3">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+        <details className="group rounded-xl border border-slate-200 bg-white p-3 sm:px-4 sm:py-3">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-xs font-bold text-slate-900 rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600">
             <Sparkles size={14} className="text-lime-600" />
             <span>Khuyến nghị</span>
-          </div>
+            <span className="font-normal text-slate-500">({shortRecommendations.length})</span>
+            <ChevronDown size={14} className="ml-auto text-slate-500 transition-transform group-open:rotate-180" />
+          </summary>
           <ul className="mt-1.5 space-y-1 text-xs text-slate-600 pl-1">
             {shortRecommendations.map((rec, idx) => (
               <li key={idx} className="flex items-start gap-2">
@@ -776,17 +850,19 @@ export default function ForecastDetail({
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       )}
 
       {/* ============================================================ */}
       {/* 3. TABS NAVIGATION — STICKY BÊN DƯỚI HEADER */}
       {/* ============================================================ */}
-      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-xs border-b border-slate-200 pt-1 pb-2 flex items-center gap-1.5 overflow-x-auto">
+      <section ref={tabSectionRef} className="space-y-4">
+      <nav aria-label="Nội dung chi tiết tốt nghiệp" className="sticky top-[calc(-1*var(--modal-scroll-padding,0px))] z-20 -mx-0.5 bg-white border-b border-slate-200 px-0.5 pt-1 pb-2 flex flex-wrap items-center gap-1.5">
         {/* Tab Cần xử lý */}
         <button
           type="button"
-          onClick={() => setActiveMainTab("action")}
+          onClick={() => selectMainTab("action")}
+          aria-pressed={activeMainTab === "action"}
           className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer whitespace-nowrap ${
             activeMainTab === "action"
               ? "bg-slate-900 text-white shadow-2xs"
@@ -809,7 +885,8 @@ export default function ForecastDetail({
         {/* Tab Đang học */}
         <button
           type="button"
-          onClick={() => setActiveMainTab("enrolled")}
+          onClick={() => selectMainTab("enrolled")}
+          aria-pressed={activeMainTab === "enrolled"}
           className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer whitespace-nowrap ${
             activeMainTab === "enrolled"
               ? "bg-slate-900 text-white shadow-2xs"
@@ -832,7 +909,8 @@ export default function ForecastDetail({
         {/* Tab Kế hoạch */}
         <button
           type="button"
-          onClick={() => setActiveMainTab("plan")}
+          onClick={() => selectMainTab("plan")}
+          aria-pressed={activeMainTab === "plan"}
           className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer whitespace-nowrap ${
             activeMainTab === "plan"
               ? "bg-slate-900 text-white shadow-2xs"
@@ -855,7 +933,8 @@ export default function ForecastDetail({
         {/* Tab Chi tiết CTĐT */}
         <button
           type="button"
-          onClick={() => setActiveMainTab("curriculum")}
+          onClick={() => selectMainTab("curriculum")}
+          aria-pressed={activeMainTab === "curriculum"}
           className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer whitespace-nowrap ${
             activeMainTab === "curriculum"
               ? "bg-slate-900 text-white shadow-2xs"
@@ -865,647 +944,13 @@ export default function ForecastDetail({
           <GraduationCap size={13} />
           <span>Chi tiết CTĐT</span>
         </button>
-      </div>
+        <button type="button" onClick={() => selectMainTab("outcomes")} aria-pressed={activeMainTab === "outcomes"}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition cursor-pointer ${activeMainTab === "outcomes" ? "bg-slate-900 text-white shadow-2xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900"}`}>
+          <Award size={13} className="shrink-0" /><span>Chuẩn đầu ra & chứng chỉ ({layer2Rules.length})</span>
+        </button>
+      </nav>
 
-      {/* ============================================================ */}
-      {/* TAB 1: CẦN XỬ LÝ (QUAN TRỌNG NHẤT) */}
-      {/* ============================================================ */}
-      {activeMainTab === "action" && (
-        <div className="space-y-3">
-          {actionCount === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-600">
-              <CheckCircle2 size={28} className="mx-auto text-emerald-600 mb-2" />
-              <p className="font-bold text-slate-900 text-sm">
-                Không có yêu cầu cần xử lý từ các học kỳ trước
-              </p>
-              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                Sinh viên không nợ học phần bắt buộc nào từ các kỳ đã qua và không có môn học nào bị điểm F chưa trả nợ.
-              </p>
-            </div>
-          ) : actionCount === 1 ? (
-            // Nếu chỉ có 1 vấn đề: hiển thị block đơn giản
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="font-bold text-slate-900 text-sm">{actionItems[0].courseName}</h4>
-                    <TextLabel className="font-mono text-xs font-semibold text-slate-700">
-                      {actionItems[0].courseCode}
-                    </TextLabel>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
-                    {actionItems[0].credits > 0 && <span>{actionItems[0].credits} TC</span>}
-                    {actionItems[0].credits > 0 && <span>•</span>}
-                    <span className="font-medium text-slate-700">{actionItems[0].requirementType}</span>
-                    {actionItems[0].letterGrade && (
-                      <>
-                        <span>•</span>
-                        <span className="font-bold text-rose-700">Điểm {actionItems[0].letterGrade}</span>
-                      </>
-                    )}
-                    {actionItems[0].termInfo && (
-                      <>
-                        <span>•</span>
-                        <span>{actionItems[0].termInfo}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <TextLabel
-                  className={`inline-flex items-center gap-1    text-xs font-bold self-start sm:self-center ${
-                    actionItems[0].statusType === "fail"
-                      ? "bg-rose-50 text-rose-800  "
-                      : "bg-amber-50 text-amber-800  "
-                  }`}
-                >
-                  {actionItems[0].statusLabel}
-                </TextLabel>
-              </div>
-
-              <div className="mt-3 text-xs text-slate-700 flex items-start gap-1.5">
-                <span className="font-semibold text-slate-900 shrink-0">Khuyến nghị:</span>
-                <span className="leading-relaxed">{renderAdvice(actionItems[0])}</span>
-              </div>
-              {expandedElectiveId === actionItems[0].id && (
-                <div className="mt-4 border-t border-slate-100 pt-4">{renderAlternatives(actionItems[0])}</div>
-              )}
-            </div>
-          ) : (
-            // Nếu có nhiều vấn đề: hiển thị bảng / danh sách gọn
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[600px] text-left text-xs">
-                  <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
-                    <tr>
-                      <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
-                      <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần / Yêu cầu</th>
-                      <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
-                      <th className="px-3 py-2.5 text-center table-cell-center">Loại</th>
-                      <th className="px-3 py-2.5 text-center table-cell-center">Tình trạng</th>
-                      <th className="px-3.5 py-2.5 text-center table-cell-center">Khuyến nghị xử lý</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {actionItems.map((item) => (
-                      <Fragment key={item.id}>
-                      <tr className="hover:bg-slate-50/70 transition">
-                        <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
-                          {item.courseCode}
-                        </td>
-                        <td className="px-3.5 py-2.5 font-medium text-slate-800 text-left table-cell-left">
-                          {item.courseName}
-                        </td>
-                        <td className="px-2 py-2.5 text-center font-mono text-slate-700 table-cell-center">
-                          {item.credits > 0 ? item.credits : "—"}
-                        </td>
-                        <td className="px-3 py-2.5 text-center table-cell-center">
-                          <TextLabel
-                            className={`rounded   text-[10px] font-semibold ${
-                              item.requirementType === "Tự chọn"
-                                ? "bg-indigo-50 text-indigo-700"
-                                : item.requirementType === "Bắt buộc"
-                                  ? "bg-slate-100 text-slate-700"
-                                  : "bg-amber-50 text-amber-800"
-                            }`}
-                          >
-                            {item.requirementType}
-                          </TextLabel>
-                        </td>
-                        <td className="px-3 py-2.5 whitespace-nowrap text-center table-cell-center">
-                          <TextLabel
-                            className={`inline-flex items-center gap-1    text-[11px] font-bold ${
-                              item.statusType === "fail"
-                                ? "bg-rose-50 text-rose-800  "
-                                : "bg-amber-50 text-amber-800  "
-                            }`}
-                          >
-                            {item.statusLabel}
-                          </TextLabel>
-                        </td>
-                        <td className="px-3.5 py-2.5 text-center text-slate-600 max-w-xs whitespace-normal leading-relaxed table-cell-center">
-                          {renderAdvice(item)}
-                        </td>
-                      </tr>
-                      {expandedElectiveId === item.id && (
-                        <tr>
-                          <td colSpan={6} className="px-3.5 py-3 bg-slate-50/50">{renderAlternatives(item)}</td>
-                        </tr>
-                      )}
-                      </Fragment>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ============================================================ */}
-      {/* TAB 2: ĐANG HỌC (HỌC PHẦN KỲ HIỆN TẠI) */}
-      {/* ============================================================ */}
-      {activeMainTab === "enrolled" && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>
-              Các học phần sinh viên đang theo học trong học kỳ hiện tại, chưa có điểm tổng kết cuối kỳ.
-            </span>
-            <TextLabel className="font-semibold text-sky-800">
-              {forecast.noScoreCourses.length} học phần
-            </TextLabel>
-          </div>
-
-          {forecast.noScoreCourses.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-500">
-              <p className="font-medium text-slate-700">Sinh viên hiện không có môn học nào đang chờ điểm.</p>
-              <p className="mt-1 text-xs text-slate-400">Không có dữ liệu học phần đang học trong đợt này.</p>
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[550px] text-left text-xs">
-                  <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
-                    <tr>
-                      <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
-                      <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần</th>
-                      <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
-                      <th className="px-3 py-2.5 text-center table-cell-center">Loại yêu cầu</th>
-                      <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {forecast.noScoreCourses.map((c) => (
-                      <tr key={c.courseId} className="hover:bg-slate-50/70 transition">
-                        <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
-                          {c.courseCode}
-                        </td>
-                        <td className="px-3.5 py-2.5 font-medium text-slate-800 text-left table-cell-left">{c.courseName}</td>
-                        <td className="px-2 py-2.5 text-center font-mono text-slate-700 table-cell-center">{c.credits}</td>
-                        <td className="px-3 py-2.5 text-slate-600 text-center table-cell-center">{c.requirementType || "Bắt buộc"}</td>
-                        <td className="px-3.5 py-2.5 text-center whitespace-nowrap table-cell-center">
-                          <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800">
-                             Đang học
-                          </TextLabel>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ============================================================ */}
-      {/* TAB 3: KẾ HOẠCH (HỌC PHẦN KỲ TƯƠNG LAI) */}
-      {/* ============================================================ */}
-      {activeMainTab === "plan" && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>
-              Các học phần bắt buộc thuộc các học kỳ tương lai theo khung chương trình đào tạo.
-            </span>
-            <TextLabel className="text-slate-600 font-semibold">
-              Kế hoạch tương lai ({futureMandatoryCourses.length} môn)
-            </TextLabel>
-          </div>
-
-          {futureMandatoryCourses.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-500">
-              <CheckCircle2 size={24} className="mx-auto text-emerald-600 mb-1.5" />
-              <p className="font-medium text-slate-700">Không có học phần kế hoạch tương lai còn lại.</p>
-              <p className="mt-1 text-xs text-slate-400">Sinh viên đã hoàn thành hoặc đang ở giai đoạn hoàn tất CTĐT.</p>
-            </div>
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[550px] text-left text-xs">
-                  <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
-                    <tr>
-                      <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
-                      <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần</th>
-                      <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
-                      <th className="px-3 py-2.5 text-center table-cell-center">Lộ trình học kỳ</th>
-                      <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {futureMandatoryCourses.map((c) => (
-                      <tr key={c.courseId} className="hover:bg-slate-50/70 transition">
-                        <td className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
-                          {c.courseCode}
-                        </td>
-                        <td className="px-3.5 py-2.5 font-medium text-slate-800 text-left table-cell-left">{c.courseName}</td>
-                        <td className="px-2 py-2.5 text-center font-mono text-slate-700 table-cell-center">{c.credits}</td>
-                        <td className="px-3 py-2.5 text-slate-600 whitespace-nowrap text-center table-cell-center">
-                          {c.semesterNo ? `Học kỳ ${c.semesterNo} (Năm ${Math.ceil(c.semesterNo / 2)})` : "Kỳ sau"}
-                        </td>
-                        <td className="px-3.5 py-2.5 text-center whitespace-nowrap table-cell-center">
-                          <TextLabel className="text-[11px] font-medium text-slate-600">
-                            Kế hoạch tương lai
-                          </TextLabel>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ============================================================ */}
-      {/* TAB 4: CHI TIẾT CTĐT (SUB-TABS: BẮT BUỘC, TỰ CHỌN, CĐR, BẢNG ĐIỂM) */}
-      {/* ============================================================ */}
-      {activeMainTab === "curriculum" && (
-        <div className="space-y-3.5">
-          {/* Sub-tabs header */}
-          <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 pb-2">
-            <button
-              type="button"
-              onClick={() => setCurriculumSubTab("mandatory")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
-                curriculumSubTab === "mandatory"
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              HP bắt buộc ({requirements.requiredCourses.total} môn)
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurriculumSubTab("electives")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
-                curriculumSubTab === "electives"
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              HP tự chọn ({requirements.electives.passedCredits || 0}/{requirements.electives.requiredCredits || "—"} TC)
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurriculumSubTab("outcomes")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
-                curriculumSubTab === "outcomes"
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              Chuẩn đầu ra & Chứng chỉ ({layer2Rules.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurriculumSubTab("transcript")}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
-                curriculumSubTab === "transcript"
-                  ? "bg-slate-800 text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              Bảng điểm ({grades.length} môn)
-            </button>
-          </div>
-
-          {/* ------------------------------------------------------------ */}
-          {/* SUB-TAB 1: HỌC PHẦN BẮT BUỘC */}
-          {/* ------------------------------------------------------------ */}
-          {curriculumSubTab === "mandatory" && (
-            <div className="space-y-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-1.5 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setMandatoryFilter("all")}
-                    className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
-                      mandatoryFilter === "all"
-                        ? "bg-slate-200 text-slate-900"
-                        : "text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    Tất cả ({allMandatoryCourses.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMandatoryFilter("completed")}
-                    className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
-                      mandatoryFilter === "completed"
-                        ? "bg-emerald-100 text-emerald-900 font-bold"
-                        : "text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    Đã đạt ({requirements.requiredCourses.completed})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMandatoryFilter("missing")}
-                    className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
-                      mandatoryFilter === "missing"
-                        ? "bg-amber-100 text-amber-900 font-bold"
-                        : "text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    Chưa hoàn thành ({requirements.requiredCourses.remaining})
-                  </button>
-                </div>
-
-                <div className="relative w-full sm:w-56">
-                  <Search size={13} className="pointer-events-none absolute left-2.5 top-2.5 text-slate-400" />
-                  <input
-                    value={mandatorySearch}
-                    onChange={(e) => setMandatorySearch(e.target.value)}
-                    placeholder="Tìm môn bắt buộc..."
-                    className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-2.5 text-xs outline-none focus:border-lime-500 focus:ring-1 focus:ring-lime-100"
-                  />
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <div className="max-h-[45vh] overflow-y-auto overflow-x-auto">
-                  <table className="w-full min-w-[550px] text-left text-xs">
-                    <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
-                      <tr>
-                        <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
-                        <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần</th>
-                        <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
-                        <th className="px-3 py-2.5 text-center table-cell-center">Lộ trình CTĐT</th>
-                        <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {displayedMandatoryCourses.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="py-8 text-center text-slate-400">
-                            Không tìm thấy học phần bắt buộc nào phù hợp.
-                          </td>
-                        </tr>
-                      ) : (
-                        displayedMandatoryCourses.map((c) => {
-                          const isPass = c.isCompleted || c.state === "passed";
-                          const isFail = c.state === "failed";
-                          const isNoScore = c.state === "no_score";
-                          const isOverdue =
-                            isOngoingStudent &&
-                            !isPass &&
-                            !isFail &&
-                            !isNoScore &&
-                            c.semesterNo != null &&
-                            expectedSemesterNo &&
-                            c.semesterNo < expectedSemesterNo;
-
-                          return (
-                            <tr key={c.courseId} className="hover:bg-slate-50/70 transition">
-                              <td className="px-3.5 py-2 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
-                                {c.courseCode}
-                              </td>
-                              <td className="px-3.5 py-2 font-medium text-slate-800 text-left table-cell-left">{c.courseName}</td>
-                              <td className="px-2 py-2 text-center font-mono text-slate-700 table-cell-center">{c.credits}</td>
-                              <td className="px-3 py-2 text-slate-500 whitespace-nowrap text-center table-cell-center">
-                                {c.semesterNo ? `Học kỳ ${c.semesterNo}` : "Chưa phân kỳ"}
-                              </td>
-                              <td className="px-3.5 py-2 text-center whitespace-nowrap table-cell-center">
-                                {isPass ? (
-                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
-                                     Đã đạt
-                                  </TextLabel>
-                                ) : isFail ? (
-                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800">
-                                     Chưa đạt (F)
-                                  </TextLabel>
-                                ) : isNoScore ? (
-                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800">
-                                     Đang học
-                                  </TextLabel>
-                                ) : isOverdue ? (
-                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
-                                     Còn thiếu
-                                  </TextLabel>
-                                ) : (
-                                  <TextLabel className="text-[11px] font-medium text-slate-600">
-                                    Kế hoạch
-                                  </TextLabel>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ------------------------------------------------------------ */}
-          {/* SUB-TAB 2: HỌC PHẦN TỰ CHỌN (RÚT GỌN THEO YÊU CẦU MỤC 8) */}
-          {/* ------------------------------------------------------------ */}
-          {curriculumSubTab === "electives" && (
-            <div className="space-y-3">
-              {/* Rút gọn phần overview thành 1 hàng đơn giản (Mục 8) */}
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-xs text-slate-700">
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500">Đã đạt:</span>
-                  <strong className="font-mono font-bold text-emerald-800">
-                    {requirements.electives.passedCredits || 0} TC
-                  </strong>
-                </div>
-                <span className="text-slate-300">•</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500">Đang học:</span>
-                  <strong className="font-mono font-bold text-sky-800">
-                    {pendingElectives.reduce((sum, c) => sum + c.credits, 0)} TC
-                  </strong>
-                </div>
-                <span className="text-slate-300">•</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500">Chưa đạt:</span>
-                  <strong className={`font-mono font-bold ${failedElectives.length > 0 ? "text-rose-700" : "text-slate-700"}`}>
-                    {failedElectives.reduce((sum, c) => sum + c.credits, 0)} TC
-                  </strong>
-                </div>
-                <span className="text-slate-300">•</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500">Còn thiếu:</span>
-                  <strong className="font-mono font-bold text-slate-900">
-                    {requirements.electives.remainingCredits != null ? `${requirements.electives.remainingCredits} TC` : "0 TC"}
-                  </strong>
-                </div>
-              </div>
-
-              {/* Nhóm định mức chuyên ngành nếu có */}
-              {forecast.electiveGroups && forecast.electiveGroups.length > 0 && (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {forecast.electiveGroups.map((group) => {
-                    const isPass = group.status === "PASS";
-                    return (
-                      <div
-                        key={group.code}
-                        className={`rounded-lg border p-2.5 text-xs ${
-                          isPass ? "border-emerald-200 bg-emerald-50/30" : "border-slate-200 bg-white"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-slate-900">{group.code}</span>
-                          <TextLabel
-                            className={`rounded   text-[10px] font-bold ${
-                              isPass ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700"
-                            }`}
-                          >
-                            {isPass ? "Đạt định mức" : "Đang tích lũy"}
-                          </TextLabel>
-                        </div>
-                        <div className="mt-1 text-slate-600">
-                          Đã tích lũy: <strong className="font-mono text-slate-900">{group.passedCredits} TC</strong>
-                          {group.requiredCredits && (
-                            <span> / {group.requiredCredits} TC</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Bộ lọc & Tìm kiếm môn tự chọn */}
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-1.5 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setElectiveFilter("taken")}
-                    className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
-                      electiveFilter === "taken"
-                        ? "bg-slate-200 text-slate-900"
-                        : "text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    Đã & Đang học ({takenElectives.length})
-                  </button>
-                  {failedElectives.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setElectiveFilter("failed")}
-                      className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
-                        electiveFilter === "failed"
-                          ? "bg-rose-100 text-rose-900 font-bold"
-                          : "text-rose-600 hover:text-rose-900"
-                      }`}
-                    >
-                      Chưa đạt ({failedElectives.length})
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setElectiveFilter("all")}
-                    className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
-                      electiveFilter === "all"
-                        ? "bg-slate-200 text-slate-900"
-                        : "text-slate-500 hover:text-slate-900"
-                    }`}
-                  >
-                    Tất cả trong CTĐT ({effectiveElectiveCourses.length})
-                  </button>
-                </div>
-
-                <div className="relative w-full sm:w-56">
-                  <Search size={13} className="pointer-events-none absolute left-2.5 top-2.5 text-slate-400" />
-                  <input
-                    value={electiveSearch}
-                    onChange={(e) => setElectiveSearch(e.target.value)}
-                    placeholder="Tìm môn tự chọn..."
-                    className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-2.5 text-xs outline-none focus:border-lime-500 focus:ring-1 focus:ring-lime-100"
-                  />
-                </div>
-              </div>
-
-              {/* Bảng danh sách học phần tự chọn */}
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <div className="max-h-[45vh] overflow-y-auto overflow-x-auto">
-                  <table className="w-full min-w-[550px] text-left text-xs">
-                    <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
-                      <tr>
-                        <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
-                        <th className="px-3.5 py-2.5 text-left table-cell-left">Tên môn học</th>
-                        <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
-                        <th className="px-3 py-2.5 text-center table-cell-center">Kỳ học / Đợt</th>
-                        <th className="px-2 py-2.5 text-center table-cell-center">Điểm chữ</th>
-                        <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {displayedElectives.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="py-8 text-center text-slate-400">
-                            Không tìm thấy học phần tự chọn nào phù hợp.
-                          </td>
-                        </tr>
-                      ) : (
-                        displayedElectives.map((course) => {
-                          const isPassed = course.state === "passed";
-                          const isFail = course.state === "failed";
-                          const isNoScore = course.state === "no_score";
-                          const grade = gradeByCourseCode.get(course.courseCode.toUpperCase());
-
-                          return (
-                            <tr key={course.courseId} className="hover:bg-slate-50/70 transition">
-                              <td className="px-3.5 py-2 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
-                                {course.courseCode}
-                              </td>
-                              <td className="px-3.5 py-2 font-medium text-slate-800 text-left table-cell-left">{course.courseName}</td>
-                              <td className="px-2 py-2 text-center font-mono text-slate-700 table-cell-center">{course.credits}</td>
-                              <td className="px-3 py-2 text-slate-500 whitespace-nowrap text-center table-cell-center">
-                                {grade?.academicYear && grade?.termCode ? (
-                                  <span className="font-mono text-slate-700">{grade.academicYear} • {grade.termCode}</span>
-                                ) : (
-                                  "Theo CTĐT"
-                                )}
-                              </td>
-                              <td className="px-2 py-2 text-center font-mono font-extrabold table-cell-center">
-                                {grade?.letterGrade ? (
-                                  <span className={grade.letterGrade === "F" ? "text-rose-700" : "text-slate-800"}>
-                                    {grade.letterGrade}
-                                  </span>
-                                ) : (
-                                  "—"
-                                )}
-                              </td>
-                              <td className="px-3.5 py-2 text-center whitespace-nowrap table-cell-center">
-                                {isPassed ? (
-                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
-                                     Đã đạt
-                                  </TextLabel>
-                                ) : isNoScore ? (
-                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800">
-                                     Đang học
-                                  </TextLabel>
-                                ) : isFail ? (
-                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800">
-                                     Chưa đạt (F)
-                                  </TextLabel>
-                                ) : (
-                                  <TextLabel className="text-[11px] font-medium text-slate-600">
-                                    Chưa học
-                                  </TextLabel>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ------------------------------------------------------------ */}
-          {/* SUB-TAB 3: CHỨNG CHỈ & CHUẨN ĐẦU RA (MỤC 9) */}
-          {/* ------------------------------------------------------------ */}
-          {curriculumSubTab === "outcomes" && (
+          {activeMainTab === "outcomes" && (
             <div className="space-y-3">
               <p className="text-xs text-slate-500">
                 Các điều kiện chuẩn đầu ra và chứng chỉ bắt buộc theo Quy chế Đào tạo đại học.
@@ -1576,6 +1021,690 @@ export default function ForecastDetail({
             </div>
           )}
 
+
+      {/* ============================================================ */}
+      {/* TAB 1: CẦN XỬ LÝ (QUAN TRỌNG NHẤT) */}
+      {/* ============================================================ */}
+      {activeMainTab === "action" && (
+        <div className="space-y-3">
+          {actionCount === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-600">
+              <CheckCircle2 size={28} className="mx-auto text-emerald-600 mb-2" />
+              <p className="font-bold text-slate-900 text-sm">
+                Không có yêu cầu cần xử lý từ các học kỳ trước
+              </p>
+              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                Sinh viên không nợ học phần bắt buộc nào từ các kỳ đã qua và không có môn học nào bị điểm F chưa trả nợ.
+              </p>
+            </div>
+          ) : actionCount === 1 ? (
+            // Nếu chỉ có 1 vấn đề: hiển thị block đơn giản
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-slate-900 text-sm">{actionItems[0].courseName}</h4>
+                    <TextLabel className="font-mono text-xs font-semibold text-slate-700">
+                      {actionItems[0].courseCode}
+                    </TextLabel>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
+                    {actionItems[0].credits > 0 && <span>{actionItems[0].credits} TC</span>}
+                    {actionItems[0].credits > 0 && <span>•</span>}
+                    <span className="font-medium text-slate-700">{actionItems[0].requirementType}</span>
+                    {actionItems[0].letterGrade && (
+                      <>
+                        <span>•</span>
+                        <span className="font-bold text-rose-700">Điểm {actionItems[0].letterGrade}</span>
+                      </>
+                    )}
+                    {actionItems[0].termInfo && (
+                      <>
+                        <span>•</span>
+                        <span>{actionItems[0].termInfo}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <TextLabel
+                  className={`inline-flex items-center gap-1    text-xs font-bold self-start sm:self-center ${
+                    actionItems[0].statusType === "fail"
+                      ? "bg-rose-50 text-rose-800  "
+                      : "bg-amber-50 text-amber-800  "
+                  }`}
+                >
+                  {actionItems[0].statusLabel}
+                </TextLabel>
+              </div>
+
+              <div className="mt-3 text-xs text-slate-700 flex items-start gap-1.5">
+                <span className="font-semibold text-slate-900 shrink-0">Khuyến nghị:</span>
+                <span className="leading-relaxed">{renderAdvice(actionItems[0])}</span>
+              </div>
+              {expandedElectiveId === actionItems[0].id && (
+                <div className="mt-4 border-t border-slate-100 pt-4">{renderAlternatives(actionItems[0])}</div>
+              )}
+            </div>
+          ) : (
+            // Nếu có nhiều vấn đề: hiển thị bảng / danh sách gọn
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <div className="min-w-0">
+                <table className="forecast-table w-full min-w-[600px] text-left text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
+                    <tr>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần / Yêu cầu</th>
+                      <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                      <th className="px-3 py-2.5 text-center table-cell-center">Loại</th>
+                      <th className="px-3 py-2.5 text-center table-cell-center">Tình trạng</th>
+                      <th className="px-3.5 py-2.5 text-center table-cell-center">Khuyến nghị xử lý</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {actionItems.map((item) => (
+                      <Fragment key={item.id}>
+                      <tr className="hover:bg-slate-50/70 transition">
+                        <td data-label="Mã HP" className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
+                          {item.courseCode}
+                        </td>
+                        <td data-label="Tên học phần / Yêu cầu" className="px-3.5 py-2.5 font-medium text-slate-800 text-left table-cell-left">
+                          {item.courseName}
+                        </td>
+                        <td data-label="Số TC" className="px-2 py-2.5 text-center font-mono text-slate-700 table-cell-center">
+                          {item.credits > 0 ? item.credits : "—"}
+                        </td>
+                        <td data-label="Loại" className="px-3 py-2.5 text-center table-cell-center">
+                          <TextLabel
+                            className={`rounded   text-[10px] font-semibold ${
+                              item.requirementType === "Tự chọn"
+                                ? "bg-indigo-50 text-indigo-700"
+                                : item.requirementType === "Bắt buộc"
+                                  ? "bg-slate-100 text-slate-700"
+                                  : "bg-amber-50 text-amber-800"
+                            }`}
+                          >
+                            {item.requirementType}
+                          </TextLabel>
+                        </td>
+                        <td data-label="Tình trạng" className="px-3 py-2.5 whitespace-nowrap text-center table-cell-center">
+                          <TextLabel
+                            className={`inline-flex items-center gap-1    text-[11px] font-bold ${
+                              item.statusType === "fail"
+                                ? "bg-rose-50 text-rose-800  "
+                                : "bg-amber-50 text-amber-800  "
+                            }`}
+                          >
+                            {item.statusLabel}
+                          </TextLabel>
+                        </td>
+                        <td data-label="Khuyến nghị xử lý" className="px-3.5 py-2.5 text-center text-slate-600 max-w-xs whitespace-normal leading-relaxed table-cell-center">
+                          {renderAdvice(item)}
+                        </td>
+                      </tr>
+                      {expandedElectiveId === item.id && (
+                        <tr>
+                          <td colSpan={6} className="px-3.5 py-3 bg-slate-50/50">{renderAlternatives(item)}</td>
+                        </tr>
+                      )}
+                      </Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* TAB 2: ĐANG HỌC (HỌC PHẦN KỲ HIỆN TẠI) */}
+      {/* ============================================================ */}
+      {activeMainTab === "enrolled" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>
+              Các học phần sinh viên đang theo học trong học kỳ hiện tại, chưa có điểm tổng kết cuối kỳ.
+            </span>
+            <TextLabel className="font-semibold text-sky-800">
+              {forecast.noScoreCourses.length} học phần
+            </TextLabel>
+          </div>
+
+          {forecast.noScoreCourses.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-500">
+              <p className="font-medium text-slate-700">Sinh viên hiện không có môn học nào đang chờ điểm.</p>
+              <p className="mt-1 text-xs text-slate-400">Không có dữ liệu học phần đang học trong đợt này.</p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <div className="min-w-0">
+                <table className="forecast-table w-full min-w-[550px] text-left text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
+                    <tr>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần</th>
+                      <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                      <th className="px-3 py-2.5 text-center table-cell-center">Loại yêu cầu</th>
+                      <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {forecast.noScoreCourses.map((c) => (
+                      <tr key={c.courseId} className="hover:bg-slate-50/70 transition">
+                        <td data-label="Mã HP" className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
+                          {c.courseCode}
+                        </td>
+                        <td data-label="Tên học phần" className="px-3.5 py-2.5 font-medium text-slate-800 text-left table-cell-left">{c.courseName}</td>
+                        <td data-label="Số TC" className="px-2 py-2.5 text-center font-mono text-slate-700 table-cell-center">{c.credits}</td>
+                        <td data-label="Loại yêu cầu" className="px-3 py-2.5 text-slate-600 text-center table-cell-center">{c.requirementType || "Bắt buộc"}</td>
+                        <td data-label="Trạng thái" className="px-3.5 py-2.5 text-center whitespace-nowrap table-cell-center">
+                          <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800">
+                             Đang học
+                          </TextLabel>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* TAB 3: KẾ HOẠCH (HỌC PHẦN KỲ TƯƠNG LAI) */}
+      {/* ============================================================ */}
+      {activeMainTab === "plan" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>
+              Các học phần bắt buộc thuộc các học kỳ tương lai theo khung chương trình đào tạo.
+            </span>
+            <TextLabel className="text-slate-600 font-semibold">
+              Kế hoạch tương lai ({futureMandatoryCourses.length} môn)
+            </TextLabel>
+          </div>
+
+          {futureMandatoryCourses.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-6 text-center text-slate-500">
+              <CheckCircle2 size={24} className="mx-auto text-emerald-600 mb-1.5" />
+              <p className="font-medium text-slate-700">Không có học phần kế hoạch tương lai còn lại.</p>
+              <p className="mt-1 text-xs text-slate-400">Sinh viên đã hoàn thành hoặc đang ở giai đoạn hoàn tất CTĐT.</p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <div className="min-w-0">
+                <table className="forecast-table w-full min-w-[550px] text-left text-xs">
+                  <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
+                    <tr>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
+                      <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần</th>
+                      <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                      <th className="px-3 py-2.5 text-center table-cell-center">Lộ trình học kỳ</th>
+                      <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {futureMandatoryCourses.map((c) => (
+                      <tr key={c.courseId} className="hover:bg-slate-50/70 transition">
+                        <td data-label="Mã HP" className="px-3.5 py-2.5 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
+                          {c.courseCode}
+                        </td>
+                        <td data-label="Tên học phần" className="px-3.5 py-2.5 font-medium text-slate-800 text-left table-cell-left">{c.courseName}</td>
+                        <td data-label="Số TC" className="px-2 py-2.5 text-center font-mono text-slate-700 table-cell-center">{c.credits}</td>
+                        <td data-label="Lộ trình học kỳ" className="px-3 py-2.5 text-slate-600 whitespace-nowrap text-center table-cell-center">
+                          {c.semesterNo ? `Học kỳ ${c.semesterNo} (Năm ${Math.ceil(c.semesterNo / 2)})` : "Kỳ sau"}
+                        </td>
+                        <td data-label="Trạng thái" className="px-3.5 py-2.5 text-center whitespace-nowrap table-cell-center">
+                          <TextLabel className="text-[11px] font-medium text-slate-600">
+                            Kế hoạch tương lai
+                          </TextLabel>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* TAB 4: CHI TIẾT CTĐT (SUB-TABS: BẮT BUỘC, TỰ CHỌN, CĐR, BẢNG ĐIỂM) */}
+      {/* ============================================================ */}
+      {activeMainTab === "curriculum" && (
+        <div className="space-y-3.5">
+          {/* Sub-tabs header */}
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-200 pb-2">
+            <button
+              type="button"
+              onClick={() => selectCurriculumTab("mandatory")}
+              aria-pressed={curriculumSubTab === "mandatory"}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                curriculumSubTab === "mandatory"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              HP bắt buộc ({requirements.requiredCourses.total} môn)
+            </button>
+            <button
+              type="button"
+              onClick={() => selectCurriculumTab("electives")}
+              aria-pressed={curriculumSubTab === "electives"}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                curriculumSubTab === "electives"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              Học phần tự chọn
+            </button>
+            <button
+              type="button"
+              onClick={() => selectCurriculumTab("transcript")}
+              aria-pressed={curriculumSubTab === "transcript"}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                curriculumSubTab === "transcript"
+                  ? "bg-slate-800 text-white"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              Bảng điểm ({grades.length} môn)
+            </button>
+          </div>
+
+          {/* ------------------------------------------------------------ */}
+          {/* SUB-TAB 1: HỌC PHẦN BẮT BUỘC */}
+          {/* ------------------------------------------------------------ */}
+          {curriculumSubTab === "mandatory" && (
+            <div className="space-y-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setMandatoryFilter("all")}
+                    className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
+                      mandatoryFilter === "all"
+                        ? "bg-slate-200 text-slate-900"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    Tất cả ({allMandatoryCourses.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMandatoryFilter("completed")}
+                    className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
+                      mandatoryFilter === "completed"
+                        ? "bg-emerald-100 text-emerald-900 font-bold"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    Đã đạt ({requirements.requiredCourses.completed})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMandatoryFilter("missing")}
+                    className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
+                      mandatoryFilter === "missing"
+                        ? "bg-amber-100 text-amber-900 font-bold"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    Chưa hoàn thành ({requirements.requiredCourses.remaining})
+                  </button>
+                </div>
+
+                <div className="relative w-full sm:w-56">
+                  <Search size={13} className="pointer-events-none absolute left-2.5 top-2.5 text-slate-400" />
+                  <input
+                    value={mandatorySearch}
+                    aria-label="Tìm học phần bắt buộc"
+                    onChange={(e) => setMandatorySearch(e.target.value)}
+                    placeholder="Tìm môn bắt buộc..."
+                    className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-2.5 text-xs outline-none focus:border-lime-500 focus:ring-1 focus:ring-lime-100"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="min-w-0">
+                  <table className="forecast-table w-full min-w-[550px] text-left text-xs">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
+                      <tr>
+                        <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
+                        <th className="px-3.5 py-2.5 text-left table-cell-left">Tên học phần</th>
+                        <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                        <th className="px-3 py-2.5 text-center table-cell-center">Lộ trình CTĐT</th>
+                        <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {displayedMandatoryCourses.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-slate-400">
+                            Không tìm thấy học phần bắt buộc nào phù hợp.
+                          </td>
+                        </tr>
+                      ) : (
+                        displayedMandatoryCourses.map((c) => {
+                          const isPass = c.isCompleted || c.state === "passed";
+                          const isFail = c.state === "failed";
+                          const isNoScore = c.state === "no_score";
+                          const isOverdue =
+                            isOngoingStudent &&
+                            !isPass &&
+                            !isFail &&
+                            !isNoScore &&
+                            c.semesterNo != null &&
+                            expectedSemesterNo &&
+                            c.semesterNo < expectedSemesterNo;
+
+                          return (
+                            <tr key={c.courseId} className="hover:bg-slate-50/70 transition">
+                              <td data-label="Mã HP" className="px-3.5 py-2 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
+                                {c.courseCode}
+                              </td>
+                              <td data-label="Tên học phần" className="px-3.5 py-2 font-medium text-slate-800 text-left table-cell-left">{c.courseName}</td>
+                              <td data-label="Số TC" className="px-2 py-2 text-center font-mono text-slate-700 table-cell-center">{c.credits}</td>
+                              <td data-label="Lộ trình CTĐT" className="px-3 py-2 text-slate-500 whitespace-nowrap text-center table-cell-center">
+                                {c.semesterNo ? `Học kỳ ${c.semesterNo}` : "Chưa phân kỳ"}
+                              </td>
+                              <td data-label="Trạng thái" className="px-3.5 py-2 text-center whitespace-nowrap table-cell-center">
+                                {isPass ? (
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
+                                     Đã đạt
+                                  </TextLabel>
+                                ) : isFail ? (
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800">
+                                     Chưa đạt (F)
+                                  </TextLabel>
+                                ) : isNoScore ? (
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800">
+                                     Đang học
+                                  </TextLabel>
+                                ) : isOverdue ? (
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
+                                     Còn thiếu
+                                  </TextLabel>
+                                ) : (
+                                  <TextLabel className="text-[11px] font-medium text-slate-600">
+                                    Kế hoạch
+                                  </TextLabel>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ------------------------------------------------------------ */}
+          {/* SUB-TAB 2: HỌC PHẦN TỰ CHỌN (RÚT GỌN THEO YÊU CẦU MỤC 8) */}
+          {/* ------------------------------------------------------------ */}
+          {curriculumSubTab === "electives" && (
+            <div className="space-y-3">
+              {/* Số tín chỉ đáp ứng yêu cầu có thể thấp hơn số tín chỉ đã học đạt. */}
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-xs text-slate-700">
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="text-slate-600">Đáp ứng yêu cầu:</span>
+                  <strong className="font-mono font-bold text-slate-900">
+                    {requirements.electives.completedCredits == null || requirements.electives.requiredCredits == null
+                      ? "Chưa xác định"
+                      : `${requirements.electives.completedCredits} / ${requirements.electives.requiredCredits} tín chỉ`}
+                  </strong>
+                </div>
+                <span className="text-slate-300">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-600">Còn thiếu:</span>
+                  <strong className={`font-mono font-bold ${requirements.electives.remainingCredits ? "text-rose-700" : "text-slate-900"}`}>
+                    {requirements.electives.remainingCredits == null ? "Chưa xác định" : `${requirements.electives.remainingCredits} tín chỉ`}
+                  </strong>
+                </div>
+                <div className="h-px w-full bg-slate-200" />
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500">Tín chỉ môn đã đạt:</span>
+                  <strong className="font-mono font-bold text-emerald-800">
+                    {requirements.electives.passedCredits || 0}
+                  </strong>
+                </div>
+                <span className="text-slate-300">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500">Đang học:</span>
+                  <strong className="font-mono font-bold text-sky-800">
+                    {pendingElectives.reduce((sum, c) => sum + c.credits, 0)} tín chỉ
+                  </strong>
+                </div>
+                <span className="text-slate-300">•</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500">Môn chưa đạt:</span>
+                  <strong className={`font-mono font-bold ${failedElectives.length > 0 ? "text-rose-700" : "text-slate-700"}`}>
+                    {failedElectives.reduce((sum, c) => sum + c.credits, 0)} tín chỉ
+                  </strong>
+                </div>
+              </div>
+
+              {/* Giải thích yêu cầu của từng nhóm bằng tên và số tín chỉ cụ thể. */}
+              {forecast.electiveGroups && forecast.electiveGroups.length > 0 && (
+                <section ref={electiveGroupsRef} aria-label="Yêu cầu tín chỉ theo nhóm tự chọn" className="space-y-2">
+                  <h4 className="text-xs font-semibold text-slate-900">Yêu cầu tín chỉ theo nhóm tự chọn</h4>
+                  <p className="text-xs leading-relaxed text-slate-600">
+                    Chọn một nhóm để xem học phần bên dưới. Cần đủ tín chỉ ở từng nhóm; tín chỉ vượt yêu cầu của một nhóm không bù cho nhóm khác.
+                  </p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {forecast.electiveGroups.map((group) => {
+                      const isKnown = group.requiredCredits != null && group.remainingCredits != null;
+                      const isPass = isKnown && group.status === "PASS";
+                      const isSelected = electiveGroupCode === group.code;
+                      const blockCode = (group.groupCode || group.code).replace(/:\d+$/, "");
+                      return (
+                        <button
+                          key={group.code}
+                          type="button"
+                          onClick={() => selectElectiveGroup(group.code)}
+                          aria-label={`Xem học phần nhóm ${electiveGroupName(group)}`}
+                          aria-pressed={isSelected}
+                          aria-controls={electiveListId}
+                          disabled={!group.courseIds}
+                          className={`rounded-lg border p-2.5 text-left text-xs transition-colors cursor-pointer hover:border-lime-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600 disabled:cursor-default disabled:hover:border-slate-200 ${
+                            isSelected ? "border-lime-500 bg-lime-50/50 ring-1 ring-lime-500" : isPass ? "border-emerald-200 bg-emerald-50/30" : "border-slate-200 bg-white"
+                          }`}
+                        >
+                          <span className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                            <span className="font-semibold text-slate-900">{electiveGroupName(group)}</span>
+                            <TextLabel className={`text-[10px] font-bold ${isPass ? "text-emerald-800" : isKnown ? "text-rose-700" : "text-slate-600"}`}>
+                              {!isKnown ? "Chưa xác định" : isPass ? "Đủ tín chỉ" : `Thiếu ${group.remainingCredits} tín chỉ`}
+                            </TextLabel>
+                          </span>
+                          <span className="mt-1 block text-[11px] text-slate-500">
+                            Nhóm {blockCode} · {group.requiredCredits == null ? "Chưa xác định yêu cầu" : `Yêu cầu ${group.requiredCredits} tín chỉ`}
+                          </span>
+                          <span className="mt-1 block text-slate-600">
+                            Đã đạt <strong className="font-mono text-slate-900">{group.passedCredits} tín chỉ</strong>
+                            {group.extraCredits != null && group.extraCredits > 0 && <span> · Vượt yêu cầu {group.extraCredits} tín chỉ</span>}
+                          </span>
+                          <span className={`mt-2 flex items-center gap-1 text-[11px] font-medium ${isSelected ? "text-lime-800" : "text-slate-500"}`}>
+                            {group.courseIds ? `${isSelected ? "Đang xem" : "Xem"} ${group.courseIds.length} học phần` : "Chưa có danh sách học phần"}
+                            <ChevronDown size={12} aria-hidden="true" />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
+              <section id={electiveListId} aria-labelledby={`${electiveListId}-heading`} className="space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-2 border-t border-slate-100 pt-3">
+                  <div className="min-w-0">
+                    <h4 id={`${electiveListId}-heading`} ref={electiveListHeadingRef} tabIndex={-1} className="text-xs font-semibold text-slate-900 focus:outline-none">
+                      {selectedElectiveGroup ? `Học phần nhóm ${electiveGroupName(selectedElectiveGroup)}` : "Học phần của tất cả nhóm tự chọn"}
+                    </h4>
+                    <p role="status" className="mt-1 text-[11px] text-slate-500">Hiển thị {displayedElectives.length} / {groupElectives.length} học phần</p>
+                  </div>
+                  {selectedElectiveGroup && (
+                    <button type="button" onClick={() => selectElectiveGroup(null)} className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-lime-800 hover:bg-lime-50 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600">
+                      Xem tất cả nhóm
+                    </button>
+                  )}
+                </div>
+
+              {/* Bộ lọc & Tìm kiếm môn tự chọn */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setElectiveFilter("taken")}
+                    aria-pressed={electiveFilter === "taken"}
+                    className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
+                      electiveFilter === "taken"
+                        ? "bg-slate-200 text-slate-900"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    Đã đăng ký ({groupTakenElectives.length})
+                  </button>
+                  {groupFailedElectives.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setElectiveFilter("failed")}
+                      aria-pressed={electiveFilter === "failed"}
+                      className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
+                        electiveFilter === "failed"
+                          ? "bg-rose-100 text-rose-900 font-bold"
+                          : "text-rose-600 hover:text-rose-900"
+                      }`}
+                    >
+                      Chưa đạt ({groupFailedElectives.length})
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setElectiveFilter("all")}
+                    aria-pressed={electiveFilter === "all"}
+                    className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${
+                      electiveFilter === "all"
+                        ? "bg-slate-200 text-slate-900"
+                        : "text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    Tất cả ({groupElectives.length})
+                  </button>
+                  {groupUnregisteredElectives.length > 0 && (
+                    <button type="button" onClick={() => setElectiveFilter("unregistered")} aria-pressed={electiveFilter === "unregistered"} className={`rounded-lg px-2.5 py-1 font-semibold transition cursor-pointer ${electiveFilter === "unregistered" ? "bg-slate-200 text-slate-900" : "text-slate-500 hover:text-slate-900"}`}>
+                      Chưa học ({groupUnregisteredElectives.length})
+                    </button>
+                  )}
+                </div>
+
+                <div className="relative w-full sm:w-56">
+                  <Search size={13} className="pointer-events-none absolute left-2.5 top-2.5 text-slate-400" />
+                  <input
+                    value={electiveSearch}
+                    aria-label="Tìm học phần tự chọn"
+                    onChange={(e) => setElectiveSearch(e.target.value)}
+                    placeholder={selectedElectiveGroup ? "Tìm môn trong nhóm..." : "Tìm môn tự chọn..."}
+                    className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-2.5 text-xs outline-none focus:border-lime-500 focus:ring-1 focus:ring-lime-100"
+                  />
+                </div>
+              </div>
+
+              {/* Bảng danh sách học phần tự chọn */}
+              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="min-w-0">
+                  <table className="forecast-table w-full min-w-[550px] text-left text-xs">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
+                      <tr>
+                        <th className="px-3.5 py-2.5 text-left table-cell-left">Mã HP</th>
+                        <th className="px-3.5 py-2.5 text-left table-cell-left">Tên môn học</th>
+                        <th className="px-2 py-2.5 text-center table-cell-center">Số TC</th>
+                        <th className="px-3 py-2.5 text-center table-cell-center">Kỳ học / Đợt</th>
+                        <th className="px-2 py-2.5 text-center table-cell-center">Điểm chữ</th>
+                        <th className="px-3.5 py-2.5 text-center table-cell-center">Trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {displayedElectives.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-slate-400">
+                            {selectedElectiveGroup && groupElectives.length === 0
+                              ? "Nhóm này chưa có học phần trong chương trình đào tạo đang đối chiếu."
+                              : "Không tìm thấy học phần tự chọn nào phù hợp với bộ lọc hoặc từ khóa."}
+                          </td>
+                        </tr>
+                      ) : (
+                        displayedElectives.map((course) => {
+                          const isPassed = course.state === "passed";
+                          const isFail = course.state === "failed";
+                          const isNoScore = course.state === "no_score";
+                          const grade = gradeByCourseCode.get(course.courseCode.toUpperCase());
+
+                          return (
+                            <tr key={course.courseId} className="hover:bg-slate-50/70 transition">
+                              <td data-label="Mã HP" className="px-3.5 py-2 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
+                                {course.courseCode}
+                              </td>
+                              <td data-label="Tên môn học" className="px-3.5 py-2 font-medium text-slate-800 text-left table-cell-left">{course.courseName}</td>
+                              <td data-label="Số TC" className="px-2 py-2 text-center font-mono text-slate-700 table-cell-center">{course.credits}</td>
+                              <td data-label="Kỳ học / Đợt" className="px-3 py-2 text-slate-500 whitespace-nowrap text-center table-cell-center">
+                                {grade?.academicYear && grade?.termCode ? (
+                                  <span className="font-mono text-slate-700">{grade.academicYear} • {grade.termCode}</span>
+                                ) : (
+                                  "Theo CTĐT"
+                                )}
+                              </td>
+                              <td data-label="Điểm chữ" className="px-2 py-2 text-center font-mono font-extrabold table-cell-center">
+                                {grade?.letterGrade ? (
+                                  <span className={grade.letterGrade === "F" ? "text-rose-700" : "text-slate-800"}>
+                                    {grade.letterGrade}
+                                  </span>
+                                ) : (
+                                  "—"
+                                )}
+                              </td>
+                              <td data-label="Trạng thái" className="px-3.5 py-2 text-center whitespace-nowrap table-cell-center">
+                                {isPassed ? (
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
+                                     Đã đạt
+                                  </TextLabel>
+                                ) : isNoScore ? (
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800">
+                                     Đang học
+                                  </TextLabel>
+                                ) : isFail ? (
+                                  <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800">
+                                     Chưa đạt (F)
+                                  </TextLabel>
+                                ) : (
+                                  <TextLabel className="text-[11px] font-medium text-slate-600">
+                                    Chưa học
+                                  </TextLabel>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              </section>
+            </div>
+          )}
+
+          {/* ------------------------------------------------------------ */}
+          {/* SUB-TAB 3: CHỨNG CHỈ & CHUẨN ĐẦU RA (MỤC 9) */}
+          {/* ------------------------------------------------------------ */}
           {/* ------------------------------------------------------------ */}
           {/* SUB-TAB 4: BẢNG ĐIỂM (TÍCH HỢP TRỌN VẸN) */}
           {/* ------------------------------------------------------------ */}
@@ -1612,6 +1741,7 @@ export default function ForecastDetail({
                   <Search size={13} className="pointer-events-none absolute left-2.5 top-2.5 text-slate-400" />
                   <input
                     value={transcriptSearch}
+                    aria-label="Tìm học phần trong bảng điểm"
                     onChange={(e) => setTranscriptSearch(e.target.value)}
                     placeholder="Tìm tên môn học hoặc mã môn..."
                     className="h-8 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-2.5 text-xs outline-none focus:border-lime-500 focus:ring-1 focus:ring-lime-100"
@@ -1619,6 +1749,7 @@ export default function ForecastDetail({
                 </div>
                 <select
                   value={transcriptTermFilter}
+                  aria-label="Lọc bảng điểm theo học kỳ"
                   onChange={(e) => setTranscriptTermFilter(e.target.value)}
                   className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 outline-none focus:border-lime-500"
                 >
@@ -1631,6 +1762,7 @@ export default function ForecastDetail({
                 </select>
                 <select
                   value={transcriptStatusFilter}
+                  aria-label="Lọc bảng điểm theo kết quả"
                   onChange={(e) => setTranscriptStatusFilter(e.target.value as "all" | "passed" | "failed" | "pending")}
                   className="h-8 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 outline-none focus:border-lime-500"
                 >
@@ -1643,9 +1775,9 @@ export default function ForecastDetail({
 
               {/* Bảng điểm chi tiết */}
               <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-                <div className="max-h-[45vh] overflow-y-auto overflow-x-auto">
-                  <table className="w-full min-w-[650px] text-left text-xs">
-                    <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
+                <div className="min-w-0">
+                  <table className="forecast-table w-full min-w-[650px] text-left text-xs">
+                    <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
                       <tr>
                         <th className="px-3.5 py-2.5 text-center table-cell-center">Học kỳ</th>
                         <th className="px-3 py-2.5 text-left table-cell-left">Mã HP</th>
@@ -1680,25 +1812,25 @@ export default function ForecastDetail({
                                     : "hover:bg-slate-50/70"
                               }
                             >
-                              <td className="px-3.5 py-2 text-slate-500 font-mono text-[11px] whitespace-nowrap text-center table-cell-center">
+                              <td data-label="Học kỳ" className="px-3.5 py-2 text-slate-500 font-mono text-[11px] whitespace-nowrap text-center table-cell-center">
                                 {g.academicYear} • {g.termCode}
                               </td>
-                              <td className="px-3 py-2 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
+                              <td data-label="Mã HP" className="px-3 py-2 font-mono font-bold text-slate-900 whitespace-nowrap text-left table-cell-left">
                                 {g.courseCode}
                               </td>
-                              <td className="px-3.5 py-2 font-medium text-slate-800 text-left table-cell-left">
+                              <td data-label="Tên môn học" className="px-3.5 py-2 font-medium text-slate-800 text-left table-cell-left">
                                 {g.courseName}
                               </td>
-                              <td className="px-2 py-2 text-center font-mono text-slate-700 table-cell-center">
+                              <td data-label="Số TC" className="px-2 py-2 text-center font-mono text-slate-700 table-cell-center">
                                 {g.credits}
                               </td>
-                              <td className="px-2 py-2 text-center font-mono font-bold table-cell-center">
+                              <td data-label="Điểm 10" className="px-2 py-2 text-center font-mono font-bold table-cell-center">
                                 {g.score10 != null ? Number(g.score10).toFixed(1) : "—"}
                               </td>
-                              <td className="px-2 py-2 text-center font-mono font-bold table-cell-center">
+                              <td data-label="Điểm 4" className="px-2 py-2 text-center font-mono font-bold table-cell-center">
                                 {g.score4 != null ? Number(g.score4).toFixed(1) : "—"}
                               </td>
-                              <td className="px-2 py-2 text-center font-mono font-extrabold table-cell-center">
+                              <td data-label="Điểm chữ" className="px-2 py-2 text-center font-mono font-extrabold table-cell-center">
                                 {g.letterGrade ? (
                                   <span
                                     className={
@@ -1715,7 +1847,7 @@ export default function ForecastDetail({
                                   "—"
                                 )}
                               </td>
-                              <td className="px-3.5 py-2 text-center whitespace-nowrap table-cell-center">
+                              <td data-label="Trạng thái" className="px-3.5 py-2 text-center whitespace-nowrap table-cell-center">
                                 {isFail ? (
                                   <TextLabel className="inline-flex text-[10px] font-bold text-rose-700">
                                     Không đạt (F)
@@ -1742,6 +1874,8 @@ export default function ForecastDetail({
           )}
         </div>
       )}
+
+      </section>
 
       {/* ============================================================ */}
       {/* 4. LOG KỸ THUẬT DÀNH CHO CÁN BỘ QUẢN TRỊ (COLLAPSIBLE) */}
