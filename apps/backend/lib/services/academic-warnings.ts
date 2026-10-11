@@ -1,5 +1,5 @@
 import { orderedStudentResultPage } from "../student-list-order";
-import { monitoredStudentResultWhere } from "../student-monitoring-scope";
+import { monitoredStudentResultWhere, studentMonitoringSql } from "../student-monitoring-scope";
 import { academicOfferingPredicate } from "../academic-course-sql";
 import { loadAcademicDebt } from "./academic-debt";
 import { prisma } from "@/lib/prisma";
@@ -51,6 +51,11 @@ import { SUPERSEDED_EARLY_WARNING_CASE_TYPE } from "@/lib/services/warning-case-
 import { loadWarningActionHistory } from "./warning-action-history";
 import { assertCohortTrainingProgramPair } from "@/lib/services/academic-warning-scope";
 import { calculateAcademicWarningProgressSignals } from "@/lib/services/academic-warning-progress";
+import { assessmentTermExamAbsences, loadEarlyWarningSources, verifiedRepeatedFailureSource } from "./early-warning-sources";
+import { EMPTY_EARLY_WARNING_SOURCES } from "./early-warning-signals";
+import { findEarlyWarningPolicy } from "./early-warning-policy";
+import { loadAcademicStandingSources } from "./academic-standing";
+import { assessAcademicStanding } from "./academic-standing-rules";
 import {
   AcademicTermResolutionError,
   assertAcademicWarningAssessmentTermAllowed,
@@ -154,8 +159,14 @@ export function sanitizeWarningSourceSnapshot(
   const source = snapshot as Prisma.JsonObject;
   const students = Array.isArray(source.students) ? source.students : [];
   const allowed = new Set(allowedClassIds);
+  const excluded = Array.isArray(source.excludedStandingStudents) ? source.excludedStandingStudents.filter(item => {
+    if (!item || Array.isArray(item) || typeof item !== "object") return false;
+    const classId = (item as Prisma.JsonObject).classId;
+    return typeof classId === "string" && allowed.has(classId);
+  }) : null;
   return {
     ...source,
+    ...(excluded ? { excludedStandingStudents: excluded, excludedStandingCount: excluded.length } : {}),
     students: students.filter((item) => {
       if (!item || Array.isArray(item) || typeof item !== "object") return false;
       const classId = (item as Prisma.JsonObject).classId;
@@ -178,6 +189,19 @@ export function projectQd600EvaluationForPersistence(result: Qd600EvaluationResu
       ? "medium"
       : "none";
   const titleForRule = (rule: Qd600RuleEvaluation) => {
+    const earlyTitles: Record<string, string> = {
+      EARLY_EXAM_ABSENCE: "Học phần vắng thi (VT) cần xác minh",
+      EARLY_LOW_TERM_GPA: "GPA học kỳ dưới ngưỡng theo dõi sớm", EARLY_LOW_CUMULATIVE_GPA: "GPA tích lũy dưới ngưỡng theo dõi sớm",
+      EARLY_TERM_GPA_DROP: "GPA học kỳ suy giảm", EARLY_CUMULATIVE_GPA_DROP: "GPA tích lũy suy giảm",
+      EARLY_FAILED_CREDIT_RATIO: "Tỷ lệ tín chỉ không đạt cần theo dõi", EARLY_REPEATED_COURSE_FAILURE: "Học phần còn nợ không đạt nhiều lần",
+      EARLY_LOW_CONDUCT_SCORE: "Điểm rèn luyện thấp", EARLY_CONDUCT_SCORE_DROP: "Điểm rèn luyện suy giảm",
+      EARLY_MISSING_TERM_DATA: "Chưa có dữ liệu học kỳ — cần ưu tiên xác minh",
+      EARLY_NO_REGISTRATION: "Chưa ghi nhận đăng ký học phần — cần xác minh lý do",
+      EARLY_NO_REGISTRATION_CONSECUTIVE: "Hai kỳ chính liên tiếp chưa ghi nhận đăng ký học phần",
+      ACADEMIC_WARNING_SEQUENCE_REVIEW: "Cảnh báo học vụ liên tiếp — ưu tiên hỗ trợ",
+      ACADEMIC_REPRIEVE_FOLLOWUP: "Cần rà soát tình trạng học sau cứu xét",
+    };
+    if (earlyTitles[rule.ruleCode]) return earlyTitles[rule.ruleCode];
     if (rule.ruleCode === "QD600_FAILED_CREDIT_RATIO") return "Không đạt quá nhiều tín chỉ trong học kỳ";
     if (rule.ruleCode === "QD600_CUMULATIVE_GPA_BY_YEAR") return "Điểm trung bình tích lũy (GPA) dưới chuẩn năm học";
     if (rule.ruleCode === "QD600_TERM_GPA") return "Điểm trung bình học kỳ (GPA) thấp";
@@ -211,7 +235,7 @@ export function projectQd600EvaluationForPersistence(result: Qd600EvaluationResu
       sourceType: rule.ruleCode === "TRAINING_PROGRESS_CREDIT_DEFICIT"
         ? "training_progress_completion_run"
         : rule.sourceType,
-      sourceId: null,
+      sourceId: rule.sourceId || null,
     })),
   };
 }
@@ -267,7 +291,6 @@ async function loadAssessmentTermCourseAttempts(
            (g.offering_id IS NOT NULL AND (
              (g.score_status = 'graded' AND
                (g.score_10 IS NOT NULL OR g.score_4 IS NOT NULL OR NULLIF(BTRIM(g.letter_code), '') IS NOT NULL))
-             OR (g.score_status = 'special' AND UPPER(BTRIM(COALESCE(g.special_code, ''))) = 'VT' AND NOT g.not_score)
            )) AS has_final_grade,
            g.is_pass
     FROM student_course_offerings o
@@ -352,14 +375,15 @@ async function loadWarningContext(
     FROM students s
     LEFT JOIN classes c ON c.class_id = s.s_class_student_id AND c.deleted_at IS NULL
     WHERE s.s_study_program_id = ${program.sProgramCode} AND s.deleted_at IS NULL AND s.s_is_in_class = true
+      AND ${studentMonitoringSql(assessmentTermId)}
       AND c.cohort_id = ${cohortId}::uuid
-      AND EXISTS (
+      AND (NOT ${requireLegacyProgressSnapshots} OR EXISTS (
         SELECT 1
         FROM student_term_summaries sts
         WHERE sts.student_id = s.id
           AND sts.academic_term_id = ${assessmentTermId}::uuid
           AND sts.s_program_code = ${program.sProgramCode}
-      )
+      ))
     ORDER BY s.s_student_id
   `;
 
@@ -596,6 +620,7 @@ async function loadSummerMonitoringContext(
     FROM students s
     LEFT JOIN classes c ON c.class_id = s.s_class_student_id AND c.deleted_at IS NULL
     WHERE s.s_study_program_id = ${program.sProgramCode} AND s.deleted_at IS NULL AND s.s_is_in_class = true
+      AND ${studentMonitoringSql(assessmentTermId)}
       AND c.cohort_id = ${cohortId}::uuid
     ORDER BY s.s_student_id
   `;
@@ -773,6 +798,7 @@ export class AcademicWarningsService {
 
   static async createPolicy(data: {
     name: string;
+    expectedBasePolicyId?: string;
     policyDefinition?: unknown;
     definition?: unknown;
     termGpaThreshold?: number;
@@ -808,6 +834,12 @@ export class AcademicWarningsService {
 
     return prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('academic_warning_policy_version'))`;
+      if (data.expectedBasePolicyId) {
+        const current = await findEarlyWarningPolicy(tx);
+        if (current.policy.id !== data.expectedBasePolicyId) {
+          throw new ApiError("Chính sách đã thay đổi. Tải lại cấu hình trước khi lưu.", "POLICY_CONFIGURATION_CHANGED", 409);
+        }
+      }
       const latest = await tx.academicWarningPolicy.findFirst({ orderBy: { version: "desc" } });
       const nextVersion = (latest?.version || 0) + 1;
       if (status === "active") {
@@ -979,6 +1011,7 @@ export class AcademicWarningsService {
         orderBy: { startedAt: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
+        omit: { sourceSnapshot: true },
       }),
     ]);
 
@@ -1204,6 +1237,20 @@ export class AcademicWarningsService {
       definition,
     });
 
+    const standingSources = executionProfile === QD600_EXECUTION_PROFILE
+      ? await loadAcademicStandingSources(ctx.students.map(student => student.id), ctx.program.sProgramCode, assessmentAcademicTermId, data.cohortId)
+      : new Map();
+    const excludedStandingStudents = ctx.students.flatMap(student => {
+      const source = standingSources.get(student.id);
+      const standing = source && assessAcademicStanding(source);
+      return standing?.excluded ? [{ id: student.id, classId: student.classId, exemption: standing.exemption, academicStandingSources: source }] : [];
+    });
+    const excludedStandingCount = excludedStandingStudents.length;
+    ctx.students = ctx.students.filter(student => {
+      const source = standingSources.get(student.id);
+      return !source || !assessAcademicStanding(source).excluded;
+    });
+
     const capabilitySnapshot = createAcademicWarningCapabilitySnapshot({ debtVerified: true });
     const capabilityDataByStudent = new Map(ctx.students.map((student) => [
       student.id,
@@ -1221,8 +1268,13 @@ export class AcademicWarningsService {
       applicability: Qd600PolicyApplicability;
       result: Qd600EvaluationResult | null;
     }>();
+    const earlyWarningSources = executionProfile === QD600_EXECUTION_PROFILE && definition.evaluationProfile === "QD600_ARTICLE_18" && definition.advisory.earlyWarning
+      ? await loadEarlyWarningSources(ctx.students.map(student => student.id), ctx.program.sProgramCode, assessmentAcademicTermId)
+      : new Map();
     if (executionProfile === QD600_EXECUTION_PROFILE && definition.evaluationProfile === "QD600_ARTICLE_18") {
       for (const student of ctx.students) {
+        earlyWarningSources.set(student.id, { ...(earlyWarningSources.get(student.id) || EMPTY_EARLY_WARNING_SOURCES),
+          examAbsences: assessmentTermExamAbsences(ctx.assessmentTermCourseAttempts.get(student.id) || []) });
         qd600Evaluations.set(student.id, evaluateQd600ForCohort({
           cohortId: student.cohortId,
           policyDefinition: definition,
@@ -1231,6 +1283,8 @@ export class AcademicWarningsService {
           termGpa4: ctx.summaries.get(student.id)?.termGPA4 ?? null,
           cumulativeGpa4: ctx.summaries.get(student.id)?.cumulativeGPA4 ?? null,
           termKind: assessmentTerm.sIsSummer ? "SUMMER" : "MAIN",
+          earlyWarningSources: verifiedRepeatedFailureSource(earlyWarningSources.get(student.id), ctx.academicDebt.get(student.id)),
+          academicStandingSources: standingSources.get(student.id),
           trainingProgress: ctx.trainingProgressSignals.has(student.id)
             ? {
                 creditDeficit: ctx.trainingProgressSignals.get(student.id)?.creditDeficit ?? null,
@@ -1259,7 +1313,9 @@ export class AcademicWarningsService {
 
     const sourceCapturedAt = new Date();
     const sourceSnapshot = {
-      schemaVersion: 5,
+      schemaVersion: 6,
+      excludedStandingCount,
+      excludedStandingStudents,
       runMode,
       executionProfile,
       engineVersion: executionProfile === QD600_EXECUTION_PROFILE
@@ -1311,6 +1367,8 @@ export class AcademicWarningsService {
           signDate: decision.signDate?.toISOString() || null,
         })),
         conduct: ctx.conduct.get(student.id) || null,
+        earlyWarningSources: verifiedRepeatedFailureSource(earlyWarningSources.get(student.id), ctx.academicDebt.get(student.id)) || null,
+        academicStandingSources: standingSources.get(student.id) || null,
         summerMonitoring: ctx.summerMonitoring.get(student.id) || null,
         qd600CapabilityData: {
           ...capabilityDataByStudent.get(student.id)!,
@@ -1363,7 +1421,8 @@ export class AcademicWarningsService {
             if (candidate.status === "running" || executionProfile !== QD600_EXECUTION_PROFILE) return true;
             const snapshot = candidate.sourceSnapshot;
             return snapshot !== null && !Array.isArray(snapshot) && typeof snapshot === "object" &&
-              snapshot.engineVersion === QD600_RULE_ENGINE_VERSION;
+              snapshot.engineVersion === QD600_RULE_ENGINE_VERSION && candidate.policyId === ctx.policy.id
+              && candidate.sourceSnapshotHash === sourceSnapshotHash;
           });
           if (existing) return { run: existing, shouldEvaluate: false as const };
           return {
@@ -1453,7 +1512,7 @@ export class AcademicWarningsService {
           ? ctx.completion.get(student.id)?.scheduleStatus || "unavailable"
           : legacyEvaluation!.scheduleStatus,
         academicWarningDecisions: qd600Projection
-          ? (ctx.decisions.get(student.id) || []).length
+          ? (standingSources.has(student.id) ? assessAcademicStanding(standingSources.get(student.id)!).officialWarningCount : 0)
           : legacyEvaluation!.academicWarningDecisions,
         maxSeverity,
         reasonCount,
@@ -1739,7 +1798,7 @@ export class AcademicWarningsService {
       ...(latestWarning ? [latestWarning.runId] : []),
     ])];
     const runs = runIds.length
-      ? await prisma.academicWarningRun.findMany({ where: { id: { in: runIds } } })
+      ? await prisma.academicWarningRun.findMany({ where: { id: { in: runIds } }, omit: { sourceSnapshot: true } })
       : [];
     const runMap = new Map(runs.map((run) => [run.id, run]));
     const termIds = [...new Set(runs.map((run) => run.assessmentAcademicTermId))];

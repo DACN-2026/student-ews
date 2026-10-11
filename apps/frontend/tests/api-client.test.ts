@@ -30,6 +30,21 @@ test("auth, exports, no-store bypass caching and request headers isolate cached 
     await apiFetch("/api/v1/students", { headers: { "X-Test-Scope": "a" } }); await apiFetch("/api/v1/students", { headers: { "X-Test-Scope": "b" } }); assert.equal(calls.length, 8);
   }, () => Response.json({ ok: true }));
 });
+test("a failed student search is not cached and retry receives the recovered result", async () => {
+  let attempts = 0;
+  await mockBrowser(async (calls) => {
+    const url = "/api/v1/students?search=" + encodeURIComponent("Lưu Thị Nghĩa");
+    const failed = await apiFetch(url);
+    assert.equal(failed.status, 500);
+    assert.equal(hasApiData(url), false);
+    const recovered = await apiFetch(url);
+    assert.equal(recovered.status, 200);
+    assert.equal((await recovered.json()).items[0].studentId, "2246A006");
+    assert.equal(calls.length, 2);
+  }, () => ++attempts === 1
+    ? Response.json({ error: { code: "INTERNAL_ERROR" } }, { status: 500 })
+    : Response.json({ total: 1, items: [{ studentId: "2246A006", fullName: "Lưu Thị Nghĩa" }] }));
+});
 test("concurrent expired-token reads coordinate one refresh and retry both requests", async () => {
   const expired = new Set<string>();
   await mockBrowser(async (calls) => {

@@ -284,7 +284,7 @@ test("unmatched final failures make debt partial; extra credits in one block do 
     { courseId: "a", courseCode: "20CT1103", courseName: "A6 elective", credits: 9, requirementType: "elective", semesterNo: 1 },
     { courseId: "b", courseCode: "20QT0001", courseName: "A7 elective", credits: 3, requirementType: "elective", semesterNo: 1 },
   ];
-  const debt = calculateAcademicDebt([pass("20CT1103", 9) as { courseCode: string; credits: number }, { courseCode: "20QT0001", credits: 3, isPass: false, scoreStatus: "special", specialCode: "VT" }], courses, "CQ22CT-PM");
+  const debt = calculateAcademicDebt([pass("20CT1103", 9) as { courseCode: string; credits: number }, { courseCode: "20QT0001", credits: 3, isPass: false, scoreStatus: "graded", letterCode: "F", score4: 0 }], courses, "CQ22CT-PM");
   assert.equal(debt.accumulatedDebtCredits, 3);
   const unknown = calculateAcademicDebt([{ courseCode: "OTHER", credits: 3, isPass: false, scoreStatus: "graded", letterCode: "F" }], courses, "CQ22CT-PM");
   assert.equal(unknown.dataStatus, "PARTIAL");

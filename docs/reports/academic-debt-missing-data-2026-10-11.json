@@ -1,0 +1,770 @@
+{
+  "checkedAt": "2026-10-11T05:19:29.085Z",
+  "period": "HK02 (2025-2026)",
+  "evaluatedRows": 622,
+  "affectedStudents": 9,
+  "groups": [
+    {
+      "category": "UNRESOLVED_OUTCOME",
+      "label": "Học phần chưa rõ kết quả / còn chờ điểm",
+      "students": 4,
+      "rows": 10,
+      "examples": [
+        {
+          "studentCode": "2448A014",
+          "name": "Lê Văn Quân",
+          "courses": [
+            {
+              "courseCode": "20CT1201",
+              "courseName": "Cấu trúc dữ liệu và thuật giải",
+              "period": "HK01 (2025-2026)",
+              "category": "UNRESOLVED_OUTCOME",
+              "details": {
+                "outcome": "pending",
+                "hasGrade": true,
+                "scoreStatus": "pending",
+                "notScore": true,
+                "score10": null,
+                "score4": null,
+                "letterCode": null,
+                "specialCode": null,
+                "credits": 3,
+                "confirmedFailedAttemptExists": false
+              }
+            }
+          ]
+        },
+        {
+          "studentCode": "2448B022",
+          "name": "Trịnh Tuấn Khanh",
+          "courses": [
+            {
+              "courseCode": "20CT1103",
+              "courseName": "Bảo trì máy tính",
+              "period": "HK02 (2024-2025)",
+              "category": "UNRESOLVED_OUTCOME",
+              "details": {
+                "outcome": "pending",
+                "hasGrade": true,
+                "scoreStatus": "pending",
+                "notScore": true,
+                "score10": null,
+                "score4": null,
+                "letterCode": null,
+                "specialCode": null,
+                "credits": 3,
+                "confirmedFailedAttemptExists": false
+              }
+            },
+            {
+              "courseCode": "20CT1202",
+              "courseName": "Nguyên lý lập trình hướng đối tượng",
+              "period": "HK02 (2024-2025)",
+              "category": "UNRESOLVED_OUTCOME",
+              "details": {
+                "outcome": "pending",
+                "hasGrade": true,
+                "scoreStatus": "pending",
+                "notScore": true,
+                "score10": null,
+                "score4": null,
+                "letterCode": null,
+                "specialCode": null,
+                "credits": 4,
+                "confirmedFailedAttemptExists": false
+              }
+            },
+            {
+              "courseCode": "20CT1203",
+              "courseName": "Đồ họa ứng dụng",
+              "period": "HK02 (2024-2025)",
+              "category": "UNRESOLVED_OUTCOME",
+              "details": {
+                "outcome": "pending",
+                "hasGrade": true,
+                "scoreStatus": "pending",
+                "notScore": true,
+                "score10": null,
+                "score4": null,
+                "letterCode": null,
+                "specialCode": null,
+                "credits": 3,
+                "confirmedFailedAttemptExists": false
+              }
+            },
+            {
+              "courseCode": "20TN1202",
+              "courseName": "Toán rời rạc",
+              "period": "HK02 (2024-2025)",
+              "category": "UNRESOLVED_OUTCOME",
+              "details": {
+                "outcome": "pending",
+                "hasGrade": true,
+                "scoreStatus": "pending",
+                "notScore": true,
+                "score10": null,
+                "score4": null,
+                "letterCode": null,
+                "specialCode": null,
+                "credits": 4,
+                "confirmedFailedAttemptExists": false
+              }
+            }
+          ]
+        },
+        {
+          "studentCode": "2448B030",
+          "name": "Phạm Văn Kiên",
+          "courses": [
+            {
+              "courseCode": "20CT1103",
+              "courseName": "Bảo trì máy tính",
+              "period": "HK02 (2024-2025)",
+              "category": "UNRESOLVED_OUTCOME",
+              "details": {
+                "outcome": "pending",
+                "hasGrade": true,
+                "scoreStatus": "pending",
+                "notScore": true,
+                "score10": null,
+                "score4": null,
+                "letterCode": null,
+                "specialCode": null,
+                "credits": 3,
+                "confirmedFailedAttemptExists": false
+              }
+            },
+            {
+              "courseCode": "20CT1202",
+              "courseName": "Nguyên lý lập trình hướng đối tượng",
+              "period": "HK02 (2024-2025)",
+              "category": "UNRESOLVED_OUTCOME",
+              "details": {
+                "outcome": "pending",
+                "hasGrade": true,
+                "scoreStatus": "pending",
+                "notScore": true,
+                "score10": null,
+                "score4": null,
+                "letterCode": null,
+                "specialCode": null,
+                "credits": 4,
+                "confirmedFailedAttemptExists": false
+              }
+            },
+            {
+              "courseCode": "20CT1203",
+              "courseName": "Đồ họa ứng dụng",
+              "period": "HK02 (2024-2025)",
+              "category": "UNRESOLVED_OUTCOME",
+              "details": {
+                "outcome": "pending",
+                "hasGrade": true,
+                "scoreStatus": "pending",
+                "notScore": true,
+                "score10": null,
+                "score4": null,
+                "letterCode": null,
+                "specialCode": null,
+                "credits": 3,
+                "confirmedFailedAttemptExists": false
+              }
+            },
+            {
+              "courseCode": "20TN1202",
+              "courseName": "Toán rời rạc",
+              "period": "HK02 (2024-2025)",
+              "category": "UNRESOLVED_OUTCOME",
+              "details": {
+                "outcome": "pending",
+                "hasGrade": true,
+                "scoreStatus": "pending",
+                "notScore": true,
+                "score10": null,
+                "score4": null,
+                "letterCode": null,
+                "specialCode": null,
+                "credits": 4,
+                "confirmedFailedAttemptExists": false
+              }
+            }
+          ]
+        },
+        {
+          "studentCode": "2246A041",
+          "name": "Vũ Ngọc Phi",
+          "courses": [
+            {
+              "courseCode": "20TN1201",
+              "courseName": "Toán cao cấp B1",
+              "period": "HK02 (2022-2023)",
+              "category": "UNRESOLVED_OUTCOME",
+              "details": {
+                "outcome": "unknown",
+                "hasGrade": true,
+                "scoreStatus": "unknown",
+                "notScore": false,
+                "score10": null,
+                "score4": null,
+                "letterCode": null,
+                "specialCode": null,
+                "credits": 3,
+                "confirmedFailedAttemptExists": true
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "COURSE_MAPPING_MISSING",
+      "label": "Học phần chưa khớp mã trong CTĐT",
+      "students": 4,
+      "rows": 6,
+      "examples": [
+        {
+          "studentCode": "2347A065",
+          "name": "Trương Quang Tuấn",
+          "courses": [
+            {
+              "courseCode": "TN1008D",
+              "courseName": "Toán rời rạc",
+              "period": "HK03 (2024-2025)",
+              "category": "COURSE_MAPPING_MISSING",
+              "details": {
+                "outcome": "failed",
+                "credits": 4
+              }
+            }
+          ]
+        },
+        {
+          "studentCode": "2347A009",
+          "name": "Vương Đức Tuấn",
+          "courses": [
+            {
+              "courseCode": "TN1008D",
+              "courseName": "Toán rời rạc",
+              "period": "HK03 (2024-2025)",
+              "category": "COURSE_MAPPING_MISSING",
+              "details": {
+                "outcome": "failed",
+                "credits": 4
+              }
+            }
+          ]
+        },
+        {
+          "studentCode": "2246A006",
+          "name": "Lưu Thị Nghĩa",
+          "courses": [
+            {
+              "courseCode": "20CT3112D",
+              "courseName": "Cấu trúc dữ liệu và thuật giải nâng cao",
+              "period": "HK02 (2024-2025)",
+              "category": "COURSE_MAPPING_MISSING",
+              "details": {
+                "outcome": "pending",
+                "credits": 3
+              }
+            }
+          ]
+        },
+        {
+          "studentCode": "2246B045",
+          "name": "Đỗ Văn Hiển",
+          "courses": [
+            {
+              "courseCode": "20HN1201",
+              "courseName": "Toán cho vật lý và kỹ thuật 3",
+              "period": "HK02 (2022-2023)",
+              "category": "COURSE_MAPPING_MISSING",
+              "details": {
+                "outcome": "unknown",
+                "credits": 3
+              }
+            },
+            {
+              "courseCode": "20HN1204",
+              "courseName": "Điện tử cơ sở",
+              "period": "HK02 (2022-2023)",
+              "category": "COURSE_MAPPING_MISSING",
+              "details": {
+                "outcome": "unknown",
+                "credits": 3
+              }
+            },
+            {
+              "courseCode": "HN2103D",
+              "courseName": "Điện tử hạt nhân",
+              "period": "HK01 (2023-2024)",
+              "category": "COURSE_MAPPING_MISSING",
+              "details": {
+                "outcome": "pending",
+                "credits": 3
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "category": "UNSCOPED_HISTORY",
+      "label": "Lịch sử điểm học thuật chưa xác định được kỳ",
+      "students": 1,
+      "rows": 5,
+      "examples": [
+        {
+          "studentCode": "2347A048",
+          "name": "Hoàng Xuân Nghĩa",
+          "courses": [
+            {
+              "category": "UNSCOPED_HISTORY",
+              "courseCode": "20CT1101",
+              "courseName": "Nhập môn ngành CNTT",
+              "details": {
+                "reason": "MISSING_ACADEMIC_PERIOD",
+                "credits": 3
+              }
+            },
+            {
+              "category": "UNSCOPED_HISTORY",
+              "courseCode": "20CT1102",
+              "courseName": "Nguyên lý lập trình cấu trúc",
+              "details": {
+                "reason": "MISSING_ACADEMIC_PERIOD",
+                "credits": 4
+              }
+            },
+            {
+              "category": "UNSCOPED_HISTORY",
+              "courseCode": "20CT2102",
+              "courseName": "Kiến trúc máy tính",
+              "details": {
+                "reason": "MISSING_ACADEMIC_PERIOD",
+                "credits": 3
+              }
+            },
+            {
+              "category": "UNSCOPED_HISTORY",
+              "courseCode": "LC1101D",
+              "courseName": "Triết học Mác - Lênin",
+              "details": {
+                "reason": "MISSING_ACADEMIC_PERIOD",
+                "credits": 3
+              }
+            },
+            {
+              "category": "UNSCOPED_HISTORY",
+              "courseCode": "LC1102D",
+              "courseName": "Kinh tế Chính trị Mác - Lênin",
+              "details": {
+                "reason": "MISSING_ACADEMIC_PERIOD",
+                "credits": 2
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "savedReasons": {
+    "UNRESOLVED_HISTORICAL_ATTEMPTS": 8,
+    "UNSCOPED_HISTORICAL_ATTEMPTS": 1
+  },
+  "cases": [
+    {
+      "studentCode": "2347A065",
+      "name": "Trương Quang Tuấn",
+      "classCode": "ITK47A",
+      "programCode": "CQ23CT",
+      "savedReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "savedDataStatus": "PARTIAL",
+      "knownDebtCredits": 27,
+      "currentDebtReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "issues": [
+        {
+          "courseCode": "TN1008D",
+          "courseName": "Toán rời rạc",
+          "period": "HK03 (2024-2025)",
+          "category": "COURSE_MAPPING_MISSING",
+          "details": {
+            "outcome": "failed",
+            "credits": 4
+          }
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A014",
+      "name": "Lê Văn Quân",
+      "classCode": "ITK48A",
+      "programCode": "CQ24CT",
+      "savedReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "savedDataStatus": "PARTIAL",
+      "knownDebtCredits": 32,
+      "currentDebtReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "issues": [
+        {
+          "courseCode": "20CT1201",
+          "courseName": "Cấu trúc dữ liệu và thuật giải",
+          "period": "HK01 (2025-2026)",
+          "category": "UNRESOLVED_OUTCOME",
+          "details": {
+            "outcome": "pending",
+            "hasGrade": true,
+            "scoreStatus": "pending",
+            "notScore": true,
+            "score10": null,
+            "score4": null,
+            "letterCode": null,
+            "specialCode": null,
+            "credits": 3,
+            "confirmedFailedAttemptExists": false
+          }
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B022",
+      "name": "Trịnh Tuấn Khanh",
+      "classCode": "ITK48B",
+      "programCode": "CQ24CT",
+      "savedReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "savedDataStatus": "PARTIAL",
+      "knownDebtCredits": 5,
+      "currentDebtReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "issues": [
+        {
+          "courseCode": "20CT1103",
+          "courseName": "Bảo trì máy tính",
+          "period": "HK02 (2024-2025)",
+          "category": "UNRESOLVED_OUTCOME",
+          "details": {
+            "outcome": "pending",
+            "hasGrade": true,
+            "scoreStatus": "pending",
+            "notScore": true,
+            "score10": null,
+            "score4": null,
+            "letterCode": null,
+            "specialCode": null,
+            "credits": 3,
+            "confirmedFailedAttemptExists": false
+          }
+        },
+        {
+          "courseCode": "20CT1202",
+          "courseName": "Nguyên lý lập trình hướng đối tượng",
+          "period": "HK02 (2024-2025)",
+          "category": "UNRESOLVED_OUTCOME",
+          "details": {
+            "outcome": "pending",
+            "hasGrade": true,
+            "scoreStatus": "pending",
+            "notScore": true,
+            "score10": null,
+            "score4": null,
+            "letterCode": null,
+            "specialCode": null,
+            "credits": 4,
+            "confirmedFailedAttemptExists": false
+          }
+        },
+        {
+          "courseCode": "20CT1203",
+          "courseName": "Đồ họa ứng dụng",
+          "period": "HK02 (2024-2025)",
+          "category": "UNRESOLVED_OUTCOME",
+          "details": {
+            "outcome": "pending",
+            "hasGrade": true,
+            "scoreStatus": "pending",
+            "notScore": true,
+            "score10": null,
+            "score4": null,
+            "letterCode": null,
+            "specialCode": null,
+            "credits": 3,
+            "confirmedFailedAttemptExists": false
+          }
+        },
+        {
+          "courseCode": "20TN1202",
+          "courseName": "Toán rời rạc",
+          "period": "HK02 (2024-2025)",
+          "category": "UNRESOLVED_OUTCOME",
+          "details": {
+            "outcome": "pending",
+            "hasGrade": true,
+            "scoreStatus": "pending",
+            "notScore": true,
+            "score10": null,
+            "score4": null,
+            "letterCode": null,
+            "specialCode": null,
+            "credits": 4,
+            "confirmedFailedAttemptExists": false
+          }
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B030",
+      "name": "Phạm Văn Kiên",
+      "classCode": "ITK48B",
+      "programCode": "CQ24CT",
+      "savedReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "savedDataStatus": "PARTIAL",
+      "knownDebtCredits": 25,
+      "currentDebtReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "issues": [
+        {
+          "courseCode": "20CT1103",
+          "courseName": "Bảo trì máy tính",
+          "period": "HK02 (2024-2025)",
+          "category": "UNRESOLVED_OUTCOME",
+          "details": {
+            "outcome": "pending",
+            "hasGrade": true,
+            "scoreStatus": "pending",
+            "notScore": true,
+            "score10": null,
+            "score4": null,
+            "letterCode": null,
+            "specialCode": null,
+            "credits": 3,
+            "confirmedFailedAttemptExists": false
+          }
+        },
+        {
+          "courseCode": "20CT1202",
+          "courseName": "Nguyên lý lập trình hướng đối tượng",
+          "period": "HK02 (2024-2025)",
+          "category": "UNRESOLVED_OUTCOME",
+          "details": {
+            "outcome": "pending",
+            "hasGrade": true,
+            "scoreStatus": "pending",
+            "notScore": true,
+            "score10": null,
+            "score4": null,
+            "letterCode": null,
+            "specialCode": null,
+            "credits": 4,
+            "confirmedFailedAttemptExists": false
+          }
+        },
+        {
+          "courseCode": "20CT1203",
+          "courseName": "Đồ họa ứng dụng",
+          "period": "HK02 (2024-2025)",
+          "category": "UNRESOLVED_OUTCOME",
+          "details": {
+            "outcome": "pending",
+            "hasGrade": true,
+            "scoreStatus": "pending",
+            "notScore": true,
+            "score10": null,
+            "score4": null,
+            "letterCode": null,
+            "specialCode": null,
+            "credits": 3,
+            "confirmedFailedAttemptExists": false
+          }
+        },
+        {
+          "courseCode": "20TN1202",
+          "courseName": "Toán rời rạc",
+          "period": "HK02 (2024-2025)",
+          "category": "UNRESOLVED_OUTCOME",
+          "details": {
+            "outcome": "pending",
+            "hasGrade": true,
+            "scoreStatus": "pending",
+            "notScore": true,
+            "score10": null,
+            "score4": null,
+            "letterCode": null,
+            "specialCode": null,
+            "credits": 4,
+            "confirmedFailedAttemptExists": false
+          }
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A009",
+      "name": "Vương Đức Tuấn",
+      "classCode": "ITK47A",
+      "programCode": "CQ23CT-PM",
+      "savedReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "savedDataStatus": "PARTIAL",
+      "knownDebtCredits": 18,
+      "currentDebtReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "issues": [
+        {
+          "courseCode": "TN1008D",
+          "courseName": "Toán rời rạc",
+          "period": "HK03 (2024-2025)",
+          "category": "COURSE_MAPPING_MISSING",
+          "details": {
+            "outcome": "failed",
+            "credits": 4
+          }
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A048",
+      "name": "Hoàng Xuân Nghĩa",
+      "classCode": "ITK47A",
+      "programCode": "CQ23CT-PM",
+      "savedReason": "UNSCOPED_HISTORICAL_ATTEMPTS",
+      "savedDataStatus": "PARTIAL",
+      "knownDebtCredits": 0,
+      "currentDebtReason": "UNSCOPED_HISTORICAL_ATTEMPTS",
+      "issues": [
+        {
+          "category": "UNSCOPED_HISTORY",
+          "courseCode": "20CT1101",
+          "courseName": "Nhập môn ngành CNTT",
+          "details": {
+            "reason": "MISSING_ACADEMIC_PERIOD",
+            "credits": 3
+          }
+        },
+        {
+          "category": "UNSCOPED_HISTORY",
+          "courseCode": "20CT1102",
+          "courseName": "Nguyên lý lập trình cấu trúc",
+          "details": {
+            "reason": "MISSING_ACADEMIC_PERIOD",
+            "credits": 4
+          }
+        },
+        {
+          "category": "UNSCOPED_HISTORY",
+          "courseCode": "20CT2102",
+          "courseName": "Kiến trúc máy tính",
+          "details": {
+            "reason": "MISSING_ACADEMIC_PERIOD",
+            "credits": 3
+          }
+        },
+        {
+          "category": "UNSCOPED_HISTORY",
+          "courseCode": "LC1101D",
+          "courseName": "Triết học Mác - Lênin",
+          "details": {
+            "reason": "MISSING_ACADEMIC_PERIOD",
+            "credits": 3
+          }
+        },
+        {
+          "category": "UNSCOPED_HISTORY",
+          "courseCode": "LC1102D",
+          "courseName": "Kinh tế Chính trị Mác - Lênin",
+          "details": {
+            "reason": "MISSING_ACADEMIC_PERIOD",
+            "credits": 2
+          }
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A006",
+      "name": "Lưu Thị Nghĩa",
+      "classCode": "ITK46A",
+      "programCode": "CQ22CT-PM",
+      "savedReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "savedDataStatus": "PARTIAL",
+      "knownDebtCredits": 6,
+      "currentDebtReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "issues": [
+        {
+          "courseCode": "20CT3112D",
+          "courseName": "Cấu trúc dữ liệu và thuật giải nâng cao",
+          "period": "HK02 (2024-2025)",
+          "category": "COURSE_MAPPING_MISSING",
+          "details": {
+            "outcome": "pending",
+            "credits": 3
+          }
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A041",
+      "name": "Vũ Ngọc Phi",
+      "classCode": "ITK46A",
+      "programCode": "CQ22CT-PM",
+      "savedReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "savedDataStatus": "PARTIAL",
+      "knownDebtCredits": 10,
+      "currentDebtReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "issues": [
+        {
+          "courseCode": "20TN1201",
+          "courseName": "Toán cao cấp B1",
+          "period": "HK02 (2022-2023)",
+          "category": "UNRESOLVED_OUTCOME",
+          "details": {
+            "outcome": "unknown",
+            "hasGrade": true,
+            "scoreStatus": "unknown",
+            "notScore": false,
+            "score10": null,
+            "score4": null,
+            "letterCode": null,
+            "specialCode": null,
+            "credits": 3,
+            "confirmedFailedAttemptExists": true
+          }
+        }
+      ]
+    },
+    {
+      "studentCode": "2246B045",
+      "name": "Đỗ Văn Hiển",
+      "classCode": "ITK46B",
+      "programCode": "CQ22CT-PM",
+      "savedReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "savedDataStatus": "PARTIAL",
+      "knownDebtCredits": 0,
+      "currentDebtReason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+      "issues": [
+        {
+          "courseCode": "20HN1201",
+          "courseName": "Toán cho vật lý và kỹ thuật 3",
+          "period": "HK02 (2022-2023)",
+          "category": "COURSE_MAPPING_MISSING",
+          "details": {
+            "outcome": "unknown",
+            "credits": 3
+          }
+        },
+        {
+          "courseCode": "20HN1204",
+          "courseName": "Điện tử cơ sở",
+          "period": "HK02 (2022-2023)",
+          "category": "COURSE_MAPPING_MISSING",
+          "details": {
+            "outcome": "unknown",
+            "credits": 3
+          }
+        },
+        {
+          "courseCode": "HN2103D",
+          "courseName": "Điện tử hạt nhân",
+          "period": "HK01 (2023-2024)",
+          "category": "COURSE_MAPPING_MISSING",
+          "details": {
+            "outcome": "pending",
+            "credits": 3
+          }
+        }
+      ]
+    }
+  ]
+}

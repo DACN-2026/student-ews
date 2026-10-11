@@ -8,6 +8,7 @@ import { academicWarningProgressSignal } from "./academic-warning-progress";
 import { loadAcademicDebt, type AcademicDebtCalculation } from "./academic-debt";
 import { calculateAssessmentTermFailedCredits } from "./academic-warning-capabilities";
 import { GraduationEvaluationsService } from "./graduation-evaluations";
+import { loadAcademicStandingSources } from "./academic-standing";
 
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -96,6 +97,17 @@ export class AcademicWarningEvidenceService {
         evidenceNumber(recordedProgress.expectedCreditsToDate) === progressSignal?.expectedCreditsToDate && evidenceNumber(recordedProgress.earnedCreditsToDate) === progressSignal?.earnedCreditsToDate
         && sameCodes(recordedMissing, progressSignal?.missingRequiredCourses?.map((course) => course.courseCode) || []));
     }
+    if (ruleCodes.some(code => code.includes("NO_REGISTRATION") || code === "EARLY_MISSING_TERM_DATA" || code.startsWith("ACADEMIC_"))) {
+      const recorded = object(studentSnapshot.academicStandingSources);
+      try {
+        const live = (await loadAcademicStandingSources([result.studentId], result.sProgramCode || "", term.id, run.cohortId)).get(result.studentId);
+        checks.push({ key: "standing", label: "Đăng ký, dữ liệu kỳ học và hiệu lực quyết định", recorded: null, current: null,
+          status: !Object.keys(recorded).length || !live ? "UNAVAILABLE" : canonical(recorded) === canonical(live) ? "MATCHED" : "CHANGED" });
+      } catch {
+        checks.push({ key: "standing", label: "Đăng ký, dữ liệu kỳ học và hiệu lực quyết định", recorded: null, current: null, status: "UNAVAILABLE" });
+        unavailableSources.push("Đăng ký và quyết định học vụ");
+      }
+    }
     let graduation = null;
     if (graduationRow) {
       try {
@@ -122,7 +134,7 @@ export class AcademicWarningEvidenceService {
           const grade = gradesById.get(offering.id);
           const outcome = grade ? courseOutcome({ ...grade, score10: evidenceNumber(grade.score10), score4: evidenceNumber(grade.score4) }) : "unknown";
           return { id: offering.id, courseCode: offering.sCurriculumId, courseName: offering.sCourseName, credits: offering.sCredits, score4: evidenceNumber(grade?.score4), score10: evidenceNumber(grade?.score10), letter: grade?.specialCode || grade?.letterCode || null,
-            status: outcome === "passed" ? "PASSED" : outcome === "failed" ? "FAILED" : outcome === "pending" ? "PENDING" : "UNKNOWN", excludedFromGpa: grade?.notComputeAverageScore ?? false };
+            status: grade?.specialCode?.trim().toUpperCase() === "VT" ? "ABSENT" : outcome === "passed" ? "PASSED" : outcome === "failed" ? "FAILED" : outcome === "pending" ? "PENDING" : "UNKNOWN", excludedFromGpa: grade?.notComputeAverageScore ?? false };
         }) },
       progress: progress && sameProgram ? { latestSemester: progress.scheduleProgress.latestCompletedSemester, expectedCredits: progress.scheduleProgress.expectedCreditsToDate, earnedCredits: progress.scheduleProgress.earnedCreditsToDate,
         electiveMissingCredits: Math.max(0, progress.scheduleProgress.expectedElectiveCredits - progress.scheduleProgress.earnedElectiveCredits),

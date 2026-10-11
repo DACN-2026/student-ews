@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { monitoredStudentWhere } from "../student-monitoring-scope";
 import type { Actor } from "@/lib/auth/types";
 import { ApiError } from "@/lib/utils/api-error";
 import {
@@ -6,7 +7,7 @@ import {
   assertAcademicWarningAssessmentTermAllowed,
   compareAcademicTerms,
 } from "@/lib/academic-terms";
-import { parseAcademicWarningPolicyDefinition } from "@/lib/services/academic-warning-policy";
+import { findEarlyWarningPolicy } from "./early-warning-policy";
 import { QD600_EXECUTION_PROFILE, QD600_RULE_ENGINE_VERSION } from "@/lib/services/academic-warning-qd600-rules";
 import { AcademicWarningsService } from "@/lib/services/academic-warnings";
 import { InterventionCasesService } from "@/lib/services/intervention-cases";
@@ -114,26 +115,6 @@ export function academicWarningRunAction(status?: string | null) {
   return "CREATE" as const;
 }
 
-async function findQd600Policy() {
-  const candidates = await prisma.academicWarningPolicy.findMany({
-    where: { status: "draft" },
-    orderBy: [{ version: "desc" }, { createdAt: "desc" }],
-  });
-  for (const policy of candidates) {
-    try {
-      const definition = parseAcademicWarningPolicyDefinition(policy.policyDefinition);
-      if (definition.evaluationProfile === "QD600_ARTICLE_18") return { policy, definition };
-    } catch {
-      // Ignore unrelated or invalid draft policies while locating the configured QĐ600 definition.
-    }
-  }
-  throw new ApiError(
-    "Không tìm thấy chính sách QĐ600 Điều 18 để đánh giá cảnh báo.",
-    "QD600_POLICY_NOT_FOUND",
-    422,
-  );
-}
-
 async function facultyCodeForActor(actor: Actor) {
   if (actor.grants.some((grant) => grant.role === "admin" || grant.scope === "system")) return null;
   if (!actor.grants.some((grant) => grant.scope === "faculty")) {
@@ -157,7 +138,6 @@ export class AcademicWarningAutomationService {
   static async evaluationScopes(
     applicableCohortIds: string[],
     facultyCode?: string | null,
-    assessmentTermId?: string,
   ) {
     const classes = await prisma.class.findMany({
       where: {
@@ -172,31 +152,14 @@ export class AcademicWarningAutomationService {
       ? await prisma.student.findMany({
           where: {
             deletedAt: null,
-            sIsInClass: true,
+            ...monitoredStudentWhere(),
             sClassStudentId: { in: classCodes },
             sStudyProgramId: { not: null },
           },
           select: { id: true, sClassStudentId: true, sStudyProgramId: true },
         })
       : [];
-    const termParticipants = assessmentTermId && students.length
-      ? await prisma.studentTermSummary.findMany({
-          where: {
-            academicTermId: assessmentTermId,
-            studentId: { in: students.map((student) => student.id) },
-          },
-          select: { studentId: true, sProgramCode: true },
-        })
-      : null;
-    const participantKeys = termParticipants
-      ? new Set(termParticipants.map((item) => `${item.studentId}:${item.sProgramCode}`))
-      : null;
-    const eligibleStudents = participantKeys
-      ? students.filter((student) => Boolean(
-          student.sStudyProgramId && participantKeys.has(`${student.id}:${student.sStudyProgramId}`),
-        ))
-      : students;
-    const programCodes = [...new Set(eligibleStudents.flatMap((item) => item.sStudyProgramId ? [item.sStudyProgramId] : []))];
+    const programCodes = [...new Set(students.flatMap((item) => item.sStudyProgramId ? [item.sStudyProgramId] : []))];
     const programs = programCodes.length
       ? await prisma.trainingProgram.findMany({
           where: {
@@ -223,7 +186,7 @@ export class AcademicWarningAutomationService {
       applicableCohortIds,
       facultyCode,
       classes,
-      students: eligibleStudents,
+      students,
       programs,
       cohortProgramPairs,
     });
@@ -234,6 +197,8 @@ export class AcademicWarningAutomationService {
     actorId?: string | null;
     facultyCode?: string | null;
     syncInterventions?: boolean;
+    preserveCompletedPolicy?: boolean;
+    refreshSources?: boolean;
   }) {
     const term = await prisma.academicTerm.findFirst({
       where: { id: input.termId, deletedAt: null },
@@ -252,14 +217,13 @@ export class AcademicWarningAutomationService {
       throw error;
     }
 
-    const { policy, definition } = await findQd600Policy();
+    const { policy, definition } = await findEarlyWarningPolicy();
     if (definition.evaluationProfile !== "QD600_ARTICLE_18") {
       throw new ApiError("Selected policy is not QĐ600 Article 18", "QD600_POLICY_TYPE_REQUIRED", 422);
     }
     const scopes = await this.evaluationScopes(
       definition.regulatory.applicableCohortIds,
       input.facultyCode,
-      term.id,
     );
     const results: Array<{
       cohortId: string;
@@ -287,7 +251,8 @@ export class AcademicWarningAutomationService {
         if (run.status === "running") return true;
         const snapshot = run.sourceSnapshot;
         return snapshot !== null && !Array.isArray(snapshot) && typeof snapshot === "object" &&
-          snapshot.engineVersion === QD600_RULE_ENGINE_VERSION;
+          !input.refreshSources && snapshot.engineVersion === QD600_RULE_ENGINE_VERSION &&
+          (input.preserveCompletedPolicy || run.policyId === policy.id);
       });
       const action = academicWarningRunAction(existing?.status);
       if (action === "SKIP_COMPLETED" || action === "SKIP_RUNNING") {
@@ -424,6 +389,9 @@ export class AcademicWarningAutomationService {
         facultyCode: input.facultyCode,
         // Mỗi học kỳ chính đã có điểm phải lưu cảnh báo của chính học kỳ đó.
         syncInterventions: true,
+        // Opening reports must not apply a newly saved policy to completed history.
+        // An explicit retry can evaluate that term with the latest policy.
+        preserveCompletedPolicy: true,
       });
       results.push({
         termId: term.id,
@@ -494,6 +462,7 @@ export class AcademicWarningAutomationService {
       termId: term.id,
       actorId: input.actorId,
       facultyCode: input.facultyCode,
+      refreshSources: true,
     });
     return {
       gradesFinalizedAt: finalizedAt,

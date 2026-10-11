@@ -1,0 +1,232 @@
+{
+  "checkedAt": "2026-10-11T06:52:36.363Z",
+  "vtRows": 1239,
+  "stats": [
+    {
+      "field": "CurriculumID",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239
+    },
+    {
+      "field": "CurriculumName",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239
+    },
+    {
+      "field": "CurriculumNamePrint",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239
+    },
+    {
+      "field": "Credits",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239,
+      "distribution": {
+        "1": 180,
+        "2": 173,
+        "3": 578,
+        "4": 308
+      }
+    },
+    {
+      "field": "YearStudy",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239,
+      "distribution": {
+        "2022-2023": 40,
+        "2025-2026": 893,
+        "2023-2024": 80,
+        "2024-2025": 226
+      }
+    },
+    {
+      "field": "TermID",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239,
+      "distribution": {
+        "HK02": 711,
+        "HK01": 494,
+        "HK03": 34
+      }
+    },
+    {
+      "field": "StudyUnitID",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239
+    },
+    {
+      "field": "ScheduleStudyUnitID",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239
+    },
+    {
+      "field": "StudyProgramID",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239,
+      "distribution": {
+        "CQ22CT-PM": 130,
+        "CQ22CT-MMT": 28,
+        "CQ23CT-MMT": 96,
+        "CQ23CT-PM": 140,
+        "CQ23CT": 40,
+        "CQ24CT": 246,
+        "CQ25CT": 559
+      }
+    },
+    {
+      "field": "DiemTK_10",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239,
+      "distribution": {
+        "VT": 1239
+      }
+    },
+    {
+      "field": "DiemTK_4",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239,
+      "distribution": {
+        "VT": 1239
+      }
+    },
+    {
+      "field": "DiemTK_Chu",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239,
+      "distribution": {
+        "VT": 1239
+      }
+    },
+    {
+      "field": "NotScore",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239,
+      "distribution": {
+        "0": 1239
+      }
+    },
+    {
+      "field": "IsPass",
+      "null": 0,
+      "missing": 0,
+      "empty": 1239,
+      "populated": 0,
+      "distribution": {
+        "[empty string]": 1239
+      }
+    },
+    {
+      "field": "IsGather",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239,
+      "distribution": {
+        "x": 1239
+      }
+    },
+    {
+      "field": "Note",
+      "null": 0,
+      "missing": 0,
+      "empty": 1239,
+      "populated": 0,
+      "distribution": {
+        "[empty string]": 1239
+      }
+    },
+    {
+      "field": "NotComputeAverageScore",
+      "null": 0,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1239,
+      "distribution": {
+        "false": 949,
+        "true": 290
+      }
+    },
+    {
+      "field": "TB_HK_4",
+      "null": 122,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1117
+    },
+    {
+      "field": "TB_HK_10",
+      "null": 122,
+      "missing": 0,
+      "empty": 0,
+      "populated": 1117
+    }
+  ],
+  "system": {
+    "score10Null": 1239,
+    "score4Null": 1239,
+    "letterNull": 1239,
+    "specialVT": 1239,
+    "isPassFalse": 1239,
+    "notScoreFalse": 1239
+  },
+  "example": {
+    "student": "2246A053",
+    "course": "LC1102D",
+    "source": {
+      "CurriculumID": "LC1102D",
+      "CurriculumName": "Kinh tế Chính trị Mác - Lênin",
+      "CurriculumNamePrint": "Kinh tế Chính trị Mác - Lênin",
+      "Credits": "2",
+      "YearStudy": "2022-2023",
+      "TermID": "HK02",
+      "StudyUnitID": "222LC1102D",
+      "ScheduleStudyUnitID": "222LC1102D01",
+      "StudyProgramID": "CQ22CT-PM",
+      "DiemTK_10": "VT",
+      "DiemTK_4": "VT",
+      "DiemTK_Chu": "VT",
+      "NotScore": "0",
+      "IsPass": "",
+      "IsGather": "x",
+      "Note": "",
+      "NotComputeAverageScore": false,
+      "TB_HK_4": "2.63",
+      "TB_HK_10": "6.68"
+    },
+    "system": {
+      "score10": null,
+      "score4": null,
+      "letterCode": null,
+      "specialCode": "VT",
+      "scoreStatus": "special",
+      "isPass": false,
+      "notScore": false
+    }
+  }
+}

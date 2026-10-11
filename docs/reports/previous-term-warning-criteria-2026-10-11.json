@@ -1,0 +1,679 @@
+{
+  "engineVersion": "academic-warning-qd600-article18-and-progress-v18",
+  "eligibleTerms": 8,
+  "completedScopes": 56,
+  "failedScopes": 0,
+  "evaluatedStudentRows": 2766,
+  "retiredCriterionCount": 0,
+  "excludesCurrentTerm": true,
+  "verifiedStudent": {
+    "studentCode": "2246A048",
+    "resultCount": 8
+  },
+  "evaluations": [
+    {
+      "termId": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "termCode": "HK01",
+      "academicYearCode": "2022-2023",
+      "summaryCount": 104,
+      "autoFinalized": false,
+      "evaluation": {
+        "term": {
+          "id": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+          "termCode": "HK01",
+          "termName": "Học kỳ 1",
+          "gradesFinalizedAt": "2026-09-20T23:00:04.872Z"
+        },
+        "policy": {
+          "id": "4834b53a-a0aa-4b63-ab06-017c9faa43f4",
+          "version": 3,
+          "name": "QĐ 600/QĐ-ĐHĐL — Điều 18"
+        },
+        "scopeCount": 7,
+        "completed": 7,
+        "skipped": 0,
+        "failed": 0,
+        "status": "completed",
+        "results": [
+          {
+            "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+            "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+            "programCode": "CQ24CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "2127e7e2-1c4b-4fdb-9ace-d5a35d71c7de"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+            "programCode": "CQ23CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "dfa6cd28-8014-4b1b-9308-73ba446e5e1c"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+            "programCode": "CQ23CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "d7b74e54-58db-44ef-b8a9-0bda8ae06c8e"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+            "programCode": "CQ23CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "402a1262-dfdd-4a00-93f5-0c9d91df4ad3"
+          },
+          {
+            "cohortId": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+            "trainingProgramId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+            "programCode": "CQ25CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "5f921282-7a51-43ea-ace1-3f88187749bf"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+            "programCode": "CQ22CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "85b166da-6c40-462d-a5ef-97b9683a9852"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+            "programCode": "CQ22CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "de2c8538-e878-4faa-bb2b-086507628f45"
+          }
+        ]
+      }
+    },
+    {
+      "termId": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "termCode": "HK02",
+      "academicYearCode": "2022-2023",
+      "summaryCount": 103,
+      "autoFinalized": false,
+      "evaluation": {
+        "term": {
+          "id": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+          "termCode": "HK02",
+          "termName": "Học kỳ 2",
+          "gradesFinalizedAt": "2026-09-20T22:59:46.871Z"
+        },
+        "policy": {
+          "id": "4834b53a-a0aa-4b63-ab06-017c9faa43f4",
+          "version": 3,
+          "name": "QĐ 600/QĐ-ĐHĐL — Điều 18"
+        },
+        "scopeCount": 7,
+        "completed": 7,
+        "skipped": 0,
+        "failed": 0,
+        "status": "completed",
+        "results": [
+          {
+            "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+            "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+            "programCode": "CQ24CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "5e3395f4-d371-4b52-a37e-1efa85793dbb"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+            "programCode": "CQ23CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "463abf6b-42b2-4dac-ad39-e34744051f39"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+            "programCode": "CQ23CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "2929c41a-e5ba-4d7d-a52b-d4e42e3e2729"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+            "programCode": "CQ23CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "84c42db8-9fe5-4bae-b2c6-b646914689f4"
+          },
+          {
+            "cohortId": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+            "trainingProgramId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+            "programCode": "CQ25CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "26c9cc8f-8d32-466c-a3fd-8ee497e02c50"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+            "programCode": "CQ22CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "f1881baa-c4a4-479f-a5d8-973e82669b20"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+            "programCode": "CQ22CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "071d5285-9f3f-437f-b101-35909442fdb8"
+          }
+        ]
+      }
+    },
+    {
+      "termId": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "termCode": "HK01",
+      "academicYearCode": "2023-2024",
+      "summaryCount": 273,
+      "autoFinalized": false,
+      "evaluation": {
+        "term": {
+          "id": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+          "termCode": "HK01",
+          "termName": "Học kỳ 1",
+          "gradesFinalizedAt": "2026-09-20T22:59:46.871Z"
+        },
+        "policy": {
+          "id": "4834b53a-a0aa-4b63-ab06-017c9faa43f4",
+          "version": 3,
+          "name": "QĐ 600/QĐ-ĐHĐL — Điều 18"
+        },
+        "scopeCount": 7,
+        "completed": 7,
+        "skipped": 0,
+        "failed": 0,
+        "status": "completed",
+        "results": [
+          {
+            "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+            "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+            "programCode": "CQ24CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "abd92076-a4a1-4ee7-bd35-eb4f747315b8"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+            "programCode": "CQ23CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "261906b4-7665-4b6b-86c1-d406cfe645c9"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+            "programCode": "CQ23CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "ccc4158d-f2d4-4275-b42e-227a4e2b540b"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+            "programCode": "CQ23CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "c17cde1f-6588-4d4a-9ba1-45fc3d937846"
+          },
+          {
+            "cohortId": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+            "trainingProgramId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+            "programCode": "CQ25CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "ed94774f-e6a6-40f8-82ec-92ecda5993bc"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+            "programCode": "CQ22CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "61532b09-9a08-44f5-9d42-1613dca02418"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+            "programCode": "CQ22CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "d4602657-2051-4f42-9312-8862022f42d2"
+          }
+        ]
+      }
+    },
+    {
+      "termId": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "termCode": "HK02",
+      "academicYearCode": "2023-2024",
+      "summaryCount": 272,
+      "autoFinalized": false,
+      "evaluation": {
+        "term": {
+          "id": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+          "termCode": "HK02",
+          "termName": "Học kỳ 2",
+          "gradesFinalizedAt": "2026-09-20T22:59:46.871Z"
+        },
+        "policy": {
+          "id": "4834b53a-a0aa-4b63-ab06-017c9faa43f4",
+          "version": 3,
+          "name": "QĐ 600/QĐ-ĐHĐL — Điều 18"
+        },
+        "scopeCount": 7,
+        "completed": 7,
+        "skipped": 0,
+        "failed": 0,
+        "status": "completed",
+        "results": [
+          {
+            "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+            "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+            "programCode": "CQ24CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "c0c1dd24-d604-47b1-9f3b-cfe3d2242114"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+            "programCode": "CQ23CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "2036fb0f-4f6b-4aa6-ae02-450701650ebe"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+            "programCode": "CQ23CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "0e3e2e44-ae00-4cab-ae21-a2ced11e94ed"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+            "programCode": "CQ23CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "0503ec28-527c-451a-9e48-7b40ce16adc8"
+          },
+          {
+            "cohortId": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+            "trainingProgramId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+            "programCode": "CQ25CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "e6125430-1b45-4a9a-bba3-f855fa789e52"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+            "programCode": "CQ22CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "a417abe7-993b-4313-bcbc-0f3b581564f1"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+            "programCode": "CQ22CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "c27672e6-de86-46bb-b263-3325ffd318e5"
+          }
+        ]
+      }
+    },
+    {
+      "termId": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "termCode": "HK01",
+      "academicYearCode": "2024-2025",
+      "summaryCount": 383,
+      "autoFinalized": false,
+      "evaluation": {
+        "term": {
+          "id": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+          "termCode": "HK01",
+          "termName": "Học kỳ 1",
+          "gradesFinalizedAt": "2026-09-20T22:59:46.871Z"
+        },
+        "policy": {
+          "id": "4834b53a-a0aa-4b63-ab06-017c9faa43f4",
+          "version": 3,
+          "name": "QĐ 600/QĐ-ĐHĐL — Điều 18"
+        },
+        "scopeCount": 7,
+        "completed": 7,
+        "skipped": 0,
+        "failed": 0,
+        "status": "completed",
+        "results": [
+          {
+            "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+            "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+            "programCode": "CQ24CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "2fe15f85-afb1-4144-aa07-f26dde66049a"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+            "programCode": "CQ23CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "9fd59a22-fcf2-4313-a264-3b17cd4b0e43"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+            "programCode": "CQ23CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "48dfe7ac-b542-472a-aca3-8998e3260c80"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+            "programCode": "CQ23CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "49c7db7e-79dd-4da9-a252-a72d36cb390d"
+          },
+          {
+            "cohortId": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+            "trainingProgramId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+            "programCode": "CQ25CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "b487cc45-4b23-4edb-b320-317bc57e7810"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+            "programCode": "CQ22CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "2bd4a90d-31e4-49ee-a35a-fb70e5925ccb"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+            "programCode": "CQ22CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "aa906750-0021-4535-ae9b-432d66de7b3f"
+          }
+        ]
+      }
+    },
+    {
+      "termId": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "termCode": "HK02",
+      "academicYearCode": "2024-2025",
+      "summaryCount": 382,
+      "autoFinalized": false,
+      "evaluation": {
+        "term": {
+          "id": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+          "termCode": "HK02",
+          "termName": "Học kỳ 2",
+          "gradesFinalizedAt": "2026-09-20T22:59:46.871Z"
+        },
+        "policy": {
+          "id": "4834b53a-a0aa-4b63-ab06-017c9faa43f4",
+          "version": 3,
+          "name": "QĐ 600/QĐ-ĐHĐL — Điều 18"
+        },
+        "scopeCount": 7,
+        "completed": 7,
+        "skipped": 0,
+        "failed": 0,
+        "status": "completed",
+        "results": [
+          {
+            "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+            "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+            "programCode": "CQ24CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "d6445254-9f98-400f-9b2d-0f8dc4528011"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+            "programCode": "CQ23CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "f42a4ab6-f5d5-4c23-a474-f69c641d8f49"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+            "programCode": "CQ23CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "873840f6-71ef-45e2-b44f-5f7b73e538cd"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+            "programCode": "CQ23CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "640301c7-ca85-43ec-b2da-32e005abddf1"
+          },
+          {
+            "cohortId": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+            "trainingProgramId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+            "programCode": "CQ25CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "0ebe37d5-4d5f-4dd6-a427-d8254505159c"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+            "programCode": "CQ22CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "6997f10c-1da9-41b2-821b-b92afd7f1d5e"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+            "programCode": "CQ22CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "796d7bb9-6ccb-4756-9120-c01b665532a0"
+          }
+        ]
+      }
+    },
+    {
+      "termId": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "termCode": "HK01",
+      "academicYearCode": "2025-2026",
+      "summaryCount": 623,
+      "autoFinalized": false,
+      "evaluation": {
+        "term": {
+          "id": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+          "termCode": "HK01",
+          "termName": "Học kỳ 1",
+          "gradesFinalizedAt": "2026-09-20T23:00:05.309Z"
+        },
+        "policy": {
+          "id": "4834b53a-a0aa-4b63-ab06-017c9faa43f4",
+          "version": 3,
+          "name": "QĐ 600/QĐ-ĐHĐL — Điều 18"
+        },
+        "scopeCount": 7,
+        "completed": 7,
+        "skipped": 0,
+        "failed": 0,
+        "status": "completed",
+        "results": [
+          {
+            "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+            "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+            "programCode": "CQ24CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "cc961a45-c2ba-4714-80ac-9b8e357ef91c"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+            "programCode": "CQ23CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "64a8d4ca-3387-4431-9315-1d6f09b34b27"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+            "programCode": "CQ23CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "96b4af19-b99b-493b-b366-8729d9a794f2"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+            "programCode": "CQ23CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "214dc119-5f3f-48f3-8174-933dc0669a43"
+          },
+          {
+            "cohortId": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+            "trainingProgramId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+            "programCode": "CQ25CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "0cde89fc-91aa-4e61-b8b4-30ea80c79f74"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+            "programCode": "CQ22CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "3b5d7c90-f65f-4cb8-9ae7-d91de301374b"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+            "programCode": "CQ22CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "c2e521ef-d146-40e1-a3cb-9c63d5f988a1"
+          }
+        ]
+      }
+    },
+    {
+      "termId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "termCode": "HK02",
+      "academicYearCode": "2025-2026",
+      "summaryCount": 590,
+      "autoFinalized": false,
+      "evaluation": {
+        "term": {
+          "id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+          "termCode": "HK02",
+          "termName": "Học kỳ 2",
+          "gradesFinalizedAt": "2026-09-20T23:00:05.094Z"
+        },
+        "policy": {
+          "id": "4834b53a-a0aa-4b63-ab06-017c9faa43f4",
+          "version": 3,
+          "name": "QĐ 600/QĐ-ĐHĐL — Điều 18"
+        },
+        "scopeCount": 7,
+        "completed": 7,
+        "skipped": 0,
+        "failed": 0,
+        "status": "completed",
+        "results": [
+          {
+            "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+            "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+            "programCode": "CQ24CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "542d83ba-3699-47f3-b7c2-490c207b2f6f"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+            "programCode": "CQ23CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "588122d9-5ed4-466d-8822-d446a611b1a6"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+            "programCode": "CQ23CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "7f0a4ec7-2a95-4c6f-845a-9acefb6adede"
+          },
+          {
+            "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+            "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+            "programCode": "CQ23CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "e6b16de8-beaa-4631-b45e-6ab165682d19"
+          },
+          {
+            "cohortId": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+            "trainingProgramId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+            "programCode": "CQ25CT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "58c492a6-8614-488a-a9b4-a8dc28636ab2"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+            "programCode": "CQ22CT-MMT",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "0447411f-6c20-41c9-8794-edf1db2d5bd6"
+          },
+          {
+            "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+            "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+            "programCode": "CQ22CT-PM",
+            "facultyCode": "CT",
+            "status": "completed",
+            "runId": "d2e1d4f8-5946-4368-8ba6-5b24888efb21"
+          }
+        ]
+      }
+    }
+  ]
+}

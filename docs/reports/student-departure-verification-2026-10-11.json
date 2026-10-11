@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-10-10T21:32:13.273Z",
+  "studentCode": "2549A044",
+  "isInClass": false,
+  "departure": {
+    "decisionId": "a4066eeb-9266-45d8-aab9-8e5450153a0a",
+    "fromYear": "2025-2026",
+    "fromTerm": 2,
+    "effectiveAt": "2026-03-19T00:00:00.000Z"
+  },
+  "sourceMembershipPreserved": true,
+  "currentlyMonitored": 623,
+  "monitoredBeforeDeparture": 624,
+  "monitoredFromDeparture": 623,
+  "offeringRecords": 31141,
+  "gradeRecords": 31141,
+  "decisionRecords": 912,
+  "studentSummaryHistory": 2,
+  "supportBlocked": true,
+  "historicalProgressOnly": true,
+  "historicalCutoff": {
+    "year": "2025-2026",
+    "term": "HK01"
+  }
+}

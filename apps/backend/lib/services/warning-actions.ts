@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import type { Actor } from "@/lib/auth/types";
 import { ApiError } from "@/lib/utils/api-error";
 import { EARLY_WARNING_CASE_TYPE, SUPERSEDED_EARLY_WARNING_CASE_TYPE } from "@/lib/services/warning-case-types";
+import { assertStudentSupportAllowed } from "../student-monitoring-scope";
 
 export const WARNING_ACTION_STATUSES = [
   "OPEN",
@@ -85,6 +86,7 @@ export class WarningActionsService {
       throw new ApiError("A new warning action must start as OPEN and continue through lifecycle updates", "INVALID_STATUS", 400);
     }
     const dueDate = parseDueDate(data.dueDate);
+    await assertStudentSupportAllowed(data.studentId);
     await assertActiveAssignee(data.assignedUserId);
     const now = new Date();
 
@@ -150,6 +152,7 @@ export class WarningActionsService {
     }
 
     const currentStatus = parseWarningActionStatus(current.status);
+    await assertStudentSupportAllowed(current.studentId);
     const status = data.status === undefined ? currentStatus : parseWarningActionStatus(data.status);
     assertWarningActionTransition(currentStatus, status);
     const dueDate = parseDueDate(data.dueDate);

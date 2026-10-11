@@ -5,6 +5,7 @@ import crypto from "crypto";
 import { Prisma } from "@prisma/client";
 import { ApiError } from "@/lib/utils/api-error";
 import { buildAcademicTermLinks, isConfiguredSummerTermCode } from "@/lib/academic-terms";
+import { sourceGradeStatus } from "../source-grade-status.cjs";
 
 // ============================================================================
 // Types — matches SWE model.go SourceYear/SourceTerm/SourceGrade
@@ -661,12 +662,8 @@ export class GradesService {
       letter = "";
     }
 
-    let scoreStatus = "graded";
-    if (isMarker(g.NotScore)) {
-      scoreStatus = "pending";
-    } else if (special) {
-      scoreStatus = "special";
-    }
+    const scoreStatus = sourceGradeStatus({ notScore: isMarker(g.NotScore), special,
+      score10: s10.value, score4: s4.value, letter, isPass: isMarker(g.IsPass) });
 
     // Upsert grade
     await tx.$executeRaw`

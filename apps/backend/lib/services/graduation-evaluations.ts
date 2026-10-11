@@ -1,5 +1,5 @@
 import { orderedStudentResultPage } from "../student-list-order";
-import { monitoredStudentResultWhere } from "../student-monitoring-scope";
+import { monitoredStudentResultWhere, monitoredStudentWhere } from "../student-monitoring-scope";
 import { loadProgramCurriculum } from "./program-curriculum";
 import { k44ElectiveAlternatives } from "../k44-elective-blocks";
 import { assessCertificateRequirements, isConditionalCourse, isK44StandardProgram } from "../academic-course-rules";
@@ -402,7 +402,8 @@ export class GraduationEvaluationsService {
             deletedAt: null,
             sStudyProgramId: program.sProgramCode,
             sClassStudentId: { in: classes.map((item) => item.classId) },
-            sIsInClass: true,
+            ...monitoredStudentWhere({ yearCode: cutoff.yearById.get(cutoff.termById.get(scope.assessmentAcademicTermId)!.academicYearId)!.sYearCode,
+              termOrder: cutoff.termById.get(scope.assessmentAcademicTermId)!.sTermOrder }),
           },
           select: { id: true },
         })

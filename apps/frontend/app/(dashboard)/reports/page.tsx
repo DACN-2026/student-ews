@@ -15,9 +15,10 @@ import Tabs, { TabItem } from "@/components/ui/Tabs";
 import FilterBar from "@/components/ui/FilterBar";
 import DataTable, { Column } from "@/components/ui/DataTable";
 import SlideOverDrawer from "@/components/ui/SlideOverDrawer";
-import WarningCaseWorkspace from "@/components/warnings/WarningCaseWorkspace";
+import dynamic from "next/dynamic";
+const WarningCaseWorkspace = dynamic(() => import("@/components/warnings/WarningCaseWorkspace"), { loading: () => <LoadingState variant="detail" label="Đang tải hồ sơ can thiệp…" /> });
 import Modal from "@/components/ui/Modal";
-import WarningAssessmentListModal from "@/components/warnings/WarningAssessmentListModal";
+const WarningAssessmentListModal = dynamic(() => import("@/components/warnings/WarningAssessmentListModal"), { loading: () => <LoadingState variant="detail" label="Đang tải danh sách sinh viên…" /> });
 import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
 import type { WarningHistoryEvent } from "@/lib/warning-history";
@@ -45,6 +46,8 @@ interface InterventionCaseItem {
     programCode: string | null;
   };
   latestBusinessStatus: WarningBusinessStatus | null;
+  regulatoryAssessment?: "BREACHED" | "NOT_BREACHED" | "UNRESOLVED";
+  regulatoryCoverage?: string | null;
   interventionStatus: InterventionStatus;
   latestWarningRunId: string | null;
   latestWarningResultId: string | null;
@@ -128,7 +131,7 @@ interface InterventionCaseDetail {
 
 type WarningReport = {
   hasCompletedOfficialRun: boolean;
-  evaluationState: { hasCompletedOfficialRun: boolean; persistedResultCount: number; persistedInsufficientDataCount: number; noPersistedResultCount: number };
+  evaluationState: { hasCompletedOfficialRun: boolean; persistedResultCount: number; persistedInsufficientDataCount: number; noPersistedResultCount: number; excludedStandingCount?: number };
   items: Array<Record<string, ApiData>>;
   total: number;
   page: number;
@@ -147,6 +150,7 @@ type WarningReport = {
     businessStatus: Record<WarningBusinessStatus, number>;
   };
   policy: { name: string; displayName: string; evaluationScope: string; configured: boolean };
+  mode?: { configuredPolicy?: { name: string; version: number } | null };
   latestPeriod: { academicTermId: string; label: string; academicYear: string; termCode: string; termGpaAvailable: number } | null;
   trend: Array<{ label: string; high: number; medium: number; evaluated: number; available: number; termGpaAvailable: number }>;
   classBreakdown: Array<{ classCode: string; className: string; totalStudents: number; evaluated: number; normal: number; partialNoRisk: number; monitoring: number; highRisk: number; verifyRequired: number; insufficientData: number; high: number; medium: number; warningStudents: number; warningRate: number }>;
@@ -198,6 +202,10 @@ const INTERVENTION_STATUS_STYLE: Record<string, { bg: string; text: string; bord
 // ────────────────────────────────────────────────────────────────────────────
 // UTILITY COMPONENTS
 // ────────────────────────────────────────────────────────────────────────────
+
+function RegulatoryStatus({ record }: { record: InterventionCaseItem }) {
+  return <div className="max-w-44 text-xs leading-5 text-slate-700"><span>{record.regulatoryAssessment === "BREACHED" ? "Chạm ngưỡng QĐ600" : record.regulatoryAssessment === "NOT_BREACHED" ? "Chưa chạm ngưỡng QĐ600" : "Chưa đối chiếu đủ"}</span>{record.regulatoryCoverage === "PARTIAL" && <p className="text-[10px] text-slate-500">Còn tiêu chí chưa đánh giá</p>}</div>;
+}
 
 function BusinessStatusBadge({ status }: { status: string | null }) {
   const isVerify = status === "VERIFY_REQUIRED";
@@ -403,6 +411,7 @@ export default function ReportsPage() {
   const [summaryError, setSummaryError] = useState("");
   const [reconcilingHistory, setReconcilingHistory] = useState(false);
   const [reconciliationReady, setReconciliationReady] = useState(() => hasSessionTask("warning-history-reconciliation"));
+  const [reconciliationRevision, setReconciliationRevision] = useState(0);
   const [reconciliationError, setReconciliationError] = useState("");
   const reconciliationStarted = useRef(false);
 
@@ -589,7 +598,10 @@ export default function ReportsPage() {
     if (authStatus === "idle" || authStatus === "loading" || reconciliationStarted.current) return;
     reconciliationStarted.current = true;
     queueMicrotask(() => void (async () => {
+      // Stored assessments can render immediately while history catches up.
+      setReconciliationReady(true);
       if (canCalculateWarning) {
+        const needsRefresh = !hasSessionTask("warning-history-reconciliation");
         try {
           setReconcilingHistory(!hasSessionTask("warning-history-reconciliation"));
           setReconciliationError("");
@@ -598,31 +610,31 @@ export default function ReportsPage() {
             const payload = await response.json().catch(() => null);
             if (!response.ok) throw new Error(payload?.error?.message || "Không thể tự động đồng bộ lịch sử cảnh báo.");
           });
+          if (needsRefresh) setReconciliationRevision(value => value + 1);
         } catch (error) {
           setReconciliationError(error instanceof Error ? error.message : "Không thể tự động đồng bộ lịch sử cảnh báo.");
         } finally {
           setReconcilingHistory(false);
         }
       }
-      setReconciliationReady(true);
     })());
   }, [authStatus, canCalculateWarning, loadOverview, loadSummary]);
 
   useEffect(() => {
     if (reconciliationReady) queueMicrotask(() => void loadOverview());
-  }, [loadOverview, reconciliationReady]);
+  }, [loadOverview, reconciliationReady, reconciliationRevision]);
 
   useEffect(() => {
     if (activeTab === "queue" && reconciliationReady) queueMicrotask(() => void loadQueue(queuePage, queueFilters));
-  }, [activeTab, queuePage, queueFilters, loadQueue, reconciliationReady]);
+  }, [activeTab, queuePage, queueFilters, loadQueue, reconciliationReady, reconciliationRevision]);
 
   useEffect(() => {
     if (activeTab === "history" && reconciliationReady) queueMicrotask(() => void loadHistory(historyPage, historyFilters));
-  }, [activeTab, historyPage, historyFilters, loadHistory, reconciliationReady]);
+  }, [activeTab, historyPage, historyFilters, loadHistory, reconciliationReady, reconciliationRevision]);
 
   useEffect(() => {
     if (drawerCaseId && reconciliationReady) queueMicrotask(() => void loadDrawerDetail(drawerCaseId));
-  }, [drawerCaseId, loadDrawerDetail, reconciliationReady]);
+  }, [drawerCaseId, loadDrawerDetail, reconciliationReady, reconciliationRevision]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -950,7 +962,7 @@ export default function ReportsPage() {
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="font-bold text-slate-800">Chính sách cảnh báo:</span>
-                    <span className="font-medium text-slate-700">QĐ 600/QĐ-ĐHĐL — Điều 18 + Tiến độ CTĐT</span>
+                    <span className="font-medium text-slate-700">{report.policy.name} — Theo dõi sớm, đối chiếu QĐ600</span>
                     <span className="text-slate-300">•</span>
                     <span className="font-semibold text-slate-600">Phạm vi:</span>
                     <TextLabel className="inline-flex items-center text-[11px] font-medium text-slate-700">
@@ -958,7 +970,7 @@ export default function ReportsPage() {
                     </TextLabel>
                   </div>
                   <p className="text-slate-500 text-[11px] leading-relaxed">
-                    Mục tiêu: Phát hiện sớm sinh viên có nguy cơ học vụ hoặc chậm tiến độ tín chỉ để GVCN/CVHT can thiệp sớm.
+                    Mục tiêu: Phát hiện sinh viên cần hỗ trợ để tránh cảnh báo học vụ. Mức nguy cơ nội bộ và trạng thái đối chiếu QĐ600 được hiển thị riêng; kết quả không phải quyết định cảnh báo học vụ.
                   </p>
                 </div>
                 {can("academic_warning.policy.manage") && (
@@ -1115,8 +1127,8 @@ export default function ReportsPage() {
                   {insufficientCount > 0 && (
                     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
                       <div>
-                        <p><strong className="font-mono text-slate-900">{insufficientCount}</strong> sinh viên chưa được phân loại trong học kỳ này.</p>
-                        <p className="mt-1 text-[11px] leading-5">{report.evaluationState.noPersistedResultCount > 0 && `${report.evaluationState.noPersistedResultCount} chưa có kết quả đánh giá. `}{report.evaluationState.persistedInsufficientDataCount > 0 && `${report.evaluationState.persistedInsufficientDataCount} có kết quả nhưng thiếu dữ liệu. `}Nhóm này chưa được tính vào ba mức nguy cơ phía trên.</p>
+                        <p><strong className="font-mono text-slate-900">{insufficientCount}</strong> sinh viên không phân mức trong học kỳ này.</p>
+                        <p className="mt-1 text-[11px] leading-5">{(report.evaluationState.excludedStandingCount || 0) > 0 && `${report.evaluationState.excludedStandingCount} nghỉ được chấp thuận hoặc ngoài phạm vi kỳ đánh giá. `}{report.evaluationState.noPersistedResultCount - (report.evaluationState.excludedStandingCount || 0) > 0 && `${report.evaluationState.noPersistedResultCount - (report.evaluationState.excludedStandingCount || 0)} chưa có kết quả đánh giá. `}{report.evaluationState.persistedInsufficientDataCount > 0 && `${report.evaluationState.persistedInsufficientDataCount} có kết quả nhưng thiếu dữ liệu. `}Nhóm này chưa được tính vào ba mức nguy cơ phía trên.</p>
                       </div>
                       <button type="button" aria-haspopup="dialog" onClick={() => setAssessmentListOpen(true)} className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] cursor-pointer">Xem {insufficientCount} sinh viên →</button>
                     </div>
@@ -1437,6 +1449,11 @@ export default function ReportsPage() {
                   render: (_, record) => <BusinessStatusBadge status={record.latestBusinessStatus} />,
                 },
                 {
+                  key: "regulatoryAssessment",
+                  title: "Đối chiếu học vụ",
+                  render: (_, record) => <RegulatoryStatus record={record} />,
+                },
+                {
                   key: "interventionStatus",
                   title: "Trạng thái xử lý",
                   render: (_, record) => (
@@ -1596,6 +1613,11 @@ export default function ReportsPage() {
                   render: (_, record) => <BusinessStatusBadge status={record.latestBusinessStatus} />,
                 },
                 {
+                  key: "regulatoryAssessment",
+                  title: "Đối chiếu học vụ",
+                  render: (_, record) => <RegulatoryStatus record={record} />,
+                },
+                {
                   key: "interventionStatus",
                   title: "Trạng thái",
                   render: (_, record) => <InterventionStatusBadge status={record.interventionStatus} />,
@@ -1703,8 +1725,9 @@ export default function ReportsPage() {
 
             <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 space-y-2.5">
               <div>
-                <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Quy chế đánh giá</span>
-                <span className="text-sm font-semibold text-slate-900">QĐ 600/QĐ-ĐHĐL — Điều 18</span>
+                <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Chính sách theo dõi sớm</span>
+                <span className="text-sm font-semibold text-slate-900">{report?.mode?.configuredPolicy?.name || "Chính sách theo dõi đang cấu hình"}{report?.mode?.configuredPolicy && ` · Phiên bản ${report.mode.configuredPolicy.version}`}</span>
+                <p className="mt-1 text-xs text-slate-500">QĐ600 là mốc đối chiếu học vụ. Các tín hiệu nội bộ phục vụ tư vấn và hỗ trợ sinh viên.</p>
               </div>
               <div>
                 <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Kỳ đánh giá</span>

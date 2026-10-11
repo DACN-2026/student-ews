@@ -516,6 +516,12 @@ test("AcademicWarningRun persists QD600 profile, student rules, coverage, and re
       class_code: "CLASS-A",
       class_name: "Lớp A",
       program_code: "CNTT",
+    }, {
+      id: IDS.plan, class_uuid: IDS.courseA, cohort_uuid: IDS.courseB,
+      s_student_id: "MISSING", s_full_name: "Missing summary", class_code: "CLASS-A", class_name: "Lớp A", program_code: "CNTT",
+    }, {
+      id: IDS.courseB, class_uuid: IDS.courseA, cohort_uuid: IDS.courseB,
+      s_student_id: "LEAVE", s_full_name: "Approved leave", class_code: "CLASS-A", class_name: "Lớp A", program_code: "CNTT",
     }],
     [{ student_id: IDS.student, status: "pass" }],
     [{
@@ -564,6 +570,9 @@ test("AcademicWarningRun persists QD600 profile, student rules, coverage, and re
   ];
   let queryIndex = 0;
   let runCreateData: any;
+  let completedCandidate: any = null;
+  let createCalls = 0;
+  let verifiedLeaveReason = "Đã đối chiếu kỳ nghỉ";
   let persistedStudents: any[] = [];
   let persistedReasons: any[] = [];
   let interventionCase: any = null;
@@ -573,6 +582,17 @@ test("AcademicWarningRun persists QD600 profile, student rules, coverage, and re
     cleanups.push(mockDelegateMethod(prisma.academicYear, "findUnique", async () => ({ id: IDS.courseA, sYearCode: "2026-2027" })));
     cleanups.push(mockDelegateMethod(prisma.academicTerm, "findUnique", async () => ({ id: IDS.term, academicYearId: IDS.courseA, sTermOrder: 1 })));
     cleanups.push(mockDelegateMethod(prisma.cohort, "findFirst", async () => null));
+    cleanups.push(mockDelegateMethod(prisma.cohort, "findUnique", async () => ({ sCohortCode: "K48", sCohortName: "Khóa 48 (2024-2028)" })));
+    cleanups.push(mockDelegateMethod(prisma.academicYear, "findMany", async () => [{ id: IDS.courseA, sYearCode: "2026-2027" }]));
+    cleanups.push(mockDelegateMethod(prisma.academicTerm, "findMany", async () => [{ id: IDS.term, academicYearId: IDS.courseA, sTermOrder: 1, sIsSummer: false, startDate: null, endDate: null, sTermCode: "HK01" }]));
+    cleanups.push(mockDelegateMethod(prisma.trainingProgram, "findFirst", async () => ({ id: IDS.student, sProgramCode: "CNTT", sStudyType: "Chính quy" })));
+    cleanups.push(mockDelegateMethod(prisma.studentTermSummary, "findMany", async () => [{ studentId: IDS.student, academicTermId: IDS.term, registeredCredits: 10 }]));
+    cleanups.push(mockDelegateMethod(prisma.studentCourseOffering, "findMany", async () => [{ studentId: IDS.student, academicTermId: IDS.term }]));
+    cleanups.push(mockDelegateMethod(prisma.studentDecision, "findMany", async () => [{ id: "leave", studentId: IDS.courseB, academicTermId: IDS.term,
+      decisionTypeId: "3", sDecisionNumber: "123/QĐ", sSignDate: new Date("2026-01-01"), sDecisionName: "Nghỉ học tạm thời",
+      sourcePayload: { academicStandingReview: { effect: "APPROVED_LEAVE", fromTermId: IDS.term, toTermId: IDS.term,
+        reason: verifiedLeaveReason, verifiedBy: "advisor", verifiedAt: "2026-01-02" } } }]));
+    cleanups.push(mockDelegateMethod(prisma.decisionType, "findMany", async () => [{ decisionTypeId: "3", decisionName: "Nghỉ học tạm thời" }]));
     cleanups.push(mockDelegateMethod(prisma.graduationRule, "findMany", async () => []));
     cleanups.push(mockDelegateMethod(prisma.trainingProgramCourse, "findMany", async () => []));
     cleanups.push(mockDelegateMethod(prisma.course, "findMany", async () => []));
@@ -638,15 +658,17 @@ test("AcademicWarningRun persists QD600 profile, student rules, coverage, and re
       },
       academicWarningGroupResult: { createMany: async () => undefined },
       academicWarningRun: {
-        findMany: async () => [],
+        findMany: async () => completedCandidate ? [completedCandidate] : [],
         create: async (args: any) => {
+          createCalls++;
           runCreateData = args.data;
           return { id: IDS.term, ...args.data };
         },
         update: async ({ data }: any) => ({ id: IDS.term, executionProfile: runCreateData.executionProfile, ...data }),
       },
       warningAction: {
-        findFirst: async ({ where }: any) => where.status === "RESOLVED" ? null : interventionCase,
+        findMany: async () => [],
+        findFirst: async ({ where }: any) => where.status === "RESOLVED" || where.studentId !== interventionCase?.studentId ? null : interventionCase,
         findUnique: async () => null,
         create: async ({ data }: any) => {
           interventionCase = { id: IDS.plan, ...data };
@@ -671,16 +693,36 @@ test("AcademicWarningRun persists QD600 profile, student rules, coverage, and re
     assert.equal(completed.executionProfile, "QD600_PARTIAL_REGULATORY");
     assert.equal(runCreateData.executionProfile, "QD600_PARTIAL_REGULATORY");
     assert.equal(runCreateData.sourceSnapshot.policy.evaluationProfile, "QD600_ARTICLE_18");
-    assert.equal(runCreateData.sourceSnapshot.regulatoryCoverage.status, "PARTIAL");
+    assert.equal(runCreateData.sourceSnapshot.regulatoryCoverage.status, "INSUFFICIENT");
     assert.equal(persistedStudents[0].businessStatus, "HIGH_RISK");
     assert.equal(persistedStudents[0].regulatoryCoverage, "PARTIAL");
-    assert.equal(persistedStudents[0].ruleResults.length, 6);
+    assert.equal(persistedStudents.length, 2);
+    assert.equal(runCreateData.sourceSnapshot.excludedStandingCount, 1);
+    const missing = persistedStudents.find(row => row.studentId === IDS.plan);
+    assert.equal(missing.businessStatus, "HIGH_RISK");
+    assert.equal(missing.termGpa4, null);
+    assert.ok(missing.ruleResults.some((rule: { ruleCode: string }) => rule.ruleCode === "EARLY_MISSING_TERM_DATA"));
+    assert.ok(persistedReasons.some(reason => reason.studentResultId === missing.id && reason.reasonCode === "EARLY_MISSING_TERM_DATA"));
+    assert.ok(persistedStudents[0].ruleResults.some((rule: { ruleCode: string }) => rule.ruleCode === "QD600_FAILED_CREDIT_RATIO"));
+    assert.equal(persistedStudents[0].ruleResults.some((rule: { ruleCode: string }) => rule.ruleCode === "ACADEMIC_STUDY_DURATION_REVIEW"), false);
     assert.equal(persistedReasons[0].sourceType, "REGULATORY");
     assert.equal(persistedReasons[0].details.observedValue, 0.6);
     assert.equal(persistedReasons[0].details.thresholdValue, 0.5);
     assert.equal(persistedReasons[0].details.articleRef, "Điều 18");
     assert.equal(interventionCase.caseType, "EARLY_WARNING_CASE");
-    assert.equal(interventionEvents.filter((event) => event.eventType === "WARNING_DETECTED").length, 1);
+    assert.equal(interventionEvents.filter((event) => event.eventType === "WARNING_DETECTED").length, 2);
+    completedCandidate = { id: IDS.term, ...runCreateData, status: "completed" };
+    const originalHash = runCreateData.sourceSnapshotHash;
+    const retry = () => AcademicWarningsService.createRun({ cohortId: IDS.courseB, trainingProgramId: IDS.student,
+      assessmentAcademicTermId: IDS.term, runMode: "OFFICIAL", executionProfile: "QD600_PARTIAL_REGULATORY", policyId: IDS.student });
+    queryIndex = 0;
+    await retry();
+    assert.equal(createCalls, 1, "Identical sources must reuse the completed result");
+    verifiedLeaveReason = "Đã bổ sung căn cứ quyết định nghỉ";
+    queryIndex = 0;
+    await retry();
+    assert.equal(createCalls, 2, "Changed verified decision metadata must create a new immutable run");
+    assert.notEqual(runCreateData.sourceSnapshotHash, originalHash);
   } finally {
     cleanups.reverse().forEach((cleanup) => cleanup());
   }
@@ -785,7 +827,7 @@ test("QD600 capability does not divide by zero or count duplicate offering rows 
   });
 });
 
-test("QD600 failed-credit ratio uses each student's actual registration and treats VT as a final failure", () => {
+test("QD600 failed-credit ratio keeps VT separate from confirmed failures", () => {
   const result = calculateAssessmentTermFailedCredits(IDS.term, [
     {
       offeringId: "absent-exam",
@@ -806,9 +848,12 @@ test("QD600 failed-credit ratio uses each student's actual registration and trea
     },
   ]);
   assert.equal(result.registeredCredits, 7);
-  assert.equal(result.failedCredits, 4);
-  assert.equal(result.failedCreditRatio, 4 / 7);
-  assert.equal(result.dataStatus, "COMPLETE");
+  assert.equal(result.failedCredits, 0);
+  assert.equal(result.failedCreditRatio, null);
+  assert.equal(result.dataStatus, "PARTIAL");
+  assert.equal(result.absenceCourseCount, 1);
+  assert.equal(result.absenceCredits, 4);
+  assert.ok(result.reasonCodes.includes("EXAM_ABSENCE_REQUIRES_VERIFICATION"));
 });
 
 test("QD600 capability keeps debt unverified and serializes fixed run capability states", () => {
@@ -2654,6 +2699,11 @@ test("Warning run API filters sourceSnapshot to assigned classes", async () => {
           startedAt: new Date("2026-01-01"),
           completedAt: new Date("2026-01-01"),
           sourceSnapshot: {
+            excludedStandingCount: 2,
+            excludedStandingStudents: [
+              { id: "leave-inside", classId: IDS.courseA, academicStandingSources: { decisions: [{ number: "inside-decision" }] } },
+              { id: "leave-outside", classId: "99999999-9999-4999-8999-999999999999", academicStandingSources: { decisions: [{ number: "outside-decision" }] } },
+            ],
             students: [
               { id: "inside", classId: IDS.courseA, name: "Inside" },
               { id: "outside", classId: "99999999-9999-4999-8999-999999999999", name: "Outside" },
@@ -2677,6 +2727,8 @@ test("Warning run API filters sourceSnapshot to assigned classes", async () => {
     assert.equal(response.status, 200);
     const payload = await response.json();
     assert.deepEqual(payload.sourceSnapshot.students.map((student: { id: string }) => student.id), ["inside"]);
+    assert.deepEqual(payload.sourceSnapshot.excludedStandingStudents.map((student: { id: string }) => student.id), ["leave-inside"]);
+    assert.equal(payload.sourceSnapshot.excludedStandingCount, 1);
     assert.deepEqual(payload.sourceSnapshot.scopeRestriction.classIds, [IDS.courseA]);
     assert.equal(payload.totalStudents, 1);
   } finally {

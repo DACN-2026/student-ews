@@ -1,0 +1,1229 @@
+{
+  "sourceHash": "97761ed09f34a5013d881e31ceabf547721f80ac5d374ad58b0a0e27f8e428a4",
+  "checkedAt": "2026-10-10T20:07:25.580Z",
+  "gradeStatusChanges": [
+    {
+      "offeringId": "570e0c76-78ff-47f7-9052-de85d4f059f8",
+      "studentCode": "2246A028",
+      "courseCode": "TC1003D",
+      "from": "graded",
+      "to": "unknown"
+    },
+    {
+      "offeringId": "3b22a694-e2f1-4c65-9f20-7aad6d1b2c98",
+      "studentCode": "2246A041",
+      "courseCode": "20TN1201",
+      "from": "graded",
+      "to": "unknown"
+    },
+    {
+      "offeringId": "47308169-7aff-400b-9fca-6314d4758807",
+      "studentCode": "2246B008",
+      "courseCode": "TC1001D",
+      "from": "graded",
+      "to": "unknown"
+    },
+    {
+      "offeringId": "4e200e78-846d-4147-baea-aa279bc54c4c",
+      "studentCode": "2246B008",
+      "courseCode": "TC1002D",
+      "from": "graded",
+      "to": "unknown"
+    },
+    {
+      "offeringId": "c4a381f0-965d-4f0d-85c5-95f8a30a58c8",
+      "studentCode": "2246B026",
+      "courseCode": "TC1001D",
+      "from": "graded",
+      "to": "unknown"
+    },
+    {
+      "offeringId": "cae84c28-7380-4b9c-bf13-b51782fbf682",
+      "studentCode": "2246B045",
+      "courseCode": "20HN1201",
+      "from": "graded",
+      "to": "unknown"
+    },
+    {
+      "offeringId": "300efc05-0d6f-4b98-a01d-e32af3b9820d",
+      "studentCode": "2246B045",
+      "courseCode": "20HN1204",
+      "from": "graded",
+      "to": "unknown"
+    }
+  ],
+  "auditedStudents": 625,
+  "studentsWithIssues": 53,
+  "issueCounts": {
+    "INCOMPLETE_ACADEMIC_DEBT": 9,
+    "OFFICIAL_GPA_UNAVAILABLE": 13,
+    "NO_ACADEMIC_COURSES": 2,
+    "MISSING_TERM_SOURCE": 33,
+    "SOURCE_PERIOD_CONFLICT": 2,
+    "UNSCOPED_ACADEMIC_HISTORY": 1,
+    "TERM_OUTSIDE_MONITORING": 1,
+    "INCOMPLETE_ACADEMIC_PROGRESS": 3
+  },
+  "apply": true,
+  "applied": true,
+  "appliedAt": "2026-10-10T20:20:30.500Z",
+  "sourceAuditId": "911c311e-7274-4d2b-a7d1-28f41972005f",
+  "repairAuditId": "aa1bccff-0f7b-4006-a3d8-53a66b06289e",
+  "students": [
+    {
+      "studentId": "bf132040-ddd0-4729-a60b-6f048d82ef46",
+      "studentCode": "2246A006",
+      "programCode": "CQ22CT-PM",
+      "issues": [
+        {
+          "code": "INCOMPLETE_ACADEMIC_DEBT",
+          "summary": "Lịch sử nợ học tập còn chưa đầy đủ: kết quả trống hoặc mã môn chưa khớp CTĐT. Chưa dùng số nợ một phần để kết luận theo ngưỡng.",
+          "blocking": true,
+          "evidence": {
+            "reason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+            "knownDebtCredits": 6,
+            "unknownOrUnmatchedCourses": [
+              {
+                "courseCode": "20CT3112D",
+                "year": "2024-2025",
+                "term": "HK02"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "57635038-4019-40da-8315-e0228fd00dbd",
+      "studentCode": "2246A041",
+      "programCode": "CQ22CT-PM",
+      "issues": [
+        {
+          "code": "INCOMPLETE_ACADEMIC_DEBT",
+          "summary": "Lịch sử nợ học tập còn chưa đầy đủ: kết quả trống hoặc mã môn chưa khớp CTĐT. Chưa dùng số nợ một phần để kết luận theo ngưỡng.",
+          "blocking": true,
+          "evidence": {
+            "reason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+            "knownDebtCredits": 10,
+            "unknownOrUnmatchedCourses": [
+              {
+                "courseCode": "20TN1201",
+                "year": "2022-2023",
+                "term": "HK02"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "a4ff52a6-9c00-4b5d-8c8e-d4521ce9573a",
+      "studentCode": "2246A050",
+      "programCode": "CQ22CT-PM",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT3113D",
+              "20CT4101D",
+              "20CT4102D",
+              "20CT4104D",
+              "20CT4105D",
+              "20CT4106D"
+            ],
+            "academicCourses": 6
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "f0c0dc9b-026d-4710-8cbf-642e30789157",
+      "studentCode": "2246B008",
+      "programCode": "CQ22CT-PM",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT3113D",
+              "20CT4101D",
+              "20CT4102D",
+              "20CT4104D",
+              "20CT4105D",
+              "20CT4107D",
+              "20TN1202"
+            ],
+            "academicCourses": 7
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "b20f3f6a-7a59-47e0-98c1-ba73137fc180",
+      "studentCode": "2246B029",
+      "programCode": "CQ22CT-PM",
+      "issues": [
+        {
+          "code": "NO_ACADEMIC_COURSES",
+          "summary": "Kỳ này chỉ có học phần điều kiện hoặc SHCD; chưa có học phần học thuật để đối chiếu GPA. SHCD 0 tín chỉ không chứng minh đã đăng ký học phần.",
+          "blocking": true,
+          "evidence": {
+            "courses": [
+              {
+                "courseCode": "SHCD-CD1",
+                "credits": 0
+              },
+              {
+                "courseCode": "SHCD-CD2",
+                "credits": 0
+              },
+              {
+                "courseCode": "SHCD-CD3",
+                "credits": 0
+              }
+            ]
+          }
+        },
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA chính thức; không tự gán 0 hoặc dùng điểm lớp để lấp.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [],
+            "academicCourses": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "0cc8d999-58fb-4e08-8693-d60ed022c27f",
+      "studentCode": "2246B045",
+      "programCode": "CQ22CT-PM",
+      "issues": [
+        {
+          "code": "INCOMPLETE_ACADEMIC_DEBT",
+          "summary": "Lịch sử nợ học tập còn chưa đầy đủ: kết quả trống hoặc mã môn chưa khớp CTĐT. Chưa dùng số nợ một phần để kết luận theo ngưỡng.",
+          "blocking": true,
+          "evidence": {
+            "reason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+            "knownDebtCredits": 0,
+            "unknownOrUnmatchedCourses": [
+              {
+                "courseCode": "20HN1201",
+                "year": "2022-2023",
+                "term": "HK02"
+              },
+              {
+                "courseCode": "20HN1204",
+                "year": "2022-2023",
+                "term": "HK02"
+              },
+              {
+                "courseCode": "HN2103D",
+                "year": "2023-2024",
+                "term": "HK01"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "d0d71f32-010a-4233-9a7d-5a8e910f0d5e",
+      "studentCode": "2347A009",
+      "programCode": "CQ23CT-PM",
+      "issues": [
+        {
+          "code": "INCOMPLETE_ACADEMIC_DEBT",
+          "summary": "Lịch sử nợ học tập còn chưa đầy đủ: kết quả trống hoặc mã môn chưa khớp CTĐT. Chưa dùng số nợ một phần để kết luận theo ngưỡng.",
+          "blocking": true,
+          "evidence": {
+            "reason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+            "knownDebtCredits": 18,
+            "unknownOrUnmatchedCourses": [
+              {
+                "courseCode": "TN1008D",
+                "year": "2024-2025",
+                "term": "HK03"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "e8415e84-bb04-4f18-8919-48ee197425f6",
+      "studentCode": "2347A019",
+      "programCode": "CQ23CT-MMT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        },
+        {
+          "code": "SOURCE_PERIOD_CONFLICT",
+          "summary": "Bảng điểm lớp có GPA HKII nhưng bảng điểm cá nhân chưa có học phần HKII. Cần xác minh kỳ điểm; không tự chuyển điểm HKIII sang HKII.",
+          "blocking": true,
+          "evidence": {
+            "classGpa4": 0.64,
+            "classCredits": 14,
+            "personalPeriods": [
+              "HK01",
+              "HK03"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "10f971c6-1d64-4ff1-85c4-d78417fab074",
+      "studentCode": "2347A036",
+      "programCode": "CQ23CT-PM",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "7e39c118-ef54-46a3-ae37-e46032c41d18",
+      "studentCode": "2347A048",
+      "programCode": "CQ23CT-PM",
+      "issues": [
+        {
+          "code": "UNSCOPED_ACADEMIC_HISTORY",
+          "summary": "Có kết quả học thuật chưa xác định được năm/kỳ; chưa dùng vào phép tính theo mốc kỳ. Cần đối chiếu hồ sơ công nhận hoặc phạm vi chương trình.",
+          "blocking": true,
+          "evidence": {
+            "courseCodes": [
+              "20CT1101",
+              "20CT1102",
+              "20CT2102",
+              "LC1101D",
+              "LC1102D"
+            ]
+          }
+        },
+        {
+          "code": "INCOMPLETE_ACADEMIC_DEBT",
+          "summary": "Lịch sử nợ học tập còn chưa đầy đủ: kết quả trống hoặc mã môn chưa khớp CTĐT. Chưa dùng số nợ một phần để kết luận theo ngưỡng.",
+          "blocking": true,
+          "evidence": {
+            "reason": "UNSCOPED_HISTORICAL_ATTEMPTS",
+            "knownDebtCredits": 0,
+            "unknownOrUnmatchedCourses": []
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "dc18f4e1-d04a-4b21-84aa-55e92a3cb26d",
+      "studentCode": "2347A049",
+      "programCode": "CQ23CT",
+      "issues": [
+        {
+          "code": "NO_ACADEMIC_COURSES",
+          "summary": "Kỳ này chỉ có học phần điều kiện hoặc SHCD; chưa có học phần học thuật để đối chiếu GPA. SHCD 0 tín chỉ không chứng minh đã đăng ký học phần.",
+          "blocking": true,
+          "evidence": {
+            "courses": [
+              {
+                "courseCode": "SHCD-CD1",
+                "credits": 0
+              },
+              {
+                "courseCode": "SHCD-CD2",
+                "credits": 0
+              },
+              {
+                "courseCode": "SHCD-CD3",
+                "credits": 0
+              }
+            ]
+          }
+        },
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA chính thức; không tự gán 0 hoặc dùng điểm lớp để lấp.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [],
+            "academicCourses": 0
+          }
+        },
+        {
+          "code": "SOURCE_PERIOD_CONFLICT",
+          "summary": "Bảng điểm lớp có GPA HKII nhưng bảng điểm cá nhân chưa có học phần HKII. Cần xác minh kỳ điểm; không tự chuyển điểm HKIII sang HKII.",
+          "blocking": true,
+          "evidence": {
+            "classGpa4": 0,
+            "classCredits": 8,
+            "personalPeriods": [
+              "HK01",
+              "HK02",
+              "HK03"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "2b4e6e37-ef82-42ab-bb6d-23d82eacae3b",
+      "studentCode": "2347A054",
+      "programCode": "CQ23CT-PM",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT3101D",
+              "20CT3103D",
+              "20CT3105D",
+              "20CT3106D",
+              "20CT3132D",
+              "20CT3208"
+            ],
+            "academicCourses": 6
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "66f89de6-e61c-4801-be89-1b717255b953",
+      "studentCode": "2347A057",
+      "programCode": "CQ23CT-PM",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT3101D",
+              "20CT3103D",
+              "20CT3104D",
+              "20CT3106D",
+              "20CT3132D",
+              "20CT3208"
+            ],
+            "academicCourses": 6
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "d1d1685c-ae88-4a4c-96d2-7b8d132ea62d",
+      "studentCode": "2347A065",
+      "programCode": "CQ23CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        },
+        {
+          "code": "INCOMPLETE_ACADEMIC_DEBT",
+          "summary": "Lịch sử nợ học tập còn chưa đầy đủ: kết quả trống hoặc mã môn chưa khớp CTĐT. Chưa dùng số nợ một phần để kết luận theo ngưỡng.",
+          "blocking": true,
+          "evidence": {
+            "reason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+            "knownDebtCredits": 27,
+            "unknownOrUnmatchedCourses": [
+              {
+                "courseCode": "TN1008D",
+                "year": "2024-2025",
+                "term": "HK03"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "0879e706-5241-44ba-b1fe-8daeae2f8a40",
+      "studentCode": "2347B045",
+      "programCode": "CQ23CT",
+      "issues": [
+        {
+          "code": "TERM_OUTSIDE_MONITORING",
+          "summary": "Kỳ xét được loại khỏi phân tích theo quyết định hợp lệ. Vắng dữ liệu kỳ này không tự tạo cảnh báo bổ sung.",
+          "blocking": false,
+          "evidence": {
+            "exemption": {
+              "decisionId": "805c078d-5b50-40ca-a8ed-4d3e8a231b06",
+              "number": "332/QÐ-ÐHÐL_03042026",
+              "effect": "APPROVED_LEAVE",
+              "reason": "Nghỉ học tạm thời"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "3ebef730-fca8-4255-8440-6631346a09f3",
+      "studentCode": "2347B047",
+      "programCode": "CQ23CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "b2876087-4482-4be2-a88b-819c4986b107",
+      "studentCode": "2347C040",
+      "programCode": "CQ23CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "4321b423-40bb-45d0-8f5d-141711b8c32c",
+      "studentCode": "2347C044",
+      "programCode": "CQ23CT-PM",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT1202",
+              "20CT3101D",
+              "20CT3103D",
+              "20CT3132D",
+              "20TN1202"
+            ],
+            "academicCourses": 5
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "b7d2e7a0-e301-4338-b896-e0c1156d2bc1",
+      "studentCode": "2347C046",
+      "programCode": "CQ23CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "75a15d0a-fb8c-4467-b142-72963be6ac95",
+      "studentCode": "2448A001",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "6e86cff4-be71-4d30-8e6a-5b11cc3a7e62",
+      "studentCode": "2448A009",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "c56f9fc7-bf9b-4ddf-84ff-e4b462e10cd3",
+      "studentCode": "2448A010",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "88e25bf0-1de4-4c1d-8b6d-9e130ac3cc84",
+      "studentCode": "2448A014",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "INCOMPLETE_ACADEMIC_DEBT",
+          "summary": "Lịch sử nợ học tập còn chưa đầy đủ: kết quả trống hoặc mã môn chưa khớp CTĐT. Chưa dùng số nợ một phần để kết luận theo ngưỡng.",
+          "blocking": true,
+          "evidence": {
+            "reason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+            "knownDebtCredits": 32,
+            "unknownOrUnmatchedCourses": [
+              {
+                "courseCode": "20CT1201",
+                "year": "2025-2026",
+                "term": "HK01"
+              }
+            ]
+          }
+        },
+        {
+          "code": "INCOMPLETE_ACADEMIC_PROGRESS",
+          "summary": "Tiến độ học thuật còn kết quả hoặc cấu hình cần xác minh; giữ riêng số liệu đã biết và phần chưa đủ căn cứ.",
+          "blocking": true,
+          "evidence": {
+            "reason": "TRAINING_PROGRESS_PENDING_RESULTS"
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "6ba2e4ae-76ef-4478-9f3c-fb5ee32ede90",
+      "studentCode": "2448A021",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT2201",
+              "20CT2203",
+              "20CT2204",
+              "20SP0001",
+              "LC1102D",
+              "LC2102D"
+            ],
+            "academicCourses": 6
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "c99dcd4b-06a9-4d4f-b9cd-0755ffcdfd6b",
+      "studentCode": "2448A024",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "178b3240-f5a6-40d2-b851-6b6d16e15c2d",
+      "studentCode": "2448A027",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT2201",
+              "20CT2203",
+              "20CT2204",
+              "20SP0001",
+              "LC2102D"
+            ],
+            "academicCourses": 5
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "d2391e4b-ef03-4002-8e86-7053e882e326",
+      "studentCode": "2448A028",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT2201",
+              "20CT2203",
+              "20CT2204",
+              "20SP0001",
+              "LC2102D"
+            ],
+            "academicCourses": 5
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "76fb11e6-c470-424b-9e75-dc6464491ef3",
+      "studentCode": "2448A030",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "7a6d9588-7f75-4e03-9777-acb6f900ee31",
+      "studentCode": "2448A036",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT2201",
+              "20CT2203",
+              "20CT2204",
+              "20NV0002",
+              "20SP0001",
+              "LC2102D"
+            ],
+            "academicCourses": 6
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "417f66dd-18d9-4116-b241-48e184060c04",
+      "studentCode": "2448A051",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "a2fa1d98-a3fb-4724-bc1e-daa208a4c9e8",
+      "studentCode": "2448A056",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "2f2a6192-1cd2-488b-9655-e6da183c2a84",
+      "studentCode": "2448B004",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "b0f34f15-f991-46b2-9690-52e5498a6fad",
+      "studentCode": "2448B022",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        },
+        {
+          "code": "INCOMPLETE_ACADEMIC_DEBT",
+          "summary": "Lịch sử nợ học tập còn chưa đầy đủ: kết quả trống hoặc mã môn chưa khớp CTĐT. Chưa dùng số nợ một phần để kết luận theo ngưỡng.",
+          "blocking": true,
+          "evidence": {
+            "reason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+            "knownDebtCredits": 5,
+            "unknownOrUnmatchedCourses": [
+              {
+                "courseCode": "20CT1103",
+                "year": "2024-2025",
+                "term": "HK02"
+              },
+              {
+                "courseCode": "20CT1202",
+                "year": "2024-2025",
+                "term": "HK02"
+              },
+              {
+                "courseCode": "20CT1203",
+                "year": "2024-2025",
+                "term": "HK02"
+              },
+              {
+                "courseCode": "20TN1202",
+                "year": "2024-2025",
+                "term": "HK02"
+              }
+            ]
+          }
+        },
+        {
+          "code": "INCOMPLETE_ACADEMIC_PROGRESS",
+          "summary": "Tiến độ học thuật còn kết quả hoặc cấu hình cần xác minh; giữ riêng số liệu đã biết và phần chưa đủ căn cứ.",
+          "blocking": true,
+          "evidence": {
+            "reason": "TRAINING_PROGRESS_PENDING_RESULTS"
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "4a80c580-9039-4112-b7c7-ac563cdc5751",
+      "studentCode": "2448B026",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "bfa070aa-c2a4-47ea-885f-4b5e5b73c926",
+      "studentCode": "2448B030",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT2201",
+              "20CT2203",
+              "20CT2204",
+              "20SP0001",
+              "LC2102D"
+            ],
+            "academicCourses": 5
+          }
+        },
+        {
+          "code": "INCOMPLETE_ACADEMIC_DEBT",
+          "summary": "Lịch sử nợ học tập còn chưa đầy đủ: kết quả trống hoặc mã môn chưa khớp CTĐT. Chưa dùng số nợ một phần để kết luận theo ngưỡng.",
+          "blocking": true,
+          "evidence": {
+            "reason": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+            "knownDebtCredits": 25,
+            "unknownOrUnmatchedCourses": [
+              {
+                "courseCode": "20CT1103",
+                "year": "2024-2025",
+                "term": "HK02"
+              },
+              {
+                "courseCode": "20CT1202",
+                "year": "2024-2025",
+                "term": "HK02"
+              },
+              {
+                "courseCode": "20CT1203",
+                "year": "2024-2025",
+                "term": "HK02"
+              },
+              {
+                "courseCode": "20TN1202",
+                "year": "2024-2025",
+                "term": "HK02"
+              }
+            ]
+          }
+        },
+        {
+          "code": "INCOMPLETE_ACADEMIC_PROGRESS",
+          "summary": "Tiến độ học thuật còn kết quả hoặc cấu hình cần xác minh; giữ riêng số liệu đã biết và phần chưa đủ căn cứ.",
+          "blocking": true,
+          "evidence": {
+            "reason": "TRAINING_PROGRESS_PENDING_RESULTS"
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "086c7d2b-2c13-452b-88ea-2ee17fd1c553",
+      "studentCode": "2448B033",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "b44d97fa-dd35-40a1-a084-c625e2f06c56",
+      "studentCode": "2448B048",
+      "programCode": "CQ24CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "85d0cbba-ed83-464f-81e2-adb4e5826329",
+      "studentCode": "2549A010",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "2deb1ab8-c08f-4961-b09a-1e21605b377d",
+      "studentCode": "2549A014",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "3dda733f-5f2f-4772-aa72-714000c64612",
+      "studentCode": "2549A038",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "962f8b14-cfe9-41a0-aa92-274d8370fc8b",
+      "studentCode": "2549A053",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "28efaa4d-ecce-4480-a28e-76f643d15b99",
+      "studentCode": "2549A065",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "16de6159-33f3-4f13-9ebb-3df73bff2112",
+      "studentCode": "2549B008",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "9705051c-e6fa-4bd7-a76e-443468b8905e",
+      "studentCode": "2549B020",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "2c8cb91c-de28-4e4a-8ac0-8d74649441af",
+      "studentCode": "2549B025",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "48ee73fd-0318-4df6-9eeb-c1b13a85122b",
+      "studentCode": "2549B030",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "OFFICIAL_GPA_UNAVAILABLE",
+          "summary": "Nguồn chưa có GPA hệ 4, nhưng có kết quả VT. Giữ GPA trống; VT vẫn được tính là không đạt trong tín chỉ học phần.",
+          "blocking": false,
+          "evidence": {
+            "vtCourses": [
+              "20CT1103",
+              "20CT1202",
+              "20TN1202",
+              "LC1102D"
+            ],
+            "academicCourses": 4
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "7d719969-f3cb-45f1-92b4-ae23128dba1d",
+      "studentCode": "2549B035",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "25e3295d-bf96-4b47-8e3f-0a40b7f0dddd",
+      "studentCode": "2549B062",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "6d492e62-4aea-48a4-979b-a76207776aa0",
+      "studentCode": "2549C036",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "1ea8fb97-e758-4ed3-bf0c-020c36249a41",
+      "studentCode": "2549C047",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "438b5edf-3172-4d1c-af91-e1c87f697b0b",
+      "studentCode": "2549C057",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "9b4c4783-a2b5-4a88-a9b2-302507521de3",
+      "studentCode": "2549C063",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "studentId": "c74f5795-bda5-46ce-b194-aa5c0f956b46",
+      "studentCode": "2549C068",
+      "programCode": "CQ25CT",
+      "issues": [
+        {
+          "code": "MISSING_TERM_SOURCE",
+          "summary": "API bảng điểm cá nhân chưa có kỳ xét đúng chương trình. Chưa đủ căn cứ kết luận sinh viên không đăng ký; cần đối chiếu hồ sơ và quyết định nghỉ.",
+          "blocking": true,
+          "evidence": {
+            "endpoint": "LayBangDiemSinhVien",
+            "targetRows": 0
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -18,7 +18,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { apiFetch } from "@/lib/api-client";
 import dynamic from "next/dynamic";
 const StudentProgressDetail = dynamic(() => import("@/components/training-progress/StudentProgressDetail"), { loading: () => <LoadingState variant="detail" label="Đang tải bảng điểm…" /> });
-import StudentWarningWorkspace from "@/components/warnings/StudentWarningWorkspace";
+const StudentWarningWorkspace = dynamic(() => import("@/components/warnings/StudentWarningWorkspace"), { loading: () => <LoadingState variant="detail" label="Đang tải chi tiết cảnh báo…" /> });
 import { isMainConductTerm, studentWarningEndpoint } from "@/lib/student-warning-view";
 
 type ActiveTab = "overview" | "conduct" | "grades" | "decisions" | "fee_policies" | "registrations" | "warnings";
@@ -398,6 +398,8 @@ export default function StudentDetailPage() {
               <span className="shrink-0 whitespace-nowrap text-xs font-medium text-slate-500">
                 MSSV: <strong className="font-mono font-semibold text-slate-800">{sCode}</strong>
               </span>
+              {student?.isInClass === false && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Đã rời lớp</span>}
+              {student?.isSuspended && <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Đang nghỉ học tạm thời</span>}
             </div>
             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 font-medium">
               <span>Lớp: <strong className="text-slate-800">{sClass}</strong></span>
@@ -406,6 +408,7 @@ export default function StudentDetailPage() {
               <span>•</span>
               <span>Khoa: <strong className="text-slate-800">{student?.program?.facultyCode || "Chưa cập nhật"}</strong></span>
             </div>
+            {student?.isSuspended && <p className="mt-2 text-xs leading-5 text-slate-600">Hồ sơ được đóng băng từ HK{student.suspension?.fromTerm} ({student.suspension?.fromYear}), theo quyết định {student.suspension?.decisionNumber}. Kết quả học tập, rèn luyện và cảnh báo trước kỳ nghỉ được giữ để tra cứu. Chờ quyết định tiếp nhận học lại có hiệu lực.</p>}
           </div>
         </div>
 
@@ -549,6 +552,7 @@ export default function StudentDetailPage() {
                     {student?.isInClass ? "Đang trong lớp" : "Đã rời lớp"}
                   </span>
                 </div>
+                {student?.departure && <p className="text-xs leading-5 text-slate-500">{student.isInClass ? "Dự kiến rời lớp" : "Ngừng theo dõi"} từ HK{student.departure.fromTerm} {student.departure.fromYear}, theo quyết định trong hồ sơ. Dữ liệu lịch sử được giữ nguyên.</p>}
                 <div className="flex justify-between py-2 border-b border-slate-100">
                   <span className="text-slate-500">Cố vấn học tập (GVCN):</span>
                   <span className="font-semibold text-slate-800 text-right">{student?.advisor?.fullName || "Chưa phân công"}</span>
@@ -1020,7 +1024,7 @@ export default function StudentDetailPage() {
         <div hidden={activeTab !== "warnings" || tabLoading}>
         <StudentWarningWorkspace
           key={student.id}
-          student={{ id: student.id, fullName: sName, studentCode: sCode, classCode: sClass, programCode: sProgram }}
+          student={{ id: student.id, fullName: sName, studentCode: sCode, classCode: sClass, programCode: sProgram, isInClass: student.isInClass, isSuspended: student.isSuspended, suspension: student.suspension }}
           warning={warningData}
           interventionCase={activeInterventionCase}
           decisions={decisionsData}

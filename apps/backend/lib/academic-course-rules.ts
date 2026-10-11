@@ -90,6 +90,9 @@ export function isK44StandardProgram(programCode?: string | null): boolean {
 
 export function normalizeProgramCourseCode(value?: string | null, programCode?: string | null): string {
   const code = normalizeCourseCode(value);
+  // K47 summer retakes use the legacy code for the same 4-credit obligation.
+  // Preserve source offerings; equivalence only groups results by curriculum.
+  if (/^CQ23CT(?:-(?:PM|MMT))?$/.test(programCode?.toUpperCase() || "") && code === "TN1008D") return "20TN1202";
   if (programCode?.toUpperCase() === "CQ22CT-PM") {
     const verified: Record<string, string> = { TN1008D: "20TN1202", TN1001D: "20TN1201", "20CT3102D": "20CT3132D" };
     return verified[code] ?? code;

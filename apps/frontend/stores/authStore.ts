@@ -162,6 +162,7 @@ interface AuthState {
   login: (credentials: { username: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   bootstrap: () => Promise<void>;
+  initializeSession: (session: SessionPayload) => void;
   can: (permission: string | string[]) => boolean;
   hasDataScope: (scope: string) => boolean;
   hasRole: (role: string) => boolean;
@@ -174,6 +175,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   dataScopes: new Set(),
   isAuthenticated: false,
   status: "idle",
+
+  initializeSession(session) {
+    applySession(session, set);
+  },
 
   async login(param) {
     setApiCacheScope("");
@@ -252,7 +257,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
 type StoreSetter = (partial: Partial<AuthState>) => void;
 
-interface SessionPayload {
+export interface SessionPayload {
   user: Omit<User, "role">;
   actor?: {
     userId?: string;

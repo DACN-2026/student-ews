@@ -24,8 +24,9 @@ export function academicWarningProgressSignal(
 ): AcademicWarningProgressSignal {
   const progress = evaluation.scheduleProgress;
   const hasPending = evaluation.semesters.some((semester) => semester.courses.some((course) =>
-    !course.isConditional && course.isCurrentlyStudying,
-  )) || evaluation.warnings.some((warning) => warning.startsWith("Kết quả học phần"));
+    !course.isConditional && (course.isCurrentlyStudying || course.status === "NO_SCORE"
+      || course.attemptCount > 0 && course.status === "NOT_COMPLETED"),
+  ));
   const configurationIncomplete = evaluation.warnings.some((warning) =>
     warning.includes("UNKNOWN_REQUIREMENT") || warning.includes("chưa có danh mục"),
   );

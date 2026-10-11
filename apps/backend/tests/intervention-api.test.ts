@@ -9,6 +9,12 @@ import { InterventionCasesService } from "../lib/services/intervention-cases";
 import { AcademicWarningAutomationService } from "../lib/services/academic-warning-automation";
 import { AcademicWarningEvidenceService } from "../lib/services/academic-warning-evidence";
 import { ReportsService } from "../lib/services/reports";
+import { AcademicWarningsService } from "../lib/services/academic-warnings";
+import { createQd600PolicyDefinition } from "../lib/services/academic-warning-policy";
+import { parseEarlyWarningSettings } from "../lib/services/early-warning-settings";
+import { GET as getEarlyWarningConfiguration, POST as saveEarlyWarningConfiguration } from "../app/api/v1/academic-warnings/policies/early-warning/route";
+import { GET as getCurrentTermMonitoring } from "../app/api/v1/academic-warnings/students/[studentId]/monitoring/route";
+import { GET as getStanding, POST as postStanding } from "../app/api/v1/academic-warnings/students/[studentId]/standing/route";
 import { GET as getWarningReport } from "../app/api/v1/reports/academic-warnings/route";
 import { GET as listInterventions } from "../app/api/v1/academic-warnings/interventions/route";
 import { GET as summarizeInterventions } from "../app/api/v1/academic-warnings/interventions/summary/route";
@@ -24,6 +30,37 @@ import { hasInvalidUuidSegment, requiredPermission } from "../proxy";
 
 const CASE_ID = "11111111-1111-4111-8111-111111111111";
 const ADVISOR_ID = "22222222-2222-4222-8222-222222222222";
+
+test("standing endpoints require permission and reject out-of-scope students before decision reads", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "standing-route-test-secret-32-characters";
+  const actor: Actor = { userId: ADVISOR_ID, username: "advisor", fullName: "Advisor", grants: [
+    { role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.read" },
+    { role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.action.update" },
+  ] };
+  let decisionReads = 0;
+  const cleanups = [installActor(actor),
+    mockMethod(prisma.classAdvisorAssignment, "findMany", async () => []),
+    mockMethod(prisma.class, "findMany", async () => []),
+    mockMethod(prisma.student, "findFirst", async () => null),
+    mockMethod(prisma.studentDecision, "findFirst", async () => { decisionReads++; throw new Error("Outside scope"); }),
+    mockMethod(prisma.studentDecision, "findMany", async () => { decisionReads++; throw new Error("Outside scope"); }),
+  ];
+  const url = `http://backend:3001/api/v1/academic-warnings/students/${CASE_ID}/standing`;
+  const params = { params: Promise.resolve({ studentId: CASE_ID }) };
+  try {
+    assert.equal((await getStanding(new NextRequest(url), params)).status, 401);
+    assert.equal((await postStanding(new NextRequest(url, { method: "POST" }), params)).status, 401);
+    assert.equal((await getStanding(await requestFor(actor, url), params)).status, 404);
+    assert.equal((await postStanding(await requestFor(actor, url, { method: "POST", body: "{}" }), params)).status, 404);
+    actor.grants = actor.grants.filter(grant => grant.permission === "academic_warning.read");
+    assert.equal((await postStanding(await requestFor(actor, url, { method: "POST", body: "{}" }), params)).status, 403);
+    assert.equal(decisionReads, 0);
+  } finally {
+    cleanups.reverse().forEach(cleanup => cleanup());
+    if (previousSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previousSecret;
+  }
+});
 
 function mockMethod<T extends object>(target: T, key: keyof T, replacement: unknown) {
   const record = target as Record<string | symbol, unknown>;
@@ -56,6 +93,10 @@ function installActor(actor: Actor) {
 }
 
 test("intervention route permission matrix is narrow and validates case UUID segments", () => {
+  assert.equal(requiredPermission("/api/v1/academic-warnings/policies/early-warning", "GET"), "academic_warning.policy.manage");
+  assert.equal(requiredPermission(`/api/v1/academic-warnings/students/${ADVISOR_ID}/monitoring`, "GET"), "academic_warning.read");
+  assert.equal(requiredPermission(`/api/v1/academic-warnings/students/${ADVISOR_ID}/standing`, "GET"), "academic_warning.read");
+  assert.equal(requiredPermission(`/api/v1/academic-warnings/students/${ADVISOR_ID}/standing`, "POST"), "academic_warning.action.update");
   assert.equal(requiredPermission("/api/v1/academic-warnings/interventions", "GET"), "academic_warning.read");
   assert.equal(requiredPermission(`/api/v1/academic-warnings/interventions/${CASE_ID}`, "GET"), "academic_warning.read");
   assert.equal(requiredPermission(`/api/v1/academic-warnings/interventions/${CASE_ID}/evidence`, "GET"), "academic_warning.read");
@@ -67,6 +108,51 @@ test("intervention route permission matrix is narrow and validates case UUID seg
   assert.equal(hasInvalidUuidSegment("/api/v1/academic-warnings/interventions/summary"), false);
   assert.equal(requiredPermission(`/api/v1/academic-warnings/terms/${CASE_ID}/retry`, "POST"), "academic_warning.calculate");
   assert.equal(requiredPermission("/api/v1/academic-warnings/reconcile", "POST"), "academic_warning.calculate");
+});
+
+test("early warning configuration requires management permission and preserves regulatory thresholds", async () => {
+  const previousSecret = process.env.JWT_SECRET;
+  process.env.JWT_SECRET = "early-warning-configuration-test-secret";
+  const actor: Actor = { userId: ADVISOR_ID, username: "warning.admin", fullName: "Admin", grants: [{ role: "admin", scope: "system", permission: "academic_warning.policy.manage" }] };
+  const definition = createQd600PolicyDefinition({ applicableCohortIds: [CASE_ID] });
+  const calls: Array<Parameters<typeof AcademicWarningsService.createPolicy>[0]> = [];
+  const url = "http://backend:3001/api/v1/academic-warnings/policies/early-warning";
+  const cleanups = [
+    installActor(actor),
+    mockMethod(prisma.academicWarningPolicy, "findMany", async () => [{ id: CASE_ID, name: "Monitoring", version: 3, policyDefinition: definition }]),
+    mockMethod(AcademicWarningsService, "createPolicy", async (data: Parameters<typeof AcademicWarningsService.createPolicy>[0]) => {
+      calls.push(data); return { id: ADVISOR_ID, version: 4 };
+    }),
+  ];
+  const post = async (body: unknown) => saveEarlyWarningConfiguration(await requestFor(actor, url, { method: "POST", body: JSON.stringify(body) }));
+  try {
+    assert.equal((await getEarlyWarningConfiguration(new NextRequest(url))).status, 401);
+    assert.equal((await getCurrentTermMonitoring(new NextRequest(`http://backend:3001/api/v1/academic-warnings/students/${ADVISOR_ID}/monitoring`), { params: Promise.resolve({ studentId: ADVISOR_ID }) })).status, 401);
+    const read = await getEarlyWarningConfiguration(await requestFor(actor, url));
+    assert.equal(read.status, 200);
+    assert.equal((await read.json()).settings.termGpaDrop, null);
+    const body = { basePolicyId: CASE_ID, name: "Early monitoring", marginGpa4: 0.2, settings: parseEarlyWarningSettings({ termGpaDrop: 0.5 }), regulatory: { accumulatedDebtCredits: 999 } };
+    for (const invalid of [null, { ...body, name: 1 }, { ...body, marginGpa4: null }, { ...body, settings: null }]) {
+      assert.equal((await post(invalid)).status, 422);
+    }
+    assert.equal((await post({ ...body, basePolicyId: ADVISOR_ID })).status, 409);
+    assert.equal((await post(body)).status, 201);
+    assert.equal(calls.length, 1);
+    const saved = calls[0].policyDefinition as typeof definition;
+    assert.deepEqual(saved.thresholds, definition.thresholds);
+    assert.deepEqual(saved.regulatory, definition.regulatory);
+    assert.equal(saved.advisory.earlyWarning?.termGpaDrop, 0.5);
+    assert.equal(calls[0].expectedBasePolicyId, CASE_ID);
+    const restore = installActor({ ...actor, grants: [{ role: "class_advisor", scope: "assigned_classes", permission: "academic_warning.read" }] });
+    try {
+      assert.equal((await getEarlyWarningConfiguration(await requestFor(actor, url))).status, 403);
+      assert.equal((await post(body)).status, 403);
+      assert.equal(calls.length, 1);
+    } finally { restore(); }
+  } finally {
+    cleanups.reverse().forEach(cleanup => cleanup());
+    if (previousSecret === undefined) delete process.env.JWT_SECRET; else process.env.JWT_SECRET = previousSecret;
+  }
 });
 
 test("faculty warning reconciliation automatically uses the faculty data scope", async () => {

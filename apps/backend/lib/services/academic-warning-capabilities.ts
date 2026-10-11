@@ -108,6 +108,8 @@ export type FailedCreditCalculation = {
   reasonCodes: string[];
   distinctOfferingCount: number;
   duplicateRowsDiscarded: number;
+  absenceCourseCount?: number;
+  absenceCredits?: number;
 };
 
 function sameAttempt(left: AssessmentTermCourseAttempt, right: AssessmentTermCourseAttempt) {
@@ -121,7 +123,7 @@ function sameAttempt(left: AssessmentTermCourseAttempt, right: AssessmentTermCou
 
 /**
  * Calculate credits for one assessment term only. A failure is a final graded
- * outcome with isPass=false (including VT). Conditional courses such as SHCD
+ * outcome with isPass=false. VT is tracked separately for verification. Conditional courses such as SHCD
  * are excluded. Missing and pending academic outcomes keep the result partial.
  */
 export function calculateAssessmentTermFailedCredits(
@@ -147,6 +149,8 @@ export function calculateAssessmentTermFailedCredits(
   let failedCredits = 0;
   let unresolvedOutcomes = 0;
   let invalidCredits = 0;
+  let absenceCourseCount = 0;
+  let absenceCredits = 0;
 
   for (const attempt of byOffering.values()) {
     if (!Number.isFinite(attempt.credits) || attempt.credits < 0) {
@@ -158,9 +162,13 @@ export function calculateAssessmentTermFailedCredits(
       unresolvedOutcomes += 1;
       continue;
     }
-    const isFinalAbsence = attempt.scoreStatus?.trim().toLowerCase() === "special" &&
-      attempt.specialCode?.trim().toUpperCase() === "VT" && attempt.isPass === false;
-    if ((!attempt.hasFinalGrade && !isFinalAbsence) || attempt.isPass == null) {
+    if (attempt.specialCode?.trim().toUpperCase() === "VT") {
+      absenceCourseCount += 1;
+      absenceCredits += attempt.credits;
+      unresolvedOutcomes += 1;
+      continue;
+    }
+    if (!attempt.hasFinalGrade || attempt.isPass == null) {
       unresolvedOutcomes += 1;
       continue;
     }
@@ -170,6 +178,7 @@ export function calculateAssessmentTermFailedCredits(
   const reasonCodes: string[] = [];
   if (registeredCredits === 0) reasonCodes.push("NO_REGISTERED_CREDITS");
   if (unresolvedOutcomes > 0) reasonCodes.push("UNRESOLVED_GRADE_OUTCOMES");
+  if (absenceCourseCount > 0) reasonCodes.push("EXAM_ABSENCE_REQUIRES_VERIFICATION");
   if (invalidCredits > 0) reasonCodes.push("INVALID_CREDIT_VALUES");
   if (conflictingOfferings.size > 0) reasonCodes.push("CONFLICTING_DUPLICATE_OFFERINGS");
 
@@ -187,6 +196,7 @@ export function calculateAssessmentTermFailedCredits(
     reasonCodes,
     distinctOfferingCount: byOffering.size,
     duplicateRowsDiscarded,
+    ...(absenceCourseCount > 0 ? { absenceCourseCount, absenceCredits } : {}),
   };
 }
 

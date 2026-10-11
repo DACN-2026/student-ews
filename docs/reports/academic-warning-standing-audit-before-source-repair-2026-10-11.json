@@ -1,0 +1,4325 @@
+{
+  "summary": {
+    "checkedAt": "2026-10-10T19:30:48.683Z",
+    "period": "HK02 (2025-2026)",
+    "students": 625,
+    "activeRoster": 624,
+    "scopes": 7,
+    "scopedStudents": 624,
+    "assessed": 622,
+    "exclusions": 2,
+    "missingSummaries": 34,
+    "missingHighRisk": 33,
+    "missingExempted": 1,
+    "gpaMissing": 46,
+    "missingRegistrations": 33,
+    "conditionalCount": 333,
+    "unresolvedGradeCount": 0,
+    "decisionRecords": 912,
+    "decisionLabels": {
+      "Chuyển khóa ngành": 101,
+      "Quyết định khác": 797,
+      "Kỷ luật": 1,
+      "Tiếp nhận Chuyển trường": 2,
+      "Tiếp nhận Nghỉ học tạm thời": 4,
+      "Nghỉ học tạm thời": 6,
+      "Thôi học": 1
+    },
+    "revokedDecisions": 5,
+    "officialWarningDecisions": 171,
+    "missingStudentsWithIntervention": 33,
+    "missingInterventionStatuses": {
+      "OPEN": 33
+    },
+    "earlyWarningSettings": {
+      "termGpaBelow": null,
+      "cumulativeGpaBelow": null,
+      "termGpaDrop": null,
+      "cumulativeGpaDrop": null,
+      "failedCreditRatioFrom": null,
+      "repeatedFailuresFrom": null,
+      "conductScoreBelow": null,
+      "conductScoreDrop": null,
+      "recognizedConductStatusIds": [],
+      "debtMonitoringFrom": 13,
+      "debtHighRiskFrom": 19,
+      "progressMonitoringFrom": 4,
+      "progressHighRiskFrom": 12
+    },
+    "businessStatuses": {
+      "HIGH_RISK": 179,
+      "NORMAL": 333,
+      "MONITORING": 110
+    },
+    "regulatoryCoverage": {
+      "PARTIAL": 51,
+      "FULL": 570,
+      "INSUFFICIENT": 1
+    },
+    "debtCoverage": {
+      "COMPLETE": 615,
+      "PARTIAL": 7
+    },
+    "progressCoverage": {
+      "COMPLETE": 621,
+      "PARTIAL": 1
+    },
+    "discrepancyCount": 0
+  },
+  "exclusions": [
+    {
+      "studentCode": "2347B045",
+      "studentName": "Dương Minh Trung",
+      "classCode": "ITK47B",
+      "exemption": {
+        "decisionId": "805c078d-5b50-40ca-a8ed-4d3e8a231b06",
+        "number": "332/QÐ-ÐHÐL_03042026",
+        "effect": "APPROVED_LEAVE",
+        "reason": "Nghỉ học tạm thời"
+      }
+    },
+    {
+      "studentCode": "2549A044",
+      "studentName": "Bùi Lan Phong",
+      "classCode": "ITK49A",
+      "exemption": {
+        "decisionId": "a4066eeb-9266-45d8-aab9-8e5450153a0a",
+        "number": "230/QÐ-ÐHÐL_19032026",
+        "effect": "LEFT_PROGRAM",
+        "reason": "Thôi học"
+      }
+    }
+  ],
+  "missing": [
+    {
+      "studentCode": "2448A001",
+      "studentName": "Lý Ngọc Tùng",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448A009",
+      "studentName": "Trương Thị Hải",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448A010",
+      "studentName": "Đinh Xuân Tuấn",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448A024",
+      "studentName": "Vũ Thúy Sơn",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448A030",
+      "studentName": "Cao Xuân Chi",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448A051",
+      "studentName": "Hoàng Hoàng Việt",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448A056",
+      "studentName": "Hán Tuấn An",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448B004",
+      "studentName": "Lâm Thúy An",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448B022",
+      "studentName": "Trịnh Tuấn Khanh",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448B026",
+      "studentName": "Đoàn Mai Vỹ",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448B033",
+      "studentName": "Đoàn Đức Lâm",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2448B048",
+      "studentName": "Cao Hoàng Phong",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2347A065",
+      "studentName": "Trương Quang Tuấn",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2347B045",
+      "studentName": "Dương Minh Trung",
+      "classCode": "ITK47B",
+      "excluded": true,
+      "exemption": {
+        "decisionId": "805c078d-5b50-40ca-a8ed-4d3e8a231b06",
+        "number": "332/QÐ-ÐHÐL_03042026",
+        "effect": "APPROVED_LEAVE",
+        "reason": "Nghỉ học tạm thời"
+      },
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": null
+    },
+    {
+      "studentCode": "2347B047",
+      "studentName": "Thái Anh Hạnh",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2347C040",
+      "studentName": "Đỗ Thúy Tài",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2347C046",
+      "studentName": "Lâm Tuấn Trang",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2347A019",
+      "studentName": "Trương Xuân Thắng",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2347A036",
+      "studentName": "Đoàn Thị Bình",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549A010",
+      "studentName": "Trương Hương Lâm",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549A014",
+      "studentName": "Cheng Văn Hải",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549A038",
+      "studentName": "Cheng Đức Nghĩa",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549A053",
+      "studentName": "Đỗ Thị Bảo",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549A065",
+      "studentName": "Trọng Thị Minh",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549B008",
+      "studentName": "Đoàn Văn Nam",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549B020",
+      "studentName": "Phạm Tuấn Sơn",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549B025",
+      "studentName": "Phùng Thị Vỹ",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549B035",
+      "studentName": "Ngô Quang Bình",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549B062",
+      "studentName": "Bùi Thị Thanh",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549C036",
+      "studentName": "Hoàng Văn Nghĩa",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549C047",
+      "studentName": "Bùi Xuân Thắng",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549C057",
+      "studentName": "Lưu Thị Phúc",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549C063",
+      "studentName": "Phan Hương Tài",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    },
+    {
+      "studentCode": "2549C068",
+      "studentName": "Võ Hữu Huy",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED",
+      "businessStatus": "HIGH_RISK"
+    }
+  ],
+  "standingStudents": [
+    {
+      "studentCode": "2448A001",
+      "studentName": "Lý Ngọc Tùng",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A005",
+      "studentName": "Ngô Ngọc Tân",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A009",
+      "studentName": "Trương Thị Hải",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A010",
+      "studentName": "Đinh Xuân Tuấn",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A013",
+      "studentName": "Phạm Lan Phúc",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A014",
+      "studentName": "Lê Văn Quân",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A017",
+      "studentName": "Phạm Lan Thanh",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A021",
+      "studentName": "Nguyễn Tuấn Bình",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A024",
+      "studentName": "Vũ Thúy Sơn",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A027",
+      "studentName": "Lưu Văn Cường",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A028",
+      "studentName": "Cao Mai Thiện",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A030",
+      "studentName": "Cao Xuân Chi",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A036",
+      "studentName": "Hán Tuấn Mạnh",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A050",
+      "studentName": "Trịnh Thị Hiển",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A051",
+      "studentName": "Hoàng Hoàng Việt",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A056",
+      "studentName": "Hán Tuấn An",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448A057",
+      "studentName": "Lý Anh Vinh",
+      "classCode": "ITK48A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B003",
+      "studentName": "Trịnh Hương Quang",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B004",
+      "studentName": "Lâm Thúy An",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B008",
+      "studentName": "Trịnh Quang Kiên",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B012",
+      "studentName": "Võ Phương Giang",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B020",
+      "studentName": "Đoàn Kim Giang",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B022",
+      "studentName": "Trịnh Tuấn Khanh",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B026",
+      "studentName": "Đoàn Mai Vỹ",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B030",
+      "studentName": "Phạm Văn Kiên",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B032",
+      "studentName": "Cao Minh Thanh",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B033",
+      "studentName": "Đoàn Đức Lâm",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B042",
+      "studentName": "Lê Ngọc Kiên",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B043",
+      "studentName": "Hoàng Mai Khanh",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B048",
+      "studentName": "Cao Hoàng Phong",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2448B050",
+      "studentName": "Phùng Văn Thông",
+      "classCode": "ITK48B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A049",
+      "studentName": "Hà Thị Trung",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A065",
+      "studentName": "Trương Quang Tuấn",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B037",
+      "studentName": "Hồ Kim Long",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "265/QÐ-ÐHÐL_30032026",
+          "signedAt": "2026-03-30T00:00:00.000Z",
+          "name": "Tiếp nhận Nghỉ học tạm thời",
+          "fullText": "Tiếp nhận học lại (CTK47B -> CTK47B)",
+          "effect": "RETURNED",
+          "revoked": false,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        },
+        {
+          "number": "121/QÐ-ÐHÐL_22022024",
+          "signedAt": "2024-02-22T00:00:00.000Z",
+          "name": "Nghỉ học tạm thời",
+          "fullText": "Nghỉ học tạm thời(HK2, 2023-2024 đến hết HK1, 2025-2026) (Nghỉ 4 học kỳ)",
+          "effect": "APPROVED_LEAVE",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B045",
+      "studentName": "Dương Minh Trung",
+      "classCode": "ITK47B",
+      "excluded": true,
+      "exemption": {
+        "decisionId": "805c078d-5b50-40ca-a8ed-4d3e8a231b06",
+        "number": "332/QÐ-ÐHÐL_03042026",
+        "effect": "APPROVED_LEAVE",
+        "reason": "Nghỉ học tạm thời"
+      },
+      "businessStatus": null,
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "332/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Nghỉ học tạm thời",
+          "fullText": "Nghỉ học tạm thời(HK2, 2025-2026 => HK2, 2026-2027) (Nghỉ 2 học kỳ)",
+          "effect": "APPROVED_LEAVE",
+          "revoked": false,
+          "periodBasis": "BOUNDARY_REVIEW"
+        },
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B047",
+      "studentName": "Thái Anh Hạnh",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C040",
+      "studentName": "Đỗ Thúy Tài",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C046",
+      "studentName": "Lâm Tuấn Trang",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A019",
+      "studentName": "Trương Xuân Thắng",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "309/QÐ-ÐHÐL_26032025",
+          "signedAt": "2025-03-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A022",
+      "studentName": "Trương Thúy Khôi",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "309/QÐ-ÐHÐL_26032025",
+          "signedAt": "2025-03-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A046",
+      "studentName": "Đặng Đức Nghĩa",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A050",
+      "studentName": "Hồ Phương Trí",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "309/QÐ-ÐHÐL_26032025",
+          "signedAt": "2025-03-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A056",
+      "studentName": "Hồ Văn Phúc",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A063",
+      "studentName": "Đinh Hương Tùng",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B018",
+      "studentName": "Phùng Thị Minh",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B028",
+      "studentName": "Đỗ Kim Thanh",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B030",
+      "studentName": "Dương Quang Bảo",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B049",
+      "studentName": "Đỗ Mai Giang",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "309/QÐ-ÐHÐL_26032025",
+          "signedAt": "2025-03-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C010",
+      "studentName": "Lưu Xuân Hà",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "444/QÐ-ÐHÐL_22042024",
+          "signedAt": "2024-04-22T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C026",
+      "studentName": "Đặng Minh Việt",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C030",
+      "studentName": "Phạm Hoàng Minh",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025 - Cứu xét HKI, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "444/QÐ-ÐHÐL_22042024",
+          "signedAt": "2024-04-22T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C032",
+      "studentName": "Dương Văn Tân",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C033",
+      "studentName": "Trọng Xuân Sơn",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C036",
+      "studentName": "Hán Đức Oanh",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025 - Cứu xét HKI, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "309/QÐ-ÐHÐL_26032025",
+          "signedAt": "2025-03-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C042",
+      "studentName": "Vũ Thanh Yến",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "444/QÐ-ÐHÐL_22042024",
+          "signedAt": "2024-04-22T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C047",
+      "studentName": "Trương Hương Trung",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A005",
+      "studentName": "Võ Kim An",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347A016",
+      "studentName": "Vũ Anh Tân",
+      "classCode": "ITK47A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "647/QÐ-ÐHÐL_11062024",
+          "signedAt": "2024-06-11T00:00:00.000Z",
+          "name": "Tiếp nhận Nghỉ học tạm thời",
+          "fullText": "Tiếp nhận học lại (CTK47A -> CTK47A)",
+          "effect": "RETURNED",
+          "revoked": false,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        },
+        {
+          "number": "579/QÐ-ÐHÐL_23052024",
+          "signedAt": "2024-05-23T00:00:00.000Z",
+          "name": "Nghỉ học tạm thời",
+          "fullText": "Nghỉ học tạm thời (Nghỉ 2 học kỳ)",
+          "effect": "APPROVED_LEAVE",
+          "revoked": false,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B008",
+      "studentName": "Đinh Minh Quang",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 1,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(Cứu xét HK2, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025 - Cứu xét HKI, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "309/QÐ-ÐHÐL_26032025",
+          "signedAt": "2025-03-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B016",
+      "studentName": "Lê Hoàng Khanh",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B022",
+      "studentName": "Trương Minh Phú",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B042",
+      "studentName": "Hà Thanh Phúc",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347B054",
+      "studentName": "Phùng Hoàng Dũng",
+      "classCode": "ITK47B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "444/QÐ-ÐHÐL_22042024",
+          "signedAt": "2024-04-22T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C002",
+      "studentName": "Lưu Quang Thắng",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C009",
+      "studentName": "Hoàng Hữu Hiển",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C015",
+      "studentName": "Cheng Ngọc Bảo",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "309/QÐ-ÐHÐL_26032025",
+          "signedAt": "2025-03-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C017",
+      "studentName": "Lâm Thị Tiến",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "NORMAL",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "931/QÐ-ÐHÐL_08082023",
+          "signedAt": "2023-08-08T00:00:00.000Z",
+          "name": "Nghỉ học tạm thời",
+          "fullText": "[Xóa quyết định 931/QÐ-ÐHÐL_08082023]",
+          "effect": null,
+          "revoked": true,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C020",
+      "studentName": "Huỳnh Tuấn Nghĩa",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C029",
+      "studentName": "Cao Văn Linh",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "NORMAL",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1045/QÐ-ÐHÐL_06082025",
+          "signedAt": "2025-08-06T00:00:00.000Z",
+          "name": "Tiếp nhận Nghỉ học tạm thời",
+          "fullText": "Tiếp nhận học lại (CTK47C -> CTK47C)",
+          "effect": "RETURNED",
+          "revoked": false,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        },
+        {
+          "number": "1220/QÐ-ÐHÐL_07102024",
+          "signedAt": "2024-10-07T00:00:00.000Z",
+          "name": "Nghỉ học tạm thời",
+          "fullText": "Nghỉ học tạm thời(NH 2024-2025) (Nghỉ 2 học kỳ)",
+          "effect": "APPROVED_LEAVE",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C039",
+      "studentName": "Trần Tuấn Khanh",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2347C044",
+      "studentName": "Cheng Ngọc Việt",
+      "classCode": "ITK47C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549A010",
+      "studentName": "Trương Hương Lâm",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549A014",
+      "studentName": "Cheng Văn Hải",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549A021",
+      "studentName": "Vũ Thúy Huyền",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549A042",
+      "studentName": "Đinh Lan Đức",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549A044",
+      "studentName": "Bùi Lan Phong",
+      "classCode": "ITK49A",
+      "excluded": true,
+      "exemption": {
+        "decisionId": "a4066eeb-9266-45d8-aab9-8e5450153a0a",
+        "number": "230/QÐ-ÐHÐL_19032026",
+        "effect": "LEFT_PROGRAM",
+        "reason": "Thôi học"
+      },
+      "businessStatus": null,
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "230/QÐ-ÐHÐL_19032026",
+          "signedAt": "2026-03-19T00:00:00.000Z",
+          "name": "Thôi học",
+          "fullText": "Xin thôi học",
+          "effect": "LEFT_PROGRAM",
+          "revoked": false,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549A053",
+      "studentName": "Đỗ Thị Bảo",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549A059",
+      "studentName": "Vương Hương Kiên",
+      "classCode": "ITK49A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549B006",
+      "studentName": "Trọng Lan Hùng",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549B008",
+      "studentName": "Đoàn Văn Nam",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549B010",
+      "studentName": "Hà Thị Mạnh",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549B025",
+      "studentName": "Phùng Thị Vỹ",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549B035",
+      "studentName": "Ngô Quang Bình",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549B041",
+      "studentName": "Trọng Kim An",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549B048",
+      "studentName": "Đặng Quang An",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549B053",
+      "studentName": "Hà Xuân Phi",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549B062",
+      "studentName": "Bùi Thị Thanh",
+      "classCode": "ITK49B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549C002",
+      "studentName": "Hồ Hồng Thiện",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549C012",
+      "studentName": "Huỳnh Thanh Huy",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549C015",
+      "studentName": "Trịnh Thị Việt",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549C036",
+      "studentName": "Hoàng Văn Nghĩa",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549C047",
+      "studentName": "Bùi Xuân Thắng",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549C057",
+      "studentName": "Lưu Thị Phúc",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "947/QÐ-ÐHÐL_23072026",
+          "signedAt": "2026-07-23T00:00:00.000Z",
+          "name": "Tiếp nhận Nghỉ học tạm thời",
+          "fullText": "Tiếp nhận học lại (CTK49C -> CTK49C)",
+          "effect": "RETURNED",
+          "revoked": false,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        },
+        {
+          "number": "595/QÐ-ÐHÐL_27052026",
+          "signedAt": "2026-05-27T00:00:00.000Z",
+          "name": "Nghỉ học tạm thời",
+          "fullText": "Nghỉ học tạm thời(HK3, 2025-2026; HK1, 2026-2027) (Nghỉ 1 học kỳ)",
+          "effect": "APPROVED_LEAVE",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549C063",
+      "studentName": "Phan Hương Tài",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549C068",
+      "studentName": "Võ Hữu Huy",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549C076",
+      "studentName": "Ngô Đức Giang",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2549C081",
+      "studentName": "Đinh Hữu Tiến",
+      "classCode": "ITK49C",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A032",
+      "studentName": "Trọng Xuân Tài",
+      "classCode": "ITK46A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "309/QÐ-ÐHÐL_26032025",
+          "signedAt": "2025-03-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A048",
+      "studentName": "Trương Kim An",
+      "classCode": "ITK46A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1601/TB-ÐHÐL_26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 1, 2022-2023)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1661/TB-ÐHÐL_26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "[Xóa quyết định 1661/TB-ÐHÐL_26102023]",
+          "effect": null,
+          "revoked": true,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        },
+        {
+          "number": "1601/TB-ÐHÐL26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK I, 2022-2023)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246B047",
+      "studentName": "Phùng Quang Lan",
+      "classCode": "ITK46B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "NORMAL",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1601/TB-ÐHÐL26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2022-2023)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A001",
+      "studentName": "Lâm Anh Vỹ",
+      "classCode": "ITK46A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "NORMAL",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1601/TB-ÐHÐL_26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 1, 2022-2023)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1601/TB-ÐHÐL26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2022-2023)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1661/TB-ÐHÐL_26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "[Xóa quyết định 1661/TB-ÐHÐL_26102023]",
+          "effect": null,
+          "revoked": true,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A007",
+      "studentName": "Bùi Quang Trí",
+      "classCode": "ITK46A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1601/TB-ÐHÐL26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2022-2023)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A024",
+      "studentName": "Đỗ Hoàng Giang",
+      "classCode": "ITK46A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "309/QÐ-ÐHÐL_26032025",
+          "signedAt": "2025-03-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A028",
+      "studentName": "Hán Quang Dũng",
+      "classCode": "ITK46A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A040",
+      "studentName": "Trịnh Anh Việt",
+      "classCode": "ITK46A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A041",
+      "studentName": "Vũ Ngọc Phi",
+      "classCode": "ITK46A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1318/QÐ-ÐHÐL_28102024",
+          "signedAt": "2024-10-28T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "444/QÐ-ÐHÐL_22042024",
+          "signedAt": "2024-04-22T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246A050",
+      "studentName": "Vương Quang Thông",
+      "classCode": "ITK46A",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246B006",
+      "studentName": "Trần Xuân Ngọc",
+      "classCode": "ITK46B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "NORMAL",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1601/TB-ÐHÐL26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2022-2023)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246B008",
+      "studentName": "Võ Kim Phúc",
+      "classCode": "ITK46B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 1,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(Cứu xét HK2, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025 - Cứu xét HKI, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "309/QÐ-ÐHÐL_26032025",
+          "signedAt": "2025-03-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1601/TB-ÐHÐL_26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 1, 2022-2023)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1601/TB-ÐHÐL26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2022-2023)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1661/TB-ÐHÐL_26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "[Xóa quyết định 1661/TB-ÐHÐL_26102023]",
+          "effect": null,
+          "revoked": true,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246B020",
+      "studentName": "Cao Quang Bảo",
+      "classCode": "ITK46B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "1601/TB-ÐHÐL26102023",
+          "signedAt": "2023-10-26T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2022-2023)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246B024",
+      "studentName": "Phan Anh Minh",
+      "classCode": "ITK46B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246B027",
+      "studentName": "Lê Quang Trâm",
+      "classCode": "ITK46B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "605/QÐ-ÐHÐL_30052024",
+          "signedAt": "2024-05-30T00:00:00.000Z",
+          "name": "Kỷ luật",
+          "fullText": "[Xóa quyết định 605/QÐ-ÐHÐL_30052024]",
+          "effect": null,
+          "revoked": true,
+          "periodBasis": "RECORDED_TERM_ONLY"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246B029",
+      "studentName": "Trịnh Minh Thiện",
+      "classCode": "ITK46B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "HIGH_RISK",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        },
+        {
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    },
+    {
+      "studentCode": "2246B030",
+      "studentName": "Vũ Hồng Quân",
+      "classCode": "ITK46B",
+      "excluded": false,
+      "exemption": null,
+      "businessStatus": "MONITORING",
+      "consecutiveOfficialWarnings": 0,
+      "decisions": [
+        {
+          "number": "444/QÐ-ÐHÐL_22042024",
+          "signedAt": "2024-04-22T00:00:00.000Z",
+          "name": "Quyết định khác",
+          "fullText": "Cảnh báo học vụ(HK1, NH 2023-2024)",
+          "effect": "ACADEMIC_WARNING",
+          "revoked": false,
+          "periodBasis": "EXPLICIT"
+        }
+      ]
+    }
+  ],
+  "currentStanding": [
+    {
+      "studentCode": "2347B037",
+      "studentName": "Hồ Kim Long",
+      "period": "HK01 (2026-2027)",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "UNVERIFIED"
+    },
+    {
+      "studentCode": "2347B045",
+      "studentName": "Dương Minh Trung",
+      "period": "HK01 (2026-2027)",
+      "excluded": true,
+      "exemption": {
+        "decisionId": "805c078d-5b50-40ca-a8ed-4d3e8a231b06",
+        "number": "332/QÐ-ÐHÐL_03042026",
+        "effect": "APPROVED_LEAVE",
+        "reason": "Nghỉ học tạm thời"
+      },
+      "absenceEvidence": "UNVERIFIED"
+    },
+    {
+      "studentCode": "2347A016",
+      "studentName": "Vũ Anh Tân",
+      "period": "HK01 (2026-2027)",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "REGISTERED"
+    },
+    {
+      "studentCode": "2347C017",
+      "studentName": "Lâm Thị Tiến",
+      "period": "HK01 (2026-2027)",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "REGISTERED"
+    },
+    {
+      "studentCode": "2347C029",
+      "studentName": "Cao Văn Linh",
+      "period": "HK01 (2026-2027)",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "REGISTERED"
+    },
+    {
+      "studentCode": "2549A044",
+      "studentName": "Bùi Lan Phong",
+      "period": "HK01 (2026-2027)",
+      "excluded": true,
+      "exemption": {
+        "decisionId": "a4066eeb-9266-45d8-aab9-8e5450153a0a",
+        "number": "230/QÐ-ÐHÐL_19032026",
+        "effect": "LEFT_PROGRAM",
+        "reason": "Thôi học"
+      },
+      "absenceEvidence": "UNVERIFIED"
+    },
+    {
+      "studentCode": "2549C057",
+      "studentName": "Lưu Thị Phúc",
+      "period": "HK01 (2026-2027)",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "REGISTERED"
+    },
+    {
+      "studentCode": "2246A048",
+      "studentName": "Trương Kim An",
+      "period": "HK01 (2026-2027)",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "REGISTERED"
+    },
+    {
+      "studentCode": "2246A001",
+      "studentName": "Lâm Anh Vỹ",
+      "period": "HK01 (2026-2027)",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "REGISTERED"
+    },
+    {
+      "studentCode": "2246B008",
+      "studentName": "Võ Kim Phúc",
+      "period": "HK01 (2026-2027)",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "REGISTERED"
+    },
+    {
+      "studentCode": "2246B027",
+      "studentName": "Lê Quang Trâm",
+      "period": "HK01 (2026-2027)",
+      "excluded": false,
+      "exemption": null,
+      "absenceEvidence": "REGISTERED"
+    }
+  ],
+  "incompleteData": [
+    {
+      "studentCode": "2448A021",
+      "studentName": "Nguyễn Tuấn Bình",
+      "classCode": "ITK48A",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2448A025",
+      "studentName": "Nguyễn Thị Kiên",
+      "classCode": "ITK48A",
+      "field": "debt",
+      "evidence": {
+        "accumulatedDebtCredits": 11,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNSCOPED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [
+          "20TN1202",
+          "20CT2201",
+          "20CT2204"
+        ],
+        "electiveBlocks": [
+          {
+            "block": "A6",
+            "requiredCredits": 9,
+            "passedCredits": 9,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "A7",
+            "requiredCredits": 6,
+            "passedCredits": 9,
+            "failedCredits": 3,
+            "debtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "plannedCredits": 18,
+            "passedCredits": 18,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "plannedCredits": 16,
+            "passedCredits": 9,
+            "surplusCredits": 0
+          }
+        ],
+        "replacements": [],
+        "electiveSelections": [
+          {
+            "semesterNo": 4,
+            "requiredCredits": 3,
+            "passedCredits": 3,
+            "failedCredits": 3,
+            "initialDebtCredits": 0,
+            "remainingDebtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentCode": "2448A027",
+      "studentName": "Lưu Văn Cường",
+      "classCode": "ITK48A",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2448A028",
+      "studentName": "Cao Mai Thiện",
+      "classCode": "ITK48A",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2448A036",
+      "studentName": "Hán Tuấn Mạnh",
+      "classCode": "ITK48A",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2448B030",
+      "studentName": "Phạm Văn Kiên",
+      "classCode": "ITK48B",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2347A049",
+      "studentName": "Hà Thị Trung",
+      "classCode": "ITK47A",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2347A065",
+      "studentName": "Trương Quang Tuấn",
+      "classCode": "ITK47A",
+      "field": "debt",
+      "evidence": {
+        "accumulatedDebtCredits": 27,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [
+          "20TN1202",
+          "20CT2201",
+          "20CT2101",
+          "LC3101D",
+          "20CT2202",
+          "20CT2205",
+          "20CT1203",
+          "20CT3107D"
+        ],
+        "electiveBlocks": [
+          {
+            "block": "A6",
+            "requiredCredits": 9,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "debtCredits": 3,
+            "failedCourseCodes": [
+              "20CT1203"
+            ]
+          },
+          {
+            "block": "A7",
+            "requiredCredits": 6,
+            "passedCredits": 6,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "B3",
+            "requiredCredits": 6,
+            "passedCredits": 0,
+            "failedCredits": 3,
+            "debtCredits": 3,
+            "failedCourseCodes": [
+              "20CT3107D"
+            ]
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 9,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "plannedCredits": 18,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "plannedCredits": 16,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 5,
+            "plannedCredits": 16,
+            "passedCredits": 0,
+            "surplusCredits": 0
+          }
+        ],
+        "replacements": [],
+        "electiveSelections": [
+          {
+            "semesterNo": 2,
+            "requiredCredits": 6,
+            "passedCredits": 3,
+            "failedCredits": 3,
+            "initialDebtCredits": 3,
+            "remainingDebtCredits": 3,
+            "failedCourseCodes": [
+              "20CT1203"
+            ]
+          },
+          {
+            "semesterNo": 5,
+            "requiredCredits": 3,
+            "passedCredits": 0,
+            "failedCredits": 3,
+            "initialDebtCredits": 3,
+            "remainingDebtCredits": 3,
+            "failedCourseCodes": [
+              "20CT3107D"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentCode": "2347A009",
+      "studentName": "Vương Đức Tuấn",
+      "classCode": "ITK47A",
+      "field": "debt",
+      "evidence": {
+        "accumulatedDebtCredits": 18,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [
+          "20TN1202",
+          "20CT1201",
+          "20CT2203",
+          "20CT2202",
+          "20CT3106D"
+        ],
+        "electiveBlocks": [
+          {
+            "block": "A6",
+            "requiredCredits": 9,
+            "passedCredits": 6,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "A7",
+            "requiredCredits": 6,
+            "passedCredits": 9,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "B3",
+            "requiredCredits": 6,
+            "passedCredits": 3,
+            "failedCredits": 3,
+            "debtCredits": 3,
+            "failedCourseCodes": [
+              "20CT3106D"
+            ]
+          },
+          {
+            "block": "B2",
+            "requiredCredits": 25,
+            "passedCredits": 9,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 9,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "plannedCredits": 18,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "plannedCredits": 16,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 5,
+            "plannedCredits": 16,
+            "passedCredits": 12,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 6,
+            "plannedCredits": 19,
+            "passedCredits": 19,
+            "surplusCredits": 0
+          }
+        ],
+        "replacements": [],
+        "electiveSelections": [
+          {
+            "semesterNo": 6,
+            "requiredCredits": 3,
+            "passedCredits": 0,
+            "failedCredits": 3,
+            "initialDebtCredits": 3,
+            "remainingDebtCredits": 3,
+            "failedCourseCodes": [
+              "20CT3106D"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentCode": "2347A048",
+      "studentName": "Hoàng Xuân Nghĩa",
+      "classCode": "ITK47A",
+      "field": "debt",
+      "evidence": {
+        "accumulatedDebtCredits": 0,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNSCOPED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [],
+        "electiveBlocks": [
+          {
+            "block": "A7",
+            "requiredCredits": 6,
+            "passedCredits": 9,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "A6",
+            "requiredCredits": 9,
+            "passedCredits": 6,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "B3",
+            "requiredCredits": 6,
+            "passedCredits": 6,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "B2",
+            "requiredCredits": 25,
+            "passedCredits": 6,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 3,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 3,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "plannedCredits": 18,
+            "passedCredits": 18,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "plannedCredits": 16,
+            "passedCredits": 19,
+            "surplusCredits": 3
+          },
+          {
+            "semesterNo": 5,
+            "plannedCredits": 16,
+            "passedCredits": 16,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 6,
+            "plannedCredits": 19,
+            "passedCredits": 19,
+            "surplusCredits": 0
+          }
+        ],
+        "replacements": [],
+        "electiveSelections": []
+      }
+    },
+    {
+      "studentCode": "2347A054",
+      "studentName": "Phạm Hương Tân",
+      "classCode": "ITK47A",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2347A057",
+      "studentName": "Phạm Thị Quang",
+      "classCode": "ITK47A",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2347C044",
+      "studentName": "Cheng Ngọc Việt",
+      "classCode": "ITK47C",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2549A055",
+      "studentName": "Phùng Hữu Minh",
+      "classCode": "ITK49A",
+      "field": "debt",
+      "evidence": {
+        "accumulatedDebtCredits": 0,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNSCOPED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [],
+        "electiveBlocks": [
+          {
+            "block": "A6",
+            "requiredCredits": 9,
+            "passedCredits": 9,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 19,
+            "surplusCredits": 3
+          }
+        ],
+        "replacements": [],
+        "electiveSelections": []
+      }
+    },
+    {
+      "studentCode": "2549B030",
+      "studentName": "Võ Thị Đức",
+      "classCode": "ITK49B",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2246A041",
+      "studentName": "Vũ Ngọc Phi",
+      "classCode": "ITK46A",
+      "field": "debt",
+      "evidence": {
+        "accumulatedDebtCredits": 10,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [
+          "20CT3103D",
+          "20CT1203",
+          "20TN1201",
+          "20CT3106D"
+        ],
+        "electiveBlocks": [
+          {
+            "block": "A6",
+            "requiredCredits": 9,
+            "passedCredits": 3,
+            "failedCredits": 6,
+            "debtCredits": 3,
+            "failedCourseCodes": [
+              "20CT1203",
+              "20TN1201"
+            ]
+          },
+          {
+            "block": "A7",
+            "requiredCredits": 6,
+            "passedCredits": 12,
+            "failedCredits": 3,
+            "debtCredits": 0,
+            "failedCourseCodes": [
+              "20QT0001"
+            ]
+          },
+          {
+            "block": "B3",
+            "requiredCredits": 6,
+            "passedCredits": 3,
+            "failedCredits": 6,
+            "debtCredits": 3,
+            "failedCourseCodes": [
+              "20CT3108D",
+              "20CT3106D"
+            ]
+          },
+          {
+            "block": "B2",
+            "requiredCredits": 25,
+            "passedCredits": 31,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "plannedCredits": 18,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "plannedCredits": 16,
+            "passedCredits": 22,
+            "surplusCredits": 6
+          },
+          {
+            "semesterNo": 5,
+            "plannedCredits": 16,
+            "passedCredits": 16,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 6,
+            "plannedCredits": 19,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 7,
+            "plannedCredits": 18,
+            "passedCredits": 18,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 8,
+            "plannedCredits": 18,
+            "passedCredits": 19,
+            "surplusCredits": 1
+          }
+        ],
+        "replacements": [
+          {
+            "semesterNo": 4,
+            "donorCourseCode": "20NV0002",
+            "donorCredits": 3,
+            "block": "A7",
+            "settledDebtCredits": 3,
+            "settledCourses": [
+              {
+                "courseCode": "20QT0001",
+                "credits": 3
+              }
+            ]
+          }
+        ],
+        "electiveSelections": [
+          {
+            "semesterNo": 2,
+            "requiredCredits": 6,
+            "passedCredits": 3,
+            "failedCredits": 6,
+            "initialDebtCredits": 3,
+            "remainingDebtCredits": 3,
+            "failedCourseCodes": [
+              "20CT1203",
+              "20TN1201"
+            ]
+          },
+          {
+            "semesterNo": 3,
+            "requiredCredits": 6,
+            "passedCredits": 3,
+            "failedCredits": 3,
+            "initialDebtCredits": 3,
+            "remainingDebtCredits": 0,
+            "failedCourseCodes": [
+              "20QT0001"
+            ]
+          },
+          {
+            "semesterNo": 5,
+            "requiredCredits": 3,
+            "passedCredits": 3,
+            "failedCredits": 3,
+            "initialDebtCredits": 0,
+            "remainingDebtCredits": 0,
+            "failedCourseCodes": [
+              "20CT3108D"
+            ]
+          },
+          {
+            "semesterNo": 6,
+            "requiredCredits": 3,
+            "passedCredits": 0,
+            "failedCredits": 3,
+            "initialDebtCredits": 3,
+            "remainingDebtCredits": 3,
+            "failedCourseCodes": [
+              "20CT3106D"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentCode": "2246A050",
+      "studentName": "Vương Quang Thông",
+      "classCode": "ITK46A",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2246B008",
+      "studentName": "Võ Kim Phúc",
+      "classCode": "ITK46B",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2246B008",
+      "studentName": "Võ Kim Phúc",
+      "classCode": "ITK46B",
+      "field": "progress",
+      "evidence": {
+        "creditDeficit": null,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "TRAINING_PROGRESS_PENDING_RESULTS",
+        "sourceId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+        "expectedCreditsToDate": 134,
+        "earnedCreditsToDate": 84,
+        "latestCompletedSemester": 8,
+        "progressStatus": "BEHIND",
+        "missingRequiredCredits": 23,
+        "missingRequiredCourses": [
+          {
+            "courseCode": "20CT1101",
+            "courseName": "Nhập môn ngành CNTT",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "credits": 4,
+            "semesterNo": 2
+          },
+          {
+            "courseCode": "20CT1201",
+            "courseName": "Cấu trúc dữ liệu và thuật giải",
+            "credits": 3,
+            "semesterNo": 3
+          },
+          {
+            "courseCode": "20CT2202",
+            "courseName": "Phát triển ứng dụng Desktop",
+            "credits": 4,
+            "semesterNo": 5
+          },
+          {
+            "courseCode": "20CT3203",
+            "courseName": "Mẫu thiết kế",
+            "credits": 3,
+            "semesterNo": 7
+          },
+          {
+            "courseCode": "20CT4101D",
+            "courseName": "Quản trị dự án công nghệ thông tin",
+            "credits": 3,
+            "semesterNo": 8
+          },
+          {
+            "courseCode": "20CT4102D",
+            "courseName": "Phát triển ứng dụng mã nguồn mở",
+            "credits": 3,
+            "semesterNo": 8
+          }
+        ]
+      }
+    },
+    {
+      "studentCode": "2246B029",
+      "studentName": "Trịnh Minh Thiện",
+      "classCode": "ITK46B",
+      "field": "term_gpa_unavailable",
+      "sourceGpa4": null
+    },
+    {
+      "studentCode": "2246B045",
+      "studentName": "Đỗ Văn Hiển",
+      "classCode": "ITK46B",
+      "field": "debt",
+      "evidence": {
+        "accumulatedDebtCredits": 0,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [],
+        "electiveBlocks": [
+          {
+            "block": "A7",
+            "requiredCredits": 6,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "debtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          },
+          {
+            "block": "B3",
+            "requiredCredits": 6,
+            "passedCredits": 6,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "A6",
+            "requiredCredits": 9,
+            "passedCredits": 9,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "B2",
+            "requiredCredits": 25,
+            "passedCredits": 25,
+            "failedCredits": 3,
+            "debtCredits": 0,
+            "failedCourseCodes": [
+              "20CT4104D"
+            ]
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 16,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "plannedCredits": 18,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "plannedCredits": 16,
+            "passedCredits": 19,
+            "surplusCredits": 3
+          },
+          {
+            "semesterNo": 5,
+            "plannedCredits": 16,
+            "passedCredits": 16,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 6,
+            "plannedCredits": 19,
+            "passedCredits": 22,
+            "surplusCredits": 3
+          },
+          {
+            "semesterNo": 7,
+            "plannedCredits": 18,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 8,
+            "plannedCredits": 18,
+            "passedCredits": 16,
+            "surplusCredits": 0
+          }
+        ],
+        "replacements": [
+          {
+            "semesterNo": 6,
+            "donorCourseCode": "20CT3104D",
+            "donorCredits": 3,
+            "block": "B2",
+            "settledDebtCredits": 2,
+            "settledCourses": [
+              {
+                "courseCode": "20CT4104D",
+                "credits": 2
+              }
+            ]
+          }
+        ],
+        "electiveSelections": [
+          {
+            "semesterNo": 4,
+            "requiredCredits": 3,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "initialDebtCredits": 0,
+            "remainingDebtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          },
+          {
+            "semesterNo": 8,
+            "requiredCredits": 12,
+            "passedCredits": 10,
+            "failedCredits": 3,
+            "initialDebtCredits": 2,
+            "remainingDebtCredits": 0,
+            "failedCourseCodes": [
+              "20CT4104D"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "discrepancies": []
+}

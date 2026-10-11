@@ -1,0 +1,97 @@
+{
+  "checkedAt": "2026-10-10T22:08:05.151Z",
+  "applied": false,
+  "checked": 625,
+  "changes": [
+    {
+      "studentId": "80bee8f1-84a6-4bb7-89df-f982035e1164",
+      "decisionId": "a56e9307-fc09-473c-94bc-ef68b53bcfc8",
+      "before": null,
+      "after": {
+        "studentId": "80bee8f1-84a6-4bb7-89df-f982035e1164",
+        "decisionId": "a56e9307-fc09-473c-94bc-ef68b53bcfc8",
+        "decisionNumber": "579/QÐ-ÐHÐL_23052024",
+        "fromYear": "2023-2024",
+        "fromTerm": 2,
+        "effectiveAt": "2024-05-23T00:00:00.000Z",
+        "returnDecisionId": "bccc53c4-1b28-4c3d-a2a1-eae8e9dc183b",
+        "returnYear": "2023-2024",
+        "returnTerm": 2,
+        "returnEffectiveAt": "2024-06-11T00:00:00.000Z",
+        "isRevoked": false
+      }
+    },
+    {
+      "studentId": "ba00a7cc-7627-4646-9a5f-0187e872dd00",
+      "decisionId": "1e956a0c-4c54-4fef-90ee-6836b9398082",
+      "before": null,
+      "after": {
+        "studentId": "ba00a7cc-7627-4646-9a5f-0187e872dd00",
+        "decisionId": "1e956a0c-4c54-4fef-90ee-6836b9398082",
+        "decisionNumber": "121/QÐ-ÐHÐL_22022024",
+        "fromYear": "2023-2024",
+        "fromTerm": 2,
+        "effectiveAt": "2024-02-22T00:00:00.000Z",
+        "returnDecisionId": "8b3f917d-6380-4006-bbde-170cb71cc821",
+        "returnYear": "2025-2026",
+        "returnTerm": 2,
+        "returnEffectiveAt": "2026-03-30T00:00:00.000Z",
+        "isRevoked": false
+      }
+    },
+    {
+      "studentId": "0879e706-5241-44ba-b1fe-8daeae2f8a40",
+      "decisionId": "805c078d-5b50-40ca-a8ed-4d3e8a231b06",
+      "before": null,
+      "after": {
+        "studentId": "0879e706-5241-44ba-b1fe-8daeae2f8a40",
+        "decisionId": "805c078d-5b50-40ca-a8ed-4d3e8a231b06",
+        "decisionNumber": "332/QÐ-ÐHÐL_03042026",
+        "fromYear": "2025-2026",
+        "fromTerm": 2,
+        "effectiveAt": "2026-04-03T00:00:00.000Z",
+        "returnDecisionId": null,
+        "returnYear": null,
+        "returnTerm": null,
+        "returnEffectiveAt": null,
+        "isRevoked": false
+      }
+    },
+    {
+      "studentId": "92514a5c-4fb8-47f3-960a-64f4634edf39",
+      "decisionId": "6e223fd9-10f1-40aa-bfb0-eabadec45f73",
+      "before": null,
+      "after": {
+        "studentId": "92514a5c-4fb8-47f3-960a-64f4634edf39",
+        "decisionId": "6e223fd9-10f1-40aa-bfb0-eabadec45f73",
+        "decisionNumber": "1220/QÐ-ÐHÐL_07102024",
+        "fromYear": "2024-2025",
+        "fromTerm": 1,
+        "effectiveAt": "2024-10-07T00:00:00.000Z",
+        "returnDecisionId": "9a056a07-cf41-43cd-9cf6-f172705d72d1",
+        "returnYear": "2025-2026",
+        "returnTerm": 1,
+        "returnEffectiveAt": "2025-08-06T00:00:00.000Z",
+        "isRevoked": false
+      }
+    },
+    {
+      "studentId": "438b5edf-3172-4d1c-af91-e1c87f697b0b",
+      "decisionId": "9e5cb163-7d74-4069-85be-82abb9742173",
+      "before": null,
+      "after": {
+        "studentId": "438b5edf-3172-4d1c-af91-e1c87f697b0b",
+        "decisionId": "9e5cb163-7d74-4069-85be-82abb9742173",
+        "decisionNumber": "595/QÐ-ÐHÐL_27052026",
+        "fromYear": "2025-2026",
+        "fromTerm": 3,
+        "effectiveAt": "2026-05-27T00:00:00.000Z",
+        "returnDecisionId": "7a839776-f1a9-498c-ba43-8c7e3f85ae60",
+        "returnYear": "2026-2027",
+        "returnTerm": 1,
+        "returnEffectiveAt": "2026-07-23T00:00:00.000Z",
+        "isRevoked": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,357 @@
+{
+  "engineVersion": "academic-warning-qd600-article18-and-progress-v19",
+  "period": {
+    "academicTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+    "academicYear": "2025-2026",
+    "termCode": "HK02",
+    "termOrder": 2,
+    "label": "HK02 (2025-2026)",
+    "isSummer": false,
+    "high": 178,
+    "medium": 119,
+    "evaluated": 622,
+    "available": 593,
+    "termGpaAvailable": 576,
+    "cumulativeGpaAvailable": 589,
+    "insufficient": 0
+  },
+  "failedScopes": 0,
+  "evaluatedStudents": 622,
+  "absenceStudents": 127,
+  "absenceCourses": 475,
+  "absenceCredits": 1418,
+  "missingRegistrationStudents": 35,
+  "pending": [
+    {
+      "student": "2448A014",
+      "businessStatus": "HIGH_RISK",
+      "debt": {
+        "dataStatus": "PARTIAL",
+        "reasonCode": "EXAM_ABSENCE_REQUIRES_VERIFICATION",
+        "replacements": [],
+        "electiveBlocks": [
+          {
+            "block": "A6",
+            "debtCredits": 6,
+            "failedCredits": 6,
+            "passedCredits": 0,
+            "requiredCredits": 9,
+            "failedCourseCodes": [
+              "20CT1203",
+              "20TN1201"
+            ]
+          },
+          {
+            "block": "A7",
+            "debtCredits": 0,
+            "failedCredits": 0,
+            "passedCredits": 3,
+            "requiredCredits": 6,
+            "failedCourseCodes": []
+          }
+        ],
+        "pendingCourses": [
+          {
+            "credits": 3,
+            "courseCode": "20CT1201",
+            "courseName": "Cấu trúc dữ liệu và thuật giải",
+            "previousOutcome": "NONE"
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "passedCredits": 13,
+            "plannedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "passedCredits": 6,
+            "plannedCredits": 16,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "passedCredits": 3,
+            "plannedCredits": 18,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "passedCredits": 5,
+            "plannedCredits": 16,
+            "surplusCredits": 0
+          }
+        ],
+        "electiveSelections": [
+          {
+            "semesterNo": 2,
+            "failedCredits": 6,
+            "passedCredits": 0,
+            "requiredCredits": 6,
+            "failedCourseCodes": [
+              "20CT1203",
+              "20TN1201"
+            ],
+            "initialDebtCredits": 6,
+            "remainingDebtCredits": 6
+          }
+        ],
+        "outstandingCourses": [
+          "20CT2102",
+          "LC2101D",
+          "20CT1203",
+          "20TN1201"
+        ],
+        "accumulatedDebtCredits": 11
+      },
+      "pendingCourses": [
+        {
+          "credits": 3,
+          "courseCode": "20CT1201",
+          "courseName": "Cấu trúc dữ liệu và thuật giải",
+          "previousOutcome": "NONE"
+        }
+      ]
+    },
+    {
+      "student": "2448B022",
+      "businessStatus": "HIGH_RISK",
+      "debt": {
+        "dataStatus": "PARTIAL",
+        "reasonCode": "EXAM_ABSENCE_REQUIRES_VERIFICATION",
+        "replacements": [],
+        "electiveBlocks": [
+          {
+            "block": "A6",
+            "debtCredits": 0,
+            "failedCredits": 0,
+            "passedCredits": 0,
+            "requiredCredits": 9,
+            "failedCourseCodes": []
+          }
+        ],
+        "pendingCourses": [
+          {
+            "credits": 3,
+            "courseCode": "20CT1103",
+            "courseName": "Bảo trì máy tính",
+            "previousOutcome": "NONE"
+          },
+          {
+            "credits": 4,
+            "courseCode": "20CT1202",
+            "courseName": "Nguyên lý lập trình hướng đối tượng",
+            "previousOutcome": "NONE"
+          },
+          {
+            "credits": 3,
+            "courseCode": "20CT1203",
+            "courseName": "Đồ họa ứng dụng",
+            "previousOutcome": "NONE"
+          },
+          {
+            "credits": 4,
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "previousOutcome": "NONE"
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "passedCredits": 10,
+            "plannedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "passedCredits": 0,
+            "plannedCredits": 16,
+            "surplusCredits": 0
+          }
+        ],
+        "electiveSelections": [],
+        "outstandingCourses": [
+          "20CT1101"
+        ],
+        "accumulatedDebtCredits": 3
+      },
+      "pendingCourses": [
+        {
+          "credits": 3,
+          "courseCode": "20CT1103",
+          "courseName": "Bảo trì máy tính",
+          "previousOutcome": "NONE"
+        },
+        {
+          "credits": 4,
+          "courseCode": "20CT1202",
+          "courseName": "Nguyên lý lập trình hướng đối tượng",
+          "previousOutcome": "NONE"
+        },
+        {
+          "credits": 3,
+          "courseCode": "20CT1203",
+          "courseName": "Đồ họa ứng dụng",
+          "previousOutcome": "NONE"
+        },
+        {
+          "credits": 4,
+          "courseCode": "20TN1202",
+          "courseName": "Toán rời rạc",
+          "previousOutcome": "NONE"
+        }
+      ]
+    },
+    {
+      "student": "2448B030",
+      "businessStatus": "MONITORING",
+      "debt": {
+        "dataStatus": "PARTIAL",
+        "reasonCode": "EXAM_ABSENCE_REQUIRES_VERIFICATION",
+        "replacements": [],
+        "electiveBlocks": [
+          {
+            "block": "A6",
+            "debtCredits": 0,
+            "failedCredits": 0,
+            "passedCredits": 0,
+            "requiredCredits": 9,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "A7",
+            "debtCredits": 0,
+            "failedCredits": 0,
+            "passedCredits": 0,
+            "requiredCredits": 6,
+            "failedCourseCodes": []
+          }
+        ],
+        "pendingCourses": [
+          {
+            "credits": 3,
+            "courseCode": "20CT1103",
+            "courseName": "Bảo trì máy tính",
+            "previousOutcome": "NONE"
+          },
+          {
+            "credits": 4,
+            "courseCode": "20CT1202",
+            "courseName": "Nguyên lý lập trình hướng đối tượng",
+            "previousOutcome": "NONE"
+          },
+          {
+            "credits": 3,
+            "courseCode": "20CT1203",
+            "courseName": "Đồ họa ứng dụng",
+            "previousOutcome": "NONE"
+          },
+          {
+            "credits": 4,
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "previousOutcome": "NONE"
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "passedCredits": 6,
+            "plannedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "passedCredits": 0,
+            "plannedCredits": 16,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "passedCredits": 0,
+            "plannedCredits": 16,
+            "surplusCredits": 0
+          }
+        ],
+        "electiveSelections": [],
+        "outstandingCourses": [
+          "20CT1101",
+          "20CT1102",
+          "LC1102D"
+        ],
+        "accumulatedDebtCredits": 9
+      },
+      "pendingCourses": [
+        {
+          "credits": 3,
+          "courseCode": "20CT1103",
+          "courseName": "Bảo trì máy tính",
+          "previousOutcome": "NONE"
+        },
+        {
+          "credits": 4,
+          "courseCode": "20CT1202",
+          "courseName": "Nguyên lý lập trình hướng đối tượng",
+          "previousOutcome": "NONE"
+        },
+        {
+          "credits": 3,
+          "courseCode": "20CT1203",
+          "courseName": "Đồ họa ứng dụng",
+          "previousOutcome": "NONE"
+        },
+        {
+          "credits": 4,
+          "courseCode": "20TN1202",
+          "courseName": "Toán rời rạc",
+          "previousOutcome": "NONE"
+        }
+      ]
+    }
+  ],
+  "nghiaUnchanged": {
+    "businessStatus": "HIGH_RISK",
+    "termGpa4": "3",
+    "regulatory": [
+      {
+        "code": "QD600_FAILED_CREDIT_RATIO",
+        "status": "EVALUATED",
+        "value": 0,
+        "reason": null,
+        "breach": false
+      },
+      {
+        "code": "QD600_CUMULATIVE_GPA_BY_YEAR",
+        "status": "EVALUATED",
+        "value": 2.96,
+        "reason": null,
+        "breach": false
+      },
+      {
+        "code": "QD600_TERM_GPA",
+        "status": "NOT_EVALUATED",
+        "value": null,
+        "reason": "FIRST_MAIN_SEMESTER_UNRESOLVED",
+        "breach": false
+      },
+      {
+        "code": "QD600_ACCUMULATED_DEBT_CREDITS",
+        "status": "NOT_EVALUATED",
+        "value": null,
+        "reason": "UNSCOPED_HISTORICAL_ATTEMPTS",
+        "breach": false
+      }
+    ]
+  },
+  "trungExcluded": true,
+  "preservedCases": 336,
+  "preservedHistoryEvents": 11229,
+  "afterCases": 353,
+  "newEvents": 344,
+  "gradeCount": 31141,
+  "decisionCount": 912,
+  "verifiedCurrentPeriod": true
+}

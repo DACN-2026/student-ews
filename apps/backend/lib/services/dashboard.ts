@@ -147,7 +147,7 @@ export class DashboardService {
     }
     const studentWhere: Prisma.StudentWhereInput = {
       AND: [
-        monitoredStudentWhere,
+        monitoredStudentWhere(),
         studentScope,
         ...(filters.trainingProgramId || filters.programCode
           ? [{ sStudyProgramId: selectedProgram ? selectedProgram.sProgramCode : { in: [] } }]
@@ -428,18 +428,22 @@ export class DashboardService {
         },
         orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
         take: 500,
+        omit: { sourceSnapshot: true },
       }) : Promise.resolve([]),
       prisma.trainingProgressCompletionRun.findMany({
+        omit: { sourceSnapshot: true },
         where: progressFilter,
         orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
         take: 500,
       }),
       prisma.trainingProgressCalculationRun.findMany({
+        omit: { sourceSnapshot: true },
         where: { status: "completed" },
         orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }],
         take: 500,
       }),
       prisma.graduationEvaluation.findMany({
+        omit: { sourceSnapshot: true },
         where: gradEvalFilter,
         orderBy: [{ evaluatedAt: "desc" }, { createdAt: "desc" }],
         take: 500,

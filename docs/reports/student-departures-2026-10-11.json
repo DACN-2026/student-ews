@@ -1,0 +1,24 @@
+{
+  "checkedAt": "2026-10-10T21:27:42.208Z",
+  "applied": true,
+  "checked": 625,
+  "changes": [
+    {
+      "studentId": "3cd90ad1-c3b0-433b-a28b-3de57c23ad6f",
+      "studentCode": "2549A044",
+      "studentName": "Bùi Lan Phong",
+      "before": {
+        "decisionId": null,
+        "yearCode": null,
+        "termOrder": null,
+        "effectiveAt": null
+      },
+      "after": {
+        "decisionId": "a4066eeb-9266-45d8-aab9-8e5450153a0a",
+        "yearCode": "2025-2026",
+        "termOrder": 2,
+        "effectiveAt": "2026-03-19T00:00:00.000Z"
+      }
+    }
+  ]
+}

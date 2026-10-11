@@ -12,6 +12,54 @@ const hk4 = () => [course("LC2102D",2,"mandatory",4),course("20CT2201",4,"mandat
   ...["20NV0002","20QT0006","20SP0001"].map(code=>course(code,3,"elective",4))];
 const mandatoryPasses = (courses: ForecastCourse[]) => courses.filter(item=>item.requirementType === "mandatory").map(item=>passed(item.courseCode,item.credits));
 
+test("unknown historical outcomes stay incomplete while pending attempts do not create F debt", () => {
+  const courses = [course("20CT1102", 4, "mandatory", 1)];
+  for (const scoreStatus of ["unknown", "pending"] as const) {
+    const unresolved: DebtAttempt = { courseCode: "20CT1102", credits: 4, scoreStatus, isPass: false, score10: null, score4: null };
+    const incomplete = calculateAcademicDebt([unresolved], courses, "CQ23CT");
+    assert.equal(incomplete.dataStatus, scoreStatus === "unknown" ? "PARTIAL" : "COMPLETE");
+    assert.equal(incomplete.accumulatedDebtCredits, 0);
+    const settled = calculateAcademicDebt([unresolved, passed("20CT1102", 4)], courses, "CQ23CT");
+    assert.equal(settled.dataStatus, "COMPLETE");
+    assert.equal(settled.accumulatedDebtCredits, 0);
+  }
+});
+
+test("K47 summer legacy aliases group one debt obligation without deleting attempts or treating VT as F", () => {
+  const courses = [course("20TN1202", 4, "mandatory", 2)];
+  const absence = { courseCode: "TN1008D", credits: 4, specialCode: "VT", scoreStatus: "special" };
+  for (const program of ["CQ23CT", "CQ23CT-PM", "CQ23CT-MMT"]) {
+    const attempts = [failed("20TN1202", 4), absence, { ...absence, courseCode: "20TN1202" }];
+    const result = calculateAcademicDebt(attempts, courses, program);
+    assert.equal(result.accumulatedDebtCredits, 4);
+    assert.deepEqual(result.outstandingCourses, ["20TN1202"]);
+    assert.equal(result.reasonCode, "EXAM_ABSENCE_REQUIRES_VERIFICATION");
+    assert.equal(attempts.length, 3);
+    const settled = calculateAcademicDebt([...attempts, passed("TN1008D", 4)], courses, program);
+    assert.equal(settled.accumulatedDebtCredits, 0);
+    assert.equal(settled.dataStatus, "COMPLETE");
+    const absenceOnly = calculateAcademicDebt([absence], courses, program);
+    assert.equal(absenceOnly.accumulatedDebtCredits, 0);
+    assert.equal(absenceOnly.dataStatus, "PARTIAL");
+  }
+  assert.equal(calculateAcademicDebt([passed("TN1008D", 4)], courses, "CQ24CT").accumulatedDebtCredits, 0);
+  assert.equal(calculateAcademicDebt([failed("20TN1202", 4), passed("TN1008D", 4)], courses, "CQ24CT").accumulatedDebtCredits, 4);
+});
+
+test("advanced course in the base catalog is review evidence, never an automatic PM obligation or basic-course alias", () => {
+  const courses = [course("20CT1201", 3, "mandatory", 3)];
+  const advanced = { ...course("20CT3112D", 3, "mandatory", 6), courseName: "Cấu trúc dữ liệu và thuật giải nâng cao", catalogProgramCode: "CQ22CT" };
+  const attempts = [passed("20CT1201"), { courseCode: "20CT3112D", credits: 3, notScore: true, academicYear: "2024-2025", termCode: "HK02" }];
+  const result = calculateAcademicDebt(attempts, courses, "CQ22CT-PM", [advanced]);
+  assert.equal(result.accumulatedDebtCredits, 0);
+  assert.equal(result.dataStatus, "PARTIAL");
+  assert.equal(result.reasonCode, "CURRICULUM_SCOPE_REQUIRES_VERIFICATION");
+  assert.deepEqual(result.curriculumReviewCourses, [{ courseCode: "20CT3112D", courseName: advanced.courseName, credits: 3, catalogProgramCode: "CQ22CT", outcome: "pending", academicYear: "2024-2025", termCode: "HK02" }]);
+  assert.equal(courses.length, 1);
+  const oldMajor = [failed("20HN1201"), { courseCode: "HN2103D", credits: 3, notScore: true }];
+  assert.deepEqual(calculateAcademicDebt(oldMajor, courses, "CQ22CT-PM", [advanced]), calculateAcademicDebt(oldMajor, courses, "CQ22CT-PM"));
+});
+
 test("SHCD with no scores never blocks the academic failed-credit ratio", () => {
   const result = calculateAssessmentTermFailedCredits("t", [
     { offeringId: "f", academicTermId: "t", courseCode: "20CT4102D", credits: 3, scoreStatus: "graded", hasFinalGrade: true, isPass: false },
@@ -242,6 +290,28 @@ test("a pending retake retains debt; a summer D resolves it without mutating his
   assert.equal(calculateAcademicDebt([before,{courseCode:before.courseCode,credits:3,notScore:true}],courses,"CQ22CT-PM").accumulatedDebtCredits,3);
   assert.equal(calculateAcademicDebt([before,passed(before.courseCode)],courses,"CQ22CT-PM").accumulatedDebtCredits,0);
   assert.equal(before.letterCode,"F");
+});
+test("pending attempts preserve confirmed debt and passes without making the debt calculation incomplete", () => {
+  const courses = [course("20CT4102D",3,"mandatory")];
+  const pending = { courseCode: "20CT4102D", credits: 3, scoreStatus: "pending", notScore: true };
+  for (const [previous, credits, previousOutcome] of [[failed("20CT4102D"),3,"FAILED"], [passed("20CT4102D"),0,"PASSED"], [null,0,"NONE"]] as const) {
+    const debt = calculateAcademicDebt([...(previous ? [previous] : []), pending], courses, "CQ22CT-PM");
+    assert.equal(debt.dataStatus, "COMPLETE");
+    assert.equal(debt.accumulatedDebtCredits, credits);
+    assert.equal(debt.pendingCourses?.[0].previousOutcome, previousOutcome);
+  }
+  assert.equal(calculateAcademicDebt([{courseCode:"20CT4102D",credits:3,scoreStatus:"unknown"}], courses, "CQ22CT-PM").dataStatus, "PARTIAL");
+});
+test("VT cannot create F debt and a later confirmed pass settles its unresolved history", () => {
+  const courses = [course("20CT4102D",3,"mandatory")];
+  const vt = { ...failed("20CT4102D"), specialCode: "VT", scoreStatus: "special", score4: null, letterCode: null };
+  const debt = calculateAcademicDebt([vt], courses, "CQ22CT-PM");
+  assert.equal(debt.accumulatedDebtCredits, 0);
+  assert.equal(debt.dataStatus, "PARTIAL");
+  assert.equal(debt.reasonCode, "EXAM_ABSENCE_REQUIRES_VERIFICATION");
+  const settled = calculateAcademicDebt([vt,passed("20CT4102D")], courses, "CQ22CT-PM");
+  assert.equal(settled.dataStatus, "COMPLETE");
+  assert.equal(settled.accumulatedDebtCredits, 0);
 });
 
 test("K49 blockchain membership and replacement options use the same A6 pool", () => {

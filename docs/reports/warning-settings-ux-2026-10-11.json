@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-11",
+  "policyVersion": 3,
+  "policyUnchanged": true,
+  "checks": [
+    {
+      "port": 3000,
+      "settingsStatus": 200,
+      "pdfStatus": 200,
+      "pdfType": "application/pdf",
+      "pdfBytes": 14399078,
+      "identicalToOriginal": true
+    }
+  ]
+}

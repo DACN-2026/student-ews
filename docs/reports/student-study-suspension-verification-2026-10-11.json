@@ -1,0 +1,65 @@
+{
+  "studentCode": "2347B045",
+  "isInClass": true,
+  "isSuspended": true,
+  "suspension": {
+    "decisionId": "805c078d-5b50-40ca-a8ed-4d3e8a231b06",
+    "decisionNumber": "332/QÐ-ÐHÐL_03042026",
+    "fromYear": "2025-2026",
+    "fromTerm": 2,
+    "effectiveAt": "2026-04-03T00:00:00.000Z",
+    "awaitingReturn": true,
+    "returnYear": null,
+    "returnTerm": null
+  },
+  "progress": {
+    "historyCutoff": "HK01 (2025-2026)",
+    "historicalOnly": true,
+    "currentAcademicYear": "2025-2026",
+    "currentTermCode": "HK01",
+    "lastHistoricalSemester": 5,
+    "completedCredits": 53
+  },
+  "dashboardPeriod": {
+    "academicYear": "2025-2026",
+    "termCode": "HK01",
+    "termName": "Học kỳ 1",
+    "termOrder": 1
+  },
+  "activeMonitoringCount": 622,
+  "excludedFromLeaveSemesterSql": true,
+  "priorSemesterRemainsAvailable": true,
+  "supportWritesBlocked": true,
+  "caseReadOnly": true,
+  "preservedCaseId": "50a837d5-8879-49f4-849c-bcfca07c7ffc",
+  "preservedHistoryEvents": 30,
+  "restoredStudentsRemainActive": [
+    "2347A016",
+    "2347B037",
+    "2347C029",
+    "2549C057"
+  ],
+  "interventionSummary": {
+    "open": 297,
+    "inProgress": 0,
+    "resolved": 2,
+    "escalated": 0,
+    "reopened": 0,
+    "overdue": 0,
+    "highRisk": 180,
+    "verifyRequired": 0,
+    "total": 299,
+    "studentCount": 297,
+    "academicTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+    "allPeriods": {
+      "total": 300,
+      "studentCount": 297,
+      "otherPeriodCases": 0,
+      "otherPeriodStudents": 0,
+      "unlinkedCases": 1
+    }
+  },
+  "historicalGradeCount": 31141,
+  "preservedDecisionCountForStudent": 3,
+  "idempotentResync": 0
+}

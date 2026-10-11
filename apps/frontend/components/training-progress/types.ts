@@ -340,6 +340,11 @@ export interface StudentTrainingProgressData {
     studyCohortCode?: string | null;
     studyScheduleSource?: "CONFIGURED" | "REGISTRATION_SEQUENCE" | null;
     programCode?: string | null;
+    isSuspended?: boolean;
+    historicalOnly?: boolean;
+    historicalReason?: "STUDY_SUSPENSION" | "LEFT_CLASS";
+    historyCutoff?: string;
+    suspension?: { decisionNumber: string; fromYear: string; fromTerm: number } | null;
   };
   curriculum: {
     programId?: string | null;

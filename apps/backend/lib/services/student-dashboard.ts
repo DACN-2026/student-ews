@@ -3,6 +3,7 @@ import { studentIdWhere } from "@/lib/utils/is-uuid";
 import { ApiError } from "@/lib/utils/api-error";
 import { hasPermission, type Actor } from "@/lib/auth/types";
 import { findLatestOfficialWarningResult } from "@/lib/services/academic-warnings";
+import { studentIsInClass, suspensionInfo, studentSuspension } from "../student-monitoring-scope";
 
 type DashboardTerm = {
   academicYear: string;
@@ -37,6 +38,7 @@ export class StudentDashboardService {
 
     const student = await prisma.student.findFirst({
       where: { ...studentIdWhere(studentIdentifier), deletedAt: null },
+      include: { studySuspensions: { where: { isRevoked: false } } },
     });
     if (!student) return null;
 
@@ -54,15 +56,19 @@ export class StudentDashboardService {
       WHERE t.deleted_at IS NULL AND y.deleted_at IS NULL
       ORDER BY y.s_year_code DESC, t.s_term_order DESC
     `;
-    const availableTerms: DashboardTerm[] = termRows.map((row) => ({
+    const pause = studentSuspension(student);
+    const cutoff = student.leftClassFromYear && student.leftClassFromTerm != null ? { year: student.leftClassFromYear, term: student.leftClassFromTerm }
+      : pause ? { year: pause.fromYear, term: pause.fromTerm } : null;
+    const historicalTerms = cutoff ? termRows.filter(row => row.s_year_code < cutoff.year || row.s_year_code === cutoff.year && row.s_term_order < cutoff.term) : termRows;
+    const availableTerms: DashboardTerm[] = historicalTerms.map((row) => ({
       academicYear: row.s_year_code,
       termCode: row.s_term_code,
       termName: row.s_term_name,
       termOrder: Number(row.s_term_order),
     }));
     const targetRow = yearFilter
-      ? termRows.find((row) => row.s_year_code === yearFilter && row.s_term_code === termFilter)
-      : termRows.find((row) => row.is_current) || termRows[0];
+      ? historicalTerms.find((row) => row.s_year_code === yearFilter && row.s_term_code === termFilter)
+      : historicalTerms.find((row) => row.is_current) || historicalTerms[0];
     if (!targetRow) throw new ApiError("Academic term not found", "INVALID_FILTER", 400);
     const target: DashboardTerm = {
       academicYear: targetRow.s_year_code,
@@ -96,6 +102,11 @@ export class StudentDashboardService {
         programCode,
         gender: student.sGender,
         birthDate: student.sBirthDate,
+        isInClass: studentIsInClass(student),
+        isSuspended: studentIsInClass(student) && Boolean(pause),
+        suspension: studentIsInClass(student) ? suspensionInfo(student) : null,
+        departure: student.leftClassDecisionId ? { decisionId: student.leftClassDecisionId,
+          fromYear: student.leftClassFromYear, fromTerm: student.leftClassFromTerm } : null,
       },
       filter: target,
       availableTerms,
@@ -116,6 +127,7 @@ export class StudentDashboardService {
         gpa: item.gpa4,
       })) || [],
       ...(access.warnings ? {
+        warningHistoricalOnly: Boolean(cutoff),
         warningLevel: latestWarning?.maxSeverity === "high"
           ? "red"
           : latestWarning?.maxSeverity === "medium"

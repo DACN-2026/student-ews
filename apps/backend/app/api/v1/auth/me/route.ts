@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
       return auth.response;
     }
 
-    const data = await AuthService.getMe(auth.actor.userId);
+    const data = await AuthService.getMe(auth.actor.userId, auth.actor);
     if (!data) {
       return errorResponse("User not found", "NOT_FOUND", 404);
     }

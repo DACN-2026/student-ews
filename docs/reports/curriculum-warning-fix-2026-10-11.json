@@ -1,0 +1,256 @@
+{
+  "checkedAt": "2026-10-11T08:43:43.383Z",
+  "engineVersion": "academic-warning-qd600-article18-and-progress-v20",
+  "refreshed": [
+    {
+      "previousRunId": "1ef90869-af5e-4450-ad30-c9bd3a81b49e",
+      "runId": "58eda323-939c-472d-b483-8dd5302c0a92",
+      "termId": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "program": "CQ22CT-PM"
+    },
+    {
+      "previousRunId": "4f8ea11f-0e8e-49f4-9e16-48d898902034",
+      "runId": "06e3590d-03d1-4448-8a9e-3f01c33e97b1",
+      "termId": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "program": "CQ23CT-PM"
+    },
+    {
+      "previousRunId": "d5dec0ee-b3ed-4b64-8071-1771a066c03d",
+      "runId": "69648ade-194d-47d8-9221-42c9febe06a5",
+      "termId": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "program": "CQ23CT"
+    },
+    {
+      "previousRunId": "7c50c3e6-b4c5-429b-8999-66393f1ee7fa",
+      "runId": "b8847b5c-7d7c-49fc-a638-810c94496b4a",
+      "termId": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "program": "CQ22CT-PM"
+    },
+    {
+      "previousRunId": "0cda189c-dee9-44bc-a2dc-cc37fd32d0d2",
+      "runId": "96e3a81d-8ac3-4f35-ab94-20aaaf78d9b4",
+      "termId": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "program": "CQ23CT-PM"
+    },
+    {
+      "previousRunId": "2da8a1a4-4266-4d86-9df3-6d38f1f67482",
+      "runId": "6fb6f929-e7b8-4762-b375-8bfd9c4fa916",
+      "termId": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "program": "CQ23CT"
+    },
+    {
+      "previousRunId": "e45f7051-9d9e-47e2-b2f4-0f6858b73e23",
+      "runId": "b0d35dde-0573-40f8-9acb-3afb59c5c7c6",
+      "termId": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "program": "CQ22CT-PM"
+    },
+    {
+      "previousRunId": "61d0de60-ec69-4ff3-9118-5fa7dc60f7fe",
+      "runId": "acd7533a-9549-4a81-979a-fafe90683ac3",
+      "termId": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "program": "CQ23CT-PM"
+    },
+    {
+      "previousRunId": "6402367d-2a72-4bc5-90e9-0198633f1c01",
+      "runId": "0e2ad0a1-78a4-43cc-9684-19fb6f598b4b",
+      "termId": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "program": "CQ23CT"
+    },
+    {
+      "previousRunId": "dc560d3e-9ffa-408b-bddb-5154cdef75fb",
+      "runId": "d552d62d-56a6-4538-b3bd-3fddacc43b95",
+      "termId": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "program": "CQ22CT-PM"
+    },
+    {
+      "previousRunId": "daa82a0c-adfe-40b9-919b-ce1cd77f3bdd",
+      "runId": "bbb68603-7ef6-4064-8392-653ec4540e9a",
+      "termId": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "program": "CQ23CT-PM"
+    },
+    {
+      "previousRunId": "f84031fb-ee3b-4c3f-be1b-75159d052a76",
+      "runId": "d9ffdd79-b5f3-486a-a1c3-a86c53ae06f1",
+      "termId": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "program": "CQ23CT"
+    },
+    {
+      "previousRunId": "4ee2eedc-a500-46ce-8442-79d79d4c76fd",
+      "runId": "1cf0eee5-e418-4dca-8b90-bd6a0f3bcacf",
+      "termId": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "program": "CQ22CT-PM"
+    },
+    {
+      "previousRunId": "3361a1a6-715c-420b-aa72-3328b5787aa2",
+      "runId": "da097770-8ea1-43aa-a026-e2de4539885d",
+      "termId": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "program": "CQ23CT-PM"
+    },
+    {
+      "previousRunId": "693522a7-2e66-4ac1-8d9f-a5e0ac8fec4c",
+      "runId": "69bad794-4b8f-4da7-a7e7-b70e3f7f3b3d",
+      "termId": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "program": "CQ23CT"
+    },
+    {
+      "previousRunId": "d73f506a-2546-4dc9-97b8-6871e23ea8ff",
+      "runId": "c85fc407-7131-4ba9-99f0-ccff7560d984",
+      "termId": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "program": "CQ22CT-PM"
+    },
+    {
+      "previousRunId": "ad7528cf-7019-4177-879c-093061235c90",
+      "runId": "c3966607-3a19-4dfd-bc28-45ac8fb95067",
+      "termId": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "program": "CQ23CT-PM"
+    },
+    {
+      "previousRunId": "1c2c16ce-7451-44fa-af25-d6263d5f4110",
+      "runId": "d21150ae-f42b-460b-99b1-16bfea71bd8b",
+      "termId": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "program": "CQ23CT"
+    },
+    {
+      "previousRunId": "366088ba-7a63-4c0e-a566-b016fbf2c5cb",
+      "runId": "47989f77-f570-4317-a6c4-bb84c170545c",
+      "termId": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "program": "CQ22CT-PM"
+    },
+    {
+      "previousRunId": "5e2f4233-2668-4eca-8d8f-7e10d4c260ef",
+      "runId": "d7bbebe0-570f-4dd5-870a-5f2f64ac67df",
+      "termId": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "program": "CQ23CT-PM"
+    },
+    {
+      "previousRunId": "589d2764-c67d-4919-9e55-caacda96d607",
+      "runId": "e5e35a86-a699-40bd-b2fe-5037d50c6eb9",
+      "termId": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "program": "CQ23CT"
+    },
+    {
+      "previousRunId": "e228fcba-accf-49fa-80c0-d5e9a643099c",
+      "runId": "65b63370-debe-4f74-82bc-4b2d808414fd",
+      "termId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "program": "CQ22CT-PM"
+    },
+    {
+      "previousRunId": "879dd886-520f-4281-b95e-d70f4df6773b",
+      "runId": "b9b10911-48ed-4ea1-94b7-75069001b494",
+      "termId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "program": "CQ23CT-PM"
+    },
+    {
+      "previousRunId": "49e44772-0761-40c7-bb79-a328cd5e9415",
+      "runId": "92ce8c8a-0366-4b7d-9266-914842aca466",
+      "termId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "program": "CQ23CT"
+    }
+  ],
+  "period": {
+    "academicTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+    "academicYear": "2025-2026",
+    "termCode": "HK02",
+    "termOrder": 2,
+    "label": "HK02 (2025-2026)",
+    "isSummer": false,
+    "high": 178,
+    "medium": 119,
+    "evaluated": 622,
+    "available": 593,
+    "termGpaAvailable": 576,
+    "cumulativeGpaAvailable": 589,
+    "insufficient": 0
+  },
+  "evaluatedStudents": 622,
+  "results": [
+    {
+      "studentCode": "2246A006",
+      "businessStatus": "MONITORING",
+      "debt": {
+        "margin": null,
+        "ruleCode": "QD600_ACCUMULATED_DEBT_CREDITS",
+        "articleRef": null,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "CURRICULUM_SCOPE_REQUIRES_VERIFICATION",
+        "sourceType": "REGULATORY",
+        "explanation": "Có học phần trong danh mục CTĐT chung nhưng chưa được xác nhận thuộc nghĩa vụ của chuyên ngành hiện tại. Đối chiếu môn được phép học, thay thế hoặc CTĐT cá nhân; môn chờ điểm không được tự cộng thành nợ F.",
+        "observedValue": null,
+        "thresholdValue": 24,
+        "isNearThreshold": false,
+        "capabilityStatus": "AVAILABLE",
+        "evaluationStatus": "NOT_EVALUATED",
+        "regulatorySource": null,
+        "pendingDebtCourses": [],
+        "isThresholdBreached": false,
+        "curriculumReviewCourses": [
+          {
+            "credits": 3,
+            "outcome": "pending",
+            "termCode": "HK02",
+            "courseCode": "20CT3112D",
+            "courseName": "Cấu trúc dữ liệu và thuật giải nâng cao",
+            "academicYear": "2024-2025",
+            "catalogProgramCode": "CQ22CT"
+          }
+        ]
+      }
+    },
+    {
+      "studentCode": "2347A009",
+      "businessStatus": "HIGH_RISK",
+      "debt": {
+        "margin": null,
+        "ruleCode": "QD600_ACCUMULATED_DEBT_CREDITS",
+        "articleRef": null,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "EXAM_ABSENCE_REQUIRES_VERIFICATION",
+        "sourceType": "REGULATORY",
+        "explanation": "Lịch sử còn học phần VT chưa được xác minh kết quả cuối cùng; theo dõi riêng, không tự cộng thành tín chỉ F còn nợ.",
+        "observedValue": null,
+        "thresholdValue": 24,
+        "isNearThreshold": false,
+        "capabilityStatus": "AVAILABLE",
+        "evaluationStatus": "NOT_EVALUATED",
+        "regulatorySource": null,
+        "pendingDebtCourses": [],
+        "isThresholdBreached": false
+      }
+    },
+    {
+      "studentCode": "2347A065",
+      "businessStatus": "HIGH_RISK",
+      "debt": {
+        "margin": null,
+        "ruleCode": "QD600_ACCUMULATED_DEBT_CREDITS",
+        "articleRef": null,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "EXAM_ABSENCE_REQUIRES_VERIFICATION",
+        "sourceType": "REGULATORY",
+        "explanation": "Lịch sử còn học phần VT chưa được xác minh kết quả cuối cùng; theo dõi riêng, không tự cộng thành tín chỉ F còn nợ.",
+        "observedValue": null,
+        "thresholdValue": 24,
+        "isNearThreshold": false,
+        "capabilityStatus": "AVAILABLE",
+        "evaluationStatus": "NOT_EVALUATED",
+        "regulatorySource": null,
+        "pendingDebtCourses": [],
+        "isThresholdBreached": false
+      }
+    }
+  ],
+  "deferredStudentsUnchanged": [
+    "2246B045",
+    "2347A048"
+  ],
+  "deferredCasesAndEventsUnchanged": true,
+  "gradeCount": 31141,
+  "decisionCount": 912,
+  "interventionSync": {
+    "processed": 20,
+    "created": 0,
+    "updated": 3,
+    "otherStudentsCasesAndEventsUnchanged": true,
+    "existingStatusesAndNotesPreserved": true
+  }
+}

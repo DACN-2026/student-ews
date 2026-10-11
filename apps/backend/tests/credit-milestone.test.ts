@@ -116,6 +116,21 @@ function warningRule(result: ReturnType<typeof evaluateStudentTrainingProgress>)
   });
 }
 
+test("unknown conditional results do not block academic progress, while unknown academic results do", () => {
+  const conditional = evaluateStudentTrainingProgress({ ...input,
+    grades: [...grades.filter(grade => grade.courseCode !== "TC1002D"),
+      { courseCode: "TC1002D", isPass: false, scoreStatus: "unknown", score10: null, score4: null }],
+  });
+  assert.ok(conditional.warnings.some(warning => warning.includes("TC1002D")));
+  assert.equal(academicWarningProgressSignal(conditional, "program").dataStatus, "COMPLETE");
+  const academic = evaluateStudentTrainingProgress({ ...input,
+    grades: [...grades.filter(grade => grade.courseCode !== "20CT1102"),
+      { courseCode: "20CT1102", isPass: false, scoreStatus: "unknown", score10: null, score4: null }],
+  });
+  assert.equal(academicWarningProgressSignal(academic, "program").dataStatus, "PARTIAL");
+  assert.equal(academicWarningProgressSignal(academic, "program").creditDeficit, null);
+});
+
 test("warnings show the same 134 planned / 103 earned / 31 missing milestone, keeping six mandatory debts separate", () => {
   const planned = [13,16,18,16,16,19,18,18];
   const earned = [13,16,21,22,16,0,15,0];

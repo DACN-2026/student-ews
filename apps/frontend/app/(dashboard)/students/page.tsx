@@ -3,7 +3,7 @@
 import TableAction from "@/components/ui/TableAction";
 import { UserRound, Pencil, Trash2 } from "lucide-react";
 import TextLabel from "@/components/ui/TextLabel";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import FilterBar from "@/components/ui/FilterBar";
@@ -30,6 +30,7 @@ interface StudentItem {
   programCode?: string;
   studyProgramId?: string;
   isInClass?: boolean;
+  isSuspended?: boolean;
   birthPlace?: string;
   permanentResidence?: string;
   warningLevel?: WarningLevel;
@@ -64,6 +65,8 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const listRequest = useRef(0);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
 
@@ -131,9 +134,12 @@ export default function StudentsPage() {
   }, []);
 
   // Fetch student list
-  const fetchStudents = useCallback(async () => {
+  const fetchStudents = useCallback(async (signal?: AbortSignal) => {
+    const requestId = ++listRequest.current;
+    const isCurrent = () => requestId === listRequest.current && !signal?.aborted;
     try {
       setLoading(true);
+      setLoadError(null);
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
@@ -144,9 +150,13 @@ export default function StudentsPage() {
       if (filterInClass !== "all") params.set("isInClass", filterInClass === "true" ? "true" : "false");
       if (canReadWarnings && filterWarning !== "all") params.set("warningLevel", filterWarning);
 
-      const res = await apiFetch(`/api/v1/students?${params.toString()}`);
+      const res = await apiFetch(`/api/v1/students?${params.toString()}`, { signal });
+      if (!res.ok) {
+        throw new Error(`Không tải được danh sách sinh viên (HTTP ${res.status}). Vui lòng thử lại.`);
+      }
       if (res.ok) {
         const json = await res.json();
+        if (!isCurrent()) return;
         const items = (json.items || []).map((s: ApiData) => ({
           id: s.id,
           studentId: s.studentId || s.studentCode || s.sStudentId || s.id,
@@ -163,23 +173,32 @@ export default function StudentsPage() {
           programCode: s.studyProgramId || s.sStudyProgramId || "",
           studyProgramId: s.studyProgramId || s.sStudyProgramId || "",
           isInClass: s.bIsInClass !== undefined ? s.bIsInClass : s.isInClass !== undefined ? s.isInClass : true,
+          isSuspended: s.isSuspended === true,
           birthPlace: s.birthPlace || s.sBirthPlace || "",
           permanentResidence: s.permanentResidence || s.sPermanentResidence || "",
           warningLevel: (s.warningLevel || "insufficient") as WarningLevel,
         }));
         setStudents(items);
-        setTotal(json.total || items.length);
+        setTotal(json.total ?? items.length);
       }
     } catch (err) {
+      if (!isCurrent()) return;
       console.error("Fetch students error:", err);
+      setStudents([]);
+      setTotal(0);
+      setLoadError(err instanceof Error ? err.message : "Không tải được danh sách sinh viên. Vui lòng thử lại.");
     } finally {
-      setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, [page, pageSize, search, filterClass, filterGender, filterInClass, filterWarning, canReadWarnings]);
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => void fetchStudents(), 0);
-    return () => window.clearTimeout(timeout);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => void fetchStudents(controller.signal), 200);
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
   }, [fetchStudents]);
 
   // Handle Create Student
@@ -402,11 +421,11 @@ export default function StudentsPage() {
       key: "isInClass",
       title: "Trạng thái",
       width: 120,
-      render: (v) => (
+      render: (v, row) => (
         <span
-          className={`text-xs font-medium ${v ? "text-emerald-800" : "text-slate-500"}`}
+          className={`text-xs font-medium ${v && !row.isSuspended ? "text-emerald-800" : "text-slate-500"}`}
         >
-          {v ? "Trong lớp" : "Đã rời lớp"}
+          {v ? row.isSuspended ? "Đang nghỉ tạm thời" : "Trong lớp" : "Đã rời lớp"}
         </span>
       ),
     },
@@ -414,7 +433,7 @@ export default function StudentsPage() {
       key: "warningLevel",
       title: "Mức cảnh báo",
       width: 140,
-      render: (v: WarningLevel) => <WarningBadge level={v || "insufficient"} />,
+      render: (v: WarningLevel, row: StudentItem) => row.isSuspended ? <span className="text-xs text-slate-500">Tạm dừng đánh giá</span> : <WarningBadge level={v || "insufficient"} />,
     } as Column<StudentItem>] : []),
     {
       key: "actions",
@@ -550,7 +569,7 @@ export default function StudentsPage() {
         }}
         actions={
           <span className="text-xs text-slate-500 font-medium">
-            {loading && students.length === 0 ? "Đang tải số lượng sinh viên…" : <>Tổng cộng: <strong className="font-semibold text-slate-900">{total}</strong> sinh viên</>}
+            {loadError ? "Chưa tải được số lượng sinh viên" : loading && students.length === 0 ? "Đang tải số lượng sinh viên…" : <>Tổng cộng: <strong className="font-semibold text-slate-900">{total}</strong> sinh viên</>}
           </span>
         }
       >
@@ -650,7 +669,14 @@ export default function StudentsPage() {
       </FilterBar>
 
       {/* Students Data Table */}
-      <DataTable
+      {loadError ? (
+        <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 flex items-center justify-between gap-4">
+          <p>{loadError}</p>
+          <button type="button" onClick={() => void fetchStudents()} className="shrink-0 rounded-lg border border-red-200 bg-white px-4 py-2 font-medium">
+            Thử lại
+          </button>
+        </div>
+      ) : <DataTable
         columns={columns}
         data={students}
         rowKey={(st) => st.id}
@@ -662,7 +688,7 @@ export default function StudentsPage() {
           total,
           onChange: (p) => setPage(p),
         }}
-      />
+      />}
 
       {/* Modal: Thêm sinh viên mới */}
       <Modal

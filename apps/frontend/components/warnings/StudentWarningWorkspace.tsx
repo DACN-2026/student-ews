@@ -13,8 +13,10 @@ import { LoadingIndicator } from "@/components/ui/LoadingState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import WarningStudentDetailModal, { type WarningStudentDetailTarget } from "./WarningStudentDetailModal";
 import { WarningVerificationProvider, WarningVerificationOverview, WarningCreditOverview, WarningReasonEvidence } from "./WarningVerification";
+import { warningRegulatoryAssessment, warningSupportSuggestions } from "@/lib/student-warning-view";
+import { warningPendingDebtCourses, warningCurriculumReviewCourses } from "@/lib/student-warning-view";
 
-export type StudentInterventionCase = { caseId: string; interventionStatus: InterventionStatus; nextFollowUpAt: string | null; overdue?: boolean; latestWarningResultId?: string | null };
+export type StudentInterventionCase = { caseId: string; interventionStatus: InterventionStatus; nextFollowUpAt: string | null; overdue?: boolean; latestWarningResultId?: string | null; assignedUserName?: string | null; readOnly?: boolean };
 export type StudentWarningData = {
   presentationState: string; warningLevel: string; warningReasons: ProfileWarningReason[];
   warningInfo: { id: string; termGpa4: number | null; regulatoryCoverage?: string; ruleResults?: unknown } | null;
@@ -22,7 +24,7 @@ export type StudentWarningData = {
   warningActions?: Array<{ id: string; actionType: string; status: string; note: string | null; actorName?: string; createdAt: string }>;
 };
 export type StudentInterventionDetail = { case: StudentInterventionCase; history: WarningHistoryEvent[] };
-export type WarningWorkspaceStudent = { id: string; fullName: string; studentCode: string; classCode: string; programCode: string };
+export type WarningWorkspaceStudent = { id: string; fullName: string; studentCode: string; classCode: string; programCode: string; isInClass?: boolean; isSuspended?: boolean; suspension?: { decisionNumber: string; fromYear: string; fromTerm: number } | null };
 export type WarningWorkspaceDecision = { id: string; decisionName?: string; decisionNumber?: string; signDate?: string; createdAt?: string; isAcademicWarning?: boolean };
 type Props = {
   student: WarningWorkspaceStudent; warning: StudentWarningData | null; interventionCase: StudentInterventionCase | null;
@@ -41,6 +43,12 @@ function formatMetric(reason: ProfileWarningReason) {
   const number = numericWarningValue(reason.details.observedValue);
   if (number == null) return "Chưa có số liệu";
   const code = warningRuleCode(reason);
+  if (code === "EARLY_EXAM_ABSENCE") return `${number} học phần · ${numericWarningValue(reason.details.absenceCredits) ?? "—"} TC`;
+  if (code.includes("NO_REGISTRATION_CONSECUTIVE") || code === "ACADEMIC_WARNING_SEQUENCE_REVIEW") return `${number} kỳ`;
+  if (code === "EARLY_NO_REGISTRATION") return `${number} học phần`;
+  if (code === "ACADEMIC_REPRIEVE_FOLLOWUP") return "Cần rà soát hồ sơ";
+  if (code.includes("CONDUCT")) return `${number} điểm`;
+  if (code.includes("REPEATED")) return `${number} lần`;
   return code.includes("CREDIT_RATIO") ? `${Math.round(number * 100)}%` : code.includes("GPA") ? number.toFixed(2) : `${number} TC`;
 }
 function Label({ children, htmlFor }: { children: ReactNode; htmlFor: string }) {
@@ -56,6 +64,8 @@ export default function StudentWarningWorkspace({ student, warning, intervention
   const [feedback, setFeedback] = useState<{ error: boolean; text: string } | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [resolveOpen, setResolveOpen] = useState(false);
+  const [followUpOpen, setFollowUpOpen] = useState(false);
+  const [followUpDate, setFollowUpDate] = useState("");
   const [sourceTarget, setSourceTarget] = useState<WarningStudentDetailTarget | null>(null);
   const [form, setForm] = useState({ interventionType: "CONTACT", occurredAt: "", note: "" });
   const formRef = useRef<HTMLFormElement>(null);
@@ -86,14 +96,15 @@ export default function StudentWarningWorkspace({ student, warning, intervention
   useEffect(() => { if (formOpen) formRef.current?.querySelector<HTMLInputElement>("input")?.focus(); }, [formOpen]);
   const current = detail?.case || interventionCase;
   const advisor = user?.role === "SYSTEM_ADMIN" || user?.role === "CLASS_ADVISOR";
-  const canRecord = Boolean(detail && current?.interventionStatus !== "RESOLVED" && advisor && can("academic_warning.action.create"));
-  const canChange = Boolean(detail && advisor && can("academic_warning.action.update"));
+  const canRecord = Boolean(student.isInClass !== false && !student.isSuspended && !current?.readOnly && detail && current?.interventionStatus !== "RESOLVED" && advisor && can("academic_warning.action.create"));
+  const canChange = Boolean(student.isInClass !== false && !student.isSuspended && !current?.readOnly && detail && advisor && can("academic_warning.action.update"));
   const history = warningSemesterHistory(warning?.warningHistory || []);
   const selected = history.find(item => item.id === warning?.warningInfo?.id);
   const caseAssessment = history.find(item => item.id === current?.latestWarningResultId);
   const historicalCase = Boolean(caseId && warning?.warningInfo?.id && current?.latestWarningResultId !== warning.warningInfo.id);
   const state = warning?.presentationState || "INSUFFICIENT_DATA";
-  const reasons = warning?.warningReasons || [];
+  const reasons = (warning?.warningReasons || []).filter(reason => warningRuleCode(reason) !== "ACADEMIC_STUDY_DURATION_REVIEW");
+  const supportSuggestions = warningSupportSuggestions(reasons.map(warningRuleCode));
   const unEvaluatedRules = warningRuleResults(warning?.warningInfo?.ruleResults).filter(rule => rule.evaluationStatus === "NOT_EVALUATED");
   const isUrgent = state === "HIGH_RISK" || state === "VERIFY_REQUIRED";
   const humanHistory = (warning?.interventionHistory || []).filter(event => !event.systemGenerated)
@@ -122,7 +133,7 @@ export default function StudentWarningWorkspace({ student, warning, intervention
     if (mounted.current) { setDetail(newDetail); onUpdated(newWarning, newDetail.case); }
   }
   async function mutate(path: string, method: string, body: Record<string, unknown>, success: string) {
-    if (busy || !caseId) return;
+    if (busy || !caseId) return false;
     setBusy(true); setFeedback(null);
     let saved = false;
     try {
@@ -138,7 +149,8 @@ export default function StudentWarningWorkspace({ student, warning, intervention
       if (mounted.current) { setFormOpen(false); setResolveOpen(false); }
       await refresh();
       if (mounted.current) { setFeedback({ error: false, text: success }); formTriggerRef.current?.focus(); }
-    } catch (error) { if (mounted.current) setFeedback({ error: true, text: error instanceof Error ? error.message : "Không thể lưu thay đổi." }); }
+      return true;
+    } catch (error) { if (mounted.current) setFeedback({ error: true, text: error instanceof Error ? error.message : "Không thể lưu thay đổi." }); return false; }
     finally { if (mounted.current) { setBusy(false); if (saved) setForm({ interventionType: "CONTACT", occurredAt: "", note: "" }); } }
   }
   function changeStatus(status: string) {
@@ -150,23 +162,36 @@ export default function StudentWarningWorkspace({ student, warning, intervention
     setForm(previous => ({ ...previous, occurredAt: previous.occurredAt || localDateTime() }));
   }
   const verification = Boolean(caseId && warning?.warningInfo?.id);
+  const pendingDebtCourses = warningPendingDebtCourses(warning?.warningInfo?.ruleResults);
+  const curriculumReviewCourses = warningCurriculumReviewCourses(warning?.warningInfo?.ruleResults);
   const reasonContent = <>
+    {curriculumReviewCourses.length > 0 && <details className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs" open>
+      <summary className="cursor-pointer font-semibold text-amber-900">Học phần chờ xác nhận phạm vi CTĐT ({curriculumReviewCourses.length})</summary>
+      <p className="mt-2 leading-5 text-slate-600">Môn có trong danh mục CTĐT chung; cần xác nhận môn được phép học, môn thay thế hoặc nghĩa vụ của CTĐT cá nhân trước khi tính vào nợ và tiến độ của chuyên ngành.</p>
+      <ul className="mt-3 space-y-2">{curriculumReviewCourses.map((course, index) => <li key={`${course.courseCode}-${course.academicYear}-${course.termCode}-${index}`}>
+        <span className="font-mono">{course.courseCode}</span> · {course.courseName} · {course.credits} TC
+        {course.academicYear && <> · {course.termCode} ({course.academicYear})</>}
+        <span className="block mt-1 text-slate-600">Danh mục: {course.catalogProgramCode} · {course.outcome === "pending" ? "Chờ điểm; chưa tính thành nợ F" : course.outcome === "passed" ? "Đã có kết quả đạt; chờ xác nhận phạm vi" : course.outcome === "VT" ? "VT — cần xác minh kết quả" : course.outcome === "failed" ? "Đã có kết quả F; chờ xác nhận nghĩa vụ trong CTĐT" : "Chưa rõ kết quả"}</span>
+      </li>)}</ul>
+    </details>}
+    {pendingDebtCourses.length > 0 && <details className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs"><summary className="cursor-pointer font-semibold text-slate-800">Học phần đang học / chờ điểm ({pendingDebtCourses.length})</summary><p className="mt-2 leading-5 text-slate-600">Giữ kết quả đã đạt; nợ F đã xác định chỉ được giải quyết khi có kết quả đạt hoặc thay thế hợp lệ. Không tự cộng lần học còn chờ điểm thành nợ F.</p><ul className="mt-3 space-y-2">{pendingDebtCourses.map(course => <li key={course.courseCode}><span className="font-mono">{course.courseCode}</span> · {course.courseName} · {course.credits} TC — {course.previousOutcome === "PASSED" ? "Đã có kết quả đạt; đang chờ kết quả mới" : course.previousOutcome === "FAILED" ? "Còn nợ F; đang chờ kết quả mới" : "Chưa có kết quả đạt/F được xác định"}</li>)}</ul></details>}
     {verification && <WarningVerificationOverview />}
-    <h3 id="profile-warning-reasons" className="text-sm font-bold text-slate-900">Vì sao sinh viên này được cảnh báo?</h3>
+    <h3 id="profile-warning-reasons" className="text-sm font-bold text-slate-900">Vì sao sinh viên cần theo dõi hoặc hỗ trợ?</h3>
     {reasons.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-xs text-slate-600">
       {state === "INSUFFICIENT_DATA" ? "Chưa đủ dữ liệu để xác định nguyên nhân. Kiểm tra bảng điểm và kết quả đánh giá trước khi kết luận." : "Chưa ghi nhận tiêu chí cần cảnh báo trong kết quả hiện tại."}
     </div> : <div className="space-y-4">
       {ordinaryReasons.length > 0 && <div className="space-y-3">
-        <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-800"><span className="h-2 w-2 rounded-full bg-red-500" aria-hidden="true" />Kết quả học vụ</p>
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-800"><span className="h-2 w-2 rounded-full bg-red-500" aria-hidden="true" />Học tập & rèn luyện</p>
         {ordinaryReasons.map(reason => {
           const regulatory = reason.details.sourceType === "REGULATORY";
           const breached = regulatory && Boolean(reason.details.isThresholdBreached);
           const ratio = warningRuleCode(reason).includes("CREDIT_RATIO");
           return <article key={reason.id || reason.reasonCode} className="space-y-2.5 rounded-xl border border-slate-200 bg-white p-3.5">
-            <div className="flex flex-wrap items-start justify-between gap-2"><h4 className="text-xs font-semibold text-slate-900">{reason.title || "Tiêu chí cần theo dõi"}</h4><span className={"text-[10px] font-semibold " + (breached || reason.severity === "high" ? "text-red-600" : "text-amber-700")}>{breached ? "Vượt ngưỡng" : reason.severity === "high" ? "Nguy cơ cao" : reason.details.isNearThreshold ? "Gần ngưỡng" : "Cần chú ý"}</span></div>
+            <div className="flex flex-wrap items-start justify-between gap-2"><h4 className="text-xs font-semibold text-slate-900">{reason.title || "Tiêu chí cần theo dõi"}</h4><span className={"text-[10px] font-semibold " + (breached || reason.severity === "high" ? "text-red-600" : "text-amber-700")}>{breached ? "Vượt ngưỡng" : reason.severity === "high" ? "Nguy cơ cao" : warningRuleCode(reason).startsWith("EARLY_") ? "Cần chú ý" : reason.details.isNearThreshold ? "Gần ngưỡng" : "Cần chú ý"}</span></div>
             <p className="text-[10px] text-slate-500">{regulatory ? "Tiêu chí theo QĐ600" : "Theo dõi sớm của hệ thống"}</p>
             <p className="text-xs leading-relaxed text-slate-600">{warningReasonSummary(reason)}</p>
-            <dl className="grid grid-cols-2 gap-2.5 text-xs"><div className="min-w-0 rounded-lg border border-red-100 bg-red-50/50 p-2.5"><dt className="text-[11px] text-red-600">{ratio ? "Không đạt" : "Điểm đạt được"}</dt><dd className="mt-0.5 font-mono text-base font-bold text-red-800">{formatMetric(reason)}</dd></div><div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-2.5"><dt className="text-[11px] text-slate-500">Ngưỡng cảnh báo</dt><dd className="mt-0.5 font-mono text-base font-bold text-slate-800">{warningThresholdLabel(reason)}</dd></div></dl>
+            <dl className="grid grid-cols-2 gap-2.5 text-xs"><div className="min-w-0 rounded-lg border border-red-100 bg-red-50/50 p-2.5"><dt className="text-[11px] text-red-600">{ratio ? "Không đạt" : warningRuleCode(reason).includes("DROP") ? "Mức suy giảm" : "Giá trị ghi nhận"}</dt><dd className="mt-0.5 font-mono text-base font-bold text-red-800">{formatMetric(reason)}</dd></div><div className="min-w-0 rounded-lg border border-slate-200 bg-slate-50 p-2.5"><dt className="text-[11px] text-slate-500">Ngưỡng cảnh báo</dt><dd className="mt-0.5 font-mono text-base font-bold text-slate-800">{warningThresholdLabel(reason)}</dd></div></dl>
+            {warningRuleCode(reason) === "EARLY_EXAM_ABSENCE" && Array.isArray(reason.details.absenceCourses) && <details className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs"><summary className="cursor-pointer font-semibold text-amber-800">Học phần VT trong kỳ xét</summary><ul className="mt-2 space-y-2">{reason.details.absenceCourses.map((course: { offeringId: string; courseCode: string; courseName: string; credits: number; conditional: boolean }) => <li key={course.offeringId}><span className="font-mono">{course.courseCode}</span> · {course.courseName} · {course.credits} TC{course.conditional ? " · Học phần điều kiện, không tính GPA" : ""}</li>)}</ul></details>}
             {verification && <WarningReasonEvidence ruleCode={warningRuleCode(reason)} />}
             <WarningRuleDetails reason={reason} />
           </article>;
@@ -176,15 +201,20 @@ export default function StudentWarningWorkspace({ student, warning, intervention
     </div>}
     {unEvaluatedRules.length > 0 && <details className="rounded-xl border border-slate-200 bg-slate-50 p-3"><summary className="cursor-pointer text-xs font-semibold text-slate-700">Tiêu chí chưa đủ dữ liệu để đánh giá ({unEvaluatedRules.length})</summary><ul className="mt-3 space-y-3">{unEvaluatedRules.map((rule, index) => <li key={String(rule.ruleCode || index)} className="rounded-lg border border-slate-200 bg-white p-3 text-xs"><p className="font-semibold text-slate-800">{humanRuleName(rule.ruleCode)}</p><p className="mt-1.5 leading-relaxed text-slate-600">{getHumanUnEvaluatedExplanation(rule)}</p></li>)}</ul></details>}
     {warning?.warningInfo?.regulatoryCoverage === "PARTIAL" && <p className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs leading-relaxed text-blue-800"><AlertCircle size={15} className="shrink-0" />Một số tiêu chí chưa đủ dữ liệu để đánh giá. Chưa thể kết luận đầy đủ các điều kiện theo quy chế.</p>}
+    {supportSuggestions.length > 0 && <aside className="rounded-xl border border-slate-200 bg-slate-50 p-4"><h4 className="text-xs font-semibold text-slate-800">Gợi ý hỗ trợ cho CVHT</h4><ul className="mt-2 list-disc space-y-2 pl-4 text-xs leading-5 text-slate-600">{supportSuggestions.map(suggestion => <li key={suggestion}>{suggestion}</li>)}</ul></aside>}
   </>;
   return <div className="space-y-5" data-student-warning-workspace data-warning-result-id={warning?.warningInfo?.id} data-intervention-case-id={caseId}>
     <header className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs" aria-label="Trạng thái cảnh báo và can thiệp">
-      <h2 className={isUrgent ? "font-medium text-red-600" : state === "MONITORING" ? "font-medium text-amber-700" : state === "INSUFFICIENT_DATA" ? "font-medium text-slate-600" : "font-medium text-emerald-700"}>{WARNING_STATE_LABELS[state]}</h2>
+      <h2 className={student.isSuspended ? "font-medium text-slate-700" : isUrgent ? "font-medium text-red-600" : state === "MONITORING" ? "font-medium text-amber-700" : state === "INSUFFICIENT_DATA" ? "font-medium text-slate-600" : "font-medium text-emerald-700"}>{student.isSuspended ? "Đang nghỉ học tạm thời · Cảnh báo lịch sử" : WARNING_STATE_LABELS[state]}</h2>
       {current && <span className={"text-[10px] font-semibold " + (current.interventionStatus === "RESOLVED" ? "text-emerald-700" : "text-blue-600")}>{INTERVENTION_STATUS_LABELS[current.interventionStatus]}</span>}
-      {current?.overdue && <span className="text-[10px] font-semibold text-red-600">Quá hạn theo dõi</span>}
+      {!student.isSuspended && current?.overdue && <span className="text-[10px] font-semibold text-red-600">Quá hạn theo dõi</span>}
       {!verification && <span className="text-[11px] text-slate-500">{selected ? selected.termCode + " · " + selected.academicYear : "Chưa có kỳ đánh giá chính thức"}</span>}
     </header>
+    <dl className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs sm:grid-cols-2"><div><dt className="text-slate-500">Đối chiếu học vụ</dt><dd className="mt-1 font-semibold text-slate-800">{warningRegulatoryAssessment(warning?.warningInfo?.ruleResults)}</dd><p className="mt-1 leading-5 text-slate-500">Thông tin đối chiếu ngưỡng, không phải quyết định cảnh báo học vụ.</p></div><div><dt className="text-slate-500">Độ đầy đủ dữ liệu</dt><dd className="mt-1 font-semibold text-slate-800">{!warning?.warningInfo ? "Chưa có đánh giá của kỳ" : unEvaluatedRules.length ? `Còn ${unEvaluatedRules.length} tiêu chí chưa đánh giá` : "Đã đánh giá các tiêu chí trong kết quả lưu"}</dd>{(state === "NORMAL" || state === "PARTIAL_NO_RISK") && unEvaluatedRules.length > 0 && <p className="mt-1 leading-5 text-slate-500">Mức hiện tại chỉ phản ánh các tiêu chí có dữ liệu.</p>}</div></dl>
     {historicalCase && <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-relaxed text-blue-800">{caseAssessment ? `Hồ sơ can thiệp đang xem gắn với ${caseAssessment.termCode} · ${caseAssessment.academicYear}. ` : "Hồ sơ can thiệp đang xem chưa liên kết với kết quả đánh giá mới nhất. "}Số liệu học vụ bên dưới là kết quả chính thức mới nhất, cùng nguồn với hồ sơ sinh viên. Các cập nhật can thiệp được lưu vào hồ sơ đang mở.</p>}
+    {student.isInClass === false ? <p className="rounded-lg bg-slate-100 p-3 text-xs leading-5 text-slate-700">Đã rời lớp. Hồ sơ cảnh báo và hỗ trợ trước đây được giữ để tra cứu; không tiếp tục theo dõi hoặc tạo hỗ trợ mới.</p>
+      : student.isSuspended ? <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-6 text-slate-700">Hồ sơ được đóng băng từ HK{student.suspension?.fromTerm} ({student.suspension?.fromYear}) theo quyết định {student.suspension?.decisionNumber}. Sinh viên vẫn thuộc lớp. Các kết quả bên dưới là lịch sử trước kỳ nghỉ; dừng tính cảnh báo, nhắc việc và hỗ trợ mới đến khi quyết định tiếp nhận học lại có hiệu lực.</p>
+      : null}
     <div className="space-y-5">
       <section className="min-w-0" aria-labelledby="profile-warning-reasons">
         <div className="space-y-4">{verification ? <WarningVerificationProvider caseId={caseId!} resultId={warning!.warningInfo!.id}>{reasonContent}</WarningVerificationProvider> : reasonContent}</div>
@@ -195,6 +225,13 @@ export default function StudentWarningWorkspace({ student, warning, intervention
           <div className="mt-4 flex items-center justify-between gap-2 border-b border-slate-100 pb-4"><span className="text-xs text-slate-500">Trạng thái xử lý</span><strong className={`text-xs ${current?.interventionStatus === "RESOLVED" ? "text-emerald-700" : "text-blue-700"}`}>{INTERVENTION_STATUS_LABELS[current?.interventionStatus || "OPEN"]}</strong></div>
           <dl className="mt-4 space-y-4 text-xs"><div><dt className="text-slate-500">Phụ trách hỗ trợ</dt><dd className="mt-1 font-medium text-slate-800">GVCN/CVHT lớp {student.classCode}</dd></div><div><dt className="flex items-center gap-1.5 text-slate-500"><CalendarClock size={14} />Lịch theo dõi tiếp theo</dt><dd className={`mt-1 font-semibold ${current?.overdue ? "text-red-700" : "text-slate-800"}`}>{current?.nextFollowUpAt ? formatHistoryDate(current.nextFollowUpAt) : "Chưa đặt lịch"}{current?.overdue && " · Quá hạn"}</dd></div><div><dt className="text-slate-500">Hoạt động gần nhất</dt><dd className="mt-1 leading-relaxed text-slate-700">{latestAction ? <>{INTERVENTION_TYPE_LABELS[String(latestAction.details.interventionType)] || "Hỗ trợ sinh viên"}<span className="mt-1 block text-slate-500">{formatHistoryDate(String(latestAction.details.occurredAt || latestAction.createdAt))} · {latestAction.actor?.displayName || "Cán bộ phụ trách"}</span></> : "Chưa ghi nhận hoạt động can thiệp"}</dd></div></dl>
           {!detail && !loadError && <div className="mt-4"><LoadingIndicator label="Đang tải hồ sơ can thiệp…" /></div>}
+          {current?.assignedUserName && <p className="mt-3 text-xs text-slate-600">Người được phân công: <strong>{current.assignedUserName}</strong></p>}
+          {canChange && current?.interventionStatus !== "RESOLVED" && <div className="mt-3">
+            {!followUpOpen ? <button type="button" onClick={() => { setFollowUpDate(current?.nextFollowUpAt ? new Date(new Date(current.nextFollowUpAt).getTime() - new Date(current.nextFollowUpAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""); setFollowUpOpen(true); }} className={`${action} border border-slate-200 text-slate-700`}>Đặt lịch theo dõi</button> : <form onSubmit={event => { event.preventDefault(); void mutate("follow-up", "PATCH", { nextFollowUpAt: followUpDate ? new Date(followUpDate).toISOString() : null }, "Đã cập nhật lịch theo dõi.").then(saved => { if (saved) setFollowUpOpen(false); }); }} className="space-y-2">
+              <Label htmlFor="profile-follow-up">Lịch theo dõi tiếp theo</Label><input id="profile-follow-up" type="datetime-local" value={followUpDate} onChange={event => setFollowUpDate(event.target.value)} className={control} disabled={busy} />
+              <p className="text-[11px] text-slate-500">Để trống để bỏ lịch. Hệ thống lưu hạn theo dõi, không tự gửi lời mời lịch.</p><div className="flex gap-2"><button type="submit" disabled={busy} className={`${action} bg-slate-900 text-white`}>Lưu lịch</button><button type="button" disabled={busy} onClick={() => setFollowUpOpen(false)} className={`${action} text-slate-600`}>Hủy</button></div>
+            </form>}
+          </div>}
           {loadError && <div role="alert" className="mt-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">{loadError}<button type="button" onClick={() => { setLoadFailure(null); setAttempt(value => value + 1); }} className="ml-2 font-semibold underline">Thử lại</button></div>}
           {canRecord && !formOpen && <button ref={formTriggerRef} type="button" onClick={startForm} disabled={busy} className={`${action} mt-5 w-full bg-slate-900 py-3 text-white hover:bg-slate-800`}><MessageSquarePlus size={16} />Ghi nhận can thiệp</button>}
           {canChange && !formOpen && <div className="mt-3 flex flex-wrap gap-2">{(ALLOWED_TRANSITIONS[current?.interventionStatus || ""] || []).map(status => <button key={status} type="button" disabled={busy} onClick={() => changeStatus(status)} className={`${action} border border-slate-200 text-slate-700 hover:bg-slate-50`}>{TRANSITION_ACTION_LABELS[status]}</button>)}</div>}

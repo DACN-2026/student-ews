@@ -1,5 +1,5 @@
 import { orderedStudentResultPage } from "../student-list-order";
-import { monitoredStudentResultWhere } from "../student-monitoring-scope";
+import { monitoredStudentResultWhere, studentMonitoringSql } from "../student-monitoring-scope";
 import { loadProgramCurriculum } from "./program-curriculum";
 import { loadEquivalentCourseIds } from "./course-equivalence";
 import { isConditionalCourse, normalizeProgramCourseCode, normalizeCourseName } from "../academic-course-rules";
@@ -403,7 +403,7 @@ export function evaluateCompletionPlan(
 // DB Query Helpers
 // ============================================================================
 
-async function loadCalcStudents(programCode: string, cohortId: string): Promise<CalcStudent[]> {
+async function loadCalcStudents(programCode: string, cohortId: string, period?: string): Promise<CalcStudent[]> {
   const rows: any[] = await prisma.$queryRaw`
     SELECT s.id::text, s.s_student_id, s.s_full_name,
            COALESCE(c.id::text,'') as class_uuid,
@@ -417,6 +417,7 @@ async function loadCalcStudents(programCode: string, cohortId: string): Promise<
     LEFT JOIN cohorts co ON co.id = c.cohort_id AND co.deleted_at IS NULL
     WHERE s.s_study_program_id = ${programCode}
       AND s.deleted_at IS NULL AND s.s_is_in_class = true
+      AND ${studentMonitoringSql(period)}
       AND c.cohort_id = ${cohortId}::uuid
     ORDER BY s.s_student_id
   `;
@@ -901,7 +902,7 @@ export class TrainingProgressService {
       prisma.academicTerm.findUnique({ where: { id: plan.academicTermId } }),
       prisma.trainingProgram.findUnique({ where: { id: plan.trainingProgramId } }),
       prisma.trainingProgressPlanCourse.findMany({ where: { planId: plan.id }, orderBy: [{ requirementType: "asc" }, { sCourseCode: "asc" }] }),
-      prisma.trainingProgressCalculationRun.findMany({ where: { planId: plan.id }, orderBy: { startedAt: "desc" }, take: 5 }),
+      prisma.trainingProgressCalculationRun.findMany({ where: { planId: plan.id }, orderBy: { startedAt: "desc" }, take: 5, omit: { sourceSnapshot: true } }),
     ]);
 
     const monitoringScope = await monitoredStudentResultWhere();
@@ -1320,7 +1321,7 @@ export class TrainingProgressService {
 
     // Load students
     const equivalentCourseIds = await loadEquivalentCourseIds(program.sProgramCode);
-    const students = await loadCalcStudents(program.sProgramCode, plan.cohortId);
+    const students = await loadCalcStudents(program.sProgramCode, plan.cohortId, plan.academicTermId);
     const allowedStudentIds = new Set(students.map((s) => s.id));
 
     // Load offerings (registrations) for this year/term
@@ -1567,6 +1568,7 @@ export class TrainingProgressService {
         orderBy: { startedAt: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
+        omit: { sourceSnapshot: true },
       }),
     ]);
 
@@ -1966,6 +1968,7 @@ export class TrainingProgressService {
         orderBy: { startedAt: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
+        omit: { sourceSnapshot: true },
       }),
     ]);
 
@@ -2089,7 +2092,7 @@ export class TrainingProgressService {
     const finalReached = duePlans.some((plan) => plan.isProgramFinal);
     const evaluationScope = finalReached ? "program_completion" : "milestone_progress";
     const coverage = await validateCompletionCoverage(data.trainingProgramId, duePlans);
-    const students = await loadCalcStudents(program.sProgramCode, data.cohortId);
+    const students = await loadCalcStudents(program.sProgramCode, data.cohortId, data.assessmentAcademicTermId);
     if (!plans.length) (data.evaluationMode === "graduation_forecast" ? warnings : blockers).push({ code: "NO_CURRENT_LOCKED_PLANS", message: "Khóa và chương trình đào tạo chưa có kế hoạch hiện hành đã khóa." });
     if (!finalConfigurationValid) (data.evaluationMode === "graduation_forecast" ? warnings : blockers).push({ code: "PROGRAM_FINAL_PLAN_INVALID", message: "Kế hoạch cuối CTĐT phải nằm ở học kỳ lộ trình lớn nhất." });
     if (!coverage.valid && duePlans.length) {
@@ -2184,7 +2187,7 @@ export class TrainingProgressService {
     const evaluationScope = hasFinalPlan && finalIsDue ? "program_completion" : "milestone_progress";
 
     // Load students
-    const students = await loadCalcStudents(program.sProgramCode, data.cohortId);
+    const students = await loadCalcStudents(program.sProgramCode, data.cohortId, data.assessmentAcademicTermId);
     const studentIds = students.map((s) => s.id);
 
     // Load passing evidence

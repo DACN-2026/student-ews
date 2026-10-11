@@ -8,6 +8,7 @@ import {
   type TrainingProgram,
 } from "@prisma/client";
 import { buildAcademicTermLinks, isConfiguredSummerTermCode } from "@/lib/academic-terms";
+import { syncStudentStudySuspensions } from "./student-study-suspension";
 
 const dateOnly = (value: Date | null) => value ? value.toISOString().slice(0, 10) : null;
 
@@ -783,7 +784,7 @@ export class TrainingProgramsService {
     status?: string;
     isCurrent?: boolean;
   }) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       if (data.isCurrent) await tx.academicYear.updateMany({ where: { isCurrent: true }, data: { isCurrent: false } });
       const created = await tx.academicYear.create({
         data: {
@@ -796,10 +797,14 @@ export class TrainingProgramsService {
       });
       return mapAcademicYear(created);
     });
+    await syncStudentStudySuspensions(undefined, true);
+    return result;
   }
 
   static async removeAcademicYear(id: string) {
-    return prisma.academicYear.update({ where: { id }, data: { deletedAt: new Date(), isCurrent: false } });
+    const result = await prisma.academicYear.update({ where: { id }, data: { deletedAt: new Date(), isCurrent: false } });
+    await syncStudentStudySuspensions(undefined, true);
+    return result;
   }
 
   static async updateAcademicYear(id: string, data: {
@@ -809,7 +814,7 @@ export class TrainingProgramsService {
     status?: string;
     isCurrent?: boolean;
   }) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const year = await tx.academicYear.findFirst({ where: { id, deletedAt: null } });
       if (!year) throw new ApiError("Academic year not found", "NOT_FOUND", 404);
       if (data.isCurrent) await tx.academicYear.updateMany({ where: { isCurrent: true, id: { not: id } }, data: { isCurrent: false } });
@@ -825,6 +830,8 @@ export class TrainingProgramsService {
       });
       return mapAcademicYear(updated);
     });
+    await syncStudentStudySuspensions(undefined, true);
+    return result;
   }
 
   static async listTerms(yearId: string) {
@@ -857,7 +864,7 @@ export class TrainingProgramsService {
     status?: string;
     isCurrent?: boolean;
   }) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const year = await tx.academicYear.findFirst({ where: { id: yearId, deletedAt: null } });
       if (!year) throw new Error("Academic year not found");
       if (data.isCurrent) await tx.academicTerm.updateMany({ where: { isCurrent: true }, data: { isCurrent: false } });
@@ -876,6 +883,8 @@ export class TrainingProgramsService {
       });
       return mapAcademicTerm(created);
     });
+    await syncStudentStudySuspensions(undefined, true);
+    return result;
   }
 
   static async updateTerm(yearId: string, termId: string, data: {
@@ -888,7 +897,7 @@ export class TrainingProgramsService {
     status?: string;
     isCurrent?: boolean;
   }) {
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const term = await tx.academicTerm.findFirst({
         where: { id: termId, academicYearId: yearId, deletedAt: null },
       });
@@ -909,6 +918,8 @@ export class TrainingProgramsService {
       });
       return mapAcademicTerm(updated);
     });
+    await syncStudentStudySuspensions(undefined, true);
+    return result;
   }
 
   static async removeTerm(yearId: string, termId: string) {
@@ -917,5 +928,6 @@ export class TrainingProgramsService {
       data: { deletedAt: new Date(), isCurrent: false },
     });
     if (!result.count) throw new ApiError("Academic term not found", "NOT_FOUND", 404);
+    await syncStudentStudySuspensions(undefined, true);
   }
 }

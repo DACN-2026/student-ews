@@ -102,8 +102,8 @@ test("historical reconciliation auto-finalizes and evaluates eligible terms chro
     const result = await AcademicWarningAutomationService.reconcilePastTermsWithGrades({ actorId: IDS.run });
     assert.deepEqual(finalized, [IDS.term, IDS.term2]);
     assert.deepEqual(evaluated, [
-      { termId: IDS.term, actorId: IDS.run, facultyCode: undefined, syncInterventions: true },
-      { termId: IDS.term2, actorId: IDS.run, facultyCode: undefined, syncInterventions: true },
+      { termId: IDS.term, actorId: IDS.run, facultyCode: undefined, syncInterventions: true, preserveCompletedPolicy: true },
+      { termId: IDS.term2, actorId: IDS.run, facultyCode: undefined, syncInterventions: true, preserveCompletedPolicy: true },
     ]);
     assert.equal(result.eligibleTermCount, 2);
     assert.equal(result.completedScopeCount, 2);
@@ -150,7 +150,7 @@ test("scope derivation rejects a program that is not configured for the student'
   assert.deepEqual(scopes, []);
 });
 
-test("term-scoped orchestration includes only students with a matching program summary in that term", async () => {
+test("orchestration retains active cohort/program members even without a term summary", async () => {
   const studentId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
   const otherStudentId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
   const cleanups = [
@@ -159,10 +159,7 @@ test("term-scoped orchestration includes only students with a matching program s
       { id: studentId, sClassStudentId: "ITK46A", sStudyProgramId: "CNTT" },
       { id: otherStudentId, sClassStudentId: "ITK46A", sStudyProgramId: "HTTT" },
     ]),
-    mockMethod(prisma.studentTermSummary, "findMany", async () => [
-      { studentId, sProgramCode: "CNTT" },
-      { studentId: otherStudentId, sProgramCode: "CNTT" },
-    ]),
+    mockMethod(prisma.studentTermSummary, "findMany", async () => { throw new Error("Missing term summaries must not remove scope members"); }),
     mockMethod(prisma.trainingProgram, "findMany", async () => [
       { id: IDS.program, sProgramCode: "CNTT", s_faculty_code: "CNTT" },
     ]),
@@ -171,7 +168,7 @@ test("term-scoped orchestration includes only students with a matching program s
     ]),
   ];
   try {
-    const scopes = await AcademicWarningAutomationService.evaluationScopes([IDS.cohort], "CNTT", IDS.term);
+    const scopes = await AcademicWarningAutomationService.evaluationScopes([IDS.cohort], "CNTT");
     assert.deepEqual(scopes, [{
       cohortId: IDS.cohort,
       trainingProgramId: IDS.program,
@@ -272,9 +269,9 @@ test("summer finalization never persists readiness or triggers early warning", a
   }
 });
 
-for (const currentVersion of [true, false]) {
-test(currentVersion ? "term orchestration reuses a completed scope from the current engine"
-  : "term orchestration recalculates a completed scope from an older engine", async () => {
+for (const scenario of ["same", "old-engine", "new-policy", "preserve-history", "refresh-sources"] as const) {
+const reuse = scenario === "same" || scenario === "preserve-history";
+test(`term orchestration ${scenario}: ${reuse ? "preserves" : "recalculates"} completed results`, async () => {
   let createRunCalls = 0;
   const syncedRunIds: string[] = [];
   const definition = createQd600PolicyDefinition({ applicableCohortIds: [IDS.cohort] });
@@ -304,7 +301,8 @@ test(currentVersion ? "term orchestration reuses a completed scope from the curr
     mockMethod(prisma.academicWarningRun, "findMany", async () => [{
       id: IDS.run,
       status: "completed",
-      sourceSnapshot: { engineVersion: currentVersion ? QD600_RULE_ENGINE_VERSION : "academic-warning-qd600-article18-and-progress-v7" },
+      sourceSnapshot: { engineVersion: scenario === "old-engine" ? "academic-warning-qd600-article18-and-progress-v7" : QD600_RULE_ENGINE_VERSION },
+      policyId: scenario === "new-policy" || scenario === "preserve-history" ? IDS.run : IDS.policy,
     }]),
     mockMethod(AcademicWarningsService, "createRun", async () => {
       createRunCalls += 1;
@@ -316,11 +314,11 @@ test(currentVersion ? "term orchestration reuses a completed scope from the curr
     }),
   ];
   try {
-    const result = await AcademicWarningAutomationService.runForFinalizedMainTerm({ termId: IDS.term });
-    assert.equal(result.skipped, currentVersion ? 1 : 0);
-    assert.equal(result.completed, currentVersion ? 0 : 1);
-    assert.equal(createRunCalls, currentVersion ? 0 : 1);
-    assert.deepEqual(syncedRunIds, currentVersion ? [IDS.run] : []);
+    const result = await AcademicWarningAutomationService.runForFinalizedMainTerm({ termId: IDS.term, preserveCompletedPolicy: scenario === "preserve-history", refreshSources: scenario === "refresh-sources" });
+    assert.equal(result.skipped, reuse ? 1 : 0);
+    assert.equal(result.completed, reuse ? 0 : 1);
+    assert.equal(createRunCalls, reuse ? 0 : 1);
+    assert.deepEqual(syncedRunIds, reuse ? [IDS.run] : []);
   } finally {
     cleanups.reverse().forEach((cleanup) => cleanup());
   }

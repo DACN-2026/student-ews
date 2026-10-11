@@ -5,22 +5,31 @@ import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import Breadcrumb from "@/components/Breadcrumb";
 import ToastContainer from "@/components/ui/Toast";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore, type SessionPayload } from "@/stores/authStore";
 import LoadingState from "@/components/ui/LoadingState";
 import NetworkActivity from "@/components/ui/NetworkActivity";
 
 export default function DashboardShell({
   children,
+  initialSession,
 }: {
   children: React.ReactNode;
+  initialSession: SessionPayload;
 }) {
-  const { bootstrap, status } = useAuthStore();
+  const { initializeSession, status } = useAuthStore();
+  const [readySession, setReadySession] = useState<SessionPayload | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    bootstrap();
-  }, [bootstrap]);
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      initializeSession(initialSession);
+      setReadySession(initialSession);
+    });
+    return () => { active = false; };
+  }, [initializeSession, initialSession]);
 
   return (
     <div className="flex h-screen bg-[var(--color-bg)] overflow-hidden relative">
@@ -60,7 +69,7 @@ export default function DashboardShell({
         <div className="relative min-h-0 flex-1">
           <NetworkActivity />
         <main className="h-full overflow-y-auto bg-[var(--color-bg)]">
-          {status === "idle" || status === "loading" ? <div className="mx-auto max-w-7xl p-4 sm:p-6"><LoadingState variant="page" label="Đang tải phiên làm việc…" /></div> : children}
+          {readySession !== initialSession || status === "idle" || status === "loading" ? <div className="mx-auto max-w-7xl p-4 sm:p-6"><LoadingState variant="page" label="Đang tải phiên làm việc…" /></div> : children}
         </main>
         </div>
       </div>

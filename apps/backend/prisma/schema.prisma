@@ -20,6 +20,11 @@ model Student {
   sClassRoleId        Int       @default(0) @map("s_class_role_id") @db.SmallInt
   sPermanentResidence String?   @map("s_permanent_residence")
   sIsInClass          Boolean   @default(true) @map("s_is_in_class")
+  // Derived from signed departure decisions; source roster membership is preserved.
+  leftClassDecisionId String?   @map("left_class_decision_id") @db.Uuid
+  leftClassFromYear   String?   @map("left_class_from_year") @db.VarChar(16)
+  leftClassFromTerm   Int?      @map("left_class_from_term") @db.SmallInt
+  leftClassEffectiveAt DateTime? @map("left_class_effective_at") @db.Timestamptz(6)
   sClassStudentId     String?   @map("s_class_student_id") @db.VarChar(64)
   sStudyProgramId     String?   @map("s_study_program_id") @db.VarChar(64)
   // Optional, confirmed study schedule; administrative class/cohort stays unchanged.
@@ -28,9 +33,35 @@ model Student {
   createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
   deletedAt           DateTime? @map("deleted_at") @db.Timestamptz(6)
+  studySuspensions    StudentStudySuspension[]
 
   @@index([sIsInClass, sClassRoleId, sGender, updatedAt(sort: Desc)], map: "students_filters_idx")
   @@map("students")
+}
+
+/// Derived intervals from signed leave/return decisions; source records stay intact.
+model StudentStudySuspension {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId          String    @map("student_id") @db.Uuid
+  decisionId         String    @unique @map("decision_id") @db.Uuid
+  decisionNumber     String    @map("decision_number") @db.Text
+  fromYear           String    @map("from_year") @db.VarChar(9)
+  fromTerm           Int       @map("from_term") @db.SmallInt
+  effectiveAt        DateTime  @map("effective_at") @db.Timestamptz(6)
+  returnDecisionId   String?   @map("return_decision_id") @db.Uuid
+  returnYear         String?   @map("return_year") @db.VarChar(9)
+  returnTerm         Int?      @map("return_term") @db.SmallInt
+  returnEffectiveAt  DateTime? @map("return_effective_at") @db.Timestamptz(6)
+  isRevoked          Boolean   @default(false) @map("is_revoked")
+  fromCalendarActive Boolean   @default(false) @map("from_calendar_active")
+  returnCalendarActive Boolean @default(false) @map("return_calendar_active")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  student            Student   @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  @@index([studentId, fromYear, fromTerm], map: "student_study_suspensions_period_idx")
+  @@index([effectiveAt, returnEffectiveAt], map: "student_study_suspensions_current_idx")
+  @@map("student_study_suspensions")
 }
 
 model AuditLog {
@@ -230,6 +261,7 @@ model StudentCourseGrade {
   notScore               Boolean  @default(false) @map("not_score")
   notComputeAverageScore Boolean  @default(false) @map("not_compute_average_score")
   note                   String?
+  // pending: source flag; graded: final evidence; special: VT/M; unknown: blank result.
   scoreStatus            String   @map("score_status") @db.VarChar(16)
   sourcePayload          Json     @default("{}") @map("source_payload")
   sourceMd5              String?  @map("source_md5") @db.VarChar(64)

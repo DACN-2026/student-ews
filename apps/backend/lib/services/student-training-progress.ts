@@ -1,5 +1,5 @@
 import { orderedStudentResultPage } from "../student-list-order";
-import { monitoredStudentWhere, departedStudentIds } from "../student-monitoring-scope";
+import { monitoredStudentWhere, departedStudentIds, studentIsInClass, studentSuspension, suspensionInfo } from "../student-monitoring-scope";
 import { loadSemesterCreditPlans } from "./semester-credit-plans";
 import { courseOutcome, isConditionalCourse, normalizeProgramCourseCode, curriculumElectiveGroup, isK44StandardProgram, K44_ELECTIVE_GROUPS, normalizeCourseCode, normalizeCourseName } from "../academic-course-rules";
 import { assessTeachingSemester, teachingSemesterCredits } from "../semester-teaching-requirements";
@@ -109,6 +109,12 @@ export type StudentTrainingProgressOutput = {
     cohortCode: string | null;
     studyCohortCode?: string | null;
     studyScheduleSource?: "CONFIGURED" | "REGISTRATION_SEQUENCE" | null;
+    isInClass?: boolean;
+    historicalOnly?: boolean;
+    isSuspended?: boolean;
+    suspension?: ReturnType<typeof suspensionInfo>;
+    historicalReason?: "STUDY_SUSPENSION" | "LEFT_CLASS";
+    historyCutoff?: string;
     programCode: string | null;
   };
   curriculum: {
@@ -952,6 +958,7 @@ export class StudentTrainingProgressService {
         ...studentIdWhere(studentIdentifier),
         deletedAt: null,
       },
+      include: { studySuspensions: { where: { isRevoked: false } } },
     });
     if (!student) return null;
 
@@ -1017,6 +1024,29 @@ export class StudentTrainingProgressService {
         termCode: currentTermCode,
         termOrder: currentTermOrder,
       };
+    }
+
+    let historicalOnly = false;
+    let historicalReason: "STUDY_SUSPENSION" | "LEFT_CLASS" | undefined;
+    const pause = studentSuspension(student, { yearCode: currentYearCode, termOrder: currentTermOrder });
+    const left = student.leftClassFromYear && student.leftClassFromTerm != null && (currentYearCode > student.leftClassFromYear
+      || currentYearCode === student.leftClassFromYear && currentTermOrder >= student.leftClassFromTerm);
+    const cutoff = left ? { year: student.leftClassFromYear!, term: student.leftClassFromTerm! }
+      : pause ? { year: pause.fromYear, term: pause.fromTerm } : null;
+    if (cutoff) {
+      const [lastTerm] = await prisma.$queryRaw<Array<{ s_year_code: string; s_term_code: string; s_term_order: number }>>`
+        SELECT y.s_year_code, t.s_term_code, t.s_term_order
+        FROM academic_terms t JOIN academic_years y ON y.id = t.academic_year_id
+        WHERE t.deleted_at IS NULL AND y.deleted_at IS NULL AND NOT t.s_is_summer
+          AND (y.s_year_code < ${cutoff.year}
+            OR (y.s_year_code = ${cutoff.year} AND t.s_term_order < ${cutoff.term}))
+        ORDER BY y.s_year_code DESC, t.s_term_order DESC LIMIT 1
+      `;
+      if (!lastTerm) return null;
+      currentYearCode = lastTerm.s_year_code; currentTermCode = lastTerm.s_term_code; currentTermOrder = Number(lastTerm.s_term_order);
+      assessment = { academicYear: currentYearCode, termCode: currentTermCode, termOrder: currentTermOrder };
+      historicalOnly = true;
+      historicalReason = left ? "LEFT_CLASS" : "STUDY_SUSPENSION";
     }
 
     const administrativeTimeline = this.determineTimeline(
@@ -1290,6 +1320,15 @@ export class StudentTrainingProgressService {
     });
 
     const reconciliation = await prisma.unscopedGradeRecord.findMany({ where: { studentId: student.id }, select: { reason: true, sCourseCode: true } });
+    result.student.isInClass = studentIsInClass(student);
+    result.student.historicalOnly = historicalOnly;
+    result.student.historicalReason = historicalReason;
+    result.student.historyCutoff = historicalOnly ? `${currentTermCode} (${currentYearCode})` : undefined;
+    result.student.isSuspended = studentIsInClass(student) && Boolean(studentSuspension(student));
+    result.student.suspension = studentIsInClass(student) ? suspensionInfo(student) : null;
+    if (historicalOnly) result.warnings.push(historicalReason === "STUDY_SUSPENSION"
+      ? `Đang nghỉ học tạm thời / bảo lưu từ HK${pause!.fromTerm} ${pause!.fromYear}, theo quyết định ${pause!.decisionNumber}. Tiến độ được đóng băng tại ${currentTermCode} ${currentYearCode}; chỉ mở lại khi quyết định tiếp nhận học lại có hiệu lực.`
+      : `Sinh viên đã rời lớp từ HK${student.leftClassFromTerm} ${student.leftClassFromYear}. Chỉ đối chiếu lịch sử đến ${currentTermCode} ${currentYearCode}; không tiếp tục theo dõi ở các kỳ sau.`);
     if (!grades.length) result.warnings.push("API chưa có bảng điểm trong phạm vi CTĐT của sinh viên; chưa đủ dữ liệu để xác nhận các học phần đã hoàn thành.");
     if (reconciliation.some((row) => row.reason === "API_PROGRAM_SCOPE_CONFLICT")) result.warnings.push("API mã CTĐT chung trả rỗng, hai mã chuyên ngành trả cùng ba đăng ký chưa có điểm. Cần đối soát phạm vi nguồn; chưa tự gán chuyên ngành hoặc tích lũy tín chỉ.");
     if (reconciliation.some((row) => row.reason !== "API_PROGRAM_SCOPE_CONFLICT")) result.warnings.push("Có lượt học thiếu phạm vi học kỳ cần đối soát; chưa tính vào kết quả tại mốc xét.");
@@ -1351,7 +1390,7 @@ export class StudentTrainingProgressService {
     if (!evaluatedList) {
       const where: Prisma.StudentWhereInput = {
         AND: [
-          monitoredStudentWhere,
+          monitoredStudentWhere(),
           params.scopeWhere || {},
         ],
       };

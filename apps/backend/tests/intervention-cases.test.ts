@@ -44,6 +44,10 @@ function createMemoryState() {
     roles: [{ id: "advisor-role", code: "class_advisor" }] as any[],
     userRoles: [] as any[],
     reasons: [] as any[],
+    terms: [
+      { id: IDS.term, sTermCode: "HK02", academicYearId: "year", sTermOrder: 2, sIsSummer: false },
+      { id: "previous-term", sTermCode: "HK01", academicYearId: "year", sTermOrder: 1, sIsSummer: false },
+    ] as any[],
     nextCaseId: 0,
   };
 }
@@ -57,7 +61,9 @@ function mockMethod<T extends object>(target: T, key: keyof T, replacement: unkn
 
 function matchesCase(row: any, where: any) {
   if (where.id !== undefined && row.id !== where.id) return false;
-  if (where.studentId !== undefined && row.studentId !== where.studentId) return false;
+  if (typeof where.studentId === "string" && row.studentId !== where.studentId) return false;
+  if (where.studentId?.in && !where.studentId.in.includes(row.studentId)) return false;
+  if (where.studentId?.notIn && where.studentId.notIn.includes(row.studentId)) return false;
   if (where.caseType !== undefined && row.caseType !== where.caseType) return false;
   if (where.latestWarningRunId !== undefined && row.latestWarningRunId !== where.latestWarningRunId) return false;
   if (where.resolvedAt?.gte && !(row.resolvedAt && row.resolvedAt >= where.resolvedAt.gte)) return false;
@@ -79,6 +85,7 @@ function matchesCase(row: any, where: any) {
 function installMemoryDatabase(state: MemoryState) {
   const cleanups: Array<() => void> = [];
   const warningAction = {
+    findMany: async ({ where }: any) => state.cases.filter((row) => matchesCase(row, where)),
     findFirst: async ({ where }: any) => state.cases.find((row) => matchesCase(row, where)) ?? null,
     findUnique: async ({ where }: any) => state.cases.find((row) =>
       where.id !== undefined ? row.id === where.id : row.episodeKey === where.episodeKey,
@@ -137,10 +144,15 @@ function installMemoryDatabase(state: MemoryState) {
       (where.revokedAt !== null || row.revokedAt === null),
     ),
   };
-  const tx = { warningAction, warningActionEvent, classAdvisorAssignment };
+  const academicWarningRun = {
+    findUnique: async ({ where }: any) => state.runs.get(where.id) ?? null,
+    findMany: async ({ where }: any) => [...state.runs.values()].filter(row => !where.id?.in || where.id.in.includes(row.id)),
+  };
+  const tx = { warningAction, warningActionEvent, classAdvisorAssignment, academicWarningRun };
 
   // This fixture contains only monitored students; do not read membership from the live DB.
   cleanups.push(mockMethod(prisma.student, "findMany", async () => []));
+  cleanups.push(mockMethod(prisma.student, "findFirst", async ({ where }: { where: { id: string } }) => ({ id: where.id, sIsInClass: true, leftClassEffectiveAt: null })));
   cleanups.push(mockMethod(prisma.academicWarningRun, "findUnique", async ({ where }: any) => state.runs.get(where.id) ?? null));
   cleanups.push(mockMethod(prisma.academicWarningRun, "findMany", async ({ where }: any) =>
     [...state.runs.values()].filter((row) => !where.id?.in || where.id.in.includes(row.id)),
@@ -153,7 +165,7 @@ function installMemoryDatabase(state: MemoryState) {
     ) && (
       !where.businessStatus?.notIn || !where.businessStatus.notIn.includes(row.businessStatus)
     ) && (
-      !where.studentId?.in || where.studentId.in.includes(row.studentId)
+      (!where.studentId?.in || where.studentId.in.includes(row.studentId)) && (!where.studentId?.notIn || !where.studentId.notIn.includes(row.studentId))
     )),
   ));
   cleanups.push(mockMethod(prisma.academicWarningStudentResult, "findUnique", async ({ where }: any) =>
@@ -172,7 +184,7 @@ function installMemoryDatabase(state: MemoryState) {
   cleanups.push(mockMethod(prisma.user, "findMany", async ({ where }: any) =>
     state.users.filter((row) => !where.id?.in || where.id.in.includes(row.id)),
   ));
-  cleanups.push(mockMethod(prisma.academicTerm, "findMany", async () => [{ id: IDS.term, sTermCode: "HK02", academicYearId: "year" }]));
+  cleanups.push(mockMethod(prisma.academicTerm, "findMany", async () => state.terms));
   cleanups.push(mockMethod(prisma.academicYear, "findMany", async () => [{ id: "year", sYearCode: "2025-2026" }]));
   cleanups.push(mockMethod(prisma.user, "findFirst", async ({ where }: any) =>
     state.users.find((row) => row.id === where.id && row.isActive === where.isActive && row.deletedAt === where.deletedAt) ?? null,
@@ -227,12 +239,57 @@ function addRun(
   }));
 }
 
+test("a scoped correction synchronizes selected students and preserves deferred students' cases and events", async () => {
+  const state = createMemoryState();
+  addRun(state, "before-correction", [
+    { studentId: IDS.studentA, status: "HIGH_RISK" }, { studentId: IDS.studentB, status: "HIGH_RISK" },
+  ]);
+  const cleanup = installMemoryDatabase(state);
+  try {
+    await InterventionCasesService.syncInterventionCasesForRun("before-correction");
+    const deferred = structuredClone(state.cases.find(row => row.studentId === IDS.studentB));
+    const history = structuredClone(state.events.filter(row => row.warningActionId === deferred.id));
+    addRun(state, "after-correction", [
+      { studentId: IDS.studentA, status: "HIGH_RISK" }, { studentId: IDS.studentB, status: "NORMAL" },
+    ]);
+    const synced = await InterventionCasesService.syncInterventionCasesForRun("after-correction", { studentIds: [IDS.studentA] });
+    assert.equal(synced.processedResults, 1);
+    assert.equal(state.cases.find(row => row.studentId === IDS.studentA).latestWarningRunId, "after-correction");
+    assert.deepEqual(state.cases.find(row => row.studentId === IDS.studentB), deferred);
+    assert.deepEqual(state.events.filter(row => row.warningActionId === deferred.id), history);
+    assert.equal((await InterventionCasesService.syncInterventionCasesForRun("after-correction", { studentIds: [] })).processedResults, 0);
+    const restoreExcluded = mockMethod(prisma.student, "findMany", async () => [{ id: IDS.studentB }]);
+    try {
+      assert.equal((await InterventionCasesService.syncInterventionCasesForRun("after-correction", { studentIds: [IDS.studentB] })).processedResults, 0);
+      assert.deepEqual(state.cases.find(row => row.studentId === IDS.studentB), deferred);
+    } finally { restoreExcluded(); }
+  } finally { cleanup(); }
+});
+
 const adminActor: Actor = {
   userId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   username: "admin",
   fullName: "Admin",
   grants: [{ role: "admin", scope: "system", permission: "academic_warning.action.update" }],
 };
+
+test("departed students leave the operational queue but their intervention detail and history remain readable", async () => {
+  const state = createMemoryState();
+  const restoreDatabase = installMemoryDatabase(state);
+  const cleanup: Array<() => void> = [];
+  try {
+    addRun(state, "historical-risk", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    await InterventionCasesService.syncInterventionCasesForRun("historical-risk");
+    const caseId = state.cases[0].id;
+    cleanup.push(mockMethod(prisma.student, "findMany", async () => [{ id: IDS.studentA }]));
+    cleanup.push(mockMethod(prisma.student, "findFirst", async () => ({ sIsInClass: true, leftClassEffectiveAt: new Date("2026-03-19") })));
+    assert.equal((await InterventionCasesService.list({ page: 1, pageSize: 20 }, adminActor)).total, 0);
+    const detail = await InterventionCasesService.getDetail(caseId, adminActor);
+    assert.equal(detail.case.readOnly, true);
+    assert.ok(detail.history.length > 0);
+    assert.equal(state.cases.length, 1);
+  } finally { cleanup.reverse().forEach(restore => restore()); restoreDatabase(); }
+});
 
 test("yellow and red warning states create OPEN cases; non-warning states do not", async () => {
   const state = createMemoryState();
@@ -258,6 +315,27 @@ test("yellow and red warning states create OPEN cases; non-warning states do not
   } finally {
     cleanup();
   }
+});
+
+test("temporary leave freezes support and overdue queues while preserving readable case history and class membership", async () => {
+  const state = createMemoryState();
+  const restoreDatabase = installMemoryDatabase(state);
+  const cleanup: Array<() => void> = [];
+  try {
+    addRun(state, "before-leave-risk", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    await InterventionCasesService.syncInterventionCasesForRun("before-leave-risk");
+    const caseId = state.cases[0].id;
+    state.cases[0].nextFollowUpAt = new Date("2025-01-01");
+    const before = structuredClone({ cases: state.cases, events: state.events });
+    cleanup.push(mockMethod(prisma.student, "findMany", async () => [{ id: IDS.studentA }]));
+    cleanup.push(mockMethod(prisma.student, "findFirst", async () => ({ sIsInClass: true, leftClassEffectiveAt: null, studySuspensions: [{ decisionId: "leave", decisionNumber: "332", fromYear: "2025-2026", fromTerm: 2, effectiveAt: new Date("2026-04-03"), returnEffectiveAt: null, fromCalendarActive: true, returnCalendarActive: false }] })));
+    assert.equal((await InterventionCasesService.list({ page: 1, pageSize: 20, overdue: true }, adminActor)).total, 0);
+    assert.equal((await InterventionCasesService.summary(adminActor)).total, 0);
+    const detail = await InterventionCasesService.getDetail(caseId, adminActor);
+    assert.equal(detail.case.readOnly, true); assert.ok(detail.history.length > 0);
+    await assert.rejects(InterventionCasesService.recordIntervention(caseId, { interventionType: "CONTACT", occurredAt: new Date(), content: "New support" }, adminActor), (error: { code?: string }) => error.code === "STUDENT_STUDY_SUSPENDED");
+    assert.deepEqual({ cases: state.cases, events: state.events }, before);
+  } finally { cleanup.reverse().forEach(restore => restore()); restoreDatabase(); }
 });
 
 test("case creation does not require a separate intervention-case assignment", async () => {
@@ -394,6 +472,78 @@ test("state machine accepts required paths and rejects arbitrary status jumps", 
     (error: unknown) => error instanceof ApiError && error.code === "INVALID_STATUS_TRANSITION",
   );
   assert.throws(() => assertWarningActionTransition("ESCALATED", "RESOLVED"), /Cannot transition/);
+});
+
+test("a recomputed earlier semester cannot replace the active episode's later-semester result", async () => {
+  const state = createMemoryState();
+  const cleanup = installMemoryDatabase(state);
+  try {
+    addRun(state, "current-risk", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    await InterventionCasesService.syncInterventionCasesForRun("current-risk");
+    const before = structuredClone({ cases: state.cases, events: state.events });
+    for (const status of ["MONITORING", "NORMAL"]) {
+      const id = `historical-recomputed-${status}`;
+      addRun(state, id, [{ studentId: IDS.studentA, status }]);
+      state.runs.get(id).assessmentAcademicTermId = "previous-term";
+      const summary = await InterventionCasesService.syncInterventionCasesForRun(id);
+      assert.equal(summary.updatedCases, 0);
+      assert.deepEqual({ cases: state.cases, events: state.events }, before);
+    }
+  } finally { cleanup(); }
+});
+
+test("a later semester repairs a stale link even when its run completed before the historical recomputation", async () => {
+  const state = createMemoryState();
+  const cleanup = installMemoryDatabase(state);
+  try {
+    addRun(state, "current-risk", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    addRun(state, "recomputed-old-risk", [{ studentId: IDS.studentA, status: "MONITORING" }]);
+    state.runs.get("recomputed-old-risk").assessmentAcademicTermId = "previous-term";
+    await InterventionCasesService.syncInterventionCasesForRun("recomputed-old-risk");
+    const caseId = state.cases[0].id;
+    const result = await InterventionCasesService.syncInterventionCasesForRun("current-risk");
+    assert.equal(result.updatedCases, 1);
+    assert.equal(state.cases.length, 1);
+    assert.equal(state.cases[0].id, caseId);
+    assert.equal(state.cases[0].latestWarningRunId, "current-risk");
+    assert.equal(state.cases[0].latestBusinessStatus, "HIGH_RISK");
+    const before = structuredClone({ cases: state.cases, events: state.events });
+    await InterventionCasesService.syncInterventionCasesForRun("recomputed-old-risk");
+    await InterventionCasesService.syncInterventionCasesForRun("current-risk");
+    assert.deepEqual({ cases: state.cases, events: state.events }, before);
+  } finally { cleanup(); }
+});
+
+test("a newly recomputed older semester cannot create another episode after a later semester was resolved", async () => {
+  const state = createMemoryState();
+  const cleanup = installMemoryDatabase(state);
+  try {
+    addRun(state, "resolved-current-risk", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    await InterventionCasesService.syncInterventionCasesForRun("resolved-current-risk");
+    state.cases[0].status = "RESOLVED";
+    state.cases[0].resolvedAt = new Date("2026-09-01T09:00:00Z");
+    const before = structuredClone({ cases: state.cases, events: state.events });
+    addRun(state, "backfilled-older-risk", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    state.runs.get("backfilled-older-risk").assessmentAcademicTermId = "previous-term";
+    const summary = await InterventionCasesService.syncInterventionCasesForRun("backfilled-older-risk");
+    assert.equal(summary.createdCases, 0);
+    assert.deepEqual({ cases: state.cases, events: state.events }, before);
+  } finally { cleanup(); }
+});
+
+test("within one semester an older risk run cannot overwrite a newer normal result", async () => {
+  const state = createMemoryState();
+  const cleanup = installMemoryDatabase(state);
+  try {
+    addRun(state, "older-risk", [{ studentId: IDS.studentA, status: "HIGH_RISK" }]);
+    await InterventionCasesService.syncInterventionCasesForRun("older-risk");
+    addRun(state, "newer-normal", [{ studentId: IDS.studentA, status: "NORMAL" }]);
+    await InterventionCasesService.syncInterventionCasesForRun("newer-normal");
+    const before = structuredClone({ cases: state.cases, events: state.events });
+    await InterventionCasesService.syncInterventionCasesForRun("older-risk");
+    assert.deepEqual({ cases: state.cases, events: state.events }, before);
+    assert.equal(state.cases[0].latestBusinessStatus, "NORMAL");
+  } finally { cleanup(); }
 });
 
 test("first intervention starts work, appends immutable history, and schedules follow-up", async () => {

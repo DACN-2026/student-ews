@@ -188,14 +188,14 @@ export class AuthService {
     };
   }
 
-  static async getMe(userId: string): Promise<{ user: UserProfile; actor: Actor } | null> {
+  static async getMe(userId: string, authenticatedActor?: Actor): Promise<{ user: UserProfile; actor: Actor } | null> {
     const user = await prisma.user.findUnique({
       where: { id: userId, deletedAt: null },
     });
 
     if (!user) return null;
 
-    const actor = await getActorById(userId);
+    const actor = authenticatedActor?.userId === userId ? authenticatedActor : await getActorById(userId);
     if (!actor) return null;
 
     const context = await AuthService.resolveUserContext(userId);

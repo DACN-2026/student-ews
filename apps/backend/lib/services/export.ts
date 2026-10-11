@@ -270,7 +270,7 @@ async function scopedStudents(filters: ReportExportFilters, studentScope: Prisma
   return prisma.student.findMany({
     where: {
       AND: [
-        monitoredStudentWhere,
+        monitoredStudentWhere(),
         studentScope,
         filters.classCode ? { sClassStudentId: filters.classCode } : {},
         filters.programCode ? { sStudyProgramId: filters.programCode } : {},

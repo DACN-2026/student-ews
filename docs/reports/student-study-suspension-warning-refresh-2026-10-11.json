@@ -1,0 +1,76 @@
+{
+  "term": {
+    "id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+    "termCode": "HK02",
+    "termName": "Học kỳ 2",
+    "gradesFinalizedAt": "2026-09-20T23:00:05.094Z"
+  },
+  "policy": {
+    "id": "4834b53a-a0aa-4b63-ab06-017c9faa43f4",
+    "version": 3,
+    "name": "QĐ 600/QĐ-ĐHĐL — Điều 18"
+  },
+  "scopeCount": 7,
+  "completed": 7,
+  "skipped": 0,
+  "failed": 0,
+  "status": "completed",
+  "results": [
+    {
+      "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "programCode": "CQ24CT",
+      "facultyCode": "CT",
+      "status": "completed",
+      "runId": "7b3037cb-57b4-4c42-8e66-51e434f21355"
+    },
+    {
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "trainingProgramId": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+      "programCode": "CQ23CT",
+      "facultyCode": "CT",
+      "status": "completed",
+      "runId": "5ac97d05-f655-429a-8bfb-19deb6e42402"
+    },
+    {
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "programCode": "CQ23CT-MMT",
+      "facultyCode": "CT",
+      "status": "completed",
+      "runId": "2e029bd7-357c-404c-a431-fd7b070cab84"
+    },
+    {
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "programCode": "CQ23CT-PM",
+      "facultyCode": "CT",
+      "status": "completed",
+      "runId": "aa8c5041-08c5-49d6-8237-86259fdbed42"
+    },
+    {
+      "cohortId": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+      "trainingProgramId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+      "programCode": "CQ25CT",
+      "facultyCode": "CT",
+      "status": "completed",
+      "runId": "0e11e3b1-e0e4-4123-bb97-a4caa85fddd8"
+    },
+    {
+      "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "programCode": "CQ22CT-MMT",
+      "facultyCode": "CT",
+      "status": "completed",
+      "runId": "202747e1-fc75-4015-b3ea-0dcd2592049a"
+    },
+    {
+      "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "programCode": "CQ22CT-PM",
+      "facultyCode": "CT",
+      "status": "completed",
+      "runId": "5448c6ae-42ab-428d-b8c6-4d83e029d8e4"
+    }
+  ]
+}

@@ -1,0 +1,212 @@
+[
+  {
+    "pass": 1,
+    "path": "/auth/me",
+    "status": 200,
+    "ms": 103,
+    "bytes": 2922
+  },
+  {
+    "pass": 1,
+    "path": "/students?page=1&pageSize=20",
+    "status": 200,
+    "ms": 6802,
+    "bytes": 15402,
+    "total": 625
+  },
+  {
+    "pass": 1,
+    "path": "/reports/academic-warnings?page=1&pageSize=20",
+    "status": 200,
+    "ms": 6812,
+    "bytes": 19948,
+    "total": 297,
+    "counts": {
+      "students": 623,
+      "evaluated": 622,
+      "available": 593,
+      "termGpaAvailable": 576,
+      "cumulativeGpaAvailable": 589,
+      "unassessed": 1,
+      "high": 178,
+      "medium": 119,
+      "safe": 325,
+      "businessStatus": {
+        "NORMAL": 325,
+        "PARTIAL_NO_RISK": 0,
+        "MONITORING": 119,
+        "HIGH_RISK": 178,
+        "VERIFY_REQUIRED": 0,
+        "INSUFFICIENT_DATA": 0
+      }
+    }
+  },
+  {
+    "pass": 1,
+    "path": "/academic-warnings/students/2246A006",
+    "status": 200,
+    "ms": 1178,
+    "bytes": 61627
+  },
+  {
+    "pass": 1,
+    "path": "/graduation-evaluations?pageSize=100&status=completed&latestPerScope=true",
+    "status": 200,
+    "ms": 27,
+    "bytes": 95190,
+    "total": 7
+  },
+  {
+    "pass": 1,
+    "path": "/training-progress/overview?page=1&pageSize=20",
+    "status": 200,
+    "ms": 225,
+    "bytes": 11502,
+    "kpi": {
+      "totalStudents": 622,
+      "onTrackCount": 0,
+      "behindCount": 0,
+      "onTrackPercentage": 0,
+      "behindPercentage": 0,
+      "avgDeficitCredits": 0
+    }
+  },
+  {
+    "pass": 1,
+    "path": "/training-progress/overview?mode=summary",
+    "status": 200,
+    "ms": 1096,
+    "bytes": 172,
+    "kpi": {
+      "totalStudents": 622,
+      "onTrackCount": 300,
+      "behindCount": 322,
+      "unknownCount": 0,
+      "onTrackPercentage": 48,
+      "behindPercentage": 52,
+      "avgDeficitCredits": 15.2
+    }
+  },
+  {
+    "pass": 1,
+    "path": "/dashboard/summary",
+    "status": 200,
+    "ms": 12997,
+    "bytes": 23409,
+    "counts": {
+      "red": 178,
+      "yellow": 119,
+      "green": 325,
+      "evaluated": 622,
+      "unassessed": 0,
+      "conductApproved": 610,
+      "conductPending": 12,
+      "conductMissing": 0
+    }
+  },
+  {
+    "pass": 2,
+    "path": "/auth/me",
+    "status": 200,
+    "ms": 11,
+    "bytes": 2922
+  },
+  {
+    "pass": 2,
+    "path": "/students?page=1&pageSize=20",
+    "status": 200,
+    "ms": 6584,
+    "bytes": 15402,
+    "total": 625
+  },
+  {
+    "pass": 2,
+    "path": "/reports/academic-warnings?page=1&pageSize=20",
+    "status": 200,
+    "ms": 6846,
+    "bytes": 19948,
+    "total": 297,
+    "counts": {
+      "students": 623,
+      "evaluated": 622,
+      "available": 593,
+      "termGpaAvailable": 576,
+      "cumulativeGpaAvailable": 589,
+      "unassessed": 1,
+      "high": 178,
+      "medium": 119,
+      "safe": 325,
+      "businessStatus": {
+        "NORMAL": 325,
+        "PARTIAL_NO_RISK": 0,
+        "MONITORING": 119,
+        "HIGH_RISK": 178,
+        "VERIFY_REQUIRED": 0,
+        "INSUFFICIENT_DATA": 0
+      }
+    }
+  },
+  {
+    "pass": 2,
+    "path": "/academic-warnings/students/2246A006",
+    "status": 200,
+    "ms": 1200,
+    "bytes": 61627
+  },
+  {
+    "pass": 2,
+    "path": "/graduation-evaluations?pageSize=100&status=completed&latestPerScope=true",
+    "status": 200,
+    "ms": 20,
+    "bytes": 95190,
+    "total": 7
+  },
+  {
+    "pass": 2,
+    "path": "/training-progress/overview?page=1&pageSize=20",
+    "status": 200,
+    "ms": 77,
+    "bytes": 11502,
+    "kpi": {
+      "totalStudents": 622,
+      "onTrackCount": 0,
+      "behindCount": 0,
+      "onTrackPercentage": 0,
+      "behindPercentage": 0,
+      "avgDeficitCredits": 0
+    }
+  },
+  {
+    "pass": 2,
+    "path": "/training-progress/overview?mode=summary",
+    "status": 200,
+    "ms": 8,
+    "bytes": 172,
+    "kpi": {
+      "totalStudents": 622,
+      "onTrackCount": 300,
+      "behindCount": 322,
+      "unknownCount": 0,
+      "onTrackPercentage": 48,
+      "behindPercentage": 52,
+      "avgDeficitCredits": 15.2
+    }
+  },
+  {
+    "pass": 2,
+    "path": "/dashboard/summary",
+    "status": 200,
+    "ms": 12807,
+    "bytes": 23409,
+    "counts": {
+      "red": 178,
+      "yellow": 119,
+      "green": 325,
+      "evaluated": 622,
+      "unassessed": 0,
+      "conductApproved": 610,
+      "conductPending": 12,
+      "conductMissing": 0
+    }
+  }
+]

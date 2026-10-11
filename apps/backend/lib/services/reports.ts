@@ -1,5 +1,5 @@
 import { compareStudentOrder } from "../student-list-order";
-import { monitoredStudentWhere } from "../student-monitoring-scope";
+import { classMembershipWhere, studentSuspension } from "../student-monitoring-scope";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/utils/api-error";
@@ -10,6 +10,7 @@ import {
   type WarningDataStatus,
 } from "@/lib/services/academic-warning-rules";
 import { compareAcademicTerms } from "@/lib/academic-terms";
+import { regulatoryAssessment } from "./warning-regulatory-assessment";
 
 type WarningLevel = "high" | "medium" | "none";
 
@@ -45,6 +46,10 @@ type WarningStudent = {
   presentationState: PersistedBusinessStatus;
   hasPersistedResult: boolean;
   assessmentIssue: string | null;
+  assessmentCategory: "APPROVED_LEAVE" | "LEFT_PROGRAM" | "BEFORE_ADMISSION" | "PENDING";
+  assessmentFollowUp: string | null;
+  regulatoryAssessment: "BREACHED" | "NOT_BREACHED" | "UNRESOLVED";
+  regulatoryCoverage: string | null;
 };
 
 const numberOrNull = (value: unknown) => value == null ? null : Number(value);
@@ -155,12 +160,12 @@ export class ReportsService {
     const [students, terms, years, classes, policies, programs] = await Promise.all([
       prisma.student.findMany({
         where: { AND: [
-          monitoredStudentWhere,
+          classMembershipWhere(),
           studentScope,
           filters.programCode ? { sStudyProgramId: filters.programCode } : {},
           cohortClassCodes ? { sClassStudentId: { in: cohortClassCodes } } : {},
         ] },
-        select: { id: true, sStudentId: true, sFullName: true, sClassStudentId: true, sStudyProgramId: true },
+        select: { id: true, sStudentId: true, sFullName: true, sClassStudentId: true, sStudyProgramId: true, studySuspensions: { where: { isRevoked: false } } },
       }),
       prisma.academicTerm.findMany({ where: { deletedAt: null } }),
       prisma.academicYear.findMany({ where: { deletedAt: null } }),
@@ -176,7 +181,7 @@ export class ReportsService {
     const qd600Policy = policies.find((policy) => {
       const definition = policy.policyDefinition;
       return definition !== null && !Array.isArray(definition) && typeof definition === "object" &&
-        definition.evaluationProfile === "QD600_ARTICLE_18";
+        definition.evaluationProfile === "QD600_ARTICLE_18" && policy.status === "draft";
     }) || null;
     const requestedTerm = filters.academicTermId ? termMap.get(filters.academicTermId) : null;
     if (filters.academicTermId && !requestedTerm) {
@@ -207,14 +212,28 @@ export class ReportsService {
         ...(filters.programCode ? { trainingProgramId: { in: programs.map((program) => program.id) } } : {}),
       },
       orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }, { id: "desc" }],
+      omit: { sourceSnapshot: true },
     });
     const latestRuns = latestRunsPerScope(runs);
     const studentIds = students.map((student) => student.id);
-    const allResults = latestRuns.length && studentIds.length
+    const rawResults = latestRuns.length && studentIds.length
       ? await prisma.academicWarningStudentResult.findMany({
           where: { runId: { in: latestRuns.map((run) => run.id) }, studentId: { in: studentIds } },
+          select: {
+            id: true, runId: true, studentId: true, sStudentId: true, sStudentName: true,
+            termGpa4: true, cumulativeGpa4: true, maxSeverity: true, reasonCount: true,
+            dataError: true, businessStatus: true, academicWarningDecisions: true, regulatoryCoverage: true,
+          },
         })
       : [];
+    const studentById = new Map(students.map(student => [student.id, student]));
+    const runsById = new Map(latestRuns.map(run => [run.id, run]));
+    const allResults = rawResults.filter(result => {
+      const student = studentById.get(result.studentId);
+      const term = termMap.get(runsById.get(result.runId)?.assessmentAcademicTermId || "");
+      const yearCode = term && yearMap.get(term.academicYearId)?.sYearCode;
+      return !student || !term || !yearCode || !studentSuspension(student, { yearCode, termOrder: term.sTermOrder });
+    });
     const resultRunIds = new Set(allResults.map((result) => result.runId));
     const availableRuns = latestRuns.filter((run) => resultRunIds.has(run.id));
     const asComparable = (term: (typeof terms)[number]) => ({
@@ -265,7 +284,9 @@ export class ReportsService {
     const resultByStudent = new Map<string, (typeof selectedResults)[number]>();
     for (const result of selectedResults) if (!resultByStudent.has(result.studentId)) resultByStudent.set(result.studentId, result);
     const selectedResultIds = [...resultByStudent.values()].map((result) => result.id);
-    const [reasons, actions] = await Promise.all([
+    const missingResultIds = students.filter((student) => !resultByStudent.has(student.id)).map((student) => student.id);
+    const exclusionRunIds = latestRuns.filter(run => run.assessmentAcademicTermId === selectedTerm?.id).map(run => run.id);
+    const [reasons, actions, selectedRules, exclusionSnapshots] = await Promise.all([
       selectedResultIds.length
         ? prisma.academicWarningReason.findMany({
             where: { studentResultId: { in: selectedResultIds } },
@@ -278,7 +299,30 @@ export class ReportsService {
             select: { studentId: true },
           })
         : [],
+      selectedResultIds.length
+        ? prisma.academicWarningStudentResult.findMany({
+            where: { id: { in: selectedResultIds } }, select: { id: true, ruleResults: true },
+          })
+        : [],
+      // Only the exclusion list is needed, not the cohort's full grade, debt,
+      // progress and decision snapshots. Project JSON in PostgreSQL so those
+      // large immutable snapshots never cross the database connection.
+      exclusionRunIds.length && missingResultIds.length
+        ? prisma.$queryRaw<Array<{ id: string; sourceSnapshot: Prisma.JsonValue }>>`
+            SELECT r.id::text AS id,
+              jsonb_build_object('excludedStandingStudents', COALESCE((
+                SELECT jsonb_agg(entry)
+                FROM jsonb_array_elements(CASE
+                  WHEN jsonb_typeof(r.source_snapshot->'excludedStandingStudents') = 'array'
+                    THEN r.source_snapshot->'excludedStandingStudents' ELSE '[]'::jsonb END) AS entry
+                WHERE entry->>'id' = ANY(${missingResultIds}::text[])
+              ), '[]'::jsonb)) AS "sourceSnapshot"
+            FROM academic_warning_runs r WHERE r.id = ANY(${exclusionRunIds}::uuid[])
+          `
+        : [],
     ]);
+    const rulesByResult = new Map(selectedRules.map(result => [result.id, result.ruleResults]));
+    const snapshotByRun = new Map(exclusionSnapshots.map(run => [run.id, run.sourceSnapshot]));
     const reasonCodesByResult = new Map<string, string[]>();
     for (const reason of reasons) {
       const values = reasonCodesByResult.get(reason.studentResultId) || [];
@@ -287,7 +331,48 @@ export class ReportsService {
     }
     const resolvedCounts = new Map<string, number>();
     for (const action of actions) resolvedCounts.set(action.studentId, (resolvedCounts.get(action.studentId) || 0) + 1);
-    const missingResultIds = students.filter((student) => !resultByStudent.has(student.id)).map((student) => student.id);
+    // Explain exclusions from the same saved runs as the report, rather than
+    // inferring a data problem from the absence of a warning result.
+    const exclusions = new Map<string, { category: WarningStudent["assessmentCategory"]; issue: string; followUp: string }>();
+    for (const run of latestRuns.filter((item) => item.assessmentAcademicTermId === selectedTerm?.id)) {
+      const snapshot = snapshotByRun.get(run.id);
+      if (!snapshot || Array.isArray(snapshot) || typeof snapshot !== "object" || !Array.isArray(snapshot.excludedStandingStudents)) continue;
+      for (const entry of snapshot.excludedStandingStudents) {
+        if (!entry || Array.isArray(entry) || typeof entry !== "object" || typeof entry.id !== "string" || exclusions.has(entry.id)) continue;
+        const exemption = entry.exemption;
+        if (exemption && !Array.isArray(exemption) && typeof exemption === "object" && typeof exemption.number === "string") {
+          if (exemption.effect === "APPROVED_LEAVE") exclusions.set(entry.id, {
+            category: "APPROVED_LEAVE",
+            issue: `Nghỉ học tạm thời / bảo lưu theo quyết định ${exemption.number}, áp dụng cho học kỳ đang xem.`,
+            followUp: "Không phân mức nguy cơ trong kỳ nghỉ được chấp thuận. Theo dõi thời hạn nghỉ và thủ tục trở lại học; sinh viên vẫn thuộc lớp.",
+          });
+          if (exemption.effect === "LEFT_PROGRAM") exclusions.set(entry.id, {
+            category: "LEFT_PROGRAM",
+            issue: `Đã thôi học / chuyển trường đi theo quyết định ${exemption.number}, áp dụng cho học kỳ đang xem.`,
+            followUp: "Giữ hồ sơ lịch sử; dừng hỗ trợ từ kỳ quyết định có hiệu lực.",
+          });
+        } else {
+          const sources = entry.academicStandingSources;
+          if (sources && !Array.isArray(sources) && typeof sources === "object" && sources.beforeAdmission === true) exclusions.set(entry.id, {
+            category: "BEFORE_ADMISSION",
+            issue: "Học kỳ đang xem nằm trước thời điểm nhập học của khóa.",
+            followUp: "Ngoài phạm vi đánh giá của sinh viên trong học kỳ này.",
+          });
+        }
+      }
+    }
+    // The calculation loaders omit paused students before computing anything.
+    // Their current decision projection therefore explains the missing result
+    // even when the new run has no excluded-student snapshot for them.
+    if (selectedTerm && selectedYear) for (const student of students) {
+      const pause = studentSuspension(student, { yearCode: selectedYear.sYearCode, termOrder: selectedTerm.sTermOrder });
+      if (pause) exclusions.set(student.id, {
+        category: "APPROVED_LEAVE",
+        issue: `Đang nghỉ học tạm thời / bảo lưu từ HK${pause.fromTerm} (${pause.fromYear}), theo quyết định ${pause.decisionNumber}.`,
+        followUp: "Hồ sơ được đóng băng; không tính cảnh báo hoặc tiến độ mới trong kỳ nghỉ. Chỉ mở lại khi quyết định tiếp nhận học lại có hiệu lực; sinh viên vẫn thuộc lớp.",
+      });
+      else if (Array.isArray(student.studySuspensions) && exclusions.get(student.id)?.category === "APPROVED_LEAVE") exclusions.delete(student.id);
+    }
     const missingResultSummaries = filters.assessmentStatus === "unassessed" && selectedTerm && missingResultIds.length
       ? await prisma.studentTermSummary.findMany({
           where: { studentId: { in: missingResultIds }, academicTermId: selectedTerm.id },
@@ -297,6 +382,7 @@ export class ReportsService {
 
     const evaluatedStudents: WarningStudent[] = students.map((student) => {
       const result = resultByStudent.get(student.id);
+      const exclusion = result ? undefined : exclusions.get(student.id);
       const dataStatus = result ? warningDataStatusFromStored(result.dataError) : "INSUFFICIENT";
       const presentationState = result
         ? persistedBusinessStatus(result, dataStatus)
@@ -323,12 +409,18 @@ export class ReportsService {
         dataStatus,
         presentationState,
         hasPersistedResult: Boolean(result),
+        regulatoryAssessment: regulatoryAssessment(result ? rulesByResult.get(result.id) : undefined),
+        regulatoryCoverage: result?.regulatoryCoverage || null,
         assessmentIssue: result
           ? presentationState === "INSUFFICIENT_DATA" ? "Kết quả đã lưu nhưng chưa đủ dữ liệu để phân loại nguy cơ." : null
-          : filters.assessmentStatus === "unassessed" && selectedTerm &&
+          : exclusion?.issue || (filters.assessmentStatus === "unassessed" && selectedTerm &&
               !missingResultSummaries.some((summary) => summary.studentId === student.id && summary.sProgramCode === student.sStudyProgramId)
             ? "Chưa có bảng tổng hợp điểm của học kỳ này theo chương trình đào tạo."
-            : "Chưa có kết quả đánh giá chính thức của học kỳ này.",
+            : "Chưa có kết quả đánh giá chính thức của học kỳ này."),
+        assessmentCategory: exclusion?.category || "PENDING",
+        assessmentFollowUp: exclusion?.followUp || (presentationState === "INSUFFICIENT_DATA"
+          ? result ? "Cần bổ sung dữ liệu và đánh giá lại." : "Kiểm tra dữ liệu và phạm vi kỳ đánh giá; đánh giá lại sau khi xác minh."
+          : null),
       };
     });
     const warningStudents = evaluatedStudents.filter((student) => student.severity !== "none");
@@ -382,6 +474,7 @@ export class ReportsService {
       [...resultByStudent.values()],
       Boolean(sourceRun),
     );
+    const excludedStandingCount = evaluatedStudents.filter((student) => student.assessmentCategory !== "PENDING").length;
     const sourcePolicy = sourceRun?.policyId
       ? await prisma.academicWarningPolicy.findUnique({ where: { id: sourceRun.policyId } })
       : null;
@@ -396,7 +489,7 @@ export class ReportsService {
 
     return {
       hasCompletedOfficialRun: evaluationState.hasCompletedOfficialRun,
-      evaluationState,
+      evaluationState: { ...evaluationState, excludedStandingCount },
       items: filtered.slice(offset, offset + pageSize),
       total: filtered.length,
       page,
@@ -431,6 +524,7 @@ export class ReportsService {
             : "Legacy",
       },
       mode: {
+        configuredPolicy: qd600Policy ? { name: qd600Policy.name, version: qd600Policy.version } : null,
         code: "official_warning_run",
         label: "OFFICIAL từ kết quả AcademicWarningRun đã lưu",
         source: "OFFICIAL",

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { isUUID, studentIdWhere } from "@/lib/utils/is-uuid";
 import { ApiError } from "@/lib/utils/api-error";
 import { Prisma, type DecisionType as DecisionTypeRecord } from "@prisma/client";
+import { syncStudentClassDepartures } from "./student-class-departure";
 
 function mapDecisionType(type: DecisionTypeRecord) {
   return {
@@ -50,14 +51,17 @@ export class DecisionsService {
         ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
       },
     });
+    await syncStudentClassDepartures(undefined, true);
     return mapDecisionType(updated);
   }
 
   static async removeType(id: number) {
-    return prisma.decisionType.update({
+    const removed = await prisma.decisionType.update({
       where: { decisionTypeId: id },
       data: { deletedAt: new Date(), isActive: false },
     });
+    await syncStudentClassDepartures(undefined, true);
+    return removed;
   }
 
   static async importTypes(items: Array<{
@@ -82,7 +86,7 @@ export class DecisionsService {
         isActive: typeof item.isActive === "boolean" ? item.isActive : true,
       };
     });
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const existing = await tx.decisionType.findMany({
         where: { decisionTypeId: { in: normalized.map((item) => item.decisionTypeId) } },
         select: { decisionTypeId: true },
@@ -101,6 +105,8 @@ export class DecisionsService {
         updated: normalized.filter((item) => existingIds.has(item.decisionTypeId)).length,
       };
     });
+    await syncStudentClassDepartures(undefined, true);
+    return result;
   }
 
   static async list(studentId: string) {
@@ -213,6 +219,7 @@ export class DecisionsService {
       },
     });
 
+    await syncStudentClassDepartures([student.id], true);
     return this.getById(created.id);
   }
 
@@ -232,6 +239,7 @@ export class DecisionsService {
       data: updateData,
     });
 
+    await syncStudentClassDepartures([updated.studentId], true);
     return this.getById(updated.id);
   }
 
@@ -242,6 +250,7 @@ export class DecisionsService {
       where: { id: decisionId },
       data: { deletedAt: new Date() },
     });
+    await syncStudentClassDepartures([existing.studentId], true);
     return true;
   }
 
@@ -375,6 +384,7 @@ export class DecisionsService {
         imported = freshRows.length;
       });
     }
+    if (imported) await syncStudentClassDepartures([...new Set(rows.map(row => row.studentId))], true);
     return { imported, skipped: items.length - imported, total: items.length, errors };
   }
 }

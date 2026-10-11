@@ -1,0 +1,286 @@
+{
+  "checkedAt": "2026-10-10T19:27:42.358Z",
+  "summary": {
+    "decisionStudents": 13,
+    "decisionMismatches": 0,
+    "missingTranscriptStudents": 34,
+    "missingStudentsWithTargetRows": 0,
+    "unscopedRows": 0
+  },
+  "decisionChecks": [
+    {
+      "studentCode": "2347A016",
+      "sourceCount": 4,
+      "systemCount": 4,
+      "matching": true
+    },
+    {
+      "studentCode": "2347B037",
+      "sourceCount": 3,
+      "systemCount": 3,
+      "matching": true
+    },
+    {
+      "studentCode": "2347B045",
+      "sourceCount": 3,
+      "systemCount": 3,
+      "matching": true
+    },
+    {
+      "studentCode": "2347C029",
+      "sourceCount": 3,
+      "systemCount": 3,
+      "matching": true
+    },
+    {
+      "studentCode": "2347C017",
+      "sourceCount": 2,
+      "systemCount": 2,
+      "matching": true
+    },
+    {
+      "studentCode": "2549A044",
+      "sourceCount": 3,
+      "systemCount": 3,
+      "matching": true
+    },
+    {
+      "studentCode": "2549C057",
+      "sourceCount": 4,
+      "systemCount": 4,
+      "matching": true
+    },
+    {
+      "studentCode": "2347A048",
+      "sourceCount": 1,
+      "systemCount": 1,
+      "matching": true
+    },
+    {
+      "studentCode": "2347A052",
+      "sourceCount": 1,
+      "systemCount": 1,
+      "matching": true
+    },
+    {
+      "studentCode": "2246B008",
+      "sourceCount": 8,
+      "systemCount": 8,
+      "matching": true
+    },
+    {
+      "studentCode": "2347B008",
+      "sourceCount": 5,
+      "systemCount": 5,
+      "matching": true
+    },
+    {
+      "studentCode": "2347C036",
+      "sourceCount": 4,
+      "systemCount": 4,
+      "matching": true
+    },
+    {
+      "studentCode": "2347C030",
+      "sourceCount": 4,
+      "systemCount": 4,
+      "matching": true
+    }
+  ],
+  "transcripts": [
+    {
+      "studentCode": "2347A019",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2347A065",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2347A036",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2347B047",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2347B045",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2347C046",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2347C040",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448A051",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448A010",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448A009",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448A001",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448A024",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448A056",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448A030",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448B004",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448B022",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448B048",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448B026",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2448B033",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549A038",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549A065",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549A014",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549A010",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549A053",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549B020",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549B062",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549B008",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549B035",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549B025",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549C047",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549C063",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549C068",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549C036",
+      "targetRows": 0,
+      "unscopedRows": 0
+    },
+    {
+      "studentCode": "2549C057",
+      "targetRows": 0,
+      "unscopedRows": 0
+    }
+  ],
+  "knownSourceConflict": {
+    "studentCode": "2347A019",
+    "classHk2": {
+      "StudentID": "2347A019",
+      "STC": 14,
+      "AverageScore": 2.29,
+      "AverageScore4": 0.64,
+      "AverageGatherScore4": 3
+    },
+    "personalPeriods": [
+      {
+        "year": "2025-2026",
+        "term": "HK01",
+        "rows": 12,
+        "gpa4": "1.08"
+      },
+      {
+        "year": "2025-2026",
+        "term": "HK03",
+        "rows": 6,
+        "gpa4": "0.64"
+      }
+    ]
+  }
+}

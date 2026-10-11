@@ -2,6 +2,27 @@ import { prisma } from "@/lib/prisma";
 import { normalizeProgramCourseCode } from "../academic-course-rules";
 import type { ForecastCourse } from "./graduation-forecast";
 
+export type CurriculumCatalogCourse = ForecastCourse & { catalogProgramCode: string };
+
+/** Recognition evidence only. A course in the base catalog is not automatically
+ * a requirement of a specialization, especially from semester 6 onward. */
+export async function loadProgramCurriculumCatalog(programId: string): Promise<CurriculumCatalogCourse[]> {
+  const program = await prisma.trainingProgram.findUnique({ where: { id: programId } });
+  if (!program) return [];
+  const programs = await prisma.trainingProgram.findMany({ where: { deletedAt: null,
+    sProgramCode: { in: [program.sProgramCode, program.sProgramCode.split("-")[0]] } } });
+  const rows = await prisma.trainingProgramCourse.findMany({ where: { trainingProgramId: { in: programs.map(item => item.id) } } });
+  const catalog = await prisma.course.findMany({ where: { id: { in: rows.map(item => item.courseId) }, deletedAt: null } });
+  const byId = new Map(catalog.map(course => [course.id, course]));
+  const byProgram = new Map(programs.map(item => [item.id, item.sProgramCode]));
+  return rows.flatMap(row => {
+    const course = byId.get(row.courseId);
+    return course ? [{ courseId: course.id, courseCode: course.sCourseCode, courseName: course.sCourseName,
+      credits: row.sCredits, requirementType: row.sRequirementType, semesterNo: row.sSemesterNo,
+      catalogProgramCode: byProgram.get(row.trainingProgramId)! }] : [];
+  });
+}
+
 /** Source specialization catalogs contain only the branch; inherit the common
  * courses from the same cohort's base catalog, never a different cohort. */
 export async function loadProgramCurriculum(programId: string): Promise<ForecastCourse[]> {

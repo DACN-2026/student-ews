@@ -8,18 +8,27 @@ import {
   createAcademicWarningPolicySnapshot,
   type Qd600PolicyDefinition,
 } from "@/lib/services/academic-warning-policy";
+import { parseEarlyWarningSettings } from "./early-warning-settings";
+import { evaluateEarlyWarningSignals, type EarlyWarningSources } from "./early-warning-signals";
+import { assessAcademicStanding, type StandingSources } from "./academic-standing-rules";
+import type { CurriculumReviewCourse } from "./academic-debt";
 
 export const QD600_EXECUTION_PROFILE = "QD600_PARTIAL_REGULATORY" as const;
-export const QD600_RULE_ENGINE_VERSION = "academic-warning-qd600-article18-and-progress-v12" as const;
+export const QD600_RULE_ENGINE_VERSION = "academic-warning-qd600-article18-and-progress-v20" as const;
 
 export type Qd600RuleCode =
+  | "EARLY_EXAM_ABSENCE"
   | "QD600_FAILED_CREDIT_RATIO"
   | "QD600_CUMULATIVE_GPA_BY_YEAR"
   | "QD600_CUMULATIVE_GPA_NEAR_THRESHOLD"
   | "QD600_TERM_GPA"
   | "QD600_ACCUMULATED_DEBT_CREDITS"
   | "ACCUMULATED_DEBT_CREDIT_RISK"
-  | "TRAINING_PROGRESS_CREDIT_DEFICIT";
+  | "TRAINING_PROGRESS_CREDIT_DEFICIT"
+  | "EARLY_LOW_TERM_GPA" | "EARLY_LOW_CUMULATIVE_GPA" | "EARLY_TERM_GPA_DROP" | "EARLY_CUMULATIVE_GPA_DROP"
+  | "EARLY_FAILED_CREDIT_RATIO" | "EARLY_REPEATED_COURSE_FAILURE" | "EARLY_LOW_CONDUCT_SCORE" | "EARLY_CONDUCT_SCORE_DROP"
+  | "EARLY_MISSING_TERM_DATA" | "EARLY_NO_REGISTRATION" | "EARLY_NO_REGISTRATION_CONSECUTIVE"
+  | "ACADEMIC_WARNING_SEQUENCE_REVIEW" | "ACADEMIC_REPRIEVE_FOLLOWUP" | "ACADEMIC_APPEAL_ELIGIBILITY_REVIEW";
 
 export type Qd600RuleSourceType = "REGULATORY" | "ADVISORY" | "OPERATIONAL";
 export type Qd600RuleEvaluationStatus = "EVALUATED" | "NOT_EVALUATED" | "NOT_APPLICABLE";
@@ -40,6 +49,11 @@ export const LEGACY_SIGNAL_SOURCE_TYPES = {
 export type LegacySignalCode = keyof typeof LEGACY_SIGNAL_SOURCE_TYPES;
 
 export type Qd600RuleEvaluation = {
+  curriculumReviewCourses?: CurriculumReviewCourse[];
+  absenceCourseCount?: number;
+  absenceCredits?: number;
+  absenceCourses?: NonNullable<EarlyWarningSources["examAbsences"]>;
+  pendingDebtCourses?: Array<{ courseCode: string; courseName: string; credits: number; previousOutcome: "PASSED" | "FAILED" | "NONE" }>;
   ruleCode: Qd600RuleCode;
   sourceType: Qd600RuleSourceType;
   evaluationStatus: Qd600RuleEvaluationStatus;
@@ -61,6 +75,11 @@ export type Qd600RuleEvaluation = {
   progressStatus?: "ON_TRACK" | "BEHIND" | "UNKNOWN";
   missingRequiredCredits?: number;
   missingRequiredCourses?: Array<{ courseCode: string; courseName: string; credits: number; semesterNo: number }>;
+  previousValue?: number | null;
+  currentValue?: number | null;
+  previousTermId?: string | null;
+  sourceId?: string;
+  affectedCourses?: Array<{ courseCode: string; courseName: string; failedAttempts: number }>;
 };
 
 export type Qd600NormalizedCapabilityData = {
@@ -72,6 +91,8 @@ export type Qd600NormalizedCapabilityData = {
   yearLevelClassification: Qd600YearLevelClassification;
   failedCreditCalculation: FailedCreditCalculation;
   accumulatedDebtCreditCalculation: {
+    curriculumReviewCourses?: CurriculumReviewCourse[];
+    pendingCourses?: Qd600RuleEvaluation["pendingDebtCourses"];
     accumulatedDebtCredits: number | null;
     dataStatus: "COMPLETE" | "PARTIAL" | "INSUFFICIENT" | "UNVERIFIED";
     reasonCode: string | null;
@@ -98,6 +119,9 @@ export type Qd600EvaluationInput = {
     missingRequiredCourses?: Array<{ courseCode: string; courseName: string; credits: number; semesterNo: number }>;
   } | null;
   legacySignalCodes?: LegacySignalCode[];
+  earlyWarningSources?: EarlyWarningSources;
+  academicStandingSources?: StandingSources;
+  provisional?: boolean;
 };
 
 export type Qd600EvaluationResult = {
@@ -215,7 +239,8 @@ function summerGate(
 }
 
 export function evaluateTrainingProgressCreditDeficit(input: Qd600EvaluationInput): Qd600RuleEvaluation {
-  const summerResult = summerGate("TRAINING_PROGRESS_CREDIT_DEFICIT", "OPERATIONAL", input, 4, 12);
+  const settings = parseEarlyWarningSettings(input.policyDefinition.advisory.earlyWarning);
+  const summerResult = summerGate("TRAINING_PROGRESS_CREDIT_DEFICIT", "OPERATIONAL", input, settings.progressMonitoringFrom, settings.progressHighRiskFrom);
   if (summerResult) return summerResult;
   const progress = input.trainingProgress;
   if (!progress) {
@@ -225,8 +250,8 @@ export function evaluateTrainingProgressCreditDeficit(input: Qd600EvaluationInpu
       dataStatus: "INSUFFICIENT",
       reasonCode: "TRAINING_PROGRESS_SNAPSHOT_MISSING",
       explanation: "Chưa có kết quả Tiến độ đào tạo đã lưu cho đúng khóa, CTĐT và học kỳ đánh giá.",
-      thresholdValue: 4,
-      margin: 12,
+      thresholdValue: settings.progressMonitoringFrom,
+      margin: settings.progressHighRiskFrom,
       policy: input.policyDefinition,
     });
   }
@@ -237,8 +262,8 @@ export function evaluateTrainingProgressCreditDeficit(input: Qd600EvaluationInpu
       dataStatus: progress.dataStatus,
       reasonCode: progress.reasonCode || "TRAINING_PROGRESS_DATA_INCOMPLETE",
       explanation: "Không phân loại tiến độ khi kết quả CTĐT còn lỗi hoặc còn học phần chưa có kết quả chính thức.",
-      thresholdValue: 4,
-      margin: 12,
+      thresholdValue: settings.progressMonitoringFrom,
+      margin: settings.progressHighRiskFrom,
       policy: input.policyDefinition,
     });
   }
@@ -246,16 +271,16 @@ export function evaluateTrainingProgressCreditDeficit(input: Qd600EvaluationInpu
   const gap = Math.max(0, progress.creditDeficit);
   const missingRequiredCredits = progress.missingRequiredCredits ?? 0;
   const missingRequiredCount = progress.missingRequiredCourses?.length ?? 0;
-  const riskLevel = Math.max(gap, missingRequiredCredits) >= 12 ? "RED"
-    : gap >= 4 || missingRequiredCount > 0 ? "YELLOW" : "GREEN";
+  const riskLevel = Math.max(gap, missingRequiredCredits) >= settings.progressHighRiskFrom ? "RED"
+    : gap >= settings.progressMonitoringFrom || missingRequiredCount > 0 ? "YELLOW" : "GREEN";
   return {
     ruleCode: "TRAINING_PROGRESS_CREDIT_DEFICIT",
     sourceType: "OPERATIONAL",
     evaluationStatus: "EVALUATED",
     dataStatus: progress.dataStatus,
     observedValue: gap,
-    thresholdValue: riskLevel === "RED" ? 12 : 4,
-    margin: riskLevel === "RED" ? 12 : 4,
+    thresholdValue: riskLevel === "RED" ? settings.progressHighRiskFrom : settings.progressMonitoringFrom,
+    margin: riskLevel === "RED" ? settings.progressHighRiskFrom : settings.progressMonitoringFrom,
     isNearThreshold: riskLevel === "YELLOW",
     isThresholdBreached: riskLevel === "RED",
     capabilityStatus: null,
@@ -309,7 +334,9 @@ function evaluateFailedCreditRatio(input: Qd600EvaluationInput): Qd600RuleEvalua
       dataStatus: data.dataStatus,
       capabilityStatus: capability.status,
       reasonCode,
-      explanation: "Tỷ lệ tín chỉ không đạt không được đánh giá khi dữ liệu kết quả học phần chưa đầy đủ hoặc mẫu số bằng 0.",
+      explanation: data.registeredCredits <= 0 ? "Chưa ghi nhận tín chỉ đăng ký trong kỳ xét nên không có mẫu số để tính tỷ lệ tín chỉ không đạt."
+        : data.absenceCourseCount ? `Có ${data.absenceCourseCount} học phần VT (${data.absenceCredits} tín chỉ) cần xác minh riêng; chưa đủ kết quả cuối cùng để đối chiếu tỷ lệ tín chỉ không đạt QĐ600.`
+          : "Tỷ lệ tín chỉ không đạt không được đánh giá khi kết quả học phần còn chờ điểm hoặc chưa đầy đủ.",
       thresholdValue: threshold,
       policy: input.policyDefinition,
     });
@@ -510,7 +537,9 @@ function evaluateTermGpa(input: Qd600EvaluationInput): Qd600RuleEvaluation {
       dataStatus: "INSUFFICIENT",
       capabilityStatus: capability.status,
       reasonCode: "TERM_GPA_MISSING",
-      explanation: "Chưa có điểm GPA học kỳ chính thức từ bảng điểm (toàn bộ học phần đăng ký ghi nhận vắng thi hoặc chưa có điểm số quy đổi hệ 4).",
+      explanation: input.capabilityData.failedCreditCalculation.registeredCredits <= 0
+        ? "Chưa ghi nhận học phần học thuật đăng ký trong kỳ xét nên chưa có dữ liệu để đánh giá GPA học kỳ. Không gán GPA bằng 0."
+        : "Chưa có GPA học kỳ chính thức từ nguồn. Các môn VT được theo dõi riêng; môn còn chờ điểm không được quy đổi thành điểm 0.",
       thresholdValue: threshold,
       policy: input.policyDefinition,
     });
@@ -539,23 +568,28 @@ function evaluateAccumulatedDebt(input: Qd600EvaluationInput): Qd600RuleEvaluati
   const capability = input.capabilities.ACCUMULATED_DEBT_CREDIT_CALCULATION;
   const data = input.capabilityData.accumulatedDebtCreditCalculation;
   if (capability.status !== "AVAILABLE" || data.dataStatus !== "COMPLETE" || data.accumulatedDebtCredits == null) {
-    return unavailableRule({
+    return { ...unavailableRule({
       ruleCode: "QD600_ACCUMULATED_DEBT_CREDITS",
       dataStatus: capability.status === "UNVERIFIED" || data.dataStatus === "UNVERIFIED"
         ? "UNVERIFIED"
         : data.dataStatus,
       capabilityStatus: capability.status,
       reasonCode: data.dataStatus === "UNVERIFIED" ? "ACCUMULATED_DEBT_SEMANTICS_UNVERIFIED" : data.reasonCode ?? "ACCUMULATED_DEBT_SEMANTICS_UNVERIFIED",
-      explanation: "Cần đối chiếu lịch sử học lại môn rớt và môn tự chọn thay thế để xác định chính xác số tín chỉ F còn nợ đọng theo Điều 18.",
+      explanation: data.reasonCode === "CURRICULUM_SCOPE_REQUIRES_VERIFICATION" ? "Có học phần trong danh mục CTĐT chung nhưng chưa được xác nhận thuộc nghĩa vụ của chuyên ngành hiện tại. Đối chiếu môn được phép học, thay thế hoặc CTĐT cá nhân; môn chờ điểm không được tự cộng thành nợ F."
+        : data.reasonCode === "EXAM_ABSENCE_REQUIRES_VERIFICATION" ? "Lịch sử còn học phần VT chưa được xác minh kết quả cuối cùng; theo dõi riêng, không tự cộng thành tín chỉ F còn nợ."
+        : "Cần đối chiếu lịch sử học lại môn rớt và môn tự chọn thay thế để xác định chính xác số tín chỉ F còn nợ đọng theo Điều 18.",
       thresholdValue: input.policyDefinition.thresholds.accumulatedDebtCredits.value,
       policy: input.policyDefinition,
-    });
+    }), pendingDebtCourses: data.pendingCourses,
+      ...(data.curriculumReviewCourses?.length ? { curriculumReviewCourses: data.curriculumReviewCourses } : {}) };
   }
 
   const threshold = input.policyDefinition.thresholds.accumulatedDebtCredits.value;
   const breached = data.accumulatedDebtCredits > threshold;
   return {
     ruleCode: "QD600_ACCUMULATED_DEBT_CREDITS",
+    pendingDebtCourses: data.pendingCourses,
+    ...(data.curriculumReviewCourses?.length ? { curriculumReviewCourses: data.curriculumReviewCourses } : {}),
     sourceType: "REGULATORY",
     evaluationStatus: "EVALUATED",
     dataStatus: "COMPLETE",
@@ -588,16 +622,17 @@ function regulatoryCoverage(rules: Qd600RuleEvaluation[]) {
 }
 
 /** Internal monitoring thresholds; QĐ600's >24-credit rule stays separate. */
-function evaluateAccumulatedDebtRisk(debt: Qd600RuleEvaluation): Qd600RuleEvaluation {
+function evaluateAccumulatedDebtRisk(debt: Qd600RuleEvaluation, input: Qd600EvaluationInput): Qd600RuleEvaluation {
+  const settings = parseEarlyWarningSettings(input.policyDefinition.advisory.earlyWarning);
   const credits = debt.observedValue!;
-  const riskLevel = credits >= 19 ? "RED" : credits >= 13 ? "YELLOW" : "GREEN";
+  const riskLevel = credits >= settings.debtHighRiskFrom ? "RED" : credits >= settings.debtMonitoringFrom ? "YELLOW" : "GREEN";
   return {
     ruleCode: "ACCUMULATED_DEBT_CREDIT_RISK",
     sourceType: "ADVISORY",
     evaluationStatus: "EVALUATED",
     dataStatus: "COMPLETE",
     observedValue: credits,
-    thresholdValue: riskLevel === "RED" ? 19 : 13,
+    thresholdValue: riskLevel === "RED" ? settings.debtHighRiskFrom : settings.debtMonitoringFrom,
     margin: null,
     isNearThreshold: riskLevel === "YELLOW",
     isThresholdBreached: riskLevel === "RED",
@@ -605,9 +640,9 @@ function evaluateAccumulatedDebtRisk(debt: Qd600RuleEvaluation): Qd600RuleEvalua
     reasonCode: riskLevel === "RED" ? "ACCUMULATED_DEBT_RISK_RED"
       : riskLevel === "YELLOW" ? "ACCUMULATED_DEBT_RISK_YELLOW" : null,
     explanation: `Nợ tích lũy còn ${credits} tín chỉ sau đối chiếu nhóm lựa chọn của từng học kỳ, học lại và bù bằng môn tự chọn cùng khối CTĐT có tín chỉ đạt dư so với kế hoạch học kỳ. `
-      + (riskLevel === "RED" ? "Nguy cơ cao từ 19 tín chỉ."
-        : riskLevel === "YELLOW" ? "Cần chú ý từ 13 đến 18 tín chỉ."
-          : "Chưa chạm mức theo dõi 13 tín chỉ.")
+      + (riskLevel === "RED" ? `Nguy cơ cao từ ${settings.debtHighRiskFrom} tín chỉ.`
+        : riskLevel === "YELLOW" ? `Cần chú ý từ ${settings.debtMonitoringFrom} đến dưới ${settings.debtHighRiskFrom} tín chỉ.`
+          : `Chưa chạm mức theo dõi ${settings.debtMonitoringFrom} tín chỉ.`)
       + " Đây là ngưỡng theo dõi của hệ thống; cảnh báo theo QĐ600 áp dụng khi nợ trên 24 tín chỉ.",
     regulatorySource: null,
     articleRef: null,
@@ -627,7 +662,21 @@ export function evaluateQd600Article18(input: Qd600EvaluationInput): Qd600Evalua
   ];
   // Do not classify advisory debt from an incomplete historical calculation.
   // The regulatory debt rule already explains why evaluation is unavailable.
-  if (debt.evaluationStatus === "EVALUATED") rules.push(evaluateAccumulatedDebtRisk(debt));
+  if (debt.evaluationStatus === "EVALUATED") rules.push(evaluateAccumulatedDebtRisk(debt, input));
+  if (input.termKind === "MAIN") rules.push(...evaluateEarlyWarningSignals({
+    settings: parseEarlyWarningSettings(input.policyDefinition.advisory.earlyWarning), sources: input.earlyWarningSources,
+    termGpa4: input.termGpa4, cumulativeGpa4: input.cumulativeGpa4,
+    failedCreditRatio: input.capabilityData.failedCreditCalculation.failedCreditRatio, provisional: input.provisional,
+  }));
+  if (input.provisional) {
+    for (const rule of rules) {
+      if (rule.sourceType !== "REGULATORY") continue;
+      rule.evaluationStatus = "NOT_EVALUATED"; rule.dataStatus = "PARTIAL";
+      rule.isThresholdBreached = false; rule.reasonCode = "CURRENT_TERM_NOT_FINALIZED";
+      rule.explanation = "Theo dõi trong kỳ dùng kết quả hiện có; chưa đối chiếu học vụ QĐ600 khi điểm chưa chốt.";
+    }
+  }
+  if (input.termKind === "MAIN" && input.academicStandingSources) rules.push(...assessAcademicStanding(input.academicStandingSources).rules);
   const coverage = regulatoryCoverage(rules);
   const legacySignalContext = [...new Set(input.legacySignalCodes || [])].map((reasonCode) => ({
     reasonCode,
@@ -639,7 +688,8 @@ export function evaluateQd600Article18(input: Qd600EvaluationInput): Qd600Evalua
   const hasYellowProgressRisk = rules.some((rule) => rule.ruleCode === "TRAINING_PROGRESS_CREDIT_DEFICIT" && rule.riskLevel === "YELLOW");
   const hasNearThreshold = rules.some((rule) => rule.sourceType === "ADVISORY" && rule.isNearThreshold);
   const hasRedDebtRisk = rules.some((rule) => rule.ruleCode === "ACCUMULATED_DEBT_CREDIT_RISK" && rule.riskLevel === "RED");
-  const businessStatus: Qd600BusinessStatus = hasRegulatoryBreach || hasRedProgressRisk || hasRedDebtRisk
+  const hasRedOperationalRisk = rules.some(rule => rule.sourceType === "OPERATIONAL" && rule.riskLevel === "RED");
+  const businessStatus: Qd600BusinessStatus = hasRegulatoryBreach || hasRedProgressRisk || hasRedDebtRisk || hasRedOperationalRisk
     ? "HIGH_RISK"
     : hasNearThreshold || hasYellowProgressRisk
       ? "MONITORING"

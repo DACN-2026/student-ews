@@ -21,13 +21,19 @@ function progress(id: string) {
 
 test("lazy overview evaluates only the requested database page, preserving scope and total", async () => {
   const evaluated: string[] = [];
+  let scope: unknown;
   const cleanup = [
     replace(prisma.student, "count", async ({ where }: { where: unknown }) => {
-      assert.deepEqual(where, { AND: [{ deletedAt: null, sIsInClass: true }, { sClassStudentId: { in: ["C1"] } }], sStudyProgramId: "P1" });
+      const membership = (where as { AND: Array<{ OR?: Array<{ leftClassEffectiveAt: null | { gt: Date } }> }> }).AND[0];
+      assert.deepEqual(membership.OR?.[0], { leftClassEffectiveAt: null });
+      assert.ok((membership.OR?.[1].leftClassEffectiveAt as { gt: Date }).gt instanceof Date);
+      const pauseScope = (membership as { studySuspensions?: { none: unknown } }).studySuspensions;
+      assert.ok(pauseScope?.none);
+      assert.deepEqual(where, { AND: [{ deletedAt: null, sIsInClass: true, OR: membership.OR, studySuspensions: pauseScope }, { sClassStudentId: { in: ["C1"] } }], sStudyProgramId: "P1" });
+      scope = where;
       return 1000;
     }),
     replace(prisma.student, "findMany", async (query: { where: unknown; select: { sLastName?: boolean; sStudyProgramId?: boolean } }) => {
-      const scope = { AND: [{ deletedAt: null, sIsInClass: true }, { sClassStudentId: { in: ["C1"] } }], sStudyProgramId: "P1" };
       if (query.select.sLastName) {
         assert.deepEqual(query.where, scope);
         assert.equal(query.select.sStudyProgramId, undefined);

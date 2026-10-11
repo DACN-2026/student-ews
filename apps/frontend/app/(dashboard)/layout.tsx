@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import DashboardShell from "@/components/DashboardShell";
 import { backendOrigin } from "@/lib/backend-origin";
+import type { SessionPayload } from "@/stores/authStore";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [cookieStore, headerStore] = await Promise.all([cookies(), headers()]);
@@ -18,5 +19,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (session.status === 401 || session.status === 403) redirect(renewUrl);
   if (!session.ok) throw new Error("Không thể kết nối dịch vụ xác thực");
 
-  return <DashboardShell>{children}</DashboardShell>;
+  const initialSession: SessionPayload = await session.json();
+  return <DashboardShell initialSession={initialSession}>{children}</DashboardShell>;
 }

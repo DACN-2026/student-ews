@@ -190,6 +190,11 @@ export function WarningCreditOverview({ debtReasons, progressReasons, onOpenGrad
 
 export function WarningReasonEvidence({ ruleCode }: { ruleCode: string }) {
   const { data, error } = useContext(VerificationContext);
+  if (ruleCode.includes("NO_REGISTRATION") || ruleCode === "EARLY_MISSING_TERM_DATA" || ruleCode.startsWith("ACADEMIC_")) {
+    if (!data) return error ? <p className="text-[11px] text-slate-500">Chưa tải được nguồn đối chiếu hồ sơ học vụ.</p> : <LoadingIndicator label="Đang đối chiếu hồ sơ học vụ…" />;
+    const check = data.checks.find(item => item.key === "standing");
+    return <div className="space-y-1 border-t border-slate-100 pt-2"><CheckStatus check={check} /><p className="text-[11px] leading-5 text-slate-500">{check?.status === "CHANGED" ? "Đăng ký, dữ liệu của kỳ đã xét hoặc quyết định đã thay đổi so với lần đánh giá. Cần chạy lại sau khi xác minh." : "Đối chiếu dữ liệu đăng ký và quyết định có hiệu lực trong kỳ đã xét. Khớp nguồn không đồng nghĩa đã xác nhận lý do không đăng ký."}</p></div>;
+  }
   const kind = ruleCode.includes("ACCUMULATED_DEBT") ? "debt" : ruleCode.includes("PROGRESS") ? "progress" : ruleCode.includes("FAILED_CREDIT_RATIO") ? "failedRatio" : ruleCode.includes("CUMULATIVE_GPA") ? "cumulativeGpa" : ruleCode.includes("TERM_GPA") ? "termGpa" : null;
   if (!kind) return null;
   if (!data) return error ? <p className="text-[11px] text-slate-500">Chưa tải được bằng chứng; thử đối chiếu lại ở đầu bảng chi tiết.</p> : <LoadingIndicator label="Đang tải bằng chứng đối chiếu…" />;

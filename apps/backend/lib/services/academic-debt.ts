@@ -2,11 +2,18 @@ import { prisma } from "@/lib/prisma";
 import { courseOutcome, isConditionalCourse, normalizeProgramCourseCode, type CourseOutcomeInput } from "../academic-course-rules";
 import { k44ElectiveMembership, type K44ElectiveBlock } from "../k44-elective-blocks";
 import { teachingSemesterSurplus } from "../semester-teaching-requirements";
-import { loadProgramCurriculum } from "./program-curriculum";
+import { loadProgramCurriculum, loadProgramCurriculumCatalog, type CurriculumCatalogCourse } from "./program-curriculum";
 import type { ForecastCourse } from "./graduation-forecast";
 
-export type DebtAttempt = CourseOutcomeInput & { courseCode: string; courseName?: string | null; credits: number };
+export type DebtAttempt = CourseOutcomeInput & { courseCode: string; courseName?: string | null; credits: number; academicYear?: string; termCode?: string };
+export type CurriculumReviewCourse = {
+  courseCode: string; courseName: string; credits: number; catalogProgramCode: string;
+  outcome: "passed" | "failed" | "pending" | "unknown" | "VT";
+  academicYear?: string; termCode?: string;
+};
 export type AcademicDebtCalculation = {
+  curriculumReviewCourses?: CurriculumReviewCourse[];
+  pendingCourses?: Array<{ courseCode: string; courseName: string; credits: number; previousOutcome: "PASSED" | "FAILED" | "NONE" }>;
   accumulatedDebtCredits: number | null;
   dataStatus: "COMPLETE" | "PARTIAL" | "INSUFFICIENT";
   reasonCode: string | null;
@@ -49,7 +56,7 @@ function settleSurplusDonors(pools: ElectiveDebtPool[], donors: SurplusDonor[]) 
 
 /** Input must be bounded to the assessment cutoff. A later summer pass clears
  * current debt, while older calls and immutable warning snapshots still see F. */
-export function calculateAcademicDebt(attempts: DebtAttempt[], courses: ForecastCourse[], programCode: string): AcademicDebtCalculation {
+export function calculateAcademicDebt(attempts: DebtAttempt[], courses: ForecastCourse[], programCode: string, catalog: CurriculumCatalogCourse[] = []): AcademicDebtCalculation {
   if (!courses.length) return { accumulatedDebtCredits: null, dataStatus: "INSUFFICIENT", reasonCode: "CURRICULUM_MISSING", outstandingCourses: [] };
   const identity = (code: string) => {
     const membership = k44ElectiveMembership(code, programCode);
@@ -63,27 +70,48 @@ export function calculateAcademicDebt(attempts: DebtAttempt[], courses: Forecast
     if (previous && (previous.credits !== course.credits || previous.semesterNo !== course.semesterNo || previous.requirementType !== course.requirementType)) conflictingCourses.add(key);
     if (!previous) byCode.set(key, course);
   }
-  const states = new Map<string, { course: ForecastCourse; failed: boolean; passed: boolean }>();
+  const states = new Map<string, { course: ForecastCourse; failed: boolean; passed: boolean; unresolved: boolean; pending: boolean; absence: boolean }>();
+  const curriculumReviewCourses: CurriculumReviewCourse[] = [];
+  const reviewKeys = new Set<string>();
   let uncertain = false;
   for (const attempt of attempts) {
     if (isConditionalCourse(attempt.courseCode, attempt.courseName)) continue;
     const course = byCode.get(identity(attempt.courseCode));
-    const outcome = courseOutcome(attempt);
+    const absence = (attempt.specialCode || attempt.letterCode || "").trim().toUpperCase() === "VT";
+    const outcome = absence ? "unknown" : courseOutcome(attempt);
     if (!course) {
-      if (outcome === "failed" || outcome === "unknown" || k44ElectiveMembership(attempt.courseCode, programCode)) uncertain = true;
+      const recognized = catalog.find(item => identity(item.courseCode) === identity(attempt.courseCode));
+      const reviewKey = `${attempt.courseCode}|${attempt.academicYear || ""}|${attempt.termCode || ""}|${absence ? "VT" : outcome}`;
+      if (recognized && !reviewKeys.has(reviewKey)) {
+        reviewKeys.add(reviewKey);
+        curriculumReviewCourses.push({ courseCode: attempt.courseCode, courseName: recognized.courseName, credits: attempt.credits,
+          catalogProgramCode: recognized.catalogProgramCode, outcome: absence ? "VT" : outcome,
+          ...(attempt.academicYear ? { academicYear: attempt.academicYear } : {}), ...(attempt.termCode ? { termCode: attempt.termCode } : {}) });
+      }
+      if (outcome === "failed" || outcome === "unknown" || outcome === "pending" || k44ElectiveMembership(attempt.courseCode, programCode)) uncertain = true;
       continue;
     }
-    if (outcome === "unknown" || attempt.credits !== course.credits || conflictingCourses.has(identity(course.courseCode))) uncertain = true;
+    if (attempt.credits !== course.credits || conflictingCourses.has(identity(course.courseCode))) uncertain = true;
     const code = identity(course.courseCode);
-    const state = states.get(code) ?? { course, failed: false, passed: false };
+    const state = states.get(code) ?? { course, failed: false, passed: false, unresolved: false, pending: false, absence: false };
     state.failed ||= outcome === "failed";
     state.passed ||= outcome === "passed";
+    state.unresolved ||= outcome === "unknown";
+    state.pending ||= outcome === "pending";
+    state.absence ||= absence;
     states.set(code, state);
   }
   let debt = 0;
+  const pendingCourses: NonNullable<AcademicDebtCalculation["pendingCourses"]> = [];
+  let unresolvedAbsence = false;
   const outstandingCourses: string[] = [];
   const groups = new Map<K44ElectiveBlock, { requiredCredits: number; passedCredits: number; failures: ElectiveFailure[] }>();
   for (const state of states.values()) {
+    // A completed retry settles current debt, without inventing the old result.
+    if (state.unresolved && !state.passed) uncertain = true;
+    unresolvedAbsence ||= state.absence && !state.passed;
+    if (state.pending) pendingCourses.push({ courseCode: state.course.courseCode, courseName: state.course.courseName, credits: state.course.credits,
+      previousOutcome: state.passed ? "PASSED" : state.failed ? "FAILED" : "NONE" });
     const mandatory = /mandatory|bắt buộc/i.test(state.course.requirementType);
     const group = mandatory ? null : k44ElectiveMembership(state.course.courseCode, programCode);
     if (!mandatory && !group) { if (state.failed && !state.passed) uncertain = true; continue; }
@@ -184,21 +212,24 @@ export function calculateAcademicDebt(attempts: DebtAttempt[], courses: Forecast
   });
   const electiveSelections = debtPools.map(pool => ({ semesterNo: pool.semesterNo, requiredCredits: pool.requiredCredits, passedCredits: pool.passedCredits,
     failedCredits: pool.failures.reduce((sum, failure) => sum + failure.credits, 0), initialDebtCredits: pool.initialDebtCredits, remainingDebtCredits: pool.remainingDebtCredits, failedCourseCodes: pool.failures.map(failure => failure.courseCode) }));
-  return { accumulatedDebtCredits: debt, dataStatus: uncertain || missingPlan ? "PARTIAL" : "COMPLETE", reasonCode: uncertain ? "UNRESOLVED_HISTORICAL_ATTEMPTS" : missingPlan ? "ELECTIVE_REPLACEMENT_PLAN_MISSING" : null, outstandingCourses, electiveBlocks, semesterSurpluses, replacements, electiveSelections };
+  const scopeUnresolved = curriculumReviewCourses.some(course => course.outcome !== "passed");
+  return { accumulatedDebtCredits: debt, dataStatus: uncertain || missingPlan ? "PARTIAL" : "COMPLETE", reasonCode: scopeUnresolved ? "CURRICULUM_SCOPE_REQUIRES_VERIFICATION" : unresolvedAbsence ? "EXAM_ABSENCE_REQUIRES_VERIFICATION" : uncertain ? "UNRESOLVED_HISTORICAL_ATTEMPTS" : missingPlan ? "ELECTIVE_REPLACEMENT_PLAN_MISSING" : null, outstandingCourses, electiveBlocks, semesterSurpluses, replacements, electiveSelections, pendingCourses,
+    ...(curriculumReviewCourses.length ? { curriculumReviewCourses } : {}) };
 }
 
 export async function loadAcademicDebt(studentIds: string[], programId: string, assessmentTermId: string) {
   const result = new Map<string, AcademicDebtCalculation>();
   if (!studentIds.length) return result;
-  const [term, program, courses] = await Promise.all([
+  const [term, program, courses, catalog] = await Promise.all([
     prisma.academicTerm.findUnique({ where: { id: assessmentTermId } }),
-    prisma.trainingProgram.findUnique({ where: { id: programId } }), loadProgramCurriculum(programId),
+    prisma.trainingProgram.findUnique({ where: { id: programId } }), loadProgramCurriculum(programId), loadProgramCurriculumCatalog(programId),
   ]);
   if (!term || !program) return result;
   const year = await prisma.academicYear.findUnique({ where: { id: term.academicYearId } });
   if (!year) return result;
   const rows: Array<DebtAttempt & { student_id: string }> = await prisma.$queryRaw`
     SELECT o.student_id::text, o.s_curriculum_id AS "courseCode", o.s_course_name AS "courseName", o.s_credits AS credits,
+      y.s_year_code AS "academicYear", t.s_term_code AS "termCode",
       g.is_pass AS "isPass", g.not_score AS "notScore", g.score_status AS "scoreStatus", g.special_code AS "specialCode",
       g.letter_code AS "letterCode", g.score_10 AS "score10", g.score_4 AS "score4"
     FROM student_course_offerings o JOIN academic_years y ON y.id = o.academic_year_id
@@ -206,9 +237,12 @@ export async function loadAcademicDebt(studentIds: string[], programId: string, 
     WHERE o.student_id = ANY(${studentIds}::uuid[]) AND (y.s_year_code < ${year.sYearCode}
       OR (y.s_year_code = ${year.sYearCode} AND t.s_term_order <= ${term.sTermOrder}))
   `;
-  const unscoped = new Set((await prisma.unscopedGradeRecord.findMany({ where: { studentId: { in: studentIds } }, select: { studentId: true } })).map((row) => row.studentId));
+  const unscoped = new Set((await prisma.unscopedGradeRecord.findMany({ where: { studentId: { in: studentIds } },
+    select: { studentId: true, sCourseCode: true, sCourseName: true, reason: true } }))
+    // GDTC/GDQP remain unresolved certificate evidence; they do not affect academic F debt.
+    .filter(row => !isConditionalCourse(row.sCourseCode, row.sCourseName)).map((row) => row.studentId));
   for (const studentId of studentIds) {
-    const debt = calculateAcademicDebt(rows.filter((row) => row.student_id === studentId), courses, program.sProgramCode);
+    const debt = calculateAcademicDebt(rows.filter((row) => row.student_id === studentId), courses, program.sProgramCode, catalog);
     if (unscoped.has(studentId)) { debt.dataStatus = "PARTIAL"; debt.reasonCode = "UNSCOPED_HISTORICAL_ATTEMPTS"; }
     result.set(studentId, debt);
   }

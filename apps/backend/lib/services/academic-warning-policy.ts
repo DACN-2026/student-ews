@@ -1,4 +1,5 @@
 import { sha256Hex } from "@/lib/utils/crypto";
+import { parseEarlyWarningSettings, type EarlyWarningSettings } from "./early-warning-settings";
 
 export const ACADEMIC_WARNING_POLICY_SCHEMA_VERSION = 1 as const;
 export const LEGACY_WARNING_ENGINE_VERSION = "academic-warning-legacy-v1";
@@ -72,6 +73,7 @@ export type Qd600PolicyDefinition = PolicyDefinitionBase & {
   advisory: {
     earlyWarningMarginGpa4: number;
     advisoryOnly: true;
+    earlyWarning?: EarlyWarningSettings;
   };
 };
 
@@ -214,6 +216,12 @@ function parseQd600PolicyDefinition(value: Record<string, unknown>): Qd600Policy
 
   if (!isObject(value.advisory)) throw new PolicyDefinitionError("advisory configuration is required");
   if (value.advisory.advisoryOnly !== true) throw new PolicyDefinitionError("advisory.advisoryOnly must be true");
+  let earlyWarning: EarlyWarningSettings | undefined;
+  try {
+    if (value.advisory.earlyWarning !== undefined) earlyWarning = parseEarlyWarningSettings(value.advisory.earlyWarning);
+  } catch (error) {
+    throw new PolicyDefinitionError(error instanceof Error ? error.message : "Invalid early warning settings");
+  }
   const requiredCapabilities = stringArray(value.requiredCapabilities, "requiredCapabilities");
   const missingCapabilities = QD600_REQUIRED_CAPABILITIES.filter((capability) => !requiredCapabilities.includes(capability));
   if (missingCapabilities.length) {
@@ -241,6 +249,7 @@ function parseQd600PolicyDefinition(value: Record<string, unknown>): Qd600Policy
     advisory: {
       earlyWarningMarginGpa4: numberInRange(value.advisory.earlyWarningMarginGpa4, "advisory.earlyWarningMarginGpa4", 0, 4),
       advisoryOnly: true,
+      ...(earlyWarning ? { earlyWarning } : {}),
     },
     requiredCapabilities,
   };

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { studentIdWhere } from "@/lib/utils/is-uuid";
 import { ReportsService } from "@/lib/services/reports";
+import { classMembershipWhere, studentIsInClass, suspensionInfo, suspensionWhere } from "../student-monitoring-scope";
 
 export interface StudentFilter {
   search?: string;
@@ -53,6 +54,7 @@ async function orderedStudentPage(where: Prisma.StudentWhereInput, skip = 0, tak
   if (!pageIds.length) return { total: matching.length, items: [] };
   const rows = await prisma.student.findMany({
     where: { AND: [where, { id: { in: pageIds.map(student => student.id) } }] },
+    include: { studySuspensions: { where: suspensionWhere() } },
   });
   const positions = new Map(pageIds.map((student, index) => [student.id, index]));
   rows.sort((left, right) => positions.get(left.id)! - positions.get(right.id)!);
@@ -105,7 +107,8 @@ export class StudentsService {
     }
 
     if (filter.isInClass !== undefined) {
-      where.sIsInClass = filter.isInClass;
+      where.AND = [...(where.AND as Prisma.StudentWhereInput[]), filter.isInClass
+        ? classMembershipWhere() : { NOT: classMembershipWhere() }];
     }
 
     if (filter.gender) {
@@ -212,6 +215,7 @@ export class StudentsService {
         ...studentIdWhere(id),
         deletedAt: null,
       },
+      include: { studySuspensions: { where: suspensionWhere() } },
     });
 
     if (!student) return null;
@@ -455,7 +459,11 @@ function mapStudent(
     gender: s.sGender,
     classRoleId: s.sClassRoleId,
     permanentResidence: s.sPermanentResidence,
-    isInClass: s.sIsInClass,
+    isInClass: studentIsInClass(s),
+    isSuspended: studentIsInClass(s) && Boolean(suspensionInfo(s)),
+    suspension: studentIsInClass(s) ? suspensionInfo(s) : null,
+    departure: s.leftClassDecisionId ? { decisionId: s.leftClassDecisionId, fromYear: s.leftClassFromYear,
+      fromTerm: s.leftClassFromTerm, effectiveAt: s.leftClassEffectiveAt?.toISOString() || null } : null,
     classStudentId: s.sClassStudentId,
     className: classMeta?.className || s.sClassStudentId,
     classId: s.sClassStudentId,

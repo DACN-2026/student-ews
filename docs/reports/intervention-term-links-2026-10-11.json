@@ -1,0 +1,4174 @@
+{
+  "termId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+  "riskStudents": 289,
+  "before": {
+    "open": 60,
+    "inProgress": 0,
+    "resolved": 2,
+    "escalated": 0,
+    "reopened": 0,
+    "overdue": 0,
+    "highRisk": 33,
+    "verifyRequired": 0,
+    "total": 62,
+    "studentCount": 62,
+    "academicTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+    "allPeriods": {
+      "total": 294,
+      "studentCount": 291,
+      "otherPeriodCases": 231,
+      "otherPeriodStudents": 231,
+      "unlinkedCases": 1
+    }
+  },
+  "after": {
+    "open": 289,
+    "inProgress": 0,
+    "resolved": 2,
+    "escalated": 0,
+    "reopened": 0,
+    "overdue": 0,
+    "highRisk": 181,
+    "verifyRequired": 0,
+    "total": 291,
+    "studentCount": 289,
+    "academicTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+    "allPeriods": {
+      "total": 293,
+      "studentCount": 290,
+      "otherPeriodCases": 1,
+      "otherPeriodStudents": 1,
+      "unlinkedCases": 1
+    }
+  },
+  "results": [
+    {
+      "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+      "processedResults": 44,
+      "createdCases": 0,
+      "updatedCases": 43,
+      "unchangedResults": 1
+    },
+    {
+      "runId": "f7faa4fb-850a-401a-bfc4-02986155fd67",
+      "processedResults": 8,
+      "createdCases": 0,
+      "updatedCases": 8,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+      "processedResults": 115,
+      "createdCases": 0,
+      "updatedCases": 64,
+      "unchangedResults": 51
+    },
+    {
+      "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+      "processedResults": 58,
+      "createdCases": 0,
+      "updatedCases": 53,
+      "unchangedResults": 5
+    },
+    {
+      "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+      "processedResults": 37,
+      "createdCases": 0,
+      "updatedCases": 36,
+      "unchangedResults": 1
+    },
+    {
+      "runId": "707994e2-0fe3-4b98-abf7-532b0215477b",
+      "processedResults": 6,
+      "createdCases": 0,
+      "updatedCases": 6,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+      "processedResults": 63,
+      "createdCases": 0,
+      "updatedCases": 58,
+      "unchangedResults": 5
+    }
+  ],
+  "repeat": [
+    {
+      "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+      "processedResults": 44,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 44
+    },
+    {
+      "runId": "f7faa4fb-850a-401a-bfc4-02986155fd67",
+      "processedResults": 8,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 8
+    },
+    {
+      "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+      "processedResults": 115,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 115
+    },
+    {
+      "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+      "processedResults": 58,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 58
+    },
+    {
+      "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+      "processedResults": 37,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 37
+    },
+    {
+      "runId": "707994e2-0fe3-4b98-abf7-532b0215477b",
+      "processedResults": 6,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 6
+    },
+    {
+      "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+      "processedResults": 63,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 63
+    }
+  ],
+  "changedCases": 268,
+  "casesPreserved": 336,
+  "priorEventsPreserved": 10311,
+  "newEvents": 51,
+  "verifiedActiveCoverage": 289,
+  "statusesNotesAssignmentsFollowUpsAndHistoryPreserved": true,
+  "changes": [
+    {
+      "caseId": "00404f2a-983f-46eb-a2a3-6551b5290b1e",
+      "studentId": "ba00a7cc-7627-4646-9a5f-0187e872dd00",
+      "status": "OPEN",
+      "before": {
+        "runId": "40f55ea1-12cd-4c2d-98a9-0664d6da4b29",
+        "resultId": "610d0e3a-3fbd-45df-bb20-c165ed87f4e5",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "707994e2-0fe3-4b98-abf7-532b0215477b",
+        "resultId": "e145a444-1898-477b-9bc4-da675c2325b4",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "004cf096-3388-4e16-bc44-be264460d5fe",
+      "studentId": "89794dcd-ebd2-48d7-833d-ce22cb2960b0",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "63ce1679-968e-4bd9-98b6-896f1694375a",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "364fd671-ec46-420d-95a6-d513925311d2",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "03bbe4ab-4288-4758-b100-a1313c11bb1a",
+      "studentId": "2deb1ab8-c08f-4961-b09a-1e21605b377d",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "5daffe0c-4080-4385-ae25-c411b93d4794",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "9480004b-0352-4636-9b4e-efc75bdc0983",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "03c2f06f-a16e-4243-aca3-e0f394ba9c83",
+      "studentId": "b875dda5-dc03-4140-8118-111aa41700ad",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "1069c8c6-dc23-49f9-882b-c6b15855df84",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "f5c4b1c6-0687-4339-b2eb-28873dc93fcc",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "0468e049-d136-4673-acf3-2fc62be3150e",
+      "studentId": "28135c37-08ac-4d79-8447-f5e63c6020d0",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "9b9f9b96-a2c4-4829-b1c7-7e501e20457d",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "a1528dd1-5ae6-4b8b-a6b0-386dedbbf680",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "04cf695c-f6e1-4004-9e49-d7009c4885d0",
+      "studentId": "30632a16-fcc4-4c70-af03-d79da8729d70",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "92b1f958-2ffe-4b41-b457-85a7180ee676",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "564ecbaa-588b-4eca-83ab-42b51df3f434",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "04fe303b-4e16-4ecb-978b-4c7ad8712d4f",
+      "studentId": "b0a0b9c1-d1a3-4e7a-8701-e6a762e3d8b3",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "17e818ea-9ff7-4398-8f1b-819c13d6b93e",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "bd526f6e-8a91-40bd-b6aa-da8f765000af",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "05756ef0-4291-4da8-aeff-484a1748c9f1",
+      "studentId": "0b711f13-0e02-44f3-9c93-fb8be4ef8d60",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "24bc2487-82f7-4eee-945f-56b7a5199fdb",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "0932b923-6f97-4d56-a997-0e1203f6ca7e",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "06efda58-7662-4623-bc5e-2f34778e6c7e",
+      "studentId": "461ed794-45f2-4b26-8204-6a2efab13a7a",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "bfec0dfd-df6b-4ccd-884b-0346985564b4",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "1b7206ac-2254-417c-9775-4e004d310501",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "0a2efd66-f64e-4fce-8fa9-29a66e1d197c",
+      "studentId": "4648b2b9-eebb-475a-969d-576545c6997b",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "eaee62cd-b05e-43d7-b080-00dca841ae07",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "94ffd0ad-c26e-4ee1-a5e7-f5206fb1e8a4",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "0aac4dbf-5634-44eb-b17f-6b7660ea799f",
+      "studentId": "a5d73cbf-d7da-4627-bf6e-ee7a184f3fd3",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "17febf4c-8502-4d11-9a2f-7d721840a81a",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "ae551b96-90c7-4f16-81d5-4959b473d6d9",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "0da9746b-6871-479f-b0fa-f4d69000a907",
+      "studentId": "4808b84e-daf3-498e-a8d5-e6ef1f110d8a",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "e91e6c13-c076-404f-b7fd-007c929bfacd",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "93394c81-af51-426e-8a3a-e1ff1a608533",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "0de824aa-9cc0-48ba-ac72-d26ec899678b",
+      "studentId": "63830801-3562-4f99-9859-8441ae961176",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "5cf501c1-07fe-4e1f-9260-310770512ce7",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "fa6e398a-1cb9-4cba-9e0d-131140e57da6",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "0e400eb9-76fa-4ebe-bef5-32635714475b",
+      "studentId": "9e491f49-3404-490d-a339-2e02ad734290",
+      "status": "OPEN",
+      "before": {
+        "runId": "385329b7-9078-41ed-a5e2-144cd6ea67a5",
+        "resultId": "c12ca19d-175b-4487-b06a-bc5ca6bb0055",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "f7faa4fb-850a-401a-bfc4-02986155fd67",
+        "resultId": "be146bba-c924-4e33-b2af-723b2350f0f4",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "0ea2236d-697c-41eb-a2ed-6331145d872a",
+      "studentId": "b61b3ca9-e60d-4a32-a7fe-a1791782fd13",
+      "status": "OPEN",
+      "before": {
+        "runId": "385329b7-9078-41ed-a5e2-144cd6ea67a5",
+        "resultId": "4034198e-3089-4060-b749-ccb89d6032a9",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f7faa4fb-850a-401a-bfc4-02986155fd67",
+        "resultId": "2b2a030f-7329-4adb-8acb-3f0d5175ac10",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "0f36d271-5336-41bc-98d8-36dacea58dde",
+      "studentId": "4a80c580-9039-4112-b7c7-ac563cdc5751",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "7399497d-e444-4eb9-a68a-bd058ea31926",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "c8fb61c1-c482-4360-852a-754e3d0fd2bc",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "0ffcaa93-f069-455c-97ff-b7bb7144c985",
+      "studentId": "38ac2af4-746a-4d84-b1bb-908bb701fe58",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "6243a18c-b519-4268-ab1f-8e4547fd021e",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "44c1bb1e-8417-42b6-b798-f8177225cdaf",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "1333a739-3770-4f3e-a8f4-6ded440edfed",
+      "studentId": "b09c7cb6-ea25-4089-bf90-7395d8c18b80",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "e3f4314b-38eb-4edd-a64b-9bce90d27253",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "d5e31635-e3d7-4c8a-b10b-342294bd0a43",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "14156080-7ff3-4755-b61e-b9bc0becfdf3",
+      "studentId": "a586ff41-6b99-42fa-a85d-38480dc7e967",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "53c0e4a0-ec1b-4c5a-b0ea-e3c6e6065ad0",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "db0f2763-0aec-4d4c-8ecf-38b7c5c88a70",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "1629c347-1f78-4986-a2a3-ca908e9d0d99",
+      "studentId": "d2391e4b-ef03-4002-8e86-7053e882e326",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "90f0673d-67cf-4cfc-8bd0-7052546bdf3b",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "d299997d-8553-4679-a69b-48a9069e62ec",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "165b2a2c-6cd8-4e46-a896-82937d610a2d",
+      "studentId": "e637c68b-0f2b-4ea2-9c2a-4823bc03e6f9",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "0228960c-9ff1-4a21-82bd-aced34015d4e",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "c0472b6f-bacb-4cfa-9a9c-ee904b792c81",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "172c6703-b733-45b6-9955-9e80249e471a",
+      "studentId": "25e3295d-bf96-4b47-8e3f-0a40b7f0dddd",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "34bc92b8-3761-44d2-8212-e2041d103c84",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "9c883105-cd1d-4b58-a457-3638bdf759d9",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "17eabc87-86ad-406e-bd6f-2c2b1c56b3fa",
+      "studentId": "75a15d0a-fb8c-4467-b142-72963be6ac95",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "3dd25a64-fd88-445a-b024-53983df28948",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "cba19828-ea0d-4c5d-8836-7efee27a0114",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "19cc370e-d3e5-4ae4-adcb-bdaeaa0a297f",
+      "studentId": "0af86f7e-746c-4307-acfe-aabffad4e1e3",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "b07000b3-6305-4ff0-a006-a63c52625172",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "7af38754-5a48-4cba-9674-7f763dc53633",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "1a01da81-9e0e-45d8-ae24-442991a008a5",
+      "studentId": "7596a658-b0fd-46b1-bdcf-2c711fce8077",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "2d68efe6-0071-4a2c-83fe-654fc98a099b",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "e5be9bb7-525d-4a2d-baff-29869f5c33ea",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "1c1a9a60-6906-43fd-98c8-593dbd0de33a",
+      "studentId": "c9f96744-fadf-43e8-96aa-4bf8b96362a8",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "2b2a9726-803a-4025-b061-2ef8bee4fb9b",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "0f3b16c6-13c6-46dd-b0d1-b9a4b88f1021",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "1d62be80-1970-4f3a-a886-e6780ba77f07",
+      "studentId": "10f971c6-1d64-4ff1-85c4-d78417fab074",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "073d9e82-e0bd-4fc7-bd9f-58e420f3fd99",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "c7d4819c-8398-4230-80b1-07e734f48df6",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "1db1f591-4d97-4238-8df9-1a90fb8a877a",
+      "studentId": "5babff25-8c53-402c-bda9-5c4192eae87a",
+      "status": "OPEN",
+      "before": {
+        "runId": "385329b7-9078-41ed-a5e2-144cd6ea67a5",
+        "resultId": "eabbb2be-a036-47f5-bb3b-2f72544403e7",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f7faa4fb-850a-401a-bfc4-02986155fd67",
+        "resultId": "c599a81c-fbe4-4049-8ceb-72d41716be66",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "1e14ada1-68d2-47b2-8d74-a7a14b9ce699",
+      "studentId": "c7c3a23d-7cbb-40e3-b46e-7b5f8e8fed6c",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "87d6964d-3e53-48f0-9165-ee68635e3d8c",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "d835f7b3-f62f-48ed-bdc4-e61e81e7c5d6",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "1e1cafe2-673d-47af-95c9-33ddc40ba608",
+      "studentId": "a2fa1d98-a3fb-4724-bc1e-daa208a4c9e8",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "d7d2cb9f-8e30-408c-8513-021e36029382",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "71d6d9f8-6063-49f5-a1eb-bf77d226b7b0",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "1e5564d4-e554-4ad5-9600-78f39b9b4421",
+      "studentId": "f72f232d-a7b8-490a-8c9b-441650d397d6",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "03d893f0-2d2f-4e08-b079-730b0dede132",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "d16bd631-0e8e-4762-9fba-39a1ddb2ce79",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "1f47bd2d-5e47-43a6-a348-5ec3b127ff95",
+      "studentId": "f4a68381-ef53-4c2b-97b6-e23a8418fe3b",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "0adcedc9-3963-482a-bc5c-a2718333b632",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "ca491779-8c8b-42b6-8059-7f06bad11a34",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "1f494d25-fd05-4ff5-b9cf-46aad739a0af",
+      "studentId": "8bf2cea1-8238-4f12-b23a-06809b3cb01a",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "2feeeaee-d6a8-4f1b-860c-6c527c192803",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "16bf22de-e801-481b-bfbd-f10dcf3a4fd1",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "20b8dbff-a164-4569-bc5a-dd358c476854",
+      "studentId": "d6dad9ee-4e6d-4866-987c-869e936dda55",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "5d8bdf06-459a-4747-9e72-e9c0a7cfb5dd",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "a148ccd4-ab40-445d-8837-7a05b1ae8e14",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "21db6f46-2a40-4857-87cf-19fed8e361a7",
+      "studentId": "76fb11e6-c470-424b-9e75-dc6464491ef3",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "0caa6fe8-5fd0-4b1e-babb-abb665a8e4d0",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "cd030643-80b4-4632-aaf5-b9e232ee738a",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "21e25b10-6a2c-4faf-95b5-e21f72a7b34a",
+      "studentId": "dc05d65c-2874-4e9c-bac6-8a63323171f2",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "4b19d60f-9dc2-48d6-9f85-ca105b12193c",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "1e19b0d5-dc38-47f1-9cf7-737a7eb774c0",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "22821ab9-cafe-42fc-bc2c-09adef95ca9c",
+      "studentId": "b0f34f15-f991-46b2-9690-52e5498a6fad",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "8eb532c8-6b32-4c8d-8b7b-96d193813139",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "edd13096-30d4-4301-9531-4aff4aa5c72a",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "2294673c-a466-49be-8cfe-38452113c1f1",
+      "studentId": "082af63d-b0fe-4559-8118-a1596a300612",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "c27c3b7a-08f1-419e-af1e-241c097fb9c8",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "e105a471-415d-48e7-81c2-ca701f73c3c9",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "22e96052-da9a-4f9a-bea4-eb3d8df0d951",
+      "studentId": "7da1b40e-c6e6-4637-a075-765411018882",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "8068b626-152c-4f8d-811b-6c208208d5d8",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "3aa5157d-8753-4035-b45a-67e33d1a3ec7",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "2483ca7e-d33c-48af-a22f-c47cbdcbf759",
+      "studentId": "a4ff52a6-9c00-4b5d-8c8e-d4521ce9573a",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "3c4dc1a1-be88-495f-a55e-3db4e3452bf5",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "b835d74d-596e-4753-b01b-4c843dbfcc2c",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "24d70f18-d26f-49a8-8787-734e3fff5e0b",
+      "studentId": "0224d003-43c1-42e3-a818-400df2fa8706",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "8d137ce3-f475-4e1a-b6c6-a67984f1a0a6",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "141fb4f3-a260-46b6-a397-d4bb1990bf1a",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "26011b18-1f71-4664-a35c-a7c41136c47e",
+      "studentId": "30e383d8-d5b9-4bde-99cb-f9136900d414",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "a93dd72e-74c4-456f-bfe8-b0ea7a4dcc10",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "49ca4fad-372e-4443-ba40-f48416c3eb03",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "263b7a09-cff3-4f13-8358-09a6f9436c0a",
+      "studentId": "f4176846-1894-4b20-b930-0f795491e073",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "b5f5f190-1858-4f2f-8cc6-e79abf9b6f4a",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "470caf89-b752-496e-acf2-fceb025d262e",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "26fab665-bef3-42e8-ac41-0f1fce284397",
+      "studentId": "0671c941-30ff-4617-8d62-444ece2ee7c3",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "7850c2cc-28dc-40fe-b12d-878642180c19",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "d69047e9-8397-4f66-999e-ac4b287db768",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "291f0ea3-44ba-45a1-b78e-5c9833a27954",
+      "studentId": "55f4d41e-b2d3-499b-9c6a-be2a82cdfee0",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "f7a7ac19-5f16-43c1-8f9e-9a6c56a609d6",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "cc7d235b-6478-4af4-b497-a3358e81c6c2",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "2b348f50-b86c-48c1-a015-90c944045ab0",
+      "studentId": "73998989-1c95-4933-ac5a-e35e46b3a22f",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "d9d5b586-0262-435f-8f18-807a4396319c",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "7c725f2c-ee4d-4c9c-919e-214ff0964148",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "2bc26183-907e-4dcb-95f9-1fbe2a09b0ba",
+      "studentId": "d0fcd6bd-5bfb-4c05-bfef-9772df46e417",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "c4f558ad-eba2-4fb6-aac2-cb6560d443d2",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "d01857f1-7f87-4125-a991-bec82e6db629",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "2c4423a0-31e7-45ed-b054-6c4e37daa642",
+      "studentId": "bd120150-2a11-495a-9404-699d4fc12809",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "5d9c897e-2d4e-4117-90a7-3a223fc44c5b",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "6aa768a7-679f-471a-9a46-88b984afd2c3",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "2d1b5457-5f47-4cbb-ac69-bc5f463a4403",
+      "studentId": "e223ca1c-abf7-4595-a03b-6117be8be305",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "35f964b3-1fde-487d-90d7-b36c08f00f14",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "2d5023e0-27ce-4051-b9a8-7bd288572b4c",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "2e159395-0240-4f4b-812b-66aa02e3db2e",
+      "studentId": "d623a303-6c39-4eb0-ad57-87ff97e19cec",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "4fa82dd7-fc11-44bf-a72e-fb560d41b6da",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "396153ca-bebb-4906-bccd-119c67cf56a8",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "2f8b6a42-cc2f-4f38-bd65-7c1b4bbd2033",
+      "studentId": "c56f9fc7-bf9b-4ddf-84ff-e4b462e10cd3",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "cd3e16ad-a182-4b66-8e3e-5c879bcee22c",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "f57dd53d-d18c-4022-a5a0-fa4e2579dae4",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "30ee4ee2-61d2-416f-9897-90a980368618",
+      "studentId": "e3b70243-ba92-44f7-9c2e-1ae231c47622",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "e5733fde-0528-4968-9428-aaa16daf6ce7",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "e4e45211-225a-46c3-9ec9-57ac84033b9d",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "33552d36-07c8-449a-b1ba-0a2b49e5faaf",
+      "studentId": "94a04fe5-3cc6-4feb-8a03-fab1ee606c31",
+      "status": "OPEN",
+      "before": {
+        "runId": "385329b7-9078-41ed-a5e2-144cd6ea67a5",
+        "resultId": "8cd51687-3b9f-4b97-95c9-0bc617ddc086",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f7faa4fb-850a-401a-bfc4-02986155fd67",
+        "resultId": "3f55858b-7519-4c47-b9a5-acc1ed1adc8b",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "33fc6970-6b28-4869-9af4-f25108e41690",
+      "studentId": "fa37f017-68d7-4955-91a3-212709bd13b2",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "0d72dd3a-d5c9-4f6b-950e-8fe420f237ed",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "c267dbec-5cfa-42fe-822d-7d7a949aed6e",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "35102b39-dfd9-4b15-baed-c69f96996a22",
+      "studentId": "80bee8f1-84a6-4bb7-89df-f982035e1164",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "342ba2b2-32b6-4479-8f56-a05d2b7b02f3",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "897df024-8051-410f-8c25-5a8ed09d4e58",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "355de87a-c5ad-4b22-a39d-846c8dfc3dc4",
+      "studentId": "baed2afe-b882-430f-beef-ff9626ca8607",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "90f7e929-5ea8-4e19-874c-847c9ddbfc82",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "9d45bf57-b13b-4b2f-ae18-89ea6a73fbfe",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "35870ec8-a898-4796-afef-a8ba7c4ae5f2",
+      "studentId": "d0912d13-5789-47a7-a50c-d11ed47ddfef",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "4121bd4c-22e7-429f-b23c-da3122a216a2",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "bd6ba2f2-70f0-442b-b5be-a0c579da7d79",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "35e080af-1c16-4db2-92fc-072f92029243",
+      "studentId": "3dbaebdb-a64b-4447-853d-0c08c232ecf0",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "17e46257-a211-4b75-a790-c69829b4e0c1",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "d00ffe38-6fa9-4dbe-8a62-6f7ee4dd788d",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "36fb904a-dd6f-4756-b85b-79e69cc77db3",
+      "studentId": "b7d2e7a0-e301-4338-b896-e0c1156d2bc1",
+      "status": "OPEN",
+      "before": {
+        "runId": "b350ec6e-e9d9-4937-bed8-b67ddb5b70b8",
+        "resultId": "bdb5ac7a-e9dd-451e-b237-765fa598ed81",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "707994e2-0fe3-4b98-abf7-532b0215477b",
+        "resultId": "fb138126-46f3-483b-a63b-655a9dea51c7",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "37802d5a-cbbf-4107-ad8d-60c7a4898b63",
+      "studentId": "8d742068-806d-46a9-a582-34d695752476",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "c9c4c4aa-00e2-483d-9d78-41f0f0655d68",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "db3eb232-79cd-4851-84ab-a28d5641da86",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "3887ba52-5de7-4a8a-b2c4-3251b5663d0c",
+      "studentId": "9903bfde-49d0-47e4-ae8a-7618ac610a07",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "690183e5-d19b-4a35-9e23-53beedbaf95e",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "3e48ed4c-3255-4136-9b4a-7b0e59bad14c",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "38889116-b329-43a1-b2dd-1abe10110587",
+      "studentId": "417f66dd-18d9-4116-b241-48e184060c04",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "8c4a9563-e700-43f7-9b7d-2e52c600ea36",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "d232e98d-3438-451e-bc4d-4b6e571bc54d",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "3a554a94-6cf6-44f9-9536-3ae317e54c0c",
+      "studentId": "48ee73fd-0318-4df6-9eeb-c1b13a85122b",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "d0f1ea1e-50a2-4845-8401-e0a1b6b302b5",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "d041a7a8-cd1b-49a6-91f0-167b0b10d2fd",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "3afff706-771b-43fc-9669-82ce6b01fa05",
+      "studentId": "24bc3804-e4a8-40eb-a28b-8c72c2fbd093",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "b20d84f9-dca9-406f-a2f8-7d8bf4d5741e",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "2d4cd264-4594-45e9-92ac-5c72febca3aa",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "3b89fdea-e1ea-4c99-979d-87e83176fc38",
+      "studentId": "140f1291-779a-4a11-8351-6175181fc336",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "593b0fc5-004e-4716-a006-9d93f6d7c195",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "09bff343-66b2-4d1d-92f7-5240e483e0e0",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "3d2a4d77-ad96-4b88-99b3-bc1e79e01bdc",
+      "studentId": "63f15788-6011-4295-9a37-0b6de79cc138",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "a8eac6c4-22c3-40fe-90ed-68248eb064b2",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "b6a07950-fcba-4be4-971d-a07f503e9d72",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "3d8ff0df-106c-470b-992c-892773dc292d",
+      "studentId": "0f15df95-127d-493d-ad2b-7c853766065e",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "00ff8d3f-108c-4bff-ab39-82646ddfa02e",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "e77a512a-4d42-431a-b81c-114138fbeb13",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "408647b7-b6da-470a-8db9-d1dade1936a3",
+      "studentId": "e24e2274-98ab-4d0d-926f-1665384ff307",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "8d5b267b-8132-488f-80a1-6757efd58051",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "659963b0-594c-4e16-9aaa-61309014f427",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "42df777d-a539-44ed-9977-6b7309c64c42",
+      "studentId": "11aff043-090d-4933-a71a-aea50e5ba7c5",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "bf0b3666-d614-4f16-8a56-933c45d726c9",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "222d149b-102e-42c9-aecc-ab29bcf22340",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "43d16bbb-30fe-447e-b1f0-20af71a85746",
+      "studentId": "aadd2373-f889-4a53-8eb9-fc57b45d6134",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "c6d8884e-8600-4b4b-97cd-7e26cf30495f",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "94ad472e-3cd8-47f9-9963-cb3be1836337",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "4551c784-f6e8-49b0-9e8c-f5c224414f40",
+      "studentId": "895a11d5-2379-4b3d-ae92-cce585f1dde7",
+      "status": "OPEN",
+      "before": {
+        "runId": "385329b7-9078-41ed-a5e2-144cd6ea67a5",
+        "resultId": "84f08df5-1060-4c99-8059-4175c4181f6c",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f7faa4fb-850a-401a-bfc4-02986155fd67",
+        "resultId": "955fa213-414f-4b9b-b23d-f5d73d08bfe0",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "466afbdf-2e54-430e-ba35-8c986aee39d0",
+      "studentId": "5203381d-2a40-498b-ac33-1f444dad5c7e",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "6a3d17e9-bedf-4812-b04e-01bdde58d3da",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "f1847879-cb35-4646-a19d-2b060faf1f07",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "4787714f-c8bd-4612-818d-d56c3d6bfdfd",
+      "studentId": "efdcc978-a7f1-4bd9-a5e9-447ce6ff5e59",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "97ec4148-dfd3-487e-be39-4aac00367224",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "bc5aae49-9f6e-411a-abf3-9c2fbc841e75",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "4a16c309-a6f8-4bae-9154-26a7f77b9dbb",
+      "studentId": "57635038-4019-40da-8315-e0228fd00dbd",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "5df1c5df-3986-4007-8b5a-b22100f60f6d",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "5b4b9a32-f1aa-4221-b8c4-0f377094989e",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "4b8f22d1-9be0-4ba7-bc61-c9c05af95070",
+      "studentId": "e8db3c3a-ab22-427a-baf7-6c28dc16c3cf",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "b5a401cc-9c53-468e-a45d-0d1ba8a9ae04",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "68a9b94a-6242-4ee2-9273-6d76214e4160",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "4c0a8190-f608-4cd8-9740-6ffc9a6da855",
+      "studentId": "1bce1116-a9fa-4496-b638-7014cddd8488",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "b60e92a7-c1ba-49f7-b346-cf6c495ea7be",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "d7c03cfe-d92a-402e-83fc-9c108f68dcb2",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "4c538ca8-4ba5-4423-ad66-3a3ea5861c2d",
+      "studentId": "bf132040-ddd0-4729-a60b-6f048d82ef46",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "d0c88fea-69fb-4650-9b82-152d9fcca790",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "66581afe-87ee-4d3a-a8eb-7716fff04a7a",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "4c6a44e6-f108-444a-8a9a-96d46578ebd2",
+      "studentId": "219666d4-38ad-4dde-a679-65abdec4d515",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "4122d082-945c-46a3-b00b-a7f6b68782b4",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "95f10e31-8fdb-4f7b-b30c-09926665ef72",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "4d22b419-f316-45ca-ad04-bcbcab9802f0",
+      "studentId": "064d8318-cb0f-4eb1-b63a-9d603b5065a3",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "ba9c72e4-0c1d-4c7e-b2b3-90dbc59a57b8",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "5ff320ce-b92c-45ce-92eb-188f45654fa6",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "4d6432d1-1dac-4d3e-a513-b776ac60bb9c",
+      "studentId": "29bb181b-d2c6-471e-a798-5c7bf0d496aa",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "b161e463-7c6a-4e4b-b91f-cea802b4ec1a",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "0dfa4cf1-951e-401b-a2c5-b8e86b67a9ec",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "4ee718c7-1137-4e8e-8bb1-5aaccc62cca7",
+      "studentId": "61d996af-cfb1-47b5-abc3-15cef7c7a9ec",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "34acd66d-076d-4015-826b-f6002f5f3d00",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "5b64dd6b-8964-4735-bd5f-2f9d0e8bf9c3",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "4efd43dc-0cf0-4c68-b83c-9219266274f6",
+      "studentId": "2c8cb91c-de28-4e4a-8ac0-8d74649441af",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "be72da04-c5ed-4293-b219-732ce8f28bc2",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "2d97f36f-3059-4065-bf80-75f7fd38afc3",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "4ffa6eb8-8ad6-45b4-ae2f-773e64bcf082",
+      "studentId": "1efbc807-a39c-489d-b8c1-f5cdf7a25623",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "2b30ae42-1e9e-4505-b576-599054da2eb2",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "3c9cfe1f-1267-4dee-9538-b3f72eed6998",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "50404331-6b35-488f-963d-22888bc98342",
+      "studentId": "a69b590f-5a9b-48db-b841-0013e4b9c2a3",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "e7ffb55a-e4fa-4916-9a47-b05a3d6d38eb",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "3e2e286a-c8d9-491d-adc2-5aa802f87024",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "50838feb-0e30-4711-af37-75cd9a6797e0",
+      "studentId": "ea1d5acd-816f-4744-950a-eccdf8f11227",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "af5bc96a-24a2-4de7-aaff-74d80513a119",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "49738474-939b-4acf-ac13-e2ac7d06373d",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "5193f083-1b84-4320-b03a-f25757667b79",
+      "studentId": "bf312a2e-3900-4787-a8c6-77e7c407e704",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "251d2482-09ce-4803-a725-47c35d26d780",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "8996ae4c-b047-40d9-98ae-ed4cac718ddd",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "520f7f77-8676-4424-8f88-f25e54926eca",
+      "studentId": "611211b9-4f24-4c50-832c-dd2611d52c85",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "8f1ca81b-141a-424e-a735-02374ab7f64f",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "9031f4da-8d99-4ee1-b692-811ad5354143",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "550d037b-803b-440d-91fb-cbbcb148004d",
+      "studentId": "f010f7c5-b379-4da0-8a5a-7955a1285cfd",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "9da4db22-af76-428a-a6c0-6f892a5f2a48",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "7ed7c552-b940-48a4-a041-d14a8009a708",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "555eea55-3385-4087-97fb-f57530ac6bc0",
+      "studentId": "6ba2e4ae-76ef-4478-9f3c-fb5ee32ede90",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "ff6170b9-3364-40e8-86a1-2fb2b15234ad",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "e02103f2-1bb8-4ead-8e56-b9c69fca9ecc",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "556e1702-27fb-4a9b-ab30-fb4d40ad5b19",
+      "studentId": "a76bea34-9a7e-4b1c-a00e-856c6e3cade6",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "b5bf6921-9de1-41c2-b9e9-b6cc7b263056",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "6d672feb-9219-4144-bab0-e57aedae5521",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "55951847-7732-4866-a951-c0039a619ddc",
+      "studentId": "54b69928-f9f7-44c5-882e-6a80c6a797f3",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "06cee6eb-2620-4db2-82bf-af18a31cb983",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "840fa94a-e03b-45ee-b957-cff1d90e66e9",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "55acd2d7-7192-4867-b226-4a924fe185a7",
+      "studentId": "154090f6-519e-47e7-a249-9e89c64c768b",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "516d68ec-238b-4daf-a434-401f8d69429e",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "02b72446-a1ed-4bfa-8fb3-d07976b52c96",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "569e3b64-d784-4eff-9e05-7cdbe6eec908",
+      "studentId": "66f89de6-e61c-4801-be89-1b717255b953",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "a6c96bdf-7d71-42fc-9867-cc81fb58fb8d",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "dc4ce35f-ae9f-4299-9703-aa0a73fbd01a",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "57f6205a-ae41-46f8-b32f-267a53e09992",
+      "studentId": "bffdba85-7fb1-4b06-90af-949ebe4464bf",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "750af033-f8e5-4df7-8f1a-529d5021bc86",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "0e3c95fd-2791-4df5-8c5a-a456930f97c6",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "59c714c6-13f5-4aca-bf13-68a74d9c0070",
+      "studentId": "88e25bf0-1de4-4c1d-8b6d-9e130ac3cc84",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "cad62be8-07ca-4378-844e-8dddc731cc77",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "a35f40ae-9998-4b0b-9fcf-0cd2e625c5ec",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "5acfe87e-50a0-450a-a4e5-902ce3e56889",
+      "studentId": "73f7b47a-c547-49fc-b71b-0850a33af8de",
+      "status": "OPEN",
+      "before": {
+        "runId": "385329b7-9078-41ed-a5e2-144cd6ea67a5",
+        "resultId": "68003ddd-5c59-4b60-8811-e0a6663cc534",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f7faa4fb-850a-401a-bfc4-02986155fd67",
+        "resultId": "28f4c640-96d5-4925-b99e-87acbc001339",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "5ba5ae7a-d1ad-4303-ad6f-0ed2c6a3cb9d",
+      "studentId": "eb2cc711-8600-4784-a2da-2022163ac8fd",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "582b1976-2f91-49c2-89f6-aa0e186b3a82",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "5463e0d0-edd1-498c-b285-1b61fd7b11af",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "5bd575b5-4af0-48a8-bbb4-d032683f841a",
+      "studentId": "6d492e62-4aea-48a4-979b-a76207776aa0",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "f798c642-afd3-4f90-bc22-b7c5f07dfdfb",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "49f03f70-5092-4fb3-a756-ee136f85d5bb",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "5dccfa6f-2848-4b93-b331-50d6fd51b1d0",
+      "studentId": "ee33f0cc-3b71-409d-a433-35c9b023f92d",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "db2deef0-f68b-4149-ad20-5f4f69881804",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "28a088d4-41ff-40d5-884d-2f0cf8099e64",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "5e079f10-0e88-4e2e-ad13-1422f1b0652c",
+      "studentId": "7533502b-b57b-45f3-bde1-ed377b588b88",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "ffcf466a-5c44-4afc-8529-b479fa26c2e3",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "a654be64-c296-4a4a-9876-13878d72d909",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "5f02906b-0bf8-4f38-b06a-bb07d0130018",
+      "studentId": "49c49ee2-57da-4471-b9a3-97f26d679216",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "f903a485-ec5f-40b3-93ee-62c0685f5acd",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "5f09ebec-44d1-4875-b741-03380c7f8b99",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "5f8f869f-a9f6-43ff-a323-97bf0ee145d2",
+      "studentId": "ec443074-24c9-481c-92c0-6391573db18e",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "9afd2ca4-b7d3-4051-859f-47c38148d888",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "649cbcba-27a4-4d76-969b-cdc4d8d0ecd9",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "600941e5-fc3d-4c99-9415-b282866f98a8",
+      "studentId": "cea49709-afb7-4fd2-aad3-d3ab579f18a8",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "2da319cc-eff0-4db6-9b3f-6d605d04ee56",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "7d34175b-2a6c-449b-a7fe-d42787b419c1",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "60a79af0-282f-482a-9cf7-91257a3c0daf",
+      "studentId": "50e63194-a8c3-4d5b-8dce-b2cea8b6e3a8",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "95973997-fb2e-4624-a1a6-6ec83aca518e",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "e3a83445-9b86-4457-a963-796b9a18d569",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "60ed9dbc-d599-47f0-abe5-b40d2053a8a6",
+      "studentId": "e8415e84-bb04-4f18-8919-48ee197425f6",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "696ee6cb-2d65-41f0-8e3b-223e246e1ca2",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "fa44135a-02a8-4b44-ae77-ce8272f8b941",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "61e2a1ee-433b-4be0-b229-2b8d456d91be",
+      "studentId": "cebbf22e-96a8-474a-b435-11e2ce4363d1",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "a2e371b3-cfb4-4ea8-bc14-4217178a91b2",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "d3a130ce-b5ea-4308-83f6-2d679d1b4399",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "622f361c-ffb5-4575-a230-d1772ec5873a",
+      "studentId": "ce4ed030-97e4-43c0-9d4d-da2e5b08f021",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "5696aaba-1318-4b32-bc5d-8bbf47b5cf99",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "8467ff1e-c48c-4ad9-aedf-ca060354704c",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "64db7db5-4809-4dbc-9666-e4eb039660de",
+      "studentId": "101c2ca9-1651-46ce-9d36-217553c75a69",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "09c5a5fc-2b0b-4f89-8ea5-148ae730cbfb",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "39bf905b-0bbe-472b-bddc-442a7c15ed76",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "65b17333-3c39-46ee-b8d0-74223895773f",
+      "studentId": "d1d67422-86d9-4ab9-a81f-69d320a39ed4",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "086179e6-cb9c-4c36-b41c-3246bc6aac1c",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "c53a4c96-bad0-46fc-9ac1-9bbb14090db7",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "66b7ad65-6f77-4eb6-91dd-a70ed1fb232e",
+      "studentId": "dda0dd26-2664-4b1c-8514-e02d5d0d193a",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "dd0f6b68-0d26-4438-ac47-73fc15eb862b",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "2ffec2d6-e8e7-4e6f-ac37-726852867b7d",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "67401b85-5201-4b99-b0af-562d1b5935ee",
+      "studentId": "02617f8c-4b4f-44f3-bb3e-8bacc30f7f6b",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "538d1413-e75b-4c25-b92b-7a62d614cb6d",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "fcd62c50-724d-4a6f-91ac-8c46674592fe",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "68e5c065-70f7-4d4a-9a06-d6c3591d91e2",
+      "studentId": "eb3e2492-1bca-4c37-9ff5-5369e272cacd",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "3bd9c183-8c1a-4734-9673-e80579b04eee",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "d6a3e8cd-a2a7-48c3-996f-fa1b36838d38",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "69c87a22-3760-406a-be3d-35099211be10",
+      "studentId": "647714fc-8139-43b2-8c99-da8186ab4df1",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "b342f4ab-68dc-483e-b3ad-a92c46c00b02",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "f301e23d-fc12-46ec-9411-f53641c81168",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "6abc3d65-fc82-493e-a7bc-39eeeb78a7a8",
+      "studentId": "4250db7e-e298-41d4-a69c-a54f0d602385",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "32188d12-6480-4df0-9bec-657f028a96ff",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "5d5bcc67-40dd-4991-8bab-6252b927bd90",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "6dc80e68-2fcb-415c-9eb4-0cc75a954156",
+      "studentId": "512c8218-134e-4ce9-91f4-9739ff92b398",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "bb06ad5d-98d8-4dda-9b70-8bcc966f66a3",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "7da555dc-c567-49e3-b03e-dcbe6e556e86",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "6e13d967-bf6e-4496-8762-a74f6a7c49b5",
+      "studentId": "263e25b3-86c0-48da-897a-cd98325c85bb",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "9640a6a2-7cf6-459b-bfec-ee3bde0b5ef8",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "24675b91-15fc-4a64-aea4-1f789f3cd3e3",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "6ecb740c-a1fd-49a7-b3e2-ae4a1a476ed8",
+      "studentId": "3f01ae3e-9209-452c-b1d1-a3e2a02244a5",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "4269606c-39bd-46ca-a76e-8c94bbcee145",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "01326829-74a4-4c5d-8a4d-4abc79fb3d28",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "7067dab2-c050-4dd1-a480-b9d0f09b883b",
+      "studentId": "2e2f07f2-0751-4cb7-82ae-c2122c33eeac",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "71c7fca7-c95d-48b6-8343-cb84767596fb",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "23dcc447-a885-4f16-8edc-c7c483a0c575",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "70a345db-06d1-4d8b-bf16-a339419c4aaa",
+      "studentId": "b44d97fa-dd35-40a1-a084-c625e2f06c56",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "6bb6d68d-c7f6-42c6-8c90-fa3f5f1dd450",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "41764947-619a-4be2-a6f7-21fca10e5802",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "70f8c941-c78f-4ec2-a7c5-26228088aacc",
+      "studentId": "252d6f83-68d7-4cb8-914a-31684ac3f91d",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "153795fe-844a-4be9-a25b-5df80f7ba0d3",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "b27c4f14-c389-4b47-8255-1dcb2ca87987",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "726dd562-c72c-4f61-8181-5625ad1272e6",
+      "studentId": "3f8671d8-ea71-4fd6-8286-81a2cc674e78",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "cc532962-0ade-4d50-bba2-132886cfd3c1",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "966da4f1-a858-44ec-868c-c64d6129423e",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "733258f9-5bff-418f-ae0e-43ebf5bb17f2",
+      "studentId": "66e01378-0e6c-409e-936c-77c80dde9805",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "665242cc-8f2e-4172-a841-c9b202dd6b57",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "4dd5add7-7bd3-44cc-be68-9c780652e332",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "73780a35-509b-47e6-a442-4ade269e67d5",
+      "studentId": "77f0c4c4-09e4-423d-b91a-594cb4661114",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "6a7df65f-43c9-4d64-af9b-b530e5e4df92",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "7654ceeb-c011-4545-b3f2-eabca9cfe28c",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "73ae69d3-f4d7-4373-a810-1199d8078615",
+      "studentId": "6e86cff4-be71-4d30-8e6a-5b11cc3a7e62",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "77c27ced-5065-404c-afe3-10bfdb2dd9e7",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "3a4d1129-7f13-4cf3-a16d-1995ea284855",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "74e8a47c-3f9e-4d72-8ce3-24d13b39db96",
+      "studentId": "99c19142-c835-4685-96be-915a3a1d9a7c",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "eebdf9dc-c420-4d7a-9100-64254f8f3438",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "eedf71f6-4709-4e00-a6d5-1ff5631ef494",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "754c7157-14cc-40da-92c9-acf2b38bd745",
+      "studentId": "c400bcea-ad5b-4462-9048-ef6cfeed5692",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "94208c61-f574-4e6d-a957-ec9c50d847f2",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "770ee7ed-497b-482d-821e-8f59b203d67e",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "76ac0c4a-4eff-4d0b-8141-0db434565b2a",
+      "studentId": "eae8c9ea-f66f-4e8a-954d-75141cc778b5",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "9234bc3e-d64c-4e3c-9f24-43faedab62bb",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "0b6f9dbb-b932-4d23-842b-754d1d31486a",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "779b968c-4ac0-485e-bf20-94947812c462",
+      "studentId": "da33d5e8-86a0-4285-ae16-b4ca4ac1159d",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "71f9ab47-4bf0-4e4b-8657-12ce2676749f",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "e2cad7de-fd6d-4ba6-8c6e-b8fc8ac888e1",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "7815d42e-3727-4085-a4e0-a649477f74b7",
+      "studentId": "c74f5795-bda5-46ce-b194-aa5c0f956b46",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "3de17678-86ec-4e89-a60b-7651d80fe3b5",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "146ef248-fbe9-4120-9fcc-f8dc2dd8934b",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "78443b19-84f6-40e7-8c24-da3517a99cdf",
+      "studentId": "a0cc1329-8747-4faa-a02d-7bb56f06857d",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "2fb9b110-0f5f-4ab8-b0f5-1099a32571c6",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "cd0d7518-25b3-4d5c-9483-84cdd9014786",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "7852032f-d032-4954-8a44-0e8ce339d768",
+      "studentId": "0ea06753-0393-406b-bbec-d9247957ef97",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "bfb9d9a5-6026-4059-ba86-97e1f693c461",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "664c74d8-4e3d-4b02-a011-119cf1a5a2a6",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "79b02291-845f-4b6c-b1ae-62eac28d642f",
+      "studentId": "cd7c9f2e-bc2b-41c2-a79e-fe0b1fabd1af",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "a6b4f235-820d-43d1-9494-c223d5738090",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "8ead5d0c-0b52-4961-ad5f-36b65ab1ea03",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "7d30e019-224c-415e-82d5-ade9fd03fa6c",
+      "studentId": "bd676301-b147-4f0d-b0b6-c7341fe46d77",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "f3c30d40-0641-480b-9670-53d40003c86b",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "d7588140-00a3-4405-97c8-adc13679d12e",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "7dfea3ea-5f65-4476-aa2e-af9b0bec6b7d",
+      "studentId": "4633c7b9-239c-4aed-837b-a5ad3b11297e",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "4de3ffa3-8d65-4897-8e69-afea5b44479b",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "1ea834f5-82f8-45a7-8b02-60902b135c36",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "7e0ffa8d-2e70-4b0c-bf8f-ec0ab1c5c901",
+      "studentId": "c99dcd4b-06a9-4d4f-b9cd-0755ffcdfd6b",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "6703e2c6-2be6-4aef-999a-5842d5190aeb",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "0c6ab044-1a7c-4915-bc84-b19f835cab72",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "7e4e97c4-ee8c-4e1b-b281-0286187566e3",
+      "studentId": "de4cb08e-d24d-4e86-849c-bcb347a82abe",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "f07e03f7-6df4-42bd-a970-db9088e40f54",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "06ef838a-7e40-407d-ae14-aa03e8e9aef4",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "7fb1afd0-569b-4e09-adff-0a02add47ef6",
+      "studentId": "fc0d7200-b88e-4408-85d3-ed52af0fa8cc",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "0c4722ea-7047-4b6c-abd3-9651d5c0d298",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "1afacd43-9225-4338-8f09-937b23b07e8f",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "80d307be-8b2f-4f3b-8b05-16d73b58ae45",
+      "studentId": "755fa293-8bdd-4705-b51f-52f47a81a3e8",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "ee63f6f5-994a-4f30-92a9-c69f69a9c3b9",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "6b639a7d-680a-4b15-bbe1-50a56cd424df",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "816e7a58-2e57-4bc6-afb5-46b6ee941180",
+      "studentId": "4bcbb6eb-b9fd-4998-b72a-ccf82dfc3755",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "ab25c3f3-bc7c-477a-8974-d84f9f7d0298",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "fdefd43b-8225-4cac-9632-78d9382a2bbe",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "8205a462-889b-4570-9cc5-1c79d4ccceae",
+      "studentId": "c85f4342-d527-45b4-8954-62a39153dc51",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "e0530a3f-c390-4b71-aa3d-bbaa70f10f1d",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "f9816eaf-d20d-42cd-8965-35c8a13a97be",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "8300cc10-0b67-4ab5-b50e-bd4e8e454900",
+      "studentId": "2b4e6e37-ef82-42ab-bb6d-23d82eacae3b",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "82e66f5d-3827-45a3-b8c8-7de4e29c4cb4",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "6785516d-a021-40f9-88ff-3895a6072060",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "843b9aac-8a2d-4895-b532-e13f80379053",
+      "studentId": "a097e8cc-7ab8-4a92-8c7a-f6deaa234078",
+      "status": "OPEN",
+      "before": {
+        "runId": "385329b7-9078-41ed-a5e2-144cd6ea67a5",
+        "resultId": "730b3266-622a-4096-a463-4fef6a0437c6",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "f7faa4fb-850a-401a-bfc4-02986155fd67",
+        "resultId": "eb3f09ab-a352-4c3c-9d3a-84ca84adde92",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "84bac670-2a37-4f8b-91be-78bd49eab9c0",
+      "studentId": "9705051c-e6fa-4bd7-a76e-443468b8905e",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "b9b9509b-ac88-452b-885d-db65709f1cba",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "5ecba8f2-b2b9-4c5f-a4f5-1c81b3943676",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "8646f9a6-bc35-4e28-aefa-4db4be64f938",
+      "studentId": "d1d1685c-ae88-4a4c-96d2-7b8d132ea62d",
+      "status": "OPEN",
+      "before": {
+        "runId": "b350ec6e-e9d9-4937-bed8-b67ddb5b70b8",
+        "resultId": "020eefde-92c5-43a0-9417-6dd6d7689296",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "707994e2-0fe3-4b98-abf7-532b0215477b",
+        "resultId": "f7fb974e-2b0d-41ee-a561-34a8f1575867",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "86e85c05-4af3-46b3-a587-e7320be640d7",
+      "studentId": "d0d71f32-010a-4233-9a7d-5a8e910f0d5e",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "509f2a94-10e1-489d-bd83-bfd98e9a65cd",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "f31870bf-4b79-44be-89db-e1d5fe9f28cc",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "86eb83be-912d-4bec-aa88-b51b619e40f0",
+      "studentId": "e8c59157-8532-408a-90f3-beef7b899955",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "a34342e1-6451-4523-a1af-428c398c6039",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "b586dbe1-bddf-4bf7-8de7-18d7a29917a7",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "8748134a-717d-4e6a-973d-288eefeec31c",
+      "studentId": "cb9b4323-5b5d-4fd5-b575-db19a248d4ca",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "687f7701-0ec3-4d47-b0eb-57c9621b3931",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "36a99a69-4fe8-4d30-a2c7-ea33cbad5f8d",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "88f85428-9b47-44fb-a955-8e6e8f9ebbde",
+      "studentId": "f8924b50-df8c-417e-88c1-9057e49f92f5",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "16951b7d-4c42-4312-9566-7d11bec2e11f",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "c869d06e-a7e1-4c5e-88ad-71bb1e9d68b1",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "88fc83df-b03d-48b3-bee3-03282a980475",
+      "studentId": "672b2062-5d7b-42cf-a416-16e9640429d6",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "7613be58-7822-448d-8845-34813d72ffb0",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "2ed55ccf-03c2-44ff-bb85-51fe51abd0aa",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "891d5024-c096-4d1d-a0db-90946917f263",
+      "studentId": "9b4c4783-a2b5-4a88-a9b2-302507521de3",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "9968906d-a8fe-4486-be0c-a615c62f5f6d",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "67ab43b6-58f6-4361-ae70-d4eeb7628e85",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "895d141b-c3a3-4067-937d-b51898b80060",
+      "studentId": "572a3330-cafe-4dfa-82ab-a1c2baa29121",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "91b680dd-718f-409c-b0e1-7f210bbd0695",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "5baa035d-5c51-4d47-87e4-c9028bdfdc63",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "8b37300f-2cdd-4ee6-965c-c8ff7fa11f7e",
+      "studentId": "1a29d791-734e-4c3a-abd0-bb54f9cad947",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "795942a7-0a18-4719-a0f2-8830c1f827c9",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "51c42c5e-1e15-44e2-9bb0-efd64fdfef61",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "8c8c1bb9-ebb0-4ef8-bd55-783244543f93",
+      "studentId": "07732c55-7892-46d2-9805-33fb8d84ba75",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "730e6257-2958-4b9e-8818-a269b29ce4bf",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "d33724cd-f6b6-49e5-8ba3-9e67ac12ba51",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "8d4888f9-3124-4602-bc64-32462f79ca3b",
+      "studentId": "4a7a0c18-bf06-4fc5-8721-35a5497c2ce6",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "6c9a86ca-05a4-4b88-81b1-97d369d6ef17",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "2dfa2dfc-8203-4c83-9dfd-38fe3bb83af6",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "8dcbc065-4b9e-4526-8ef5-927e2487d5e2",
+      "studentId": "a67f9d08-241b-4769-8f44-ce7864ebe475",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "d119022b-7a81-49b8-aa09-fc4d0520e828",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "d0564f1a-09f8-43e9-9009-2c6fb8567ff6",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "8eceb442-7e8f-412b-a647-ea4da374fb27",
+      "studentId": "3ebef730-fca8-4255-8440-6631346a09f3",
+      "status": "OPEN",
+      "before": {
+        "runId": "b350ec6e-e9d9-4937-bed8-b67ddb5b70b8",
+        "resultId": "677868d4-e679-4413-9d20-9bbc1c2ee648",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "707994e2-0fe3-4b98-abf7-532b0215477b",
+        "resultId": "6f4f9113-890a-4b28-ad1f-130ff7b26d45",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "8fd41abb-f0bf-497f-af25-6602646e180e",
+      "studentId": "85d0cbba-ed83-464f-81e2-adb4e5826329",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "3703eea4-0158-49f1-8a77-c0c9a1d57aa9",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "f3f8da1d-1a83-48ed-8ea5-29b86b7cfea8",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "951c47ac-0fd3-4dce-8357-cba207b4e112",
+      "studentId": "965f6d68-b0ef-45dd-b248-83c4a3c0dd6b",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "34236195-7c58-4130-811e-a033fbf14984",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "6253d920-29f2-4d81-8d7c-7c9ea9ea7099",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "966a2adf-fab2-45cd-8aa5-2a10b5cb09e0",
+      "studentId": "086c7d2b-2c13-452b-88ea-2ee17fd1c553",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "535fa927-ced3-441a-96fb-92963c794287",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "1efebbde-553f-4686-9168-e97aad2ee863",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "974b9394-6789-49f5-8d2f-5c532942deef",
+      "studentId": "fdd2abbf-81c0-4765-aa66-3164805e739e",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "b79a87e1-22e8-49fc-b79c-8dc406f4f7be",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "aec0f5b9-abb3-4ab0-bc02-3f5df160fca2",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "97f25948-9f99-41bc-8d14-68b27355b404",
+      "studentId": "0ffc51f7-bc11-4759-b9a9-6dea2fb4e90c",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "0d7d3d2c-c580-4ed8-831b-8bf931df38fb",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "74b28ea6-3085-4dc3-9b2f-1d8d4c13a035",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "97ff9bf5-7e83-4451-bfb0-6b93853796c3",
+      "studentId": "9c84d05e-316b-4287-a6a9-33406b8ab1c8",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "0041001b-9fee-469b-92fe-0227437b0bbd",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "fd9cb556-b25c-4b9f-9e9a-a49e5629c4d6",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "98840767-8aef-4192-afef-25de54285f5e",
+      "studentId": "dc18f4e1-d04a-4b21-84aa-55e92a3cb26d",
+      "status": "OPEN",
+      "before": {
+        "runId": "b350ec6e-e9d9-4937-bed8-b67ddb5b70b8",
+        "resultId": "88238307-28f5-4a10-b0ee-559c8888df3f",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "707994e2-0fe3-4b98-abf7-532b0215477b",
+        "resultId": "959e270d-ec6d-4251-8663-fddc03fa511e",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "98e42d75-28a5-4a55-bff2-a45bbdd62ec5",
+      "studentId": "2d90300d-f83d-46b7-9013-873149068a33",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "e6c1cdbd-8c53-448d-8c7f-9eb67c599237",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "935735af-7b17-4329-ad5b-db6175b96087",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "994c4c11-074f-43c7-8e77-b81687a18c9c",
+      "studentId": "0954b8e1-85e4-4070-b05c-587d949061c6",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "06b902ea-246b-4535-b470-a90975935b6e",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "0b88e7d9-a3a7-4029-933c-aed123a52dee",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "995abdca-5888-449d-80cf-3e6acce7d727",
+      "studentId": "6ca35cfb-9cdd-40d0-9356-cd24910fc445",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "700af022-0154-4fb9-bda7-3c846f7d4dc6",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "8414f38c-d4e1-4baa-8f61-ec1fc5c3c79a",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "99681259-6c08-426d-a967-664c614148ca",
+      "studentId": "58640a95-7721-49b7-93da-4314d73ee092",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "56d9f732-277c-42c5-b7cd-ddedc4e8e0c9",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "cc509de6-4889-4a2b-bc7c-9f6d7b39bf24",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "9a87a588-8432-4672-9a23-9489a70ec15e",
+      "studentId": "568f1aaf-ca60-4d8e-bfa1-312031c9fd2e",
+      "status": "OPEN",
+      "before": {
+        "runId": "385329b7-9078-41ed-a5e2-144cd6ea67a5",
+        "resultId": "e391ece7-53ce-4767-bca1-200598ca9791",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "f7faa4fb-850a-401a-bfc4-02986155fd67",
+        "resultId": "8e816d57-f513-4a30-ae6f-dd2fd5aaab38",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "9ae0d868-59bf-4fe1-8ff2-dd0940af258c",
+      "studentId": "77103746-ed54-4653-9bf6-a3b1eba85af2",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "d1c97cbf-abf3-4bf6-a038-5f5efbe8d79e",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "0226cc58-286f-4b0f-8ef7-4ccb53092a6c",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "9ae47ee2-1ecd-4951-9ebb-6d3155fbe313",
+      "studentId": "f516e084-f771-457f-b946-3ee76e323cf5",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "db89e748-93d5-48e8-a77f-22ec9f765f15",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "79f099ee-1ffb-4ecc-a089-b4c851e6e1f9",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "9cee5a2c-9300-4d0b-b1b5-dee2593cc9a0",
+      "studentId": "40b97626-964c-4967-b3f8-65ee8419313a",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "e9a4d90c-72c6-4bc8-bce4-13b47703319b",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "677be4ca-739e-425f-af05-961bb1018a75",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "9d347a6b-2607-4f44-86f2-1441259df0b7",
+      "studentId": "a775493c-3e58-4f3c-9280-565a8c6ecba4",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "a81f2815-dd01-4383-bdb9-6df646116218",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "b29da14d-8f09-421f-86dd-c05020b4cf12",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "9d5cd58a-e269-44db-8bb4-ccd9350a6376",
+      "studentId": "962f8b14-cfe9-41a0-aa92-274d8370fc8b",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "9a24b9b7-54c3-463d-8a72-d00053082e11",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "f2bc9d7c-9d07-4427-b41f-924293b6a5ad",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "9eaebc47-5dc9-4752-bc57-f6d34e73651f",
+      "studentId": "d884fbc8-4f5e-41fc-a594-67f48ade1dfc",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "4a8000e5-e934-40bb-857d-df424103bc93",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "14479942-f96b-45f4-89bd-d4f0c9e55f95",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "9ece0a12-4582-4692-bae1-191a34ade08c",
+      "studentId": "e595b97f-5bee-4f81-a8ba-71c4ec21615f",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "10cdfafc-7218-4d0d-8577-e616c91cfdd0",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "caff5d7f-fc1e-401e-931b-1fb6c51883cf",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "9f123ac6-cdd4-4df8-a468-fe3ab2382368",
+      "studentId": "3ae44e60-0436-402b-b603-dfe7b42c981c",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "5be33ae2-fb63-4219-9c27-0d1532bafab0",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "7e061da9-8ff2-4d87-bc15-c5dd21cdb676",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "a0bf4220-e71a-463b-bcf7-6057b3eed62d",
+      "studentId": "8542915a-8860-477e-b411-d1aa9d5d7eb1",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "89e04233-70a0-42b9-a326-a98bffce28f0",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "2129a9c5-09c1-4df9-889c-94c83594c0ba",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "a38fb9b2-3244-4208-ae05-ef5967c943c2",
+      "studentId": "cd6d1a09-1814-497b-85ba-7aa60315d45a",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "c6b1be3b-c182-462f-b1a6-61c3ea3c4977",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "0ebf2678-6762-411e-9a48-25e3fcaada65",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "a431a27e-0289-47e4-8bc4-2379760c5a43",
+      "studentId": "7e39c118-ef54-46a3-ae37-e46032c41d18",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "a4d0d415-309c-462c-b42a-838076153cd4",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "2516b41c-437d-4dd2-b46c-2d240a49bd9b",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "a5b13a66-2a21-4e4a-87af-064dc73be85c",
+      "studentId": "b36543e5-edf8-4085-99c3-8f1d0c32e167",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "f9245ef5-c4d0-43b4-ba4b-91695dfbd5ce",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "2d87898e-9eba-47e1-bb81-0416f4f0c21c",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "a5d6ea36-1f2e-45b5-9c18-33379b5dcb44",
+      "studentId": "1d96bb85-b6d0-4a7c-a5e3-61f4b4dd3b1c",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "d28d53e8-e2b0-4f9d-aa1c-db5a4d2c16b4",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "15c37163-e0a3-4d34-af1a-8fb7d02d2eab",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "a5f93259-cd47-4331-9e91-a61588bfd9a2",
+      "studentId": "0cc8d999-58fb-4e08-8693-d60ed022c27f",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "d0214919-7e81-4ce3-9c20-7b3ed8e8917d",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "bd4901eb-acfc-4336-b3b3-b09d1408a5b8",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "a67c7fe8-4db6-48ac-85ff-954a01abb99f",
+      "studentId": "d40720ec-dcbf-4a19-b566-660f59449636",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "16efe227-8a70-4c75-bfca-33517686433f",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "48f3e292-466f-4614-af81-8caec7c7d5b5",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "a81627ca-90b4-42c4-a0c6-6fb70be56005",
+      "studentId": "dd208cb6-de8b-4ee6-bc7e-b3485569998a",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "172b903c-f75b-4711-a265-2aac6a14861c",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "2bd2f0d6-7794-45fb-8729-2c1117928f8f",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "a973a201-977a-4c53-9302-d555f0e0f038",
+      "studentId": "d5368f9e-a7d1-4613-b92a-b63f48c36fb0",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "0d26051a-8269-4dfa-8194-4ccfbc45f62a",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "402cf862-a837-46d4-a42a-c91839cba857",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "aa2f870a-b891-48a3-a681-ae7e8df65e78",
+      "studentId": "34f99005-7b71-4024-8672-c05e3ba126c2",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "069e680f-4b9b-4370-942b-d837181d01c7",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "ae0022d9-01a3-4335-a888-dc36ab7878a9",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "ab92ddb2-9bf0-48df-bf2e-cbb85c3287a4",
+      "studentId": "762c72ef-3832-4067-9773-57f44b46a86e",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "eaac4e40-a6de-430d-9ac0-1854db1deb40",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "36f7b288-98c2-4332-8327-ee6674a17cf5",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "ac5567dc-21d5-4c6b-b48d-3db3d9b5d526",
+      "studentId": "851e61a5-2afb-4b1f-82b2-d8f73cfcd1e2",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "54b208dc-55a3-4201-b8f3-8c883c1161f2",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "0e0787d2-6924-4bd8-a69a-6312e54d52a0",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "ad21e95c-26b7-4d56-b151-a06c68adfd2a",
+      "studentId": "6a1feee2-7327-4eae-b1a4-a45a9ad25fe6",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "4a6bc219-d2cb-4b48-aabd-6ac1859e9a93",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "3fe3e8a4-421e-4687-a752-6c1b4e9029e8",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "ade017c2-282f-4893-be7a-3f7734f50a23",
+      "studentId": "3fb80576-d998-4e27-936a-a5dc0eb92e87",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "69a6df35-4225-4a35-8b8d-792956506fd7",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "1c5c4380-a5a0-496b-8199-1488a6a25960",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "b209bbfd-c47c-420a-b9a3-f1e44d8d6afb",
+      "studentId": "178b3240-f5a6-40d2-b851-6b6d16e15c2d",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "4f5161b7-3ce5-4f3b-8c6b-6da41a3c97de",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "339d37a8-a268-4673-80b5-d245d43053f6",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "b28a5a4f-79fb-4c00-ae74-055015f1acbe",
+      "studentId": "30bf14b7-7463-4707-93ac-698972854368",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "fac4e50f-3c09-4547-8267-e4e73c352ca3",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "623aae09-6842-45e5-a159-621728fbc46b",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "b3f29f9d-a795-4e2e-a970-7ee295798f92",
+      "studentId": "946cdf86-7083-470b-945f-dd26f2695cc7",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "a7626d6a-9a95-4d7a-b3ae-924bdb103b67",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "b1616263-7eaa-46bf-9b89-53ac0771bc55",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "b4803155-1ee8-414c-9321-9fa77b294dcd",
+      "studentId": "ad8a7054-bf70-4748-b471-50ea35dc9505",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "7d390020-f340-45da-b57c-b876d7f594b5",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "5ccbe6ae-8a64-45f1-9181-4a911c970e5d",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "b4e87389-44c0-4243-8990-bb423c946fd4",
+      "studentId": "cee2bf1f-483a-4399-8f7f-c97fd63013ab",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "8ad8a6de-9885-4732-995b-4793d33d2397",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "58ab86d1-6417-45c7-8ab2-91d9ccd998df",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "b4ea170a-311a-47cc-95f4-1b47cc5e9fe0",
+      "studentId": "438b5edf-3172-4d1c-af91-e1c87f697b0b",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "824b5ac0-21f8-460e-bf0c-f76d35d123d9",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "ed4d9560-b1a2-4944-bbb0-b0ece225d2b6",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "b60352e7-6f2c-4c41-b8d1-322879c09c66",
+      "studentId": "dbedaebf-1b60-4a81-9b78-cffafa540ba6",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "1767176f-32c2-4559-a01c-492e1304a5a6",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "a1f79025-45d7-4d54-833e-292095a227dc",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "b71cbcd8-b801-4d3c-9e1b-41d64fc40eba",
+      "studentId": "c1749bac-0669-4a23-9768-5f52c579ac19",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "8846b1ce-ab1a-4eb6-9803-f1bebac8da14",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "ca3bace7-5c79-462c-9f00-801a3b332925",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "b8aa94eb-4f7d-429b-9a07-ef01b27d0fa0",
+      "studentId": "807b3074-5c6f-49da-b0e2-78fb3d16d1f4",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "1e2e4efd-f49b-4ee7-85d1-4938c010865d",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "2fe0ffe6-2673-4089-828b-8b83bd85dd2e",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "b8fed3b3-fe2c-45c0-a43b-19108693338d",
+      "studentId": "7abdea70-fef4-4aea-b45d-cfd979a1c545",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "0f71c644-2e66-497d-8a5a-669345c3805a",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "3dbe911e-ba55-4299-98dd-076c48584180",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "ba229691-9ce7-4e37-9f53-07827187a6e3",
+      "studentId": "b7d85194-1d88-4527-875c-4c0f59a2c65d",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "baa114a9-1130-414b-a52f-3aa524bbb723",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "b7373e70-8dbc-4f70-8a5b-93cab27d1f38",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "bc2446f8-f6d3-4d8d-8700-4a9a6410f4be",
+      "studentId": "6dcffd5b-ce5d-45fb-bb54-2ad346ec61ab",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "c327e6a2-059d-4dc4-80c1-2bc97d359b9d",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "8eb66aea-0fcb-4243-ac63-c542c7e40f3f",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "bdf4665e-ff27-49db-83f2-78e861ecab37",
+      "studentId": "b2876087-4482-4be2-a88b-819c4986b107",
+      "status": "OPEN",
+      "before": {
+        "runId": "b350ec6e-e9d9-4937-bed8-b67ddb5b70b8",
+        "resultId": "95449ad0-88e7-4d43-a005-8b5291701b22",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "707994e2-0fe3-4b98-abf7-532b0215477b",
+        "resultId": "2c0df3ae-6c41-4ed7-826f-2907a4f35e29",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "c02c4ee0-cdca-40f8-89f7-3e148afe873e",
+      "studentId": "1ea8fb97-e758-4ed3-bf0c-020c36249a41",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "7b1585d3-6f4b-4cea-b160-80c80ed6ef68",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "49297635-036a-4aa2-965f-a3c2cae9a289",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "c053d0b1-bf12-4feb-8b0c-2d129d5f9e57",
+      "studentId": "dcb1e709-70c2-4a67-9014-2101baf74054",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "16b10703-2fba-42ab-b395-2fa120351cd4",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "3c633e88-8f67-4143-a671-07dbf15ef343",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "c20cefc3-9c70-449c-a3b5-de340e1c3125",
+      "studentId": "e45206ea-33d0-4405-b67b-cfc49cdec87d",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "bad77b80-6c53-47ce-8746-54b3e12a048f",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "d047b230-73e6-4062-b50d-370c0361a8d2",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "c21253a8-8e54-4508-9600-6609bae0541c",
+      "studentId": "3afd9561-b622-451c-a460-f9a70fe6c61f",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "ea1876ae-deb9-41bc-9423-b4ada9a9a9de",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "b014015a-32bd-4c36-b0d0-619d7062eb0a",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "c336326f-ad83-485a-b7b0-561b222c86d7",
+      "studentId": "20cbe6cf-5180-4e8b-8540-3a4700026496",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "ff8b2d51-ead2-4bc5-9e46-0294e4b17d47",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "4e626f93-3642-4030-bfbb-de43ad2a5abb",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "c4668766-34b6-432b-8c4c-996f6bc07e6a",
+      "studentId": "34aa853e-d8aa-4848-8e62-3c9be521af81",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "a9454b7b-55a3-4dca-9431-76d1731f8707",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "7b846806-b43e-4f68-ab16-49859116e5d8",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "c46b5b0c-294a-4afc-8d06-c1a3b157ad34",
+      "studentId": "6aa9faf0-fdc6-49f4-8a31-767dc41eee1b",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "c4f87f2c-ecb0-42fd-ae59-1317f27c40e1",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "3bba6eb5-6b8c-4af8-80fd-9106839f7202",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "c4b36873-6e2d-4b96-92de-ee407265cb55",
+      "studentId": "86972205-2df4-4f13-9fe6-0b438737327b",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "03ba7001-d645-4414-98bb-5c071c25c5b0",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "e99d9016-8f24-4ca3-98ea-c0769dd69911",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "c60cc8b6-6aec-4deb-8587-1ee38619afda",
+      "studentId": "4699318b-5046-45cb-9f63-6aeb76aa223e",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "144969c1-de89-477d-ad73-88d7b9c48aa7",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "6bad5716-bb03-4ed7-9506-2fe8bace649f",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "c651bd12-b39b-46cb-9dea-4121d23bd70d",
+      "studentId": "c58a0f55-06aa-43a1-bcbb-5fd7da15530a",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "0ae0e4f6-8a12-4b1d-97d2-964567cf40b1",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "abfa1283-2114-42af-97d2-868f2e32bd2a",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "c7dec132-d8d6-4711-ab2c-280c0458c60e",
+      "studentId": "7409b75b-e448-404b-b306-7e7dbcf5866e",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "98b2bede-7a52-4526-b007-fbfd432d77f9",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "f631ac42-9a1f-40b8-84c6-b2fe9f92fccf",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "c7df148e-2c8b-45f9-9749-e514f4af7461",
+      "studentId": "074c3934-c106-4d08-b72e-532fa2f9c25b",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "46b754a9-6a52-4bae-a2e9-adc9c91a9379",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "bc5c07a9-f7d0-4a78-9279-56e9ae0420ff",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "c9ed693c-df53-4985-b86d-4bdb975dc734",
+      "studentId": "52cd5eb7-80d6-45b8-a488-66cfd3b99cf2",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "1b66e109-bcc7-461c-9702-7216dba71f11",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "0482424c-d225-46d0-9cc1-5f0023c1d86e",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "c9fc56be-f8cc-4b22-bdf8-8c29730d4b91",
+      "studentId": "016365c4-f697-46c2-9411-2ca597d923cf",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "4fc5cdf4-3ace-497e-9591-3d40c5a04433",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "de909518-9465-4718-ae89-db1b5ae952c9",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "cab276b6-1403-443e-a9d8-ea193f27493b",
+      "studentId": "8358631f-3b35-4092-9458-3e7c28ee4595",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "00478d4d-5121-4878-9915-bdaae8cbff6f",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "c43f6cb0-f2f2-4ecd-ad0a-53b50dc72b36",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "cc4ad3d8-a47c-48b0-b9ff-64d0847f72a6",
+      "studentId": "3c4784c0-8d8d-48fc-b8a4-c697494dbdd8",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "5483f4cf-334b-4cea-abfd-05401531f6ab",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "4c3a7d6a-ead3-4bcd-8b08-aefbe1a55ebf",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "cf7cdeb8-1b0a-4e0d-8774-417aae6d3935",
+      "studentId": "ea6742cf-0373-498e-b93e-2d3e628de11b",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "fa33fdce-2875-4825-9c7c-a5655ac5242d",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "bc65e3f5-e66a-4215-992d-3c602a58c152",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "d1147b78-a35e-48f6-b9e0-d86895663249",
+      "studentId": "96f4e402-828e-444d-ab25-e9f0e94a6ecf",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "74b247ba-d5d5-421e-9aac-927d8c2250bd",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "8e1383a0-5057-44f0-ba01-f0ce2ad3946d",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "d2bec51b-9428-4c9b-90f2-d8860e4c58f7",
+      "studentId": "46b3dd64-64d9-4873-9680-7da7fff3471d",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "a5645e2a-7c42-4739-a3ce-26fc36d268eb",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "ca1be7ed-5fca-4bf8-921a-96ccd89c8c66",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "d3dd0eba-8b5e-4051-bca4-9dbc3023a3fc",
+      "studentId": "c970bb57-f51d-4ae8-aede-c289d8dc0c27",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "21120dfa-8841-4814-b266-976d73a02a05",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "3d5bc760-f421-4403-a71b-324b0cb5d9e5",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "d4381a04-0053-429a-9683-70d6c817948f",
+      "studentId": "7ece94b3-c1b9-483c-a557-fb82a2241006",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "9349ebb2-8a56-46f2-9513-4f45271e1ada",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "d8ae2b52-4ab2-406c-8e8f-070fa6265cf8",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "d9e8edfa-6c2a-4d1b-8343-4ac2db86e017",
+      "studentId": "5ca90469-8638-4b9b-bf40-a3cbb37c34a1",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "7f12b6b9-a50f-4892-b63a-0f73e6eb7aff",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "19d2e9cc-035e-48ba-9e42-147ae60fc40b",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "da6ab2cf-be12-4efd-815a-eceb780bb369",
+      "studentId": "93f12056-fced-449e-85d9-7e7737bae2ff",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "a7c3d626-9197-47bf-a511-0b61ce2c5e6e",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "2ac05f67-5070-48c3-b66d-3493dcad108c",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "daf41bc1-e0fe-43a9-8630-ab38ce87145b",
+      "studentId": "c79f650b-cd6e-4a7c-abf3-67287de8891d",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "a70ffa82-61f2-49c3-bf12-f045d23191ad",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "e8c6e0d5-0b93-4d7d-a019-9503cdfabfd9",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "db69ae6a-b55c-4953-8941-fffbbe3741e3",
+      "studentId": "50a36679-16d6-4b6c-a671-960ba38260b7",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "346e057e-b899-4501-b945-ef6cbfb2255f",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "d3603115-64bd-49fe-982b-fd87aa1a073c",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "dc149ff5-f894-420b-bfa2-784db6267acf",
+      "studentId": "0d5ef7fa-b524-4694-b60a-7c7ed6ed635a",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "3a8b9b6b-0acb-48c8-87f4-5dbff5e65dbf",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "32324e08-4c6c-4bfd-b731-4667a42ddc80",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "dc16537e-2417-476d-96f0-a44ed621eb67",
+      "studentId": "5a0d50ee-c0f5-4dde-a095-3b20759e71b1",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "bec8b26a-6cda-4baa-a9a3-088b9182a6ee",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "146369eb-d336-420e-9190-ab8fee6a668a",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "dd4080ce-a641-4197-8ea9-fe6557a2f2f1",
+      "studentId": "7a6d9588-7f75-4e03-9777-acb6f900ee31",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "9a981fa3-7716-4571-826f-3a93471a8292",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "ff4bc454-c6cf-4146-b8b9-e19e41f4e7cb",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "dd4a6909-c5e8-4c82-a5ac-bdee13726fb0",
+      "studentId": "f0c0dc9b-026d-4710-8cbf-642e30789157",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "bfe96feb-c18c-42e2-b0a7-8bd2bf761cf7",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "2d5e237b-2cbc-42d8-bd91-70fd36572063",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "dd65c0b1-f2d2-4300-9a58-feeaada01b74",
+      "studentId": "bfa070aa-c2a4-47ea-885f-4b5e5b73c926",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "ffcec2ae-345c-46ae-ae48-7d464da1dcb4",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "e0bd8af1-0f17-4046-85f1-eb497a489ca5",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "e0303472-b36e-4c9e-86b3-b9db6a549786",
+      "studentId": "618a9eb7-3e41-4099-88e2-519323b15981",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "dde17ada-073a-4f4c-91cb-c28324259e87",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "c95dafc1-57ec-4a79-9e15-7a65b35ce69f",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "e5d9f45c-289c-4d69-ad49-6839b7d55c9d",
+      "studentId": "7d719969-f3cb-45f1-92b4-ae23128dba1d",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "d83a5103-d5c1-4830-9163-860de20c7f2d",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "5f47de04-0ad0-476b-8809-5ca404bba69f",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "e675229d-29a4-4de5-a222-3dfeabc410ea",
+      "studentId": "b8c544b3-bb68-4373-8ae8-f60ca3624f94",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "275d0d22-e7dc-4ad4-95a2-69b7a996e0ac",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "e6e31cdd-e0d1-4705-a175-2b10cddc6354",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "e6b4d4c7-07c2-4ef0-9dea-7d1c0c80743a",
+      "studentId": "7206874b-e9f4-4783-ad6e-125796081469",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "da4eec39-cf4c-4ae3-b798-7c180fc6928c",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "1ce4f54c-57b6-445b-9065-429d7176a21d",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "e7316462-4c88-456c-808d-c04903e8d6b9",
+      "studentId": "45e75913-80f9-49a3-a80a-13d191df517d",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "91cdcda1-32ab-42ef-8858-c097378df895",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "5e470d0d-8cb3-4447-9dc2-4f911315a630",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "e7769dfe-55bb-4702-83bb-4f5f5a06182d",
+      "studentId": "4321b423-40bb-45d0-8f5d-141711b8c32c",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "1c25fcac-05cf-42da-9684-601eee55a4f3",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "001df8fc-5bd0-48bf-bcfa-1d54b7722dcb",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "e8115af7-d522-4485-bd8b-f7fc02fb6f36",
+      "studentId": "16c4bb7e-dd05-43dc-9388-07ef3ea60d83",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "22842568-558d-4f13-ab75-bb19400cffe3",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "d3d9bbda-ef29-411e-b4f9-4f390dc0652b",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "e956f279-1849-4d0d-8507-be079682b9a0",
+      "studentId": "e36890f2-e16e-40b0-83d9-2e4889419a4f",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "d440dc1e-f36b-49e6-8a41-5fc0e3a3fd27",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "44c2541e-08df-4dda-a72d-e9fedf02425c",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "ea7d3c1f-ac73-494e-90f4-19afa673ff20",
+      "studentId": "59ba29b3-2853-44da-9d8b-a1d97cb64f91",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "ceb76563-fe86-49ac-9954-24fc9763271b",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "de4fbefb-d416-4dbf-a2bd-ddadcdd0d5ca",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "eb469837-947e-4d9f-95f2-56af268df3b7",
+      "studentId": "76b1d388-ebb3-422c-a4b2-2f535644ee3d",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "d6e3745f-9f1c-47ec-8006-f018a2ab1d60",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "91076cd3-ba82-49dd-974b-10e96dd8c3dd",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "eda6d6e4-f00f-4b72-a8ac-88435bf93750",
+      "studentId": "16de6159-33f3-4f13-9ebb-3df73bff2112",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "c9439fa5-fa1e-4cef-9766-9acc07330609",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "8d89ac87-8dd3-42f2-816c-3d2cf93aa1a8",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "eed91c99-f4b4-4a93-a705-f87f3cfd114c",
+      "studentId": "4db4fd18-a359-455e-bdaf-78070e5bce5f",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "e98ea772-e6fa-41ce-b348-fd135b17dbe6",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "6e4c2eac-5d3e-4f31-ae6a-503a1d7931a1",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "eee98e72-5777-4b88-848c-cfaf08526858",
+      "studentId": "bc428655-2347-4cb6-98b3-d1d180b4cd0a",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "4544f722-4e65-427f-9393-f8dbeb3d4519",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "59c16009-3170-4a71-bb25-182243d669ae",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "ef0bcf36-c83a-40a2-aac7-5d6d602d3d12",
+      "studentId": "b4913546-961c-4900-9159-8b85a73f488f",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "62b0b0fc-e295-4e5f-aad2-b6fc9088b26b",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "40cea1b1-f7b4-48ce-8394-ddfbf96ffaa2",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "ef142ea1-e2be-4c54-a117-324d26cad962",
+      "studentId": "25b81344-80df-492a-8960-5bbb4da1d23d",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "2eb4634c-7534-4d10-88d9-187e9ff29d99",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "ac209c3a-d258-4086-866d-a3e30eac76b8",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "ef58bcf8-bb21-4a4f-b8a4-b006de3f6864",
+      "studentId": "586df88b-b4cc-4105-bf92-865c5c125414",
+      "status": "OPEN",
+      "before": {
+        "runId": "a30b077b-554a-4cd6-9559-e27b20bf1946",
+        "resultId": "c6fd4d28-a97d-443a-9db5-e43f75691a3b",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "ae94b1e8-840b-4d37-b1eb-67b3d3136b3e",
+        "resultId": "48468441-5efc-439d-bd15-6d6df9801e23",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "effe403f-4361-48f8-a3f3-22d9c8e86848",
+      "studentId": "b20f3f6a-7a59-47e0-98c1-ba73137fc180",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "0b577f52-bd01-4605-9242-c962f53f57d4",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "edc0223e-e230-45ef-aa22-91ec1ddbce3a",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "f01b073a-b494-4775-bcaa-028f14b73ae3",
+      "studentId": "8276653a-cc4c-47dc-93a5-c2eab7fde395",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "3f45cdce-adca-455d-b817-e3652c6e63d7",
+        "risk": "NORMAL"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "fba19e02-3a95-42f7-a465-f28d4e3b4e17",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "f21ea5b6-0cae-400e-8e8a-9549a94fc811",
+      "studentId": "2f2a6192-1cd2-488b-9655-e6da183c2a84",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "b2340645-9e8a-4a98-ac16-f92b382b9f0b",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "d3000148-739b-4789-9b0e-2c34a6e403f2",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "f30912f2-be17-401a-8369-df3401b3b6b9",
+      "studentId": "c326d88e-bba2-4ebd-9b88-63c524765db9",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "c989e092-5a67-4639-a940-ff8bdc91b43b",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "01aaef1c-884e-49af-8249-39ea2b8584c6",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "f30ca906-a018-4486-932d-6d9db5a81be9",
+      "studentId": "0c478b73-3e15-4e8d-8ccf-c7c46e277d50",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "ffaf58d0-6741-47fa-843f-7da33e7f6ae9",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "593b3c20-ba60-4a89-9c86-06f2a29330d6",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "f404f6e0-09cf-481c-a5c8-84a9f3c7df3c",
+      "studentId": "afa7937f-eee6-405a-a5a0-0a38a3edca64",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "e51a2305-01e8-472b-a94a-f9b4526f7d8b",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "fd59b7ff-b333-419d-b92a-f5e9d5c09b7f",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "f4ded635-f406-4a6f-9544-c753cc41f7e7",
+      "studentId": "fe3d469b-f385-4352-bdb4-a9418a6786d4",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "d39150f1-9da4-45a2-b77e-c2f1eb37cf09",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "e6889cde-c8dd-4d83-a3e8-450389bf9f1e",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "f52333a2-ed90-4e33-afe9-48184a0fd688",
+      "studentId": "9e1cdf5c-ca69-4aac-9e1b-7c425f057498",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "64942fd3-ae78-470e-ae3a-927aca7d3770",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "96782aa5-6fb4-4890-95e7-c155661305db",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "f59d2142-c077-4fa8-a3db-483832f1d7ed",
+      "studentId": "b02fd0c6-5fa2-42ed-8135-238cbd65a0eb",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "c65c628d-6e04-4c3e-8fdd-f4983d61f3f2",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "fe7a6f13-7ff2-4506-8fd9-ad0bb84c6a20",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "f61ede4a-2e73-45e5-944c-c3e2f4ed06ec",
+      "studentId": "a3a3edbf-07ea-436d-a093-d9b8107dbb98",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "88f3b31f-23f3-473f-8347-22d5da0b272d",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "fdd940e7-39c2-4ff9-a126-b8225c9fce99",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "f831c9fe-38e2-4da8-981a-258d16d4efd4",
+      "studentId": "9c0af43a-f1c7-4ed7-8eed-7fccf63aceee",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "25003325-e18c-4541-84d9-6de6fc5df278",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "ece6e905-d5a8-4b11-8bbf-10a3cd97f302",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "f8710670-1359-4d22-a73c-e762be34ae47",
+      "studentId": "847f286a-bc67-4fa4-b5ab-023debb12c30",
+      "status": "OPEN",
+      "before": {
+        "runId": "c3aa6cdf-a6e9-443c-9682-56c6576b92d6",
+        "resultId": "108c194f-bd8a-42d7-bb9e-ba3bb72a18e2",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "796e6fbe-ff7a-45e7-90f7-464dff5813c4",
+        "resultId": "181e260e-e395-479a-91f8-ccd8e5c961b9",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "f8bdfd19-7533-45b2-be1b-5006c3900b62",
+      "studentId": "ad152b17-eb08-4e26-9a13-944de37f3ecf",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "8dc56c5c-1938-42fb-85df-d8fecb1e93ec",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "d89c4e67-172c-4935-adb2-57c22f599ea8",
+        "risk": "NORMAL"
+      }
+    },
+    {
+      "caseId": "fae13497-e0c0-4c0a-a25b-ea997deca926",
+      "studentId": "95add877-d904-46ad-af5b-504068b5ef8a",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "c4bce37d-b9a9-4f14-8324-c06eef7ea800",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "c302bf5f-26f8-4afd-9cd3-fb7c0b3525f9",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "fc016047-5744-46d9-97b2-839fc0c674f4",
+      "studentId": "fa59e708-0d0f-4528-a427-9361324a68dc",
+      "status": "OPEN",
+      "before": {
+        "runId": "73f9a7b3-e93a-45e9-8acf-5df98ef8ad4c",
+        "resultId": "35ad8957-80f4-43c6-a139-b3a6fbd68050",
+        "risk": "HIGH_RISK"
+      },
+      "after": {
+        "runId": "f574fc39-e239-456f-844c-81f8343e6286",
+        "resultId": "0c448ff5-7e1a-45f8-8151-df5d08f94776",
+        "risk": "HIGH_RISK"
+      }
+    },
+    {
+      "caseId": "fc33177f-2205-433f-9768-53dcaf39d2b6",
+      "studentId": "46360f4f-b299-42e3-bb3c-961af061ddb0",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "77be0e0b-9b3d-4461-a2a1-0a06154b4cf2",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "1fe26302-0a7e-48ce-97ad-f2b66515d495",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "fc424666-9a80-45f6-ad61-731b2e402053",
+      "studentId": "a323047a-72b0-438c-a5a1-b79da0f396d9",
+      "status": "OPEN",
+      "before": {
+        "runId": "f37bc73c-3e37-4cd2-8eaf-fd98547bd942",
+        "resultId": "71b32996-c6a1-469c-846b-1cbeb98d16f1",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "3cd863b5-3321-4781-bda7-4f50612ae8ba",
+        "resultId": "c92aa576-c56a-46d4-82d6-b4edcd8b5540",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "fcc8e4c3-5a66-4e13-9600-a213e30b711f",
+      "studentId": "c71dbc3b-0879-4410-bc48-dfc625ed7fb2",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "8795a85c-9877-48f6-b228-89ab7248cffb",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "ac97ce10-399f-4b60-83db-a2abf19eecf1",
+        "risk": "MONITORING"
+      }
+    },
+    {
+      "caseId": "fdd1e93c-b03e-4601-81c0-b00e8a7c75b7",
+      "studentId": "8300d61b-4067-4ea4-9a6f-d9f7cb2ca40a",
+      "status": "OPEN",
+      "before": {
+        "runId": "8cbd2293-3b5b-44a2-b36c-a4520611c8bb",
+        "resultId": "2ac1810b-b0de-4a8b-834c-ec474b4c12e7",
+        "risk": "MONITORING"
+      },
+      "after": {
+        "runId": "7eb2b03a-3055-4120-9779-cc3d4f182f66",
+        "resultId": "1153f79b-172a-4516-979b-8934ea8afd78",
+        "risk": "MONITORING"
+      }
+    }
+  ]
+}

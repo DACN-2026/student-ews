@@ -2,6 +2,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { PrismaClient } = require("@prisma/client");
+const { sourceGradeStatus } = require("../lib/source-grade-status.cjs");
+const { sourceAcademicPeriod } = require("../lib/source-academic-period.cjs");
 
 const DOC_URL =
   "https://kg8vuz7mh4.apidog.io/l%E1%BA%A5y-danh-s%C3%A1ch-sinh-vi%C3%AAn-theo-m%C3%A3-l%E1%BB%9Bp-42667620e0";
@@ -298,10 +300,8 @@ async function fetchSourceData() {
     for (const year of item.grades) {
       for (const term of year.DanhSachDiem || []) {
         const grades = term.DanhSachDiemHK || [];
-        const firstGrade = grades[0] || {};
-        const yearCode = clean(year.NamHoc) || clean(firstGrade.NamHoc) || clean(firstGrade.YearStudy);
-        const rawTerm = clean(term.HocKy) || clean(term.TermID) || clean(firstGrade.HocKy) || clean(firstGrade.TermID);
-        if (!validYear(yearCode) || !rawTerm) {
+        const period = sourceAcademicPeriod(year.NamHoc, clean(term.HocKy) || clean(term.TermID), grades);
+        if (!period) {
           for (const grade of grades) {
             unscopedGradeRows.push({
               studentId: clean(grade.StudentID) || item.studentId,
@@ -311,7 +311,7 @@ async function fetchSourceData() {
           }
           continue;
         }
-        const termCode = normalizeTerm(rawTerm);
+        const { yearCode, termCode } = period;
         for (const grade of grades) {
           gradeRows.push({ studentId: item.studentId, yearCode, termCode, grade });
         }
@@ -866,7 +866,7 @@ async function replaceBusinessData(prisma, source) {
         notScore,
         notComputeAverageScore: marker(grade.NotComputeAverageScore),
         note: nullable(grade.Note),
-        scoreStatus: notScore ? "pending" : special ? "special" : "graded",
+        scoreStatus: sourceGradeStatus({ notScore, special, score10: score10.value, score4: score4.value, letter, isPass: marker(grade.IsPass) }),
         sourcePayload: grade,
         sourceMd5: nullable(grade.MD5),
         gradeImportBatchId: batchId,
@@ -1240,6 +1240,11 @@ async function main() {
     } else {
       await replaceBusinessData(prisma, source);
     }
+    // Rebuild derived departure scope after source membership/decisions are imported.
+    const { spawnSync } = require('node:child_process');
+    const departureSync = spawnSync(process.execPath, ['--require', path.join(__dirname, 'node-platform-shim.cjs'), '--import', 'tsx', path.join(__dirname, 'sync-student-departures.ts'), '--apply'],
+      { cwd: path.resolve(__dirname, '..'), env: process.env, stdio: 'inherit', windowsHide: true });
+    if (departureSync.error || departureSync.status !== 0) throw new Error('Student departure synchronization failed');
     console.log("Database counts:", JSON.stringify(await verify(prisma)));
   } finally {
     await prisma.$disconnect();
@@ -1254,6 +1259,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  createSourceClient, mapLimit, clean, normalizeTerm, validYear, parseNumber, parseInteger, marker, scoreParts, parseDate,
   deduplicateCurricula,
   legacyAcademicWarningPolicyDefinition,
   qd600AcademicWarningPolicyDefinition,

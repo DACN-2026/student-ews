@@ -194,7 +194,9 @@ export default function StudentProgressDetail({
     );
   }
 
-  const { student, curriculum, summary, scheduleProgress, semesters } = data;
+  const { student, curriculum, summary, scheduleProgress } = data;
+  const historicalSemesterNo = scheduleProgress.latestCompletedSemester ?? scheduleProgress.lastCompletedSemester ?? Math.max(0, (scheduleProgress.expectedSemesterNo || 1) - 1);
+  const semesters = student.historicalOnly ? data.semesters.filter(semester => semester.semesterNo <= historicalSemesterNo) : data.semesters;
 
 
   // Normalized summary numbers
@@ -301,6 +303,10 @@ export default function StudentProgressDetail({
       {/* ========================================================================= */}
       {/* TỔNG QUAN TIẾN ĐỘ ĐẾN MỐC HIỆN TẠI (SUMMARY NGẮN GỌN)                    */}
       {/* ========================================================================= */}
+      {student.historicalOnly && <div role="status" className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-6 text-slate-700">
+        <p className="font-semibold">{student.historicalReason === "STUDY_SUSPENSION" ? "Đang nghỉ học tạm thời · Tiến độ được đóng băng" : "Đã rời lớp · Tiến độ lịch sử"}</p>
+        <p>Chỉ hiển thị kết quả đến {student.historyCutoff || "mốc trước khi ngừng theo dõi"}.{student.suspension && ` Nghỉ từ HK${student.suspension.fromTerm} (${student.suspension.fromYear}), theo quyết định ${student.suspension.decisionNumber}.`} {student.historicalReason === "STUDY_SUSPENSION" && "Không tính thêm thiếu tín chỉ, chậm tiến độ hoặc chưa đăng ký trong thời gian nghỉ. Chỉ mở lại khi quyết định tiếp nhận học lại có hiệu lực."}</p>
+      </div>}
       {view === "progress" && <section aria-labelledby="section-progress-summary" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
         {/* Header row with milestone & status */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3.5">
@@ -316,11 +322,11 @@ export default function StudentProgressDetail({
               </TextLabel>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              {student.studyScheduleSource === "REGISTRATION_SEQUENCE" ? `Mốc theo chuỗi đăng ký (tương ứng ${student.studyCohortCode}): `
-                : student.studyCohortCode ? `Mốc kế hoạch đang theo học (${student.studyCohortCode}): ` : "Mốc chuẩn của khóa: "}<strong className="text-slate-800 font-semibold">{benchmarkLabel}</strong>
+              {student.historicalOnly ? "Mốc lịch sử: " : student.studyScheduleSource === "REGISTRATION_SEQUENCE" ? `Mốc theo chuỗi đăng ký (tương ứng ${student.studyCohortCode}): `
+                : student.studyCohortCode ? `Mốc kế hoạch đang theo học (${student.studyCohortCode}): ` : "Mốc chuẩn của khóa: "}<strong className="text-slate-800 font-semibold">{student.historicalOnly ? student.historyCutoff : benchmarkLabel}</strong>
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              {studyingSemesterLabel ? <>Đang học các học phần: <strong className="text-slate-800 font-semibold">{studyingSemesterLabel}</strong></> : "Chưa ghi nhận học phần đang học trong kỳ hiện tại."}
+              {student.historicalOnly ? "Các chỉ số bên dưới phản ánh mốc lịch sử, không phải tình trạng tiến độ hiện tại." : studyingSemesterLabel ? <>Đang học các học phần: <strong className="text-slate-800 font-semibold">{studyingSemesterLabel}</strong></> : "Chưa ghi nhận học phần đang học trong kỳ hiện tại."}
             </p>
           </div>
 

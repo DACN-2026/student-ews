@@ -1,8 +1,10 @@
 import { compareStudentOrder } from "../student-list-order";
-import { monitoredStudentResultWhere } from "../student-monitoring-scope";
+import { compareAcademicTerms, type AcademicTermLinkInput } from "../academic-terms";
+import { monitoredStudentResultWhere, assertStudentSupportAllowed, studentIsInClass, studentSuspension, suspensionWhere } from "../student-monitoring-scope";
 import crypto from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { regulatoryAssessment } from "./warning-regulatory-assessment";
 import { hasPermission, type Actor } from "@/lib/auth/types";
 import { normalizeWarningBusinessStatus } from "./academic-warning-rules";
 import { ApiError } from "@/lib/utils/api-error";
@@ -107,6 +109,7 @@ function jsonObject(value: Prisma.JsonValue): Prisma.JsonObject {
 async function scopedQueueRows(
   actor: Actor,
   filters: Omit<InterventionQueueFilters, "page" | "pageSize"> & { caseId?: string } = {},
+  includeHistorical = false,
 ) {
   const statuses = ["OPEN", "IN_PROGRESS", "RESOLVED", "ESCALATED", "REOPENED", "ACTIVE_PROCESSING"];
   const businessStatuses = ["NORMAL", "PARTIAL_NO_RISK", "MONITORING", "HIGH_RISK", "VERIFY_REQUIRED", "INSUFFICIENT_DATA", "HIGH_RISK_OR_VERIFY"];
@@ -120,7 +123,7 @@ async function scopedQueueRows(
   const cases = await prisma.warningAction.findMany({
     where: {
       caseType: EARLY_WARNING_CASE_TYPE,
-      ...await monitoredStudentResultWhere(),
+      ...(includeHistorical ? {} : await monitoredStudentResultWhere()),
       ...(filters.caseId ? { id: filters.caseId } : {}),
       ...(filters.status ? { status: filters.status === "ACTIVE_PROCESSING" ? { in: ["IN_PROGRESS", "ESCALATED", "REOPENED"] } : filters.status } : {}),
       ...(filters.businessStatus ? { latestBusinessStatus: normalizeWarningBusinessStatus(filters.businessStatus) === "NORMAL"
@@ -148,6 +151,8 @@ async function scopedQueueRows(
         sClassName: true,
         sProgramCode: true,
         businessStatus: true,
+        ruleResults: true,
+        regulatoryCoverage: true,
       },
     }),
     prisma.academicWarningRun.findMany({
@@ -228,9 +233,12 @@ async function scopedQueueRows(
         programCode: result?.sProgramCode || null,
       },
       latestBusinessStatus: normalizeWarningBusinessStatus(interventionCase.latestBusinessStatus),
+      regulatoryAssessment: regulatoryAssessment(result?.ruleResults),
+      regulatoryCoverage: result?.regulatoryCoverage || null,
       interventionStatus: interventionCase.status,
       latestWarningRunId: interventionCase.latestWarningRunId,
       latestWarningResultId: interventionCase.latestWarningResultId,
+      assignedUserId: interventionCase.assignedUserId || null,
       assessmentAcademicTermId: run?.assessmentAcademicTermId || null,
       lastDetectedAt: interventionCase.lastDetectedAt,
       nextFollowUpAt: interventionCase.nextFollowUpAt,
@@ -260,7 +268,10 @@ async function assertCanMutateInterventionCase(caseId: string, actor: Actor) {
     throw new ApiError("Intervention case not found", "NOT_FOUND", 404);
   }
 
-  if (actorHasRole(actor, "admin") || actorHasScope(actor, "system")) return interventionCase;
+  if (actorHasRole(actor, "admin") || actorHasScope(actor, "system")) {
+    await assertStudentSupportAllowed(interventionCase.studentId);
+    return interventionCase;
+  }
 
   const isAdvisor = actorHasRole(actor, "class_advisor") && actorHasScope(actor, "assigned_classes");
   if (!isAdvisor) {
@@ -295,12 +306,14 @@ async function assertCanMutateInterventionCase(caseId: string, actor: Actor) {
   if (!assignment) {
     throw new ApiError("Intervention case not found", "NOT_FOUND", 404);
   }
+  await assertStudentSupportAllowed(interventionCase.studentId);
   return interventionCase;
 }
 
 async function syncPersistedResult(
   run: { id: string; assessmentAcademicTermId: string; completedAt: Date | null },
   result: { id: string; studentId: string; classId: string | null; businessStatus: string },
+  termsById: ReadonlyMap<string, AcademicTermLinkInput>,
 ) {
   const activeWhere = {
     studentId: result.studentId,
@@ -308,6 +321,12 @@ async function syncPersistedResult(
     status: { in: [...ACTIVE_INTERVENTION_STATUSES] },
   } satisfies Prisma.WarningActionWhereInput;
   const detectedAt = run.completedAt ?? new Date();
+  const comparePeriods = (previousTermId: string) => {
+    if (run.assessmentAcademicTermId === previousTermId) return 0;
+    const target = termsById.get(run.assessmentAcademicTermId);
+    const previous = termsById.get(previousTermId);
+    return target && previous ? compareAcademicTerms(target, previous) : null;
+  };
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -334,6 +353,17 @@ async function syncPersistedResult(
 
         if (!activeCase) {
           if (!shouldCreate) return "unchanged" as const;
+          // Recomputing an older semester after resolution is historical
+          // reconciliation, even if the run itself completed just now.
+          const resolvedCases = await tx.warningAction.findMany({
+            where: { studentId: result.studentId, caseType: EARLY_WARNING_CASE_TYPE, status: "RESOLVED" },
+            select: { latestWarningRunId: true },
+          });
+          const resolvedRuns = resolvedCases.length ? await tx.academicWarningRun.findMany({
+            where: { id: { in: resolvedCases.flatMap(item => item.latestWarningRunId ? [item.latestWarningRunId] : []) } },
+            select: { assessmentAcademicTermId: true },
+          }) : [];
+          if (resolvedRuns.some(previous => (comparePeriods(previous.assessmentAcademicTermId) ?? 0) < 0)) return "unchanged" as const;
           const episodeKey = createInterventionEpisodeKey(result.studentId, run.id);
           const previouslyHandledEpisode = await tx.warningAction.findUnique({ where: { episodeKey } });
           if (previouslyHandledEpisode) return "unchanged" as const;
@@ -389,7 +419,17 @@ async function syncPersistedResult(
         }
 
         if (activeCase.latestWarningRunId === run.id) return "unchanged" as const;
-        if (activeCase.lastDetectedAt && activeCase.lastDetectedAt > detectedAt) return "unchanged" as const;
+        const previousRun = activeCase.latestWarningRunId ? await tx.academicWarningRun.findUnique({
+          where: { id: activeCase.latestWarningRunId },
+          select: { assessmentAcademicTermId: true, completedAt: true },
+        }) : null;
+        if (previousRun) {
+          const periodOrder = comparePeriods(previousRun.assessmentAcademicTermId);
+          // Semester chronology takes precedence over the time a historical
+          // run was recomputed. Within one semester, keep the newest result.
+          if (periodOrder === null || periodOrder < 0) return "unchanged" as const;
+          if (periodOrder === 0 && previousRun.completedAt && previousRun.completedAt > detectedAt) return "unchanged" as const;
+        } else if (activeCase.lastDetectedAt && activeCase.lastDetectedAt > detectedAt) return "unchanged" as const;
         const previousBusinessStatus = activeCase.latestBusinessStatus;
         await tx.warningAction.update({
           where: { id: activeCase.id },
@@ -533,8 +573,13 @@ export class InterventionCasesService {
   }
 
   static async getDetail(caseId: string, actor: Actor) {
-    const [queueCase] = await scopedQueueRows(actor, { caseId });
+    const [queueCase] = await scopedQueueRows(actor, { caseId }, true);
     if (!queueCase) throw new ApiError("Intervention case not found", "NOT_FOUND", 404);
+    const student = await prisma.student.findFirst({ where: { id: queueCase.student.id, deletedAt: null },
+      select: { sIsInClass: true, leftClassEffectiveAt: true, studySuspensions: { where: suspensionWhere() } } });
+    const assignedUser = queueCase.assignedUserId ? await prisma.user.findFirst({
+      where: { id: queueCase.assignedUserId, deletedAt: null }, select: { fullName: true },
+    }) : null;
     const [result, history] = await Promise.all([
       queueCase.latestWarningResultId
         ? prisma.academicWarningStudentResult.findUnique({
@@ -556,7 +601,7 @@ export class InterventionCasesService {
         })
       : [];
     return {
-      case: queueCase,
+      case: { ...queueCase, readOnly: !student || !studentIsInClass(student) || Boolean(studentSuspension(student)), assignedUserName: assignedUser?.fullName || null },
       currentWarning: result ? {
         resultId: result.id,
         businessStatus: normalizeWarningBusinessStatus(result.businessStatus),
@@ -598,7 +643,7 @@ export class InterventionCasesService {
     };
   }
 
-  static async syncInterventionCasesForRun(runId: string): Promise<SyncResult> {
+  static async syncInterventionCasesForRun(runId: string, options: { studentIds?: string[] } = {}): Promise<SyncResult> {
     const run = await prisma.academicWarningRun.findUnique({
       where: { id: runId },
       select: {
@@ -615,14 +660,18 @@ export class InterventionCasesService {
     }
 
     const monitoringScope = await monitoredStudentResultWhere();
+    // Maintenance corrections can synchronize only affected students while
+    // retaining the normal monitoring scope and all other intervention records.
+    const selectedStudents = options.studentIds === undefined ? {} : { studentId: { ...monitoringScope.studentId, in: options.studentIds } };
     const triggerResults = await prisma.academicWarningStudentResult.findMany({
-      where: { runId, ...monitoringScope, businessStatus: { in: [...INTERVENTION_TRIGGER_STATUSES] } },
+      where: { runId, ...monitoringScope, ...selectedStudents, businessStatus: { in: [...INTERVENTION_TRIGGER_STATUSES] } },
       select: { id: true, studentId: true, classId: true, businessStatus: true },
     });
     const activeCaseStudents = await prisma.warningAction.findMany({
       where: {
         caseType: EARLY_WARNING_CASE_TYPE,
         ...monitoringScope,
+        ...selectedStudents,
         status: { in: [...ACTIVE_INTERVENTION_STATUSES] },
       },
       select: { studentId: true },
@@ -639,6 +688,15 @@ export class InterventionCasesService {
         })
       : [];
     const persistedResults = [...triggerResults, ...nonTriggerResults];
+    const [terms, years] = await Promise.all([
+      prisma.academicTerm.findMany({ where: { deletedAt: null } }),
+      prisma.academicYear.findMany({ where: { deletedAt: null }, select: { id: true, sYearCode: true } }),
+    ]);
+    const yearById = new Map(years.map(year => [year.id, year.sYearCode]));
+    const termsById = new Map(terms.map(term => [term.id, {
+      id: term.id, academicYearId: term.academicYearId, academicYearCode: yearById.get(term.academicYearId) || "",
+      termOrder: term.sTermOrder, isSummer: term.sIsSummer, startDate: term.startDate, endDate: term.endDate,
+    }]));
     const summary: SyncResult = {
       runId,
       processedResults: persistedResults.length,
@@ -647,7 +705,7 @@ export class InterventionCasesService {
       unchangedResults: 0,
     };
     for (const result of persistedResults) {
-      const outcome = await syncPersistedResult(run, result);
+      const outcome = await syncPersistedResult(run, result, termsById);
       if (outcome === "created") summary.createdCases++;
       else if (outcome === "updated") summary.updatedCases++;
       else summary.unchangedResults++;

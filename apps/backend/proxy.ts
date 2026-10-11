@@ -90,6 +90,8 @@ export function requiredPermission(pathname: string, method: string): string | s
     return "graduation.read";
   }
   if (pathname.startsWith("/api/v1/academic-warnings")) {
+    if (pathname.includes("/students/") && pathname.endsWith("/standing") && method === "POST") return "academic_warning.action.update";
+    if (pathname === "/api/v1/academic-warnings/policies/early-warning") return "academic_warning.policy.manage";
     if (pathname.includes("/policies") && method !== "GET") return "academic_warning.policy.manage";
     if (pathname.endsWith("/reconcile") && method === "POST") return "academic_warning.calculate";
     if (pathname.includes("/terms/") && pathname.endsWith("/retry") && method === "POST") {
