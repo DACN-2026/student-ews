@@ -1,0 +1,17 @@
+{
+  "pageStatus": 200,
+  "policyVersion": 3,
+  "verifiedConductMappingConfigured": false,
+  "conductCriteriaEnabled": false,
+  "policyUnchanged": true,
+  "statuses": [
+    {
+      "statusId": "1",
+      "count": 2744
+    },
+    {
+      "statusId": "0",
+      "count": 6631
+    }
+  ]
+}

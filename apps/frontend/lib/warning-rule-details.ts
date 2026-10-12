@@ -2,7 +2,7 @@ const LEGAL_BASIS_INFO: Record<string, { title: string; summary: string }> = {
   QD600_FAILED_CREDIT_RATIO: {
     title: "Điều 18 – Quyết định 600/QĐ-ĐHĐL (Cảnh báo học tập)",
     summary:
-      "Điều 18 quy định đối chiếu cuối học kỳ chính khi tín chỉ không đạt vượt quá 50% tín chỉ đã đăng ký trong kỳ. Hệ thống loại SHCD và học phần điều kiện khỏi tỷ lệ học thuật; VT được theo dõi riêng để xác minh, không tự quy thành tín chỉ F.",
+      "Điều 18 quy định đối chiếu cuối học kỳ chính khi tín chỉ không đạt vượt quá 50% tín chỉ đã đăng ký trong kỳ. Hệ thống loại SHCD và học phần điều kiện khỏi tỷ lệ học thuật. VT đã có kết quả dùng IsPass để xác định đạt/không đạt; giữ nguyên mã VT và theo dõi riêng lý do vắng thi.",
   },
   QD600_TERM_GPA: {
     title: "Điều 18 – Quyết định 600/QĐ-ĐHĐL (Điểm trung bình học kỳ)",

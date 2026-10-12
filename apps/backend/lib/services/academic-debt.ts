@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { courseOutcome, isConditionalCourse, normalizeProgramCourseCode, type CourseOutcomeInput } from "../academic-course-rules";
+import { warningCourseOutcome, sourcePassOutcome, isConditionalCourse, normalizeProgramCourseCode, type CourseOutcomeInput } from "../academic-course-rules";
 import { k44ElectiveMembership, type K44ElectiveBlock } from "../k44-elective-blocks";
 import { teachingSemesterSurplus } from "../semester-teaching-requirements";
 import { loadProgramCurriculum, loadProgramCurriculumCatalog, type CurriculumCatalogCourse } from "./program-curriculum";
@@ -78,7 +78,7 @@ export function calculateAcademicDebt(attempts: DebtAttempt[], courses: Forecast
     if (isConditionalCourse(attempt.courseCode, attempt.courseName)) continue;
     const course = byCode.get(identity(attempt.courseCode));
     const absence = (attempt.specialCode || attempt.letterCode || "").trim().toUpperCase() === "VT";
-    const outcome = absence ? "unknown" : courseOutcome(attempt);
+    const outcome = warningCourseOutcome(attempt);
     if (!course) {
       const recognized = catalog.find(item => identity(item.courseCode) === identity(attempt.courseCode));
       const reviewKey = `${attempt.courseCode}|${attempt.academicYear || ""}|${attempt.termCode || ""}|${absence ? "VT" : outcome}`;
@@ -98,7 +98,7 @@ export function calculateAcademicDebt(attempts: DebtAttempt[], courses: Forecast
     state.passed ||= outcome === "passed";
     state.unresolved ||= outcome === "unknown";
     state.pending ||= outcome === "pending";
-    state.absence ||= absence;
+    state.absence ||= absence && outcome === "unknown";
     states.set(code, state);
   }
   let debt = 0;
@@ -227,11 +227,11 @@ export async function loadAcademicDebt(studentIds: string[], programId: string, 
   if (!term || !program) return result;
   const year = await prisma.academicYear.findUnique({ where: { id: term.academicYearId } });
   if (!year) return result;
-  const rows: Array<DebtAttempt & { student_id: string }> = await prisma.$queryRaw`
+  const rows: Array<DebtAttempt & { student_id: string; source_payload: unknown }> = await prisma.$queryRaw`
     SELECT o.student_id::text, o.s_curriculum_id AS "courseCode", o.s_course_name AS "courseName", o.s_credits AS credits,
       y.s_year_code AS "academicYear", t.s_term_code AS "termCode",
       g.is_pass AS "isPass", g.not_score AS "notScore", g.score_status AS "scoreStatus", g.special_code AS "specialCode",
-      g.letter_code AS "letterCode", g.score_10 AS "score10", g.score_4 AS "score4"
+      g.letter_code AS "letterCode", g.score_10 AS "score10", g.score_4 AS "score4", g.source_payload
     FROM student_course_offerings o JOIN academic_years y ON y.id = o.academic_year_id
     JOIN academic_terms t ON t.id = o.academic_term_id LEFT JOIN student_course_grades g ON g.offering_id = o.id
     WHERE o.student_id = ANY(${studentIds}::uuid[]) AND (y.s_year_code < ${year.sYearCode}
@@ -242,7 +242,8 @@ export async function loadAcademicDebt(studentIds: string[], programId: string, 
     // GDTC/GDQP remain unresolved certificate evidence; they do not affect academic F debt.
     .filter(row => !isConditionalCourse(row.sCourseCode, row.sCourseName)).map((row) => row.studentId));
   for (const studentId of studentIds) {
-    const debt = calculateAcademicDebt(rows.filter((row) => row.student_id === studentId), courses, program.sProgramCode, catalog);
+    const debt = calculateAcademicDebt(rows.filter((row) => row.student_id === studentId).map(row =>
+      row.specialCode?.trim().toUpperCase() === "VT" ? { ...row, isPass: sourcePassOutcome(row.source_payload) } : row), courses, program.sProgramCode, catalog);
     if (unscoped.has(studentId)) { debt.dataStatus = "PARTIAL"; debt.reasonCode = "UNSCOPED_HISTORICAL_ATTEMPTS"; }
     result.set(studentId, debt);
   }

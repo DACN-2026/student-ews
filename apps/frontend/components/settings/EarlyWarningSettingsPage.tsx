@@ -9,8 +9,9 @@ import ForbiddenState from "@/components/ui/ForbiddenState";
 import LoadingState from "@/components/ui/LoadingState";
 import WarningPolicyReference, { WarningRegulationDocument } from "./WarningPolicyReference";
 import WarningNumberField from "./WarningNumberField";
+import ConductSourceNotice from "./ConductSourceNotice";
 import {
-  gpaAdvisoryExample, recognizedConductStatuses, signalFields, signalGroups, signalDisplayValue, signalStoredValue,
+  conductSignalsAvailable, gpaAdvisoryExample, signalFields, signalGroups, signalDisplayValue, signalStoredValue,
   validateWarningConfiguration, warningNumber, warningConfigurationKey,
   type CreditField, type OptionalField, type WarningConfiguration, type WarningSettings,
 } from "@/lib/early-warning-configuration";
@@ -29,7 +30,6 @@ export default function EarlyWarningSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [recognizedStatuses, setRecognizedStatuses] = useState("");
   const [exampleYear, setExampleYear] = useState(1);
 
   useEffect(() => {
@@ -45,7 +45,6 @@ export default function EarlyWarningSettingsPage() {
         if (!response.ok) throw new Error(data.error?.message || "Không thể tải cấu hình.");
         if (!controller.signal.aborted) {
           setConfiguration(data); setSavedConfiguration(data);
-          setRecognizedStatuses(data.settings.recognizedConductStatusIds.join(", "));
         }
       } catch (failure) { if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : "Không thể tải cấu hình."); }
       finally { if (!controller.signal.aborted) setLoading(false); }
@@ -53,19 +52,20 @@ export default function EarlyWarningSettingsPage() {
     return () => controller.abort();
   }, [permitted, status, retry]);
 
-  const errors = configuration ? validateWarningConfiguration(configuration, recognizedStatuses) : {};
+  const errors = configuration ? validateWarningConfiguration(configuration) : {};
   const invalid = Object.keys(errors).length > 0;
   const dirty = Boolean(configuration && savedConfiguration && (
-    warningConfigurationKey(configuration) !== warningConfigurationKey(savedConfiguration) || recognizedStatuses !== savedConfiguration.settings.recognizedConductStatusIds.join(", ")
+    warningConfigurationKey(configuration) !== warningConfigurationKey(savedConfiguration)
   ));
   function edited() { setSuccess(""); setError(""); }
   function setting(key: keyof WarningSettings, value: WarningSettings[keyof WarningSettings]) {
+    if ((key === "conductScoreBelow" || key === "conductScoreDrop") && value !== null
+      && configuration && !conductSignalsAvailable(configuration.settings)) return;
     setConfiguration(previous => previous ? { ...previous, settings: { ...previous.settings, [key]: value } } : previous);
     edited();
   }
   function discard() {
     setConfiguration(savedConfiguration);
-    setRecognizedStatuses(savedConfiguration?.settings.recognizedConductStatusIds.join(", ") || "");
     edited();
   }
   async function save(event: React.FormEvent) {
@@ -73,7 +73,7 @@ export default function EarlyWarningSettingsPage() {
     if (!configuration || !permitted || saving || !dirty) return;
     if (invalid) { setError("Kiểm tra các ô được đánh dấu trước khi lưu."); return; }
     setSaving(true); setError(""); setSuccess("");
-    const nextSettings = { ...configuration.settings, recognizedConductStatusIds: recognizedConductStatuses(recognizedStatuses) };
+    const nextSettings = { ...configuration.settings };
     try {
       const response = await apiFetch("/api/v1/academic-warnings/policies/early-warning", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -82,7 +82,7 @@ export default function EarlyWarningSettingsPage() {
       const data = await response.json();
       if (!response.ok) { setConflict(response.status === 409); throw new Error(data.error?.message || "Không thể lưu cấu hình."); }
       const saved = { ...configuration, name: configuration.name.trim(), settings: nextSettings, id: data.id, version: data.version };
-      setConfiguration(saved); setSavedConfiguration(saved); setRecognizedStatuses(nextSettings.recognizedConductStatusIds.join(", ")); setConflict(false);
+      setConfiguration(saved); setSavedConfiguration(saved); setConflict(false);
       setSuccess(`Đã lưu phiên bản ${data.version}. Cấu hình được dùng cho các lần đánh giá tiếp theo. Muốn cập nhật học kỳ đã có kết quả, hãy chạy lại đánh giá trong Cảnh báo học tập.`);
     } catch (failure) { setError(failure instanceof Error ? failure.message : "Không thể lưu cấu hình."); }
     finally { setSaving(false); }
@@ -113,7 +113,7 @@ export default function EarlyWarningSettingsPage() {
   const selectedYear = configuration?.regulatory.cumulativeGpaByYear.find(year => year.yearLevel === exampleYear)
     || configuration?.regulatory.cumulativeGpaByYear[0];
   const enabledSignals = configuration ? (Object.keys(signalFields) as OptionalField[]).filter(key => configuration.settings[key] !== null).length : 0;
-  const conductEnabled = configuration && (configuration.settings.conductScoreBelow !== null || configuration.settings.conductScoreDrop !== null);
+  const conductAvailable = configuration ? conductSignalsAvailable(configuration.settings) : false;
 
   return <div className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6">
     <header className="flex flex-wrap items-start justify-between gap-4">
@@ -154,21 +154,18 @@ export default function EarlyWarningSettingsPage() {
               <div className="border-b border-slate-100 px-5 py-5 sm:px-6"><div className="flex flex-wrap items-center justify-between gap-2"><h2 id="additional-signals-title" className="font-semibold text-slate-900">Tiêu chí theo dõi bổ sung</h2><span className="text-xs tabular-nums text-slate-500">{enabledSignals}/8 đang bật</span></div><p className="mt-2 text-xs leading-5 text-slate-600">Bật những tiêu chí phù hợp với nhu cầu hỗ trợ. Khi đạt ngưỡng, sinh viên được đưa vào mức Cần chú ý; mức Nguy cơ cao từ các tiêu chí khác vẫn được ưu tiên.</p></div>
               <div className="space-y-6 px-5 py-5 sm:px-6">{signalGroups.map(group => <section key={group.title} aria-label={group.title}>
                 <h3 className="mb-3 text-xs font-semibold text-slate-500">{group.title}</h3>
+                {group.fields.some(key => key === "conductScoreBelow") && <ConductSourceNotice available={conductAvailable} />}
                 <div className="grid gap-3 sm:grid-cols-2">{group.fields.map(key => {
                   const field = signalFields[key]; const value = configuration.settings[key]; const enabled = value !== null; const scale = field.scale || 1;
+                  const unavailable = (key === "conductScoreBelow" || key === "conductScoreDrop") && !conductAvailable;
                   return <div key={key} className={`rounded-lg border p-4 transition-colors ${enabled ? "border-lime-200 bg-lime-50/30" : "border-slate-200 bg-white"}`}>
-                    <label className="flex min-h-10 cursor-pointer items-start gap-2.5 text-sm font-medium text-slate-900"><input type="checkbox" checked={enabled} onChange={event => setting(key, event.target.checked ? field.suggested : null)} className="mt-0.5 size-4 shrink-0 accent-lime-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-700" /><span>{field.label}</span></label>
+                    <label className={`flex min-h-10 items-start gap-2.5 text-sm font-medium ${unavailable && !enabled ? "cursor-not-allowed text-slate-400" : "cursor-pointer text-slate-900"}`}><input type="checkbox" checked={enabled} disabled={unavailable && !enabled} aria-describedby={unavailable ? "conduct-source-notice" : undefined} onChange={event => setting(key, event.target.checked ? field.suggested : null)} className="mt-0.5 size-4 shrink-0 accent-lime-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-700" /><span>{field.label}</span></label>
                     <p className="mt-2 min-h-10 text-xs leading-5 text-slate-600">{field.description}</p>
-                    {enabled ? <div className="mt-3"><WarningNumberField id={`signal-${key}`} label={field.inputLabel} value={signalDisplayValue(key, value)} unit={field.unit} min={field.min * scale} max={field.max * scale} step={field.step * scale} onChange={next => setting(key, signalStoredValue(key, next))} error={errors[key]} /></div> : <p className="mt-3 text-xs text-slate-500">Đang tắt</p>}
+                    {enabled ? <div className="mt-3"><WarningNumberField id={`signal-${key}`} label={field.inputLabel} value={signalDisplayValue(key, value)} unit={field.unit} min={field.min * scale} max={field.max * scale} step={field.step * scale} onChange={next => setting(key, signalStoredValue(key, next))} error={errors[key]} /></div> : <p className="mt-3 text-xs text-slate-500">{unavailable ? "Chờ xác nhận nguồn điểm" : "Đang tắt"}</p>}
                   </div>;
                 })}</div>
               </section>)}
-                <details open={Boolean(conductEnabled || errors.recognizedConductStatusIds)} className="rounded-lg border border-slate-200 p-4"><summary className="cursor-pointer text-xs font-semibold text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-700">Nguồn điểm rèn luyện được công nhận</summary>
-                  <p className="mt-3 text-xs leading-5 text-slate-600">Chỉ dùng điểm đã được công nhận. Nếu chưa xác minh được trạng thái từ dữ liệu đào tạo, hãy giữ các tiêu chí rèn luyện ở trạng thái tắt.</p>
-                  <label htmlFor="recognized-conduct-statuses" className="mt-3 block text-xs font-medium text-slate-700">Mã trạng thái đã xác minh là công nhận</label>
-                  <input id="recognized-conduct-statuses" value={recognizedStatuses} onChange={event => { setRecognizedStatuses(event.target.value); edited(); }} placeholder="Nhập các mã trạng thái, ngăn cách bằng dấu phẩy" className={`${inputClass} mt-2`} aria-invalid={Boolean(errors.recognizedConductStatusIds)} aria-describedby={errors.recognizedConductStatusIds ? "conduct-status-error" : "conduct-status-help"} />
-                  {errors.recognizedConductStatusIds ? <p id="conduct-status-error" className="mt-2 text-xs leading-5 text-red-700">{errors.recognizedConductStatusIds}</p> : <p id="conduct-status-help" className="mt-2 text-xs leading-5 text-slate-500">Điểm tự đánh giá và điểm chưa được công nhận không tham gia các tiêu chí này.</p>}
-                </details>
+                {errors.recognizedConductStatusIds && <p role="alert" className="text-xs leading-5 text-red-700">{errors.recognizedConductStatusIds}</p>}
               </div>
             </section>
           </div>

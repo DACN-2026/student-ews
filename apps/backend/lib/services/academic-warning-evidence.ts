@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import type { Actor } from "@/lib/auth/types";
 import { ApiError } from "@/lib/utils/api-error";
-import { courseOutcome, isConditionalCourse } from "@/lib/academic-course-rules";
+import { courseOutcome, sourcePassOutcome, isConditionalCourse } from "@/lib/academic-course-rules";
 import { InterventionCasesService } from "./intervention-cases";
 import { StudentTrainingProgressService } from "./student-training-progress";
 import { academicWarningProgressSignal } from "./academic-warning-progress";
@@ -73,7 +73,7 @@ export class AcademicWarningEvidenceService {
     const failed = calculateAssessmentTermFailedCredits(term.id, offerings.map((offering) => {
       const grade = gradesById.get(offering.id);
       return { offeringId: offering.id, academicTermId: term.id, credits: offering.sCredits, courseCode: offering.sCurriculumId, courseName: offering.sCourseName,
-        scoreStatus: grade?.scoreStatus ?? null, hasFinalGrade: grade?.scoreStatus === "graded", isPass: grade?.isPass ?? null, specialCode: grade?.specialCode };
+        scoreStatus: grade?.scoreStatus ?? null, hasFinalGrade: grade?.scoreStatus === "graded", isPass: grade?.specialCode?.trim().toUpperCase() === "VT" ? sourcePassOutcome(grade.sourcePayload) : grade?.isPass ?? null, specialCode: grade?.specialCode, notScore: grade?.notScore ?? null };
     }));
     const progressSignal = progress ? academicWarningProgressSignal(progress, run.trainingProgramId) : null;
     const sameProgram = progress?.curriculum.programCode === result.sProgramCode;

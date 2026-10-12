@@ -173,14 +173,50 @@ test("extra electives cannot hide mandatory debt or be reported as missing miles
   assert.equal(rule.isNearThreshold,true);
 });
 
-test("a pending assessment remains unevaluated while its semester credit breakdown is preserved", () => {
+test("a future/current pending course does not block the completed semester milestone", () => {
   const result = evaluateStudentTrainingProgress({
     ...input, grades:[...grades,{courseCode:"20CT3202",scoreStatus:"pending",notScore:true,academicYear:"2026-2027",termCode:"HK01"}],
   });
   const signal = academicWarningProgressSignal(result,"program");
-  assert.equal(signal.creditDeficit,null);
-  assert.equal(signal.reasonCode,"TRAINING_PROGRESS_PENDING_RESULTS");
+  assert.equal(signal.creditDeficit,0);
+  assert.equal(signal.reasonCode,null);
   assert.equal(signal.expectedCreditsToDate,98);
   assert.equal(signal.earnedCreditsToDate,107);
-  assert.equal(warningRule(result).evaluationStatus,"NOT_EVALUATED");
+  assert.equal(warningRule(result).evaluationStatus,"EVALUATED");
+});
+
+test("known passes and failures survive pending improvement/retake without hiding progress", () => {
+  const result = evaluateStudentTrainingProgress({ ...input,
+    grades: [...grades.filter(grade => grade.courseCode !== "20CT1102"),
+      { courseCode: "20CT1102", isPass: false, letterCode: "F", scoreStatus: "graded" },
+      ...["20CT1101", "20CT1102"].map(courseCode => ({ courseCode, notScore: true, scoreStatus: "pending", academicYear: "2026-2027", termCode: "HK01" }))],
+  });
+  const signal = academicWarningProgressSignal(result, "program");
+  assert.equal(signal.dataStatus, "COMPLETE");
+  assert.equal(signal.creditDeficit, 0);
+  assert.equal(signal.missingRequiredCredits, 4);
+  assert.deepEqual(signal.pendingCourses?.map(course => [course.courseCode, course.context]), [["20CT1101", "IMPROVEMENT"], ["20CT1102", "RETAKE"]]);
+  assert.equal(warningRule(result).evaluationStatus, "EVALUATED");
+});
+
+test("a recorded pending result is assessed from recognized credits with explicit partial coverage", () => {
+  const result = evaluateStudentTrainingProgress({ ...input,
+    grades: [...grades.filter(grade => grade.courseCode !== "20CT1102"), { courseCode: "20CT1102", notScore: true, scoreStatus: "pending", academicYear: "2025-2026", termCode: "HK02" }],
+  });
+  const signal = academicWarningProgressSignal(result, "program");
+  assert.equal(signal.dataStatus, "PARTIAL");
+  assert.equal(signal.reasonCode, "TRAINING_PROGRESS_AWAITING_RESULTS");
+  assert.equal(signal.missingRequiredCredits, 4);
+  assert.equal(signal.pendingCourses?.[0].context, "AWAITING_RESULT");
+  assert.equal(warningRule(result).evaluationStatus, "EVALUATED");
+});
+
+test("an unknown due result still blocks progress and a future pass cannot repair it", () => {
+  const result = evaluateStudentTrainingProgress({ ...input,
+    grades: [...grades.filter(grade => grade.courseCode !== "20CT1102"), { courseCode: "20CT1102", scoreStatus: "unknown" }],
+  });
+  const signal = academicWarningProgressSignal(result, "program");
+  assert.equal(signal.creditDeficit, null);
+  assert.equal(signal.reasonCode, "TRAINING_PROGRESS_EVIDENCE_INSUFFICIENT");
+  assert.equal(warningRule(result).evaluationStatus, "NOT_EVALUATED");
 });

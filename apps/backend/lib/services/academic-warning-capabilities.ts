@@ -1,5 +1,5 @@
 import type { AcademicDebtCalculation } from "./academic-debt";
-import { isConditionalCourse } from "../academic-course-rules";
+import { isConditionalCourse, warningCourseOutcome } from "../academic-course-rules";
 export const ACADEMIC_WARNING_CAPABILITY_STATUSES = ["AVAILABLE", "UNAVAILABLE", "UNVERIFIED"] as const;
 
 export type AcademicWarningCapabilityStatus = typeof ACADEMIC_WARNING_CAPABILITY_STATUSES[number];
@@ -96,6 +96,7 @@ export type AssessmentTermCourseAttempt = {
   hasFinalGrade: boolean;
   isPass: boolean | null;
   specialCode?: string | null;
+  notScore?: boolean | null;
   courseCode?: string | null;
   courseName?: string | null;
 };
@@ -118,12 +119,12 @@ function sameAttempt(left: AssessmentTermCourseAttempt, right: AssessmentTermCou
     left.scoreStatus === right.scoreStatus &&
     left.hasFinalGrade === right.hasFinalGrade &&
     left.isPass === right.isPass &&
-    (left.specialCode || null) === (right.specialCode || null);
+    (left.specialCode || null) === (right.specialCode || null) && left.notScore === right.notScore;
 }
 
 /**
  * Calculate credits for one assessment term only. A failure is a final graded
- * outcome with isPass=false. VT is tracked separately for verification. Conditional courses such as SHCD
+ * outcome with isPass=false. VT uses its finalized source outcome and remains separately tracked. Conditional courses such as SHCD
  * are excluded. Missing and pending academic outcomes keep the result partial.
  */
 export function calculateAssessmentTermFailedCredits(
@@ -151,6 +152,7 @@ export function calculateAssessmentTermFailedCredits(
   let invalidCredits = 0;
   let absenceCourseCount = 0;
   let absenceCredits = 0;
+  let unresolvedAbsences = 0;
 
   for (const attempt of byOffering.values()) {
     if (!Number.isFinite(attempt.credits) || attempt.credits < 0) {
@@ -165,10 +167,12 @@ export function calculateAssessmentTermFailedCredits(
     if (attempt.specialCode?.trim().toUpperCase() === "VT") {
       absenceCourseCount += 1;
       absenceCredits += attempt.credits;
-      unresolvedOutcomes += 1;
+      const outcome = warningCourseOutcome(attempt);
+      if (outcome === "failed") failedCredits += attempt.credits;
+      else if (outcome !== "passed") { unresolvedOutcomes += 1; unresolvedAbsences += 1; }
       continue;
     }
-    if (!attempt.hasFinalGrade || attempt.isPass == null) {
+    if (!attempt.hasFinalGrade || attempt.isPass == null || attempt.notScore === true || attempt.scoreStatus === "pending") {
       unresolvedOutcomes += 1;
       continue;
     }
@@ -178,7 +182,7 @@ export function calculateAssessmentTermFailedCredits(
   const reasonCodes: string[] = [];
   if (registeredCredits === 0) reasonCodes.push("NO_REGISTERED_CREDITS");
   if (unresolvedOutcomes > 0) reasonCodes.push("UNRESOLVED_GRADE_OUTCOMES");
-  if (absenceCourseCount > 0) reasonCodes.push("EXAM_ABSENCE_REQUIRES_VERIFICATION");
+  if (unresolvedAbsences > 0) reasonCodes.push("EXAM_ABSENCE_REQUIRES_VERIFICATION");
   if (invalidCredits > 0) reasonCodes.push("INVALID_CREDIT_VALUES");
   if (conflictingOfferings.size > 0) reasonCodes.push("CONFLICTING_DUPLICATE_OFFERINGS");
 

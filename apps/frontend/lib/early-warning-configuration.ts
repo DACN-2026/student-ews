@@ -54,7 +54,12 @@ export function warningConfigurationKey(value: WarningConfiguration) {
 }
 
 /** Match backend constraints, with field-specific messages and display units. */
-export function validateWarningConfiguration(configuration: WarningConfiguration, statuses: string): ConfigurationErrors {
+export function conductSignalsAvailable(settings: WarningSettings) {
+  return settings.recognizedConductStatusIds.length > 0
+    && settings.recognizedConductStatusIds.every(status => status.trim().length > 0 && status.length <= 32);
+}
+
+export function validateWarningConfiguration(configuration: WarningConfiguration, statuses = configuration.settings.recognizedConductStatusIds.join(", ")): ConfigurationErrors {
   const errors: ConfigurationErrors = {};
   if (!configuration.name.trim() || configuration.name.trim().length > 200) errors.name = "Nhập tên chính sách từ 1 đến 200 ký tự.";
   if (!Number.isFinite(configuration.marginGpa4) || configuration.marginGpa4 < 0 || configuration.marginGpa4 > 4) errors.marginGpa4 = "Nhập khoảng GPA từ 0 đến 4 điểm.";
@@ -75,7 +80,7 @@ export function validateWarningConfiguration(configuration: WarningConfiguration
   }
   const recognized = recognizedConductStatuses(statuses);
   if (recognized.some(value => value.length > 32)) errors.recognizedConductStatusIds = "Mỗi mã trạng thái có tối đa 32 ký tự.";
-  if ((configuration.settings.conductScoreBelow !== null || configuration.settings.conductScoreDrop !== null) && !recognized.length) errors.recognizedConductStatusIds = "Bổ sung mã trạng thái đã xác minh là công nhận trước khi bật tiêu chí rèn luyện.";
+  if ((configuration.settings.conductScoreBelow !== null || configuration.settings.conductScoreDrop !== null) && !recognized.length) errors.recognizedConductStatusIds = "Nguồn điểm rèn luyện chưa được xác nhận. Tắt hai tiêu chí rèn luyện để lưu các ngưỡng khác.";
   return errors;
 }
 

@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { gpaAdvisoryExample, recognizedConductStatuses, signalDisplayValue, signalStoredValue, validateWarningConfiguration, warningConfigurationKey, REGULATION_DOCUMENT, type WarningConfiguration } from "../lib/early-warning-configuration";
+import { conductSignalsAvailable, gpaAdvisoryExample, recognizedConductStatuses, signalDisplayValue, signalStoredValue, validateWarningConfiguration, warningConfigurationKey, REGULATION_DOCUMENT, type WarningConfiguration } from "../lib/early-warning-configuration";
 import { WarningRegulationDocument } from "../components/settings/WarningPolicyReference";
+import ConductSourceNotice from "../components/settings/ConductSourceNotice";
 
 function configuration(): WarningConfiguration {
   return { id: "policy", name: "Chính sách hỗ trợ sớm", version: 3, marginGpa4: 0.2,
@@ -56,6 +57,31 @@ test("conduct criteria require verified approval statuses, with trimming and ded
   assert.deepEqual(validateWarningConfiguration(c, "approved, approved, confirmed "), {});
   assert.deepEqual(recognizedConductStatuses("approved, approved, confirmed "), ["approved", "confirmed"]);
   assert.ok(validateWarningConfiguration(c, "x".repeat(33)).recognizedConductStatusIds);
+});
+
+test("conduct controls depend on the saved approval mapping without asking users to enter source codes", () => {
+  const c = configuration();
+  assert.equal(conductSignalsAvailable(c.settings), false);
+  c.settings.failedCreditRatioFrom = 0.3;
+  assert.deepEqual(validateWarningConfiguration(c), {}, "unavailable conduct must not block saving academic thresholds");
+  c.settings.conductScoreBelow = 50;
+  assert.ok(validateWarningConfiguration(c).recognizedConductStatusIds);
+  c.settings.recognizedConductStatusIds = ["confirmed"];
+  const before = JSON.stringify(c.settings);
+  assert.equal(conductSignalsAvailable(c.settings), true);
+  assert.deepEqual(validateWarningConfiguration(c), {});
+  assert.equal(JSON.stringify(c.settings), before, "availability and validation preserve the source mapping");
+  c.settings.recognizedConductStatusIds = [" "];
+  assert.equal(conductSignalsAvailable(c.settings), false);
+});
+
+test("conduct source notice explains unavailable data and requests only thresholds when ready", () => {
+  const pending = renderToStaticMarkup(createElement(ConductSourceNotice, { available: false }));
+  assert.match(pending, /Chưa thể bật tiêu chí rèn luyện/);
+  assert.match(pending, /vẫn có thể cấu hình và lưu các tiêu chí học tập/);
+  const ready = renderToStaticMarkup(createElement(ConductSourceNotice, { available: true }));
+  assert.match(ready, /chỉ cần chọn tiêu chí và đặt ngưỡng điểm/);
+  assert.doesNotMatch(pending + ready, /<input|StatusID|Nhập.*mã/);
 });
 
 test("GPA preview preserves the inclusive lower and exclusive upper bounds, including disabled margin", () => {

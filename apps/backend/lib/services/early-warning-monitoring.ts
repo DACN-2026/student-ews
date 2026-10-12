@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ApiError } from "@/lib/utils/api-error";
 import { studentIdWhere } from "@/lib/utils/is-uuid";
-import { courseOutcome, isConditionalCourse } from "../academic-course-rules";
+import { courseOutcome, sourcePassOutcome, isConditionalCourse } from "../academic-course-rules";
 import { createAcademicWarningCapabilitySnapshot, createQd600StudentCapabilityData } from "./academic-warning-capabilities";
 import { evaluateQd600ForCohort } from "./academic-warning-qd600-rules";
 import { findEarlyWarningPolicy } from "./early-warning-policy";
@@ -52,7 +52,8 @@ export async function previewCurrentTermMonitoring(studentId: string) {
     return { offeringId: offering.id, academicTermId: term.id, credits: offering.sCredits,
       courseCode: offering.sCurriculumId, courseName: offering.sCourseName,
       scoreStatus: grade?.scoreStatus || null, specialCode: grade?.specialCode || null,
-      hasFinalGrade: outcome === "passed" || outcome === "failed", isPass: outcome === "passed" ? true : outcome === "failed" ? false : null };
+      hasFinalGrade: outcome === "passed" || outcome === "failed", isPass: grade?.specialCode?.trim().toUpperCase() === "VT" ? sourcePassOutcome(grade.sourcePayload) : outcome === "passed" ? true : outcome === "failed" ? false : null,
+      notScore: grade?.notScore ?? null };
   });
   const [sources, debt, progress] = await Promise.all([
     loadEarlyWarningSources([student.id], program.sProgramCode, term.id),

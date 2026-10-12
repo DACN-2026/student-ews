@@ -1,0 +1,35 @@
+{
+  "summary": {
+    "open": 297,
+    "inProgress": 0,
+    "resolved": 0,
+    "escalated": 0,
+    "reopened": 0,
+    "overdue": 0,
+    "highRisk": 178,
+    "verifyRequired": 0,
+    "total": 297,
+    "studentCount": 297,
+    "academicTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+    "history": {
+      "total": 3,
+      "studentCount": 3,
+      "resolved": 3,
+      "unlinkedCases": 1
+    },
+    "allPeriods": {
+      "total": 297,
+      "studentCount": 297,
+      "otherPeriodCases": 0,
+      "otherPeriodStudents": 0,
+      "unlinkedCases": 0
+    }
+  },
+  "currentList": {
+    "total": 297,
+    "uniqueStudents": 297,
+    "pages": 3
+  },
+  "historyTotal": 3,
+  "savedRecordCountsUnchanged": true
+}

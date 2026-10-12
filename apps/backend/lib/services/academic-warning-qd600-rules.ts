@@ -14,7 +14,7 @@ import { assessAcademicStanding, type StandingSources } from "./academic-standin
 import type { CurriculumReviewCourse } from "./academic-debt";
 
 export const QD600_EXECUTION_PROFILE = "QD600_PARTIAL_REGULATORY" as const;
-export const QD600_RULE_ENGINE_VERSION = "academic-warning-qd600-article18-and-progress-v20" as const;
+export const QD600_RULE_ENGINE_VERSION = "academic-warning-qd600-article18-and-progress-v21" as const;
 
 export type Qd600RuleCode =
   | "EARLY_EXAM_ABSENCE"
@@ -54,6 +54,7 @@ export type Qd600RuleEvaluation = {
   absenceCredits?: number;
   absenceCourses?: NonNullable<EarlyWarningSources["examAbsences"]>;
   pendingDebtCourses?: Array<{ courseCode: string; courseName: string; credits: number; previousOutcome: "PASSED" | "FAILED" | "NONE" }>;
+  pendingProgressCourses?: Array<{ courseCode: string; courseName: string; credits: number; context: "IMPROVEMENT" | "RETAKE" | "AWAITING_RESULT" }>;
   ruleCode: Qd600RuleCode;
   sourceType: Qd600RuleSourceType;
   evaluationStatus: Qd600RuleEvaluationStatus;
@@ -117,6 +118,7 @@ export type Qd600EvaluationInput = {
     progressStatus?: "ON_TRACK" | "BEHIND" | "UNKNOWN";
     missingRequiredCredits?: number;
     missingRequiredCourses?: Array<{ courseCode: string; courseName: string; credits: number; semesterNo: number }>;
+    pendingCourses?: Qd600RuleEvaluation["pendingProgressCourses"];
   } | null;
   legacySignalCodes?: LegacySignalCode[];
   earlyWarningSources?: EarlyWarningSources;
@@ -291,7 +293,9 @@ export function evaluateTrainingProgressCreditDeficit(input: Qd600EvaluationInpu
         : null,
     explanation: `Thiếu ${gap} tín chỉ so với kế hoạch${progress.latestCompletedSemester != null ? ` đến hết học kỳ ${progress.latestCompletedSemester}` : " đến mốc"}.`
       + (missingRequiredCount > 0 ? ` Còn ${missingRequiredCount} học phần bắt buộc chưa hoàn thành (${missingRequiredCredits} TC); tín chỉ tự chọn dư không thay thế các học phần này.` : "")
-      + (progress.dataStatus === "PARTIAL" ? " Số liệu nhóm tự chọn chưa hoàn chỉnh; các tiêu chí chưa đủ dữ liệu được ghi rõ trong chi tiết đánh giá." : ""),
+      + (progress.pendingCourses?.length ? ` Có ${progress.pendingCourses.length} học phần đang học lại, cải thiện hoặc chờ điểm; chỉ sử dụng tín chỉ đã được công nhận đến mốc xét, không cộng tín chỉ của lượt học chưa đạt.` : "")
+      + (progress.dataStatus === "PARTIAL" ? " Đánh giá theo phần tiến độ đã xác định; dữ liệu còn chờ kết quả hoặc cấu hình cần đối chiếu được ghi trong chi tiết." : ""),
+    pendingProgressCourses: progress.pendingCourses,
     regulatorySource: null,
     articleRef: null,
     riskLevel,

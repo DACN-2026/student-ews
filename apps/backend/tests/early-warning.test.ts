@@ -55,11 +55,11 @@ test("new signals are disabled by default and existing credit thresholds stay in
   assert.equal(parseEarlyWarningSettings(undefined).progressMonitoringFrom, 4);
   assert.equal(parseEarlyWarningSettings(undefined).progressHighRiskFrom, 12);
 });
-test("VT-only concern produces monitoring and never a regulatory failed-credit or debt breach", () => {
+test("VT without a confirmed final outcome remains a concern without inventing a credit breach", () => {
   const result = evaluateQd600Article18({
     policyDefinition: createQd600PolicyDefinition(), capabilities: createAcademicWarningCapabilitySnapshot({debtVerified:true}),
     capabilityData: createQd600StudentCapabilityData({ cumulativeCredits:70,assessmentTermId:"t",isFirstMainSemester:false,
-      attempts:[{offeringId:"vt",academicTermId:"t",credits:4,scoreStatus:"special",specialCode:"VT",hasFinalGrade:true,isPass:false}],
+      attempts:[{offeringId:"vt",academicTermId:"t",credits:4,scoreStatus:"special",specialCode:"VT",hasFinalGrade:true,isPass:null,notScore:false}],
       debt:{accumulatedDebtCredits:0,dataStatus:"PARTIAL",reasonCode:"EXAM_ABSENCE_REQUIRES_VERIFICATION",outstandingCourses:[]},
     }),termGpa4:3,cumulativeGpa4:3,termKind:"MAIN",trainingProgress:{creditDeficit:0,dataStatus:"COMPLETE",reasonCode:null,runId:"p"},
     earlyWarningSources:{...EMPTY_EARLY_WARNING_SOURCES,examAbsences:[{offeringId:"vt",courseCode:"A",courseName:"Môn A",credits:4,conditional:false}]},
@@ -68,6 +68,27 @@ test("VT-only concern produces monitoring and never a regulatory failed-credit o
   assert.equal(result.rules.find(r=>r.ruleCode==="QD600_FAILED_CREDIT_RATIO")?.evaluationStatus,"NOT_EVALUATED");
   assert.equal(result.rules.filter(r=>r.sourceType==="REGULATORY").some(r=>r.isThresholdBreached),false);
   assert.equal(result.rules.find(r=>r.ruleCode==="EARLY_EXAM_ABSENCE")?.absenceCredits,4);
+});
+
+test("confirmed VT uses source IsPass for credits while GPA keeps the API aggregate", () => {
+  const evaluate = (termGpa4: number | null, cumulativeGpa4: number | null) => evaluateQd600Article18({
+    policyDefinition: createQd600PolicyDefinition(), capabilities: createAcademicWarningCapabilitySnapshot({ debtVerified: true }),
+    capabilityData: createQd600StudentCapabilityData({ cumulativeCredits: 70, assessmentTermId: "t", isFirstMainSemester: false,
+      attempts: [{ offeringId: "vt", academicTermId: "t", credits: 4, scoreStatus: "special", specialCode: "VT", notScore: false, hasFinalGrade: false, isPass: false }],
+      debt: { accumulatedDebtCredits: 4, dataStatus: "COMPLETE", reasonCode: null, outstandingCourses: ["A"] },
+    }), termGpa4, cumulativeGpa4, termKind: "MAIN", trainingProgress: { creditDeficit: 0, dataStatus: "COMPLETE", reasonCode: null, runId: "p" },
+    earlyWarningSources: { ...EMPTY_EARLY_WARNING_SOURCES, examAbsences: [{ offeringId: "vt", courseCode: "A", courseName: "Môn A", credits: 4, conditional: false }] },
+  });
+  const result = evaluate(0.63, 2.16);
+  assert.equal(result.rules.find(rule => rule.ruleCode === "QD600_TERM_GPA")?.observedValue, 0.63);
+  assert.equal(result.rules.find(rule => rule.ruleCode === "QD600_CUMULATIVE_GPA_BY_YEAR")?.observedValue, 2.16);
+  assert.equal(result.rules.find(rule => rule.ruleCode === "QD600_FAILED_CREDIT_RATIO")?.observedValue, 1);
+  assert.equal(result.rules.find(rule => rule.ruleCode === "QD600_ACCUMULATED_DEBT_CREDITS")?.evaluationStatus, "EVALUATED");
+  assert.equal(result.rules.find(rule => rule.ruleCode === "EARLY_EXAM_ABSENCE")?.absenceCredits, 4);
+  const missing = evaluate(null, null);
+  assert.equal(missing.rules.find(rule => rule.ruleCode === "QD600_TERM_GPA")?.reasonCode, "TERM_GPA_MISSING");
+  assert.equal(missing.rules.find(rule => rule.ruleCode === "QD600_TERM_GPA")?.observedValue, null);
+  assert.equal(missing.rules.find(rule => rule.ruleCode === "QD600_CUMULATIVE_GPA_BY_YEAR")?.evaluationStatus, "NOT_EVALUATED");
 });
 
 test("invalid and reversed monitoring settings cannot be applied", () => {

@@ -1,0 +1,10 @@
+{
+  "studentCode": "2246B017",
+  "observedGpa": 0.63,
+  "regulatoryThreshold": 1,
+  "earlyThreshold": 2,
+  "regulatoryBreached": true,
+  "groupedReasons": 2,
+  "dropRemainsSeparate": true,
+  "savedWarningUnchanged": true
+}

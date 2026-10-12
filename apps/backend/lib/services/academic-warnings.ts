@@ -2,6 +2,7 @@ import { orderedStudentResultPage } from "../student-list-order";
 import { monitoredStudentResultWhere, studentMonitoringSql } from "../student-monitoring-scope";
 import { academicOfferingPredicate } from "../academic-course-sql";
 import { loadAcademicDebt } from "./academic-debt";
+import { sourcePassOutcome } from "../academic-course-rules";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import crypto from "crypto";
@@ -240,16 +241,32 @@ export function projectQd600EvaluationForPersistence(result: Qd600EvaluationResu
   };
 }
 
+export function latestOfficialWarningResult<T extends { runId: string; createdAt: Date }>(
+  candidates: T[],
+  runs: Array<{ id: string; assessmentAcademicTermId: string }>,
+  terms: Array<{ id: string; academicYearId: string; sTermOrder: number }>,
+  years: Array<{ id: string; sYearCode: string }>,
+): T | null {
+  const periods = new Map(terms.map(term => [term.id, { year: years.find(year => year.id === term.academicYearId)?.sYearCode || "", order: term.sTermOrder }]));
+  const runPeriods = new Map(runs.map((run, rank) => [run.id, { ...periods.get(run.assessmentAcademicTermId), rank }]));
+  return candidates.filter(result => runPeriods.has(result.runId)).sort((left, right) => {
+    const a = runPeriods.get(left.runId)!; const b = runPeriods.get(right.runId)!;
+    return String(b.year || "").localeCompare(String(a.year || "")) || (b.order || 0) - (a.order || 0)
+      || a.rank - b.rank || right.createdAt.getTime() - left.createdAt.getTime();
+  })[0] || null;
+}
+
 export async function findLatestOfficialWarningResult(studentId: string) {
-  const [candidates, mainTerms] = await Promise.all([
+  const [candidates, mainTerms, years] = await Promise.all([
     prisma.academicWarningStudentResult.findMany({
       where: { studentId },
       orderBy: { createdAt: "desc" },
     }),
     prisma.academicTerm.findMany({
       where: { deletedAt: null, sIsSummer: false },
-      select: { id: true },
+      select: { id: true, academicYearId: true, sTermOrder: true },
     }),
+    prisma.academicYear.findMany({ where: { deletedAt: null }, select: { id: true, sYearCode: true } }),
   ]);
   if (!candidates.length || !mainTerms.length) return null;
   const officialRuns = await prisma.academicWarningRun.findMany({
@@ -259,10 +276,10 @@ export async function findLatestOfficialWarningResult(studentId: string) {
       runMode: "OFFICIAL",
       assessmentAcademicTermId: { in: mainTerms.map((term) => term.id) },
     },
-    select: { id: true },
+    select: { id: true, assessmentAcademicTermId: true },
+    orderBy: [{ completedAt: "desc" }, { startedAt: "desc" }, { id: "desc" }],
   });
-  const officialRunIds = new Set(officialRuns.map((run) => run.id));
-  const result = candidates.find((result) => officialRunIds.has(result.runId));
+  const result = latestOfficialWarningResult(candidates, officialRuns, mainTerms, years);
   return result ? { ...result, businessStatus: normalizeWarningBusinessStatus(result.businessStatus) } : null;
 }
 
@@ -285,6 +302,8 @@ async function loadAssessmentTermCourseAttempts(
     special_code: string | null;
     course_code: string;
     course_name: string;
+    not_score: boolean | null;
+    source_payload: unknown;
   }> = await prisma.$queryRaw`
     SELECT o.student_id::text, o.id::text AS offering_id, o.academic_term_id::text,
            o.s_credits AS credits, o.s_curriculum_id AS course_code, o.s_course_name AS course_name, g.score_status, g.special_code,
@@ -292,7 +311,7 @@ async function loadAssessmentTermCourseAttempts(
              (g.score_status = 'graded' AND
                (g.score_10 IS NOT NULL OR g.score_4 IS NOT NULL OR NULLIF(BTRIM(g.letter_code), '') IS NOT NULL))
            )) AS has_final_grade,
-           g.is_pass
+           g.is_pass, g.not_score, g.source_payload
     FROM student_course_offerings o
     LEFT JOIN student_course_grades g ON g.offering_id = o.id
     WHERE o.academic_term_id = ${assessmentTermId}::uuid
@@ -308,8 +327,9 @@ async function loadAssessmentTermCourseAttempts(
       credits: Number(row.credits),
       scoreStatus: row.score_status,
       hasFinalGrade: row.has_final_grade,
-      isPass: row.is_pass,
+      isPass: row.special_code?.trim().toUpperCase() === "VT" ? sourcePassOutcome(row.source_payload) : row.is_pass,
       specialCode: row.special_code,
+      notScore: row.not_score,
       courseCode: row.course_code,
       courseName: row.course_name,
     });
@@ -1297,6 +1317,7 @@ export class AcademicWarningsService {
                 progressStatus: ctx.trainingProgressSignals.get(student.id)?.progressStatus,
                 missingRequiredCredits: ctx.trainingProgressSignals.get(student.id)?.missingRequiredCredits,
                 missingRequiredCourses: ctx.trainingProgressSignals.get(student.id)?.missingRequiredCourses,
+                pendingCourses: ctx.trainingProgressSignals.get(student.id)?.pendingCourses,
               }
             : null,
         }));

@@ -255,6 +255,7 @@ test("work queue list and summary require academic_warning.read and pass scoped 
     ));
     assert.equal(response.status, 200);
     assert.deepEqual(captured.filters, {
+      view: "current",
       status: "OPEN",
       businessStatus: "HIGH_RISK",
       classId: undefined,
@@ -265,6 +266,10 @@ test("work queue list and summary require academic_warning.read and pass scoped 
       pageSize: 10,
     });
     assert.equal(captured.receivedActor.userId, actor.userId);
+    const historical = await listInterventions(await requestFor(actor, "http://backend:3001/api/v1/academic-warnings/interventions?view=history&status=RESOLVED"));
+    assert.equal(historical.status, 200);
+    assert.equal(captured.filters.view, "history");
+    assert.equal(captured.filters.status, "RESOLVED");
     assert.equal((await summarizeInterventions(await requestFor(actor, "http://backend:3001/api/v1/academic-warnings/interventions/summary"))).status, 200);
   } finally {
     cleanups.reverse().forEach((cleanup) => cleanup());

@@ -16,6 +16,15 @@ export function warningRuleResults(value: unknown): Array<Record<string, unknown
   const rules = Array.isArray(value) ? value : value && typeof value === "object" && "rules" in value ? value.rules : [];
   return Array.isArray(rules) ? rules.filter((rule): rule is Record<string, unknown> => Boolean(rule && typeof rule === "object") && rule.ruleCode !== "ACADEMIC_STUDY_DURATION_REVIEW") : [];
 }
+
+export function warningPendingProgressCourses(value: unknown) {
+  const rule = warningRuleResults(value).find(item => item.ruleCode === "TRAINING_PROGRESS_CREDIT_DEFICIT");
+  if (!Array.isArray(rule?.pendingProgressCourses)) return [];
+  return rule.pendingProgressCourses.filter((course): course is { courseCode: string; courseName: string; credits: number; context: "IMPROVEMENT" | "RETAKE" | "AWAITING_RESULT" } =>
+    Boolean(course && typeof course === "object" && typeof course.courseCode === "string" && typeof course.courseName === "string"
+      && typeof course.credits === "number" && Number.isFinite(course.credits) && course.credits >= 0
+      && ["IMPROVEMENT", "RETAKE", "AWAITING_RESULT"].includes(course.context)));
+}
 export function isMainConductTerm(record: { termCode: string | null; isSummer: boolean }) {
   return !record.isSummer && !/^HK0?3$/i.test(String(record.termCode || "").trim());
 }
@@ -75,6 +84,43 @@ export function warningThresholdLabel(reason: ProfileWarningReason) {
   if (code.includes("GPA")) return `< ${value.toFixed(2)}`;
   if (code.includes("PROGRESS") || code === "ACCUMULATED_DEBT_CREDIT_RISK") return `từ ${value} tín chỉ`;
   return `> ${value} tín chỉ`;
+}
+
+const TERM_GPA_LEVEL_CODES = new Set(["QD600_TERM_GPA", "QD600_TERM_GPA_FIRST_TERM", "EARLY_LOW_TERM_GPA"]);
+export type TermGpaWarningGroup = {
+  reasons: ProfileWarningReason[];
+  observedValue: number | null;
+  regulatoryThreshold: number | null;
+  earlyThreshold: number | null;
+  regulatoryBreached: boolean;
+  regulatoryReason: ProfileWarningReason | null;
+  earlyReason: ProfileWarningReason | null;
+};
+
+export function termGpaWarningGroup(reasons: ProfileWarningReason[], storedRules: unknown): TermGpaWarningGroup | null {
+  const grouped = reasons.filter(reason => TERM_GPA_LEVEL_CODES.has(warningRuleCode(reason)));
+  if (!grouped.length) return null;
+  const values = new Set(grouped.map(reason => numericWarningValue(reason.details.observedValue)).filter(value => value !== null));
+  // Conflicting recorded measurements must remain visible for verification.
+  if (values.size > 1) return null;
+  const rules = warningRuleResults(storedRules);
+  const ruleReason = (codes: string[]) => {
+    const reason = grouped.find(reason => codes.includes(warningRuleCode(reason)));
+    if (reason) return reason;
+    const rule = rules.find(rule => codes.includes(String(rule.ruleCode)));
+    return rule ? { reasonCode: String(rule.ruleCode), severity: "medium", title: null, details: rule } : null;
+  };
+  const regulatoryReason = ruleReason(["QD600_TERM_GPA", "QD600_TERM_GPA_FIRST_TERM"]);
+  const earlyReason = ruleReason(["EARLY_LOW_TERM_GPA"]);
+  return {
+    reasons: grouped,
+    observedValue: values.values().next().value ?? null,
+    regulatoryThreshold: numericWarningValue(regulatoryReason?.details.thresholdValue),
+    earlyThreshold: numericWarningValue(earlyReason?.details.thresholdValue),
+    regulatoryBreached: regulatoryReason?.details.evaluationStatus !== "NOT_EVALUATED" && regulatoryReason?.details.isThresholdBreached === true,
+    regulatoryReason,
+    earlyReason,
+  };
 }
 export function warningRegulatoryAssessment(value: unknown) {
   const rules = warningRuleResults(value).filter(rule => rule.sourceType === "REGULATORY");

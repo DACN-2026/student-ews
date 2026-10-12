@@ -7,14 +7,17 @@ import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
 import { ALLOWED_TRANSITIONS, INTERVENTION_STATUS_LABELS, INTERVENTION_TYPE_LABELS, TRANSITION_ACTION_LABELS, type InterventionStatus } from "@/lib/intervention-workflow";
 import { formatHistoryDate, formatWarningHistoryEvent, interventionHistoryDetails, type WarningHistoryEvent } from "@/lib/warning-history";
-import { numericWarningValue, studentWarningEndpoint, warningReasonSummary, warningRuleCode, warningRuleResults, warningSemesterHistory, warningThresholdLabel, WARNING_STATE_LABELS, type ProfileWarningReason, type ProfileWarningScan } from "@/lib/student-warning-view";
+import { numericWarningValue, studentWarningEndpoint, warningReasonSummary, warningRuleCode, warningSemesterHistory, warningThresholdLabel, WARNING_STATE_LABELS, type ProfileWarningReason, type ProfileWarningScan } from "@/lib/student-warning-view";
 import { getLegalInfo, getHumanUnEvaluatedExplanation, humanRuleName } from "@/lib/warning-rule-details";
 import { LoadingIndicator } from "@/components/ui/LoadingState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import WarningStudentDetailModal, { type WarningStudentDetailTarget } from "./WarningStudentDetailModal";
 import { WarningVerificationProvider, WarningVerificationOverview, WarningCreditOverview, WarningReasonEvidence } from "./WarningVerification";
 import { warningRegulatoryAssessment, warningSupportSuggestions } from "@/lib/student-warning-view";
-import { warningPendingDebtCourses, warningCurriculumReviewCourses } from "@/lib/student-warning-view";
+import { warningPendingDebtCourses, warningPendingProgressCourses, warningCurriculumReviewCourses } from "@/lib/student-warning-view";
+import { termGpaWarningGroup } from "@/lib/student-warning-view";
+import WarningTermGpaCard from "./WarningTermGpaCard";
+import { warningAssessmentGaps } from "@/lib/warning-assessment-gaps";
 
 export type StudentInterventionCase = { caseId: string; interventionStatus: InterventionStatus; nextFollowUpAt: string | null; overdue?: boolean; latestWarningResultId?: string | null; assignedUserName?: string | null; readOnly?: boolean };
 export type StudentWarningData = {
@@ -105,7 +108,11 @@ export default function StudentWarningWorkspace({ student, warning, intervention
   const state = warning?.presentationState || "INSUFFICIENT_DATA";
   const reasons = (warning?.warningReasons || []).filter(reason => warningRuleCode(reason) !== "ACADEMIC_STUDY_DURATION_REVIEW");
   const supportSuggestions = warningSupportSuggestions(reasons.map(warningRuleCode));
-  const unEvaluatedRules = warningRuleResults(warning?.warningInfo?.ruleResults).filter(rule => rule.evaluationStatus === "NOT_EVALUATED");
+  const assessmentGaps = warningAssessmentGaps(warning?.warningInfo?.ruleResults);
+  const assessmentGapSummary = [
+    assessmentGaps.missingData.length ? `${assessmentGaps.missingData.length} chỉ số thiếu dữ liệu hoặc kết quả` : "",
+    assessmentGaps.verification.length ? `${assessmentGaps.verification.length} chỉ số cần xác minh` : "",
+  ].filter(Boolean).join(" · ");
   const isUrgent = state === "HIGH_RISK" || state === "VERIFY_REQUIRED";
   const humanHistory = (warning?.interventionHistory || []).filter(event => !event.systemGenerated)
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
@@ -114,7 +121,8 @@ export default function StudentWarningWorkspace({ student, warning, intervention
   const fullHistory = (warning?.interventionHistory || []).slice().sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   const debtReasons = reasons.filter(reason => warningRuleCode(reason).includes("ACCUMULATED_DEBT"));
   const progressReasons = reasons.filter(reason => warningRuleCode(reason).includes("PROGRESS"));
-  const ordinaryReasons = reasons.filter(reason => !debtReasons.includes(reason) && !progressReasons.includes(reason));
+  const termGpaGroup = termGpaWarningGroup(reasons, warning?.warningInfo?.ruleResults);
+  const ordinaryReasons = reasons.filter(reason => !debtReasons.includes(reason) && !progressReasons.includes(reason) && !termGpaGroup?.reasons.includes(reason));
   const creditCriterion = (reason: ProfileWarningReason) => ({
     reasonCode: reason.reasonCode, details: reason.details, severity: reason.severity,
     observedValue: numericWarningValue(reason.details.observedValue), thresholdValue: numericWarningValue(reason.details.thresholdValue),
@@ -163,8 +171,10 @@ export default function StudentWarningWorkspace({ student, warning, intervention
   }
   const verification = Boolean(caseId && warning?.warningInfo?.id);
   const pendingDebtCourses = warningPendingDebtCourses(warning?.warningInfo?.ruleResults);
+  const pendingProgressCourses = warningPendingProgressCourses(warning?.warningInfo?.ruleResults);
   const curriculumReviewCourses = warningCurriculumReviewCourses(warning?.warningInfo?.ruleResults);
   const reasonContent = <>
+    {pendingProgressCourses.length > 0 && <details className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-xs"><summary className="cursor-pointer font-semibold text-blue-900">Tiến độ: học lại, cải thiện và chờ điểm ({pendingProgressCourses.length})</summary><p className="mt-2 leading-5 text-slate-600">Tiến độ được đánh giá theo tín chỉ đã được công nhận đến học kỳ xét. Giữ kết quả đạt/không đạt đã xác định; lượt học đang chờ điểm chưa bổ sung tín chỉ và không tạo thêm một lần không đạt.</p><ul className="mt-3 space-y-2">{pendingProgressCourses.map(course => <li key={course.courseCode}><span className="font-mono">{course.courseCode}</span> · {course.courseName} · {course.credits} TC<span className="block mt-1 text-slate-600">{course.context === "IMPROVEMENT" ? "Đã có kết quả đạt; đang chờ điểm cải thiện" : course.context === "RETAKE" ? "Đã có kết quả không đạt; đang chờ kết quả học lại/bù môn" : "Đang chờ kết quả; chưa có kết quả đạt/không đạt trước đó được xác định"}</span></li>)}</ul></details>}
     {curriculumReviewCourses.length > 0 && <details className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs" open>
       <summary className="cursor-pointer font-semibold text-amber-900">Học phần chờ xác nhận phạm vi CTĐT ({curriculumReviewCourses.length})</summary>
       <p className="mt-2 leading-5 text-slate-600">Môn có trong danh mục CTĐT chung; cần xác nhận môn được phép học, môn thay thế hoặc nghĩa vụ của CTĐT cá nhân trước khi tính vào nợ và tiến độ của chuyên ngành.</p>
@@ -180,8 +190,11 @@ export default function StudentWarningWorkspace({ student, warning, intervention
     {reasons.length === 0 ? <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-xs text-slate-600">
       {state === "INSUFFICIENT_DATA" ? "Chưa đủ dữ liệu để xác định nguyên nhân. Kiểm tra bảng điểm và kết quả đánh giá trước khi kết luận." : "Chưa ghi nhận tiêu chí cần cảnh báo trong kết quả hiện tại."}
     </div> : <div className="space-y-4">
-      {ordinaryReasons.length > 0 && <div className="space-y-3">
+      {(ordinaryReasons.length > 0 || termGpaGroup) && <div className="space-y-3">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-800"><span className="h-2 w-2 rounded-full bg-red-500" aria-hidden="true" />Học tập & rèn luyện</p>
+        {termGpaGroup && <WarningTermGpaCard group={termGpaGroup}>
+          {verification && <WarningReasonEvidence ruleCode="QD600_TERM_GPA" />}
+        </WarningTermGpaCard>}
         {ordinaryReasons.map(reason => {
           const regulatory = reason.details.sourceType === "REGULATORY";
           const breached = regulatory && Boolean(reason.details.isThresholdBreached);
@@ -199,7 +212,8 @@ export default function StudentWarningWorkspace({ student, warning, intervention
       </div>}
       {(debtReasons.length > 0 || progressReasons.length > 0) && <WarningCreditOverview debtReasons={debtReasons.map(creditCriterion)} progressReasons={progressReasons.map(creditCriterion)} onOpenGraduation={evaluationId => setSourceTarget({ kind: "graduation", evaluationId })} onOpenProgress={() => setSourceTarget({ kind: "progress" })} />}
     </div>}
-    {unEvaluatedRules.length > 0 && <details className="rounded-xl border border-slate-200 bg-slate-50 p-3"><summary className="cursor-pointer text-xs font-semibold text-slate-700">Tiêu chí chưa đủ dữ liệu để đánh giá ({unEvaluatedRules.length})</summary><ul className="mt-3 space-y-3">{unEvaluatedRules.map((rule, index) => <li key={String(rule.ruleCode || index)} className="rounded-lg border border-slate-200 bg-white p-3 text-xs"><p className="font-semibold text-slate-800">{humanRuleName(rule.ruleCode)}</p><p className="mt-1.5 leading-relaxed text-slate-600">{getHumanUnEvaluatedExplanation(rule)}</p></li>)}</ul></details>}
+    {assessmentGaps.verification.length > 0 && <details className="rounded-xl border border-amber-200 bg-amber-50 p-3"><summary className="cursor-pointer text-xs font-semibold text-amber-900">Thông tin cần xác minh trước khi kết luận ({assessmentGaps.verification.length})</summary><p className="mt-2 text-xs leading-5 text-slate-600">Đã có dữ liệu ghi nhận, nhưng cần xác minh kết quả thi hoặc phạm vi CTĐT. Các tiêu chí có đủ dữ liệu vẫn được đánh giá; chưa kết luận học vụ đối với phần cần xác minh.</p><ul className="mt-3 space-y-3">{assessmentGaps.verification.map(group => <li key={group.key} className="rounded-lg border border-amber-200 bg-white p-3 text-xs"><p className="font-semibold text-slate-800">{humanRuleName(group.rules[0].ruleCode)}</p><p className="mt-1.5 leading-relaxed text-slate-600">{getHumanUnEvaluatedExplanation(group.rules[0])}</p></li>)}</ul></details>}
+    {assessmentGaps.missingData.length > 0 && <details className="rounded-xl border border-slate-200 bg-slate-50 p-3"><summary className="cursor-pointer text-xs font-semibold text-slate-700">Dữ liệu hoặc kết quả còn thiếu để đánh giá ({assessmentGaps.missingData.length})</summary><p className="mt-2 text-xs leading-5 text-slate-600">Chỉ liệt kê phần chưa thể tính hoặc đối chiếu. Một chỉ số dùng chung cho ngưỡng theo dõi sớm và ngưỡng học vụ được hiển thị một lần. GDQP, GDTC không tham gia phép tính GPA, nợ tín chỉ học thuật và tỷ lệ tín chỉ không đạt.</p><ul className="mt-3 space-y-3">{assessmentGaps.missingData.map(group => <li key={group.key} className="rounded-lg border border-slate-200 bg-white p-3 text-xs"><p className="font-semibold text-slate-800">{humanRuleName(group.rules[0].ruleCode)}</p><p className="mt-1.5 leading-relaxed text-slate-600">{getHumanUnEvaluatedExplanation(group.rules[0])}</p></li>)}</ul></details>}
     {warning?.warningInfo?.regulatoryCoverage === "PARTIAL" && <p className="flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs leading-relaxed text-blue-800"><AlertCircle size={15} className="shrink-0" />Một số tiêu chí chưa đủ dữ liệu để đánh giá. Chưa thể kết luận đầy đủ các điều kiện theo quy chế.</p>}
     {supportSuggestions.length > 0 && <aside className="rounded-xl border border-slate-200 bg-slate-50 p-4"><h4 className="text-xs font-semibold text-slate-800">Gợi ý hỗ trợ cho CVHT</h4><ul className="mt-2 list-disc space-y-2 pl-4 text-xs leading-5 text-slate-600">{supportSuggestions.map(suggestion => <li key={suggestion}>{suggestion}</li>)}</ul></aside>}
   </>;
@@ -210,7 +224,7 @@ export default function StudentWarningWorkspace({ student, warning, intervention
       {!student.isSuspended && current?.overdue && <span className="text-[10px] font-semibold text-red-600">Quá hạn theo dõi</span>}
       {!verification && <span className="text-[11px] text-slate-500">{selected ? selected.termCode + " · " + selected.academicYear : "Chưa có kỳ đánh giá chính thức"}</span>}
     </header>
-    <dl className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs sm:grid-cols-2"><div><dt className="text-slate-500">Đối chiếu học vụ</dt><dd className="mt-1 font-semibold text-slate-800">{warningRegulatoryAssessment(warning?.warningInfo?.ruleResults)}</dd><p className="mt-1 leading-5 text-slate-500">Thông tin đối chiếu ngưỡng, không phải quyết định cảnh báo học vụ.</p></div><div><dt className="text-slate-500">Độ đầy đủ dữ liệu</dt><dd className="mt-1 font-semibold text-slate-800">{!warning?.warningInfo ? "Chưa có đánh giá của kỳ" : unEvaluatedRules.length ? `Còn ${unEvaluatedRules.length} tiêu chí chưa đánh giá` : "Đã đánh giá các tiêu chí trong kết quả lưu"}</dd>{(state === "NORMAL" || state === "PARTIAL_NO_RISK") && unEvaluatedRules.length > 0 && <p className="mt-1 leading-5 text-slate-500">Mức hiện tại chỉ phản ánh các tiêu chí có dữ liệu.</p>}</div></dl>
+    <dl className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs sm:grid-cols-2"><div><dt className="text-slate-500">Đối chiếu học vụ</dt><dd className="mt-1 font-semibold text-slate-800">{warningRegulatoryAssessment(warning?.warningInfo?.ruleResults)}</dd><p className="mt-1 leading-5 text-slate-500">Thông tin đối chiếu ngưỡng, không phải quyết định cảnh báo học vụ.</p></div><div><dt className="text-slate-500">Dữ liệu và xác minh</dt><dd className="mt-1 font-semibold text-slate-800">{!warning?.warningInfo ? "Chưa có đánh giá của kỳ" : assessmentGapSummary || "Đã đánh giá các tiêu chí trong kết quả lưu"}</dd>{(state === "NORMAL" || state === "PARTIAL_NO_RISK") && assessmentGapSummary && <p className="mt-1 leading-5 text-slate-500">Mức hiện tại phản ánh phần đã đánh giá; phần còn thiếu hoặc cần xác minh chưa được kết luận.</p>}</div></dl>
     {historicalCase && <p className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-relaxed text-blue-800">{caseAssessment ? `Hồ sơ can thiệp đang xem gắn với ${caseAssessment.termCode} · ${caseAssessment.academicYear}. ` : "Hồ sơ can thiệp đang xem chưa liên kết với kết quả đánh giá mới nhất. "}Số liệu học vụ bên dưới là kết quả chính thức mới nhất, cùng nguồn với hồ sơ sinh viên. Các cập nhật can thiệp được lưu vào hồ sơ đang mở.</p>}
     {student.isInClass === false ? <p className="rounded-lg bg-slate-100 p-3 text-xs leading-5 text-slate-700">Đã rời lớp. Hồ sơ cảnh báo và hỗ trợ trước đây được giữ để tra cứu; không tiếp tục theo dõi hoặc tạo hỗ trợ mới.</p>
       : student.isSuspended ? <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs leading-6 text-slate-700">Hồ sơ được đóng băng từ HK{student.suspension?.fromTerm} ({student.suspension?.fromYear}) theo quyết định {student.suspension?.decisionNumber}. Sinh viên vẫn thuộc lớp. Các kết quả bên dưới là lịch sử trước kỳ nghỉ; dừng tính cảnh báo, nhắc việc và hỗ trợ mới đến khi quyết định tiếp nhận học lại có hiệu lực.</p>

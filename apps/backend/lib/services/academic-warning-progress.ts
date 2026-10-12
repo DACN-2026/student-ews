@@ -15,6 +15,7 @@ export type AcademicWarningProgressSignal = {
   progressStatus?: "ON_TRACK" | "BEHIND" | "UNKNOWN";
   missingRequiredCredits?: number;
   missingRequiredCourses?: Array<{ courseCode: string; courseName: string; credits: number; semesterNo: number }>;
+  pendingCourses?: Array<{ courseCode: string; courseName: string; credits: number; context: "IMPROVEMENT" | "RETAKE" | "AWAITING_RESULT" }>;
 };
 
 /** Use the visible semester milestone, keeping mandatory debt separate. */
@@ -23,25 +24,30 @@ export function academicWarningProgressSignal(
   sourceId: string,
 ): AcademicWarningProgressSignal {
   const progress = evaluation.scheduleProgress;
-  const hasPending = evaluation.semesters.some((semester) => semester.courses.some((course) =>
-    !course.isConditional && (course.isCurrentlyStudying || course.status === "NO_SCORE"
-      || course.attemptCount > 0 && course.status === "NOT_COMPLETED"),
-  ));
+  const dueCourses = evaluation.semesters.filter(semester => semester.semesterNo <= progress.latestCompletedSemester)
+    .flatMap(semester => semester.courses).filter(course => !course.isConditional);
+  const pendingCourses: NonNullable<AcademicWarningProgressSignal["pendingCourses"]> = dueCourses
+    .filter(course => course.hasPendingAttempt || course.isCurrentlyStudying || course.status === "NO_SCORE")
+    .map(course => ({ courseCode: course.courseCode, courseName: course.courseName, credits: course.credits,
+      context: course.confirmedOutcome === "PASSED" || course.status === "PASSED" ? "IMPROVEMENT"
+        : course.confirmedOutcome === "FAILED" || course.status === "FAILED" ? "RETAKE" : "AWAITING_RESULT" }));
+  const hasUnknownOutcome = dueCourses.some(course => course.attemptCount > 0 && course.status === "NOT_COMPLETED");
   const configurationIncomplete = evaluation.warnings.some((warning) =>
     warning.includes("UNKNOWN_REQUIREMENT") || warning.includes("chưa có danh mục"),
   );
   const progressUnknown = progress.progressStatus === "UNKNOWN";
   return {
-    creditDeficit: hasPending || progressUnknown ? null : Math.max(0, -progress.creditDifference),
-    dataStatus: configurationIncomplete || progressUnknown || hasPending ? "PARTIAL" : "COMPLETE",
-    reasonCode: progressUnknown ? "TRAINING_PROGRESS_EVIDENCE_INSUFFICIENT" : hasPending
-      ? "TRAINING_PROGRESS_PENDING_RESULTS"
+    creditDeficit: hasUnknownOutcome || progressUnknown ? null : Math.max(0, -progress.creditDifference),
+    dataStatus: configurationIncomplete || progressUnknown || hasUnknownOutcome || pendingCourses.some(course => course.context === "AWAITING_RESULT") ? "PARTIAL" : "COMPLETE",
+    reasonCode: progressUnknown || hasUnknownOutcome ? "TRAINING_PROGRESS_EVIDENCE_INSUFFICIENT" : pendingCourses.some(course => course.context === "AWAITING_RESULT")
+      ? "TRAINING_PROGRESS_AWAITING_RESULTS"
       : configurationIncomplete ? "TRAINING_PROGRESS_ELECTIVE_CONFIGURATION_PARTIAL" : null,
     sourceId,
     expectedCreditsToDate: progress.expectedCreditsToDate,
     earnedCreditsToDate: progress.earnedCreditsToDate,
     latestCompletedSemester: progress.latestCompletedSemester,
     progressStatus: progress.progressStatus,
+    pendingCourses,
     missingRequiredCredits: progress.missingRequiredCredits,
     missingRequiredCourses: progress.missingRequiredCourses.map(({ courseCode, courseName, credits, semesterNo }) =>
       ({ courseCode, courseName, credits, semesterNo })),

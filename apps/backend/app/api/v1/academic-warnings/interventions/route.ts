@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     }
     const { page, pageSize } = parsePagination(searchParams, 100);
     return jsonResponse(await InterventionCasesService.list({
+      view: (searchParams.get("view") || "current") as "current" | "history",
       status: searchParams.get("status") || undefined,
       businessStatus: searchParams.get("businessStatus") || undefined,
       classId: searchParams.get("classId") || undefined,

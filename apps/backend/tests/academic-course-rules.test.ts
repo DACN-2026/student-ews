@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { assessCertificateRequirements, courseOutcome, curriculumElectiveGroup, type CertificateAttempt } from "../lib/academic-course-rules";
+import { assessCertificateRequirements, courseOutcome, warningCourseOutcome, sourcePassOutcome, curriculumElectiveGroup, type CertificateAttempt } from "../lib/academic-course-rules";
 import { buildGraduationForecast } from "../lib/services/graduation-forecast";
 import { calculateAssessmentTermFailedCredits } from "../lib/services/academic-warning-capabilities";
 import { evaluateProgress } from "../lib/services/training-progress";
@@ -11,6 +11,35 @@ import { semesterProgressDisplay } from "../../frontend/lib/semester-progress-di
 import { assessTeachingSemester, teachingSemesterCredits } from "../lib/semester-teaching-requirements";
 
 const pass = (courseCode: string, credits = 1): CertificateAttempt & { courseCode: string } => ({ courseCode, credits, isPass: true, scoreStatus: "graded", letterCode: "D" });
+
+test("VT credit outcomes require a finalized source marker and do not fabricate numeric grades", () => {
+  for (const [marker, expected] of [["", false], ["x", true], ["0", false], [false, false], [true, true]] as const) assert.equal(sourcePassOutcome({ IsPass: marker }), expected);
+  for (const payload of [{}, { IsPass: null }, { IsPass: "unexpected" }, null]) assert.equal(sourcePassOutcome(payload), null);
+  const vt = { specialCode: "VT", scoreStatus: "special", notScore: false, isPass: sourcePassOutcome({ IsPass: "" }), score10: null, score4: null };
+  const before = JSON.stringify(vt);
+  assert.equal(warningCourseOutcome(vt), "failed");
+  assert.equal(warningCourseOutcome({ ...vt, isPass: true }), "passed");
+  assert.equal(warningCourseOutcome({ ...vt, notScore: true }), "pending");
+  assert.equal(warningCourseOutcome({ ...vt, isPass: null }), "unknown");
+  assert.equal(JSON.stringify(vt), before);
+  const courses = [{ courseId: "academic", courseCode: "HP1", courseName: "Academic", credits: 4, requirementType: "mandatory", semesterNo: 1 }];
+  const attempt = { ...vt, courseCode: "HP1", credits: 4 };
+  const debt = calculateAcademicDebt([attempt, attempt], courses, "CQ22CT-PM");
+  assert.equal(debt.dataStatus, "COMPLETE");
+  assert.equal(debt.accumulatedDebtCredits, 4);
+  assert.equal(debt.reasonCode, null);
+  const settled = calculateAcademicDebt([attempt, { ...pass("HP1", 4), credits: 4 }], courses, "CQ22CT-PM");
+  assert.equal(settled.accumulatedDebtCredits, 0);
+  const ratioAttempt = { ...attempt, offeringId: "vt", academicTermId: "t", hasFinalGrade: false };
+  const ratio = calculateAssessmentTermFailedCredits("t", [ratioAttempt, ratioAttempt]);
+  assert.equal(ratio.dataStatus, "COMPLETE");
+  assert.equal(ratio.failedCreditRatio, 1);
+  assert.equal(ratio.absenceCourseCount, 1);
+  assert.equal(ratio.failedCredits, 4);
+  assert.equal(calculateAssessmentTermFailedCredits("t", [{ ...ratioAttempt, isPass: true }]).failedCreditRatio, 0);
+  assert.equal(calculateAssessmentTermFailedCredits("t", [{ ...ratioAttempt, notScore: true }]).dataStatus, "PARTIAL");
+  assert.equal(calculateAssessmentTermFailedCredits("t", [{ ...ratioAttempt, isPass: null }]).dataStatus, "PARTIAL");
+});
 
 const planCourse = (code: string, credits: number, requirementType = "elective", status = "PASSED") => ({ courseId: code, courseCode: code, courseName: code, credits, requirementType, status, semesterNo: 2 });
 const semester2Pool = [planCourse("20TN1202",4,"mandatory"),planCourse("20CT1202",4,"mandatory"),planCourse("LC1102D",2,"mandatory"),
@@ -261,6 +290,25 @@ test("semester registration and warning ratio exclude GDTC/GDQP but keep certifi
 test("blank source IDs do not merge different courses", () => {
   const row = { StudentID: "S", StudyProgramID: "P", CurriculumID: "QP2101D", StudyUnitID: "", ScheduleStudyUnitID: "", Credits: "3" };
   assert.notEqual(gradeImportRowKey("2023-2024", "HK01", row), gradeImportRowKey("2023-2024", "HK01", { ...row, CurriculumID: "QP2102D" }));
+});
+
+test("failed, VT and pending conditional courses never make academic debt or semester ratio incomplete", () => {
+  const conditional = [
+    { courseCode: "QP2101D", courseName: "Giáo dục quốc phòng", credits: 3, scoreStatus: "graded", isPass: false, letterCode: "F" },
+    { courseCode: "TC1002D", courseName: "Giáo dục thể chất", credits: 1, scoreStatus: "special", specialCode: "VT", isPass: false },
+    { courseCode: "25TC3001", courseName: "Giáo dục thể chất", credits: 1, scoreStatus: "pending", notScore: true },
+  ];
+  const attempts = [{ courseCode: "HP1", courseName: "Academic", credits: 3, scoreStatus: "graded", isPass: false, letterCode: "F" }, ...conditional];
+  const debt = calculateAcademicDebt(attempts, [{ courseId: "academic", courseCode: "HP1", courseName: "Academic", credits: 3, requirementType: "mandatory", semesterNo: 1 }], "CQ22CT-PM");
+  assert.equal(debt.dataStatus, "COMPLETE");
+  assert.equal(debt.reasonCode, null);
+  assert.equal(debt.accumulatedDebtCredits, 3);
+  assert.deepEqual(debt.outstandingCourses, ["HP1"]);
+  const ratio = calculateAssessmentTermFailedCredits("t", attempts.map((attempt, index) => ({ ...attempt, offeringId: String(index), academicTermId: "t", hasFinalGrade: attempt.scoreStatus === "graded", isPass: attempt.isPass ?? null })));
+  assert.equal(ratio.dataStatus, "COMPLETE");
+  assert.equal(ratio.registeredCredits, 3);
+  assert.equal(ratio.failedCreditRatio, 1);
+  assert.deepEqual(ratio.reasonCodes, []);
 });
 
 test("conflicting programs for the same source attempt are rejected before any database write", async () => {

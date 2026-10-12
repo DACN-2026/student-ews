@@ -4,6 +4,77 @@ import { warningRegulatoryAssessment, warningSupportSuggestions } from "../lib/s
 import { isMainConductTerm, numericWarningValue, warningReasonSummary, warningRuleResults, warningSemesterHistory, warningThresholdLabel, type ProfileWarningReason, type ProfileWarningScan } from "../lib/student-warning-view";
 import { getHumanUnEvaluatedExplanation, getLegalInfo } from "../lib/warning-rule-details";
 import { warningPendingDebtCourses, warningCurriculumReviewCourses } from "../lib/student-warning-view";
+import { termGpaWarningGroup } from "../lib/student-warning-view";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import WarningTermGpaCard from "../components/warnings/WarningTermGpaCard";
+import { warningPendingProgressCourses } from "../lib/student-warning-view";
+
+test("progress pending context preserves improvement, retake and unconfirmed results in stored formats", () => {
+  const courses = [
+    { courseCode: "A", courseName: "Môn A", credits: 3, context: "IMPROVEMENT" },
+    { courseCode: "B", courseName: "Môn B", credits: 4, context: "RETAKE" },
+    { courseCode: "C", courseName: "Môn C", credits: 2, context: "AWAITING_RESULT" },
+  ];
+  const rules = [{ ruleCode: "TRAINING_PROGRESS_CREDIT_DEFICIT", pendingProgressCourses: [...courses, { ...courses[0], context: "UNKNOWN" }, { ...courses[0], credits: null }] }];
+  assert.deepEqual(warningPendingProgressCourses(rules), courses);
+  assert.deepEqual(warningPendingProgressCourses({ rules }), courses);
+  assert.deepEqual(warningPendingProgressCourses(null), []);
+});
+
+test("one semester GPA card retains both thresholds and gives an academic breach priority", () => {
+  const regulatory: ProfileWarningReason = { reasonCode: "QD600_TERM_GPA", severity: "high", title: "Điểm trung bình học kỳ thấp", details: { ruleCode: "QD600_TERM_GPA", observedValue: 0.63, thresholdValue: 1, sourceType: "REGULATORY", isThresholdBreached: true } };
+  const early: ProfileWarningReason = { reasonCode: "EARLY_LOW_TERM_GPA", severity: "medium", title: "GPA dưới ngưỡng sớm", details: { ruleCode: "EARLY_LOW_TERM_GPA", observedValue: 0.63, thresholdValue: 2 } };
+  const drop: ProfileWarningReason = { reasonCode: "EARLY_TERM_GPA_DROP", severity: "medium", title: "GPA suy giảm", details: { observedValue: 1.2, thresholdValue: 0.5 } };
+  const reasons = [early, drop, regulatory];
+  const before = JSON.stringify(reasons);
+  const group = termGpaWarningGroup(reasons, []);
+  assert.ok(group);
+  assert.equal(group.observedValue, 0.63);
+  assert.equal(group.regulatoryThreshold, 1);
+  assert.equal(group.earlyThreshold, 2);
+  assert.equal(group.regulatoryBreached, true);
+  assert.deepEqual(reasons.filter(reason => !group.reasons.includes(reason)), [drop]);
+  const html = renderToStaticMarkup(createElement(WarningTermGpaCard, { group }, createElement("span", { "data-evidence": "term" }, "Bảng điểm")));
+  assert.equal((html.match(/<article/g) || []).length, 1);
+  assert.equal((html.match(/data-evidence="term"/g) || []).length, 1);
+  assert.match(html, /Dưới ngưỡng học vụ/);
+  assert.match(html, /&lt; 1\.00/);
+  assert.match(html, /&lt; 2\.00/);
+  assert.match(html, /không thay thế quyết định/);
+  assert.equal(JSON.stringify(reasons), before);
+});
+
+test("an early-only GPA still shows the evaluated non-breached academic threshold from the stored run", () => {
+  const early: ProfileWarningReason = { reasonCode: "EARLY_LOW_TERM_GPA", severity: "medium", title: null, details: { observedValue: 1.5, thresholdValue: 2 } };
+  for (const rules of [[{ ruleCode: "QD600_TERM_GPA", observedValue: 1.5, thresholdValue: 1, evaluationStatus: "EVALUATED", isThresholdBreached: false }], { rules: [{ ruleCode: "QD600_TERM_GPA", observedValue: 1.5, thresholdValue: 1, evaluationStatus: "EVALUATED", isThresholdBreached: false }] }]) {
+    const group = termGpaWarningGroup([early], rules)!;
+    assert.equal(group.regulatoryThreshold, 1);
+    assert.equal(group.regulatoryBreached, false);
+    const html = renderToStaticMarkup(createElement(WarningTermGpaCard, { group }));
+    assert.match(html, /Cần chú ý/);
+    assert.doesNotMatch(html, /Dưới ngưỡng học vụ/);
+  }
+});
+
+test("GPA grouping preserves first-semester thresholds, disabled early signals and unknown measurements", () => {
+  const reason: ProfileWarningReason = { reasonCode: "QD600_TERM_GPA_FIRST_TERM", severity: "high", title: null, details: { observedValue: null, thresholdValue: 0.8, isThresholdBreached: true, evaluationStatus: "NOT_EVALUATED" } };
+  const group = termGpaWarningGroup([reason], [])!;
+  assert.equal(group.observedValue, null);
+  assert.equal(group.regulatoryThreshold, 0.8);
+  assert.equal(group.earlyThreshold, null);
+  assert.equal(group.regulatoryBreached, false);
+  const html = renderToStaticMarkup(createElement(WarningTermGpaCard, { group }));
+  assert.match(html, /Chưa có GPA hợp lệ/);
+  assert.doesNotMatch(html, /GPA học kỳ 0\.00|Dưới ngưỡng học vụ/);
+  assert.equal(termGpaWarningGroup([], []), null);
+  assert.equal(termGpaWarningGroup([{ ...reason, reasonCode: "EARLY_TERM_GPA_DROP" }], []), null);
+});
+
+test("conflicting saved GPA values stay separate for verification rather than hiding one measurement", () => {
+  const reason: ProfileWarningReason = { reasonCode: "QD600_TERM_GPA", severity: "high", title: null, details: { observedValue: 0.63, thresholdValue: 1 } };
+  assert.equal(termGpaWarningGroup([reason, { ...reason, reasonCode: "EARLY_LOW_TERM_GPA", details: { observedValue: 1.5, thresholdValue: 2 } }], []), null);
+});
 test("known base-catalog courses have a distinct curriculum review with validated metadata", () => {
   const course = {courseCode:"20CT3112D",courseName:"Môn nâng cao",credits:3,catalogProgramCode:"CQ22CT",outcome:"pending",academicYear:"2024-2025",termCode:"HK02"};
   const rule={ruleCode:"QD600_ACCUMULATED_DEBT_CREDITS",reasonCode:"CURRICULUM_SCOPE_REQUIRES_VERIFICATION",explanation:"Môn có trong CTĐT chung; chờ xác nhận phạm vi.",curriculumReviewCourses:[course,{...course,credits:null},{...course,outcome:"INVALID"}]};

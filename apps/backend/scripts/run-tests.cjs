@@ -32,6 +32,7 @@ const testFiles = requestedTests.length ? requestedTests : [
   "tests/intervention-api.test.ts",
   "tests/intervention-cases.test.ts",
   "tests/warning-history-display.test.ts",
+  "tests/warning-result-chronology.test.ts",
   "tests/actual-study-semester.test.ts",
   "tests/student-progress-cohort.test.ts",
   "tests/semester-grade-summary.test.ts",

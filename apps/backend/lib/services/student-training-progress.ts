@@ -57,6 +57,8 @@ export type AssessedCourse = TrainingProgressCourse & {
   status: CourseProgressStatus;
   timelineCategory: CourseTimelineCategory | null;
   attemptCount: number;
+  confirmedOutcome?: "PASSED" | "FAILED" | "NONE";
+  hasPendingAttempt?: boolean;
   latestScore10?: number | null;
   latestScore4?: number | null;
   latestLetterCode?: string | null;
@@ -368,6 +370,8 @@ export function evaluateStudentTrainingProgress(input: {
       status,
       timelineCategory,
       attemptCount: attempts.length,
+      confirmedOutcome: passingAttempt ? "PASSED" : hasFail ? "FAILED" : "NONE",
+      hasPendingAttempt,
       latestScore10: latestAttempt?.score10 ?? null,
       latestScore4: latestAttempt?.score4 ?? null,
       latestLetterCode: latestAttempt?.letterCode ?? null,

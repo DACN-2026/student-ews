@@ -73,6 +73,7 @@ interface InterventionSummary {
   studentCount: number;
   academicTermId: string | null;
   allPeriods: { total: number; studentCount: number; otherPeriodCases: number; otherPeriodStudents: number; unlinkedCases: number };
+  history: { total: number; studentCount: number; resolved: number; unlinkedCases: number };
   open: number;
   inProgress: number;
   resolved: number;
@@ -444,7 +445,7 @@ export default function ReportsPage() {
   const queueSearchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── HISTORY STATE ───────────────────────────────────────────────────────
-  const [historyData, setHistoryData] = useState<InterventionListResponse | null>(() => peekApiData("/api/v1/academic-warnings/interventions?page=1&pageSize=20&status=RESOLVED"));
+  const [historyData, setHistoryData] = useState<InterventionListResponse | null>(() => peekApiData("/api/v1/academic-warnings/interventions?page=1&pageSize=20&status=RESOLVED&view=history"));
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
   const [historyPage, setHistoryPage] = useState(1);
@@ -545,7 +546,7 @@ export default function ReportsPage() {
     await Promise.resolve();
     try {
       setHistoryError("");
-      const params = new URLSearchParams({ page: String(page), pageSize: "20", status: "RESOLVED" });
+      const params = new URLSearchParams({ page: String(page), pageSize: "20", status: "RESOLVED", view: "history" });
       if (filters.businessStatus) params.set("businessStatus", filters.businessStatus);
       if (filters.classId) params.set("classId", filters.classId);
       if (filters.academicTermId) params.set("academicTermId", filters.academicTermId);
@@ -1208,7 +1209,7 @@ export default function ReportsPage() {
                       <h2 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                         Tình hình can thiệp
                       </h2>
-                      <p className="text-[11px] text-slate-500">Theo {report.latestPeriod?.label} · {summary.studentCount} sinh viên / {summary.total} hồ sơ. Một sinh viên có thể có nhiều đợt can thiệp.</p>
+                      <p className="text-[11px] text-slate-500">Theo {report.latestPeriod?.label} · {summary.studentCount} sinh viên có nguy cơ · {summary.total} hồ sơ hiện hành. Mỗi sinh viên được tính một hồ sơ.</p>
                     </div>
                     <button
                       type="button"
@@ -1220,7 +1221,7 @@ export default function ReportsPage() {
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     <SummaryCard
-                      label="Hồ sơ trong học kỳ"
+                      label="Hồ sơ hiện hành"
                       value={summary.total}
                       color="slate"
                       onClick={() => openOverviewQueue()}
@@ -1252,10 +1253,10 @@ export default function ReportsPage() {
                   </div>
                   <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs leading-5 text-slate-600">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p>Toàn bộ học kỳ: <strong>{summary.allPeriods.studentCount} sinh viên / {summary.allPeriods.total} hồ sơ</strong>. Có {summary.allPeriods.otherPeriodStudents} sinh viên có hồ sơ ở học kỳ khác.</p>
-                      <button type="button" onClick={() => openOverviewQueue({}, true)} className="font-semibold text-[var(--color-primary)] hover:underline cursor-pointer">Xem toàn bộ hồ sơ →</button>
+                      <p>Lịch sử can thiệp: <strong>{summary.history?.resolved ?? 0} đợt hỗ trợ đã hoàn tất</strong>, được lưu riêng để tra cứu.</p>
+                      <button type="button" onClick={() => { if (historySearchDebounce.current) clearTimeout(historySearchDebounce.current); setHistorySearch(""); setHistoryPage(1); setHistoryFilters({ businessStatus: "", classId: "", academicTermId: "", search: "" }); setActiveTab("history"); }} className="font-semibold text-[var(--color-primary)] hover:underline cursor-pointer">Xem lịch sử can thiệp →</button>
                     </div>
-                    {summary.allPeriods.unlinkedCases > 0 && <p className="mt-1 text-[11px]">{summary.allPeriods.unlinkedCases} hồ sơ lịch sử chưa liên kết được kết quả học kỳ, được giữ để tra cứu và không tính vào học kỳ đang xem.</p>}
+                    {summary.allPeriods.otherPeriodStudents > 0 && <p className="mt-1 text-[11px]">Có {summary.allPeriods.otherPeriodStudents} sinh viên có hồ sơ hiện hành ở học kỳ khác. <button type="button" onClick={() => openOverviewQueue({}, true)} className="font-semibold text-[var(--color-primary)] hover:underline">Xem các học kỳ khác →</button></p>}
                   </div>
                 </section>
               )}
@@ -1333,7 +1334,7 @@ export default function ReportsPage() {
       ═══════════════════════════════════════════════════════════════════ */}
       {activeTab === "queue" && (
         <div className="space-y-4">
-          <p className="text-xs leading-5 text-slate-600">Hồ sơ can thiệp · {queueFilters.academicTermId ? academicTermOptions.find((term) => term.value === queueFilters.academicTermId)?.label || "Học kỳ đã chọn" : "Toàn bộ học kỳ"}{!queueLoading && queueData ? ` · ${queueData.total} hồ sơ phù hợp bộ lọc` : ""}. Số hồ sơ có thể khác số sinh viên vì một sinh viên có nhiều đợt can thiệp.</p>
+          <p className="text-xs leading-5 text-slate-600">Hồ sơ hiện hành · {queueFilters.academicTermId ? academicTermOptions.find((term) => term.value === queueFilters.academicTermId)?.label || "Học kỳ đã chọn" : "Toàn bộ học kỳ"}{!queueLoading && queueData ? ` · ${queueData.total} hồ sơ phù hợp bộ lọc` : ""}. Mỗi sinh viên được tính một hồ sơ; các đợt hỗ trợ trước được lưu trong Lịch sử can thiệp.</p>
           {/* Filter Bar */}
           <FilterBar
             onReset={() => {

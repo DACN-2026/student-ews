@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-11T15:44:52.057Z",
+  "period": "HK02 (2025-2026)",
+  "assessed": 622,
+  "noGaps": 422,
+  "missingDataOrResults": 50,
+  "verification": 195,
+  "verificationOnly": 150,
+  "debtVt": 192,
+  "debtVtWithoutAcademicVt": [],
+  "rulesAndScoresUnchanged": true,
+  "noRerun": true
+}

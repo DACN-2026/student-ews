@@ -830,9 +830,10 @@ test("summary aligns with a selected term and separates students, cases, other t
     assert.equal(current.studentCount, 1);
     assert.equal(current.open, 1);
     assert.equal(current.resolved, 0);
-    assert.deepEqual(current.allPeriods, { total: 3, studentCount: 2, otherPeriodCases: 1, otherPeriodStudents: 1, unlinkedCases: 1 });
+    assert.deepEqual(current.allPeriods, { total: 2, studentCount: 2, otherPeriodCases: 1, otherPeriodStudents: 1, unlinkedCases: 0 });
+    assert.deepEqual(current.history, { total: 1, studentCount: 1, resolved: 1, unlinkedCases: 1 });
     const global = await InterventionCasesService.summary(adminActor);
-    assert.equal(global.total, 3);
+    assert.equal(global.total, 2);
     assert.equal(global.studentCount, 2);
     assert.equal((await InterventionCasesService.list({ page: 1, pageSize: 20, academicTermId: IDS.term }, adminActor)).total, current.total);
     const [a, b] = state.cases;
@@ -841,6 +842,40 @@ test("summary aligns with a selected term and separates students, cases, other t
     assert.equal((await InterventionCasesService.list({ page: 1, pageSize: 20, status: "ACTIVE_PROCESSING" }, adminActor)).total, 2);
     a.latestBusinessStatus = "VERIFY_REQUIRED";
     assert.equal((await InterventionCasesService.list({ page: 1, pageSize: 20, academicTermId: IDS.term, businessStatus: "HIGH_RISK_OR_VERIFY" }, adminActor)).total, 1);
+  } finally { cleanup(); }
+});
+
+test("current support counts one record per student before filtering, while completed episodes remain in history", async () => {
+  const state = createMemoryState();
+  const cleanup = installMemoryDatabase(state);
+  try {
+    addRun(state, "current-counts", [{ studentId: IDS.studentA, status: "HIGH_RISK" }, { studentId: IDS.studentB, status: "MONITORING" }]);
+    await InterventionCasesService.syncInterventionCasesForRun("current-counts");
+    const currentA = state.cases.find(row => row.studentId === IDS.studentA);
+    const currentB = state.cases.find(row => row.studentId === IDS.studentB);
+    state.cases.push({ ...currentA, id: "older-resolved", status: "RESOLVED", createdAt: new Date("2020-01-01"), nextFollowUpAt: new Date("2020-01-02") });
+    state.cases.push({ ...currentB, id: "unlinked-resolved", status: "RESOLVED", createdAt: new Date("2020-01-01"), latestWarningRunId: "missing", latestWarningResultId: "missing" });
+    const before = JSON.stringify(state);
+    const base = { page: 1, pageSize: 20, academicTermId: IDS.term };
+    const summary = await InterventionCasesService.summary(adminActor, { academicTermId: IDS.term });
+    assert.equal(summary.total, 2);
+    assert.equal(summary.studentCount, 2);
+    assert.equal(summary.open, 2);
+    assert.equal(summary.resolved, 0);
+    assert.equal(summary.history.total, 2);
+    assert.equal((await InterventionCasesService.list(base, adminActor)).total, 2);
+    assert.equal((await InterventionCasesService.list({ ...base, status: "RESOLVED" }, adminActor)).total, 0);
+    assert.equal((await InterventionCasesService.list({ ...base, pageSize: 1 }, adminActor)).totalPages, 2);
+    const history = await InterventionCasesService.list({ page: 1, pageSize: 20, view: "history", status: "RESOLVED" }, adminActor);
+    assert.deepEqual(new Set(history.items.map(row => row.caseId)), new Set(["older-resolved", "unlinked-resolved"]));
+    assert.equal((await InterventionCasesService.list({ page: 1, pageSize: 20, view: "history" }, adminActor)).total, 2);
+    assert.equal((await InterventionCasesService.getDetail("older-resolved", adminActor)).case.interventionStatus, "RESOLVED");
+    assert.equal(JSON.stringify(state), before, "reading counts and history must not modify saved records");
+    currentA.status = "RESOLVED";
+    assert.equal((await InterventionCasesService.summary(adminActor)).total, 2);
+    assert.equal((await InterventionCasesService.summary(adminActor)).resolved, 1);
+    assert.deepEqual((await InterventionCasesService.list({ ...base, status: "RESOLVED" }, adminActor)).items.map(row => row.caseId), [currentA.id]);
+    await assert.rejects(InterventionCasesService.list({ ...base, view: "invalid" as "current" }, adminActor), (error: ApiError) => error.code === "INVALID_FILTER");
   } finally { cleanup(); }
 });
 

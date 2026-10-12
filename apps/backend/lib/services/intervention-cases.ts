@@ -44,6 +44,7 @@ export type InterventionType = (typeof INTERVENTION_TYPES)[number];
 export type WarningBusinessStatus = "NORMAL" | "PARTIAL_NO_RISK" | "MONITORING" | "HIGH_RISK" | "VERIFY_REQUIRED" | "INSUFFICIENT_DATA";
 
 export type InterventionQueueFilters = {
+  view?: "current" | "history";
   status?: string;
   businessStatus?: string;
   classId?: string;
@@ -106,11 +107,7 @@ function jsonObject(value: Prisma.JsonValue): Prisma.JsonObject {
 }
 
 
-async function scopedQueueRows(
-  actor: Actor,
-  filters: Omit<InterventionQueueFilters, "page" | "pageSize"> & { caseId?: string } = {},
-  includeHistorical = false,
-) {
+function validateQueueFilters(filters: Pick<InterventionQueueFilters, "status" | "businessStatus" | "view">) {
   const statuses = ["OPEN", "IN_PROGRESS", "RESOLVED", "ESCALATED", "REOPENED", "ACTIVE_PROCESSING"];
   const businessStatuses = ["NORMAL", "PARTIAL_NO_RISK", "MONITORING", "HIGH_RISK", "VERIFY_REQUIRED", "INSUFFICIENT_DATA", "HIGH_RISK_OR_VERIFY"];
   if (filters.status && !statuses.includes(filters.status)) {
@@ -119,6 +116,17 @@ async function scopedQueueRows(
   if (filters.businessStatus && !businessStatuses.includes(filters.businessStatus)) {
     throw new ApiError(`businessStatus must be one of: ${businessStatuses.join(", ")}`, "INVALID_BUSINESS_STATUS", 400);
   }
+  if (filters.view && !["current", "history"].includes(filters.view)) {
+    throw new ApiError("view must be current or history", "INVALID_FILTER", 400);
+  }
+}
+
+async function scopedQueueRows(
+  actor: Actor,
+  filters: Omit<InterventionQueueFilters, "page" | "pageSize"> & { caseId?: string } = {},
+  includeHistorical = false,
+) {
+  validateQueueFilters(filters);
   const now = new Date();
   const cases = await prisma.warningAction.findMany({
     where: {
@@ -475,15 +483,46 @@ async function syncPersistedResult(
   return "unchanged" as const;
 }
 
+type InterventionRow = Awaited<ReturnType<typeof scopedQueueRows>>[number];
+
+function currentInterventionRows(rows: InterventionRow[]) {
+  const current = new Map<string, InterventionRow>();
+  for (const row of rows) {
+    const previous = current.get(row.student.id);
+    const active = ACTIVE_INTERVENTION_STATUSES.includes(row.interventionStatus as typeof ACTIVE_INTERVENTION_STATUSES[number]);
+    const previousActive = previous && ACTIVE_INTERVENTION_STATUSES.includes(previous.interventionStatus as typeof ACTIVE_INTERVENTION_STATUSES[number]);
+    if (!previous || (active && !previousActive) || (active === previousActive && (
+      row.createdAt.getTime() > previous.createdAt.getTime()
+      || (row.createdAt.getTime() === previous.createdAt.getTime() && row.caseId.localeCompare(previous.caseId) > 0)
+    ))) current.set(row.student.id, row);
+  }
+  return [...current.values()];
+}
+
 export class InterventionCasesService {
   static async list(filters: InterventionQueueFilters, actor: Actor) {
-    const scopedRows = await scopedQueueRows(actor, filters);
+    validateQueueFilters(filters);
+    // Select the current support record before applying status/risk filters.
+    // Otherwise an old resolved episode can appear when the current one is open.
+    const scopedRows = await scopedQueueRows(actor, { ...filters, status: undefined, businessStatus: undefined, overdue: undefined, academicTermId: undefined });
+    const currentRows = currentInterventionRows(scopedRows);
+    const candidates = filters.view === "history" ? scopedRows.filter(row => row.interventionStatus === "RESOLVED") : currentRows;
     // Tab Cần can thiệp mặc định chỉ chứa Vàng/Đỏ hiện hành. Hồ sơ đã
     // vượt khỏi ngưỡng vẫn được giữ nguyên để tra cứu lịch sử; trạng thái
     // "Hoàn tất" của can thiệp không tự thay đổi kết quả cảnh báo học vụ.
-    const rows = filters.businessStatus || filters.status === "RESOLVED"
-      ? scopedRows
-      : scopedRows.filter((row) => isInterventionTriggerStatus(row.latestBusinessStatus));
+    const rows = candidates.filter(row => {
+      if (filters.academicTermId && row.assessmentAcademicTermId !== filters.academicTermId) return false;
+      if (filters.status && (filters.status === "ACTIVE_PROCESSING"
+        ? !["IN_PROGRESS", "ESCALATED", "REOPENED"].includes(row.interventionStatus)
+        : row.interventionStatus !== filters.status)) return false;
+      if (filters.businessStatus) {
+        const allowed = normalizeWarningBusinessStatus(filters.businessStatus) === "NORMAL"
+          ? ["NORMAL", "PARTIAL_NO_RISK"] : filters.businessStatus === "HIGH_RISK_OR_VERIFY"
+            ? ["HIGH_RISK", "VERIFY_REQUIRED"] : [filters.businessStatus];
+        if (!row.latestBusinessStatus || !allowed.includes(row.latestBusinessStatus)) return false;
+      } else if (filters.view !== "history" && filters.status !== "RESOLVED" && !isInterventionTriggerStatus(row.latestBusinessStatus)) return false;
+      return filters.overdue === undefined || row.overdue === filters.overdue;
+    });
     rows.sort((left, right) => compareStudentOrder(
       { id: left.caseId, classCode: left.student.classCode, fullName: left.student.fullName, studentCode: left.student.studentCode },
       { id: right.caseId, classCode: right.student.classCode, fullName: right.student.fullName, studentCode: right.student.studentCode },
@@ -500,8 +539,10 @@ export class InterventionCasesService {
   }
 
   static async summary(actor: Actor, filters: { academicTermId?: string } = {}) {
-    const allRows = (await scopedQueueRows(actor))
-      .filter((row) => isInterventionTriggerStatus(row.latestBusinessStatus));
+    const scopedRows = await scopedQueueRows(actor);
+    const currentRows = currentInterventionRows(scopedRows);
+    const allRows = currentRows.filter((row) => isInterventionTriggerStatus(row.latestBusinessStatus));
+    const historicalRows = scopedRows.filter(row => row.interventionStatus === "RESOLVED");
     const rows = filters.academicTermId
       ? allRows.filter((row) => row.assessmentAcademicTermId === filters.academicTermId)
       : allRows;
@@ -559,6 +600,12 @@ export class InterventionCasesService {
       total: rows.length,
       studentCount: new Set(rows.map((row) => row.student.id)).size,
       academicTermId: filters.academicTermId || null,
+      history: {
+        total: historicalRows.length,
+        studentCount: new Set(historicalRows.map(row => row.student.id)).size,
+        resolved: historicalRows.filter(row => row.interventionStatus === "RESOLVED").length,
+        unlinkedCases: historicalRows.filter(row => !row.assessmentAcademicTermId).length,
+      },
       allPeriods: {
         total: allRows.length,
         studentCount: new Set(allRows.map((row) => row.student.id)).size,

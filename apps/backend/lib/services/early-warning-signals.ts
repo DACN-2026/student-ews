@@ -32,7 +32,7 @@ export function evaluateEarlyWarningSignals(input: {
     ruleCode: "EARLY_EXAM_ABSENCE", sourceType: "ADVISORY", evaluationStatus: "EVALUATED", dataStatus: "COMPLETE",
     observedValue: absences.length, thresholdValue: 1, margin: null,
     isNearThreshold: true, isThresholdBreached: false, capabilityStatus: null, reasonCode: "EXAM_ABSENCE_REQUIRES_VERIFICATION",
-    explanation: `Kỳ xét có ${absences.length} học phần VT (${absences.reduce((sum, course) => sum + course.credits, 0)} tín chỉ). GVCN/CVHT cần xác minh lý do vắng thi, phê duyệt hoãn thi và kết quả bổ sung. Đây là tín hiệu theo dõi, không phải kết luận cảnh báo học vụ; không tự quy đổi VT thành GPA 0 hoặc tín chỉ F.`,
+    explanation: `Kỳ xét có ${absences.length} học phần VT (${absences.reduce((sum, course) => sum + course.credits, 0)} tín chỉ). GVCN/CVHT cần xác minh lý do vắng thi, phê duyệt hoãn thi và kết quả bổ sung. Đây là tín hiệu theo dõi, không phải quyết định cảnh báo học vụ. Phép tính tín chỉ dùng kết quả đạt/không đạt đã có từ nguồn; giữ nguyên mã VT và không tự gán GPA bằng 0.`,
     regulatorySource: null, articleRef: null, riskLevel: "YELLOW",
     absenceCourseCount: absences.length, absenceCredits: absences.reduce((sum, course) => sum + course.credits, 0), absenceCourses: absences,
   });
@@ -40,6 +40,14 @@ export function evaluateEarlyWarningSignals(input: {
     comparison: "BELOW" | "FROM", explanation: string, missing: string, extra?: Record<string, unknown>) {
     if (threshold === null) return;
     const available = observed !== null && Number.isFinite(observed);
+    const missingExplanation = code === "EARLY_LOW_TERM_GPA" ? "Nguồn chưa cung cấp GPA học kỳ hệ 4 hợp lệ tại kỳ xét; không tự tính GPA bằng 0 từ VT."
+      : code === "EARLY_LOW_CUMULATIVE_GPA" ? "Nguồn chưa cung cấp GPA tích lũy hệ 4 hợp lệ tại kỳ xét."
+        : code === "EARLY_TERM_GPA_DROP" || code === "EARLY_CUMULATIVE_GPA_DROP"
+          ? extra?.currentValue == null && extra?.previousValue == null ? "Thiếu GPA hợp lệ của cả kỳ xét và kỳ chính liền trước để tính mức suy giảm."
+            : extra?.currentValue == null ? "Thiếu GPA hợp lệ của kỳ xét để so sánh với kỳ chính liền trước."
+              : "Thiếu GPA hợp lệ của kỳ chính liền trước; không thay bằng GPA kỳ hè hoặc kỳ không liền kề."
+          : code === "EARLY_FAILED_CREDIT_RATIO" ? "Chưa có tỷ lệ tín chỉ không đạt hợp lệ: kiểm tra đăng ký học thuật và kết quả còn chờ hoặc chưa xác định. VT đã có kết quả đạt/không đạt không chặn phép tính."
+            : "Chưa đủ dữ liệu hợp lệ để đánh giá tín hiệu này.";
     const triggered = available && (comparison === "BELOW" ? observed < threshold : observed + 1e-9 >= threshold);
     result.push({
       ruleCode: code, sourceType: "ADVISORY", evaluationStatus: available ? "EVALUATED" : "NOT_EVALUATED",
@@ -47,7 +55,7 @@ export function evaluateEarlyWarningSignals(input: {
       observedValue: available ? observed : null, thresholdValue: threshold, margin: null,
       isNearThreshold: triggered, isThresholdBreached: false, capabilityStatus: null,
       reasonCode: triggered ? code : available ? null : missing,
-      explanation: available ? explanation : "Chưa đủ dữ liệu hợp lệ để đánh giá tín hiệu này.",
+      explanation: available ? explanation : missingExplanation,
       regulatorySource: null, articleRef: null, riskLevel: triggered ? "YELLOW" : "GREEN", ...extra,
     });
   }

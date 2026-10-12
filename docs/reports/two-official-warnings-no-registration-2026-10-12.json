@@ -1,0 +1,1546 @@
+{
+  "checkedAt": "2026-10-12T03:25:24.102Z",
+  "scopeStudents": 625,
+  "sourceDecisionRows": 912,
+  "officialWarningDecisions": 171,
+  "warningStudents": 110,
+  "currentTerm": "HK01 (2026-2027)",
+  "unresolvedWarningPeriods": [],
+  "futureSignedWarningDecisions": [],
+  "matchingEpisodes": 14,
+  "uniqueStudentsWithNoAcademicRegistration": 14,
+  "matchingNoPositiveCreditRegistrationEpisodes": 14,
+  "uniqueStudentsNeedingPriorityReview": 14,
+  "currentAssessmentFollowUpCases": [
+    {
+      "studentId": "b20f3f6a-7a59-47e0-98c1-ba73137fc180",
+      "code": "2246B029",
+      "name": "Trịnh Minh Thiện",
+      "class": "ITK46B",
+      "program": "CQ22CT-PM",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "c5cc77fe-4bad-446e-a95d-7f1ad04193e2",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "4c5aa988-7f99-4d03-a634-04a40f264351",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 3,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": true,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "ZERO_CREDIT_ACTIVITY_ONLY",
+      "sourceRecords": [
+        {
+          "code": "SHCD-CD1",
+          "name": "Chuyên đề 1",
+          "credits": 0,
+          "program": "CQ22CT-PM"
+        },
+        {
+          "code": "SHCD-CD2",
+          "name": "Chuyên đề 2",
+          "credits": 0,
+          "program": "CQ22CT-PM"
+        },
+        {
+          "code": "SHCD-CD3",
+          "name": "Chuyên đề 3",
+          "credits": 0,
+          "program": "CQ22CT-PM"
+        }
+      ],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "dc18f4e1-d04a-4b21-84aa-55e92a3cb26d",
+      "code": "2347A049",
+      "name": "Hà Thị Trung",
+      "class": "ITK47A",
+      "program": "CQ23CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "6720804d-c061-4603-ae9e-7b1dcb189c99",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "8d1a874a-aa01-4d26-9a74-ca072663f4b4",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 3,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": true,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "ZERO_CREDIT_ACTIVITY_ONLY",
+      "sourceRecords": [
+        {
+          "code": "SHCD-CD1",
+          "name": "Chuyên đề 1",
+          "credits": 0,
+          "program": "CQ23CT"
+        },
+        {
+          "code": "SHCD-CD2",
+          "name": "Chuyên đề 2",
+          "credits": 0,
+          "program": "CQ23CT"
+        },
+        {
+          "code": "SHCD-CD3",
+          "name": "Chuyên đề 3",
+          "credits": 0,
+          "program": "CQ23CT"
+        }
+      ],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "b7d2e7a0-e301-4338-b896-e0c1156d2bc1",
+      "code": "2347C046",
+      "name": "Lâm Tuấn Trang",
+      "class": "ITK47C",
+      "program": "CQ23CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "c9ba1ae0-82de-4732-9848-6b7a230d6a9d",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "403bdd55-d251-4ee3-a1d7-e89d95df6e6f",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "75a15d0a-fb8c-4467-b142-72963be6ac95",
+      "code": "2448A001",
+      "name": "Lý Ngọc Tùng",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "af97fe7d-75fa-4ac4-81de-d0b5a60e5e40",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "a6ae40e1-c26e-4195-8a02-89d10caceed8",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "6e86cff4-be71-4d30-8e6a-5b11cc3a7e62",
+      "code": "2448A009",
+      "name": "Trương Thị Hải",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "5856df30-96df-43a2-a35e-454044b2c9ed",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "1dc2926e-009c-4a89-9499-93c265c96b0b",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "c56f9fc7-bf9b-4ddf-84ff-e4b462e10cd3",
+      "code": "2448A010",
+      "name": "Đinh Xuân Tuấn",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "ff1160af-da93-4830-a31d-0cce6be4513b",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "e5401369-82c1-482e-ae21-f72c827d0f5a",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "c99dcd4b-06a9-4d4f-b9cd-0755ffcdfd6b",
+      "code": "2448A024",
+      "name": "Vũ Thúy Sơn",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "44959e0f-2e18-4ff4-962c-505e502fb33a",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "9955f7b1-1a9e-4183-a582-4fed4c8deab8",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "76fb11e6-c470-424b-9e75-dc6464491ef3",
+      "code": "2448A030",
+      "name": "Cao Xuân Chi",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "ed9954a3-9f91-4d0e-bf6f-eb787f4317dc",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "e7ae9e27-5ad9-4e84-899c-e85e39e19a77",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "417f66dd-18d9-4116-b241-48e184060c04",
+      "code": "2448A051",
+      "name": "Hoàng Hoàng Việt",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "15530a8a-e2b9-4eb2-bb7e-46429d5d3c9f",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "564d3455-9522-4ffc-827e-4cb090f95ecd",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "2f2a6192-1cd2-488b-9655-e6da183c2a84",
+      "code": "2448B004",
+      "name": "Lâm Thúy An",
+      "class": "ITK48B",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "3daa82d4-c953-4023-aed4-8bfe02a69bd1",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "4b6b4c95-3216-4013-a510-e414365c141b",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "b0f34f15-f991-46b2-9690-52e5498a6fad",
+      "code": "2448B022",
+      "name": "Trịnh Tuấn Khanh",
+      "class": "ITK48B",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "3331fb61-66ea-4046-8f19-96a02e04e73b",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "cbe9920d-a60d-4bab-8a65-128ae876a91c",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "4a80c580-9039-4112-b7c7-ac563cdc5751",
+      "code": "2448B026",
+      "name": "Đoàn Mai Vỹ",
+      "class": "ITK48B",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "91b34dfe-1343-47c5-b9b8-f81706276f32",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "f9c28d92-5842-443e-aec1-ed666bb50663",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "086c7d2b-2c13-452b-88ea-2ee17fd1c553",
+      "code": "2448B033",
+      "name": "Đoàn Đức Lâm",
+      "class": "ITK48B",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "f1cc26f6-be87-40e4-bb36-9df9690609e6",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "40ed2e82-2942-446b-b4c4-1e70998a5572",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "b44d97fa-dd35-40a1-a084-c625e2f06c56",
+      "code": "2448B048",
+      "name": "Cao Hoàng Phong",
+      "class": "ITK48B",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "abe90cd2-6f05-4f13-a5d5-a9aa612a6b08",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "55cf9ab6-a4b3-4e1e-b858-80fc9656a3cc",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    }
+  ],
+  "allCases": [
+    {
+      "studentId": "b20f3f6a-7a59-47e0-98c1-ba73137fc180",
+      "code": "2246B029",
+      "name": "Trịnh Minh Thiện",
+      "class": "ITK46B",
+      "program": "CQ22CT-PM",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "c5cc77fe-4bad-446e-a95d-7f1ad04193e2",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "4c5aa988-7f99-4d03-a634-04a40f264351",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 3,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": true,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "ZERO_CREDIT_ACTIVITY_ONLY",
+      "sourceRecords": [
+        {
+          "code": "SHCD-CD1",
+          "name": "Chuyên đề 1",
+          "credits": 0,
+          "program": "CQ22CT-PM"
+        },
+        {
+          "code": "SHCD-CD2",
+          "name": "Chuyên đề 2",
+          "credits": 0,
+          "program": "CQ22CT-PM"
+        },
+        {
+          "code": "SHCD-CD3",
+          "name": "Chuyên đề 3",
+          "credits": 0,
+          "program": "CQ22CT-PM"
+        }
+      ],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "dc18f4e1-d04a-4b21-84aa-55e92a3cb26d",
+      "code": "2347A049",
+      "name": "Hà Thị Trung",
+      "class": "ITK47A",
+      "program": "CQ23CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "6720804d-c061-4603-ae9e-7b1dcb189c99",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "8d1a874a-aa01-4d26-9a74-ca072663f4b4",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 3,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": true,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "ZERO_CREDIT_ACTIVITY_ONLY",
+      "sourceRecords": [
+        {
+          "code": "SHCD-CD1",
+          "name": "Chuyên đề 1",
+          "credits": 0,
+          "program": "CQ23CT"
+        },
+        {
+          "code": "SHCD-CD2",
+          "name": "Chuyên đề 2",
+          "credits": 0,
+          "program": "CQ23CT"
+        },
+        {
+          "code": "SHCD-CD3",
+          "name": "Chuyên đề 3",
+          "credits": 0,
+          "program": "CQ23CT"
+        }
+      ],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "b7d2e7a0-e301-4338-b896-e0c1156d2bc1",
+      "code": "2347C046",
+      "name": "Lâm Tuấn Trang",
+      "class": "ITK47C",
+      "program": "CQ23CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "c9ba1ae0-82de-4732-9848-6b7a230d6a9d",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "403bdd55-d251-4ee3-a1d7-e89d95df6e6f",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "75a15d0a-fb8c-4467-b142-72963be6ac95",
+      "code": "2448A001",
+      "name": "Lý Ngọc Tùng",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "af97fe7d-75fa-4ac4-81de-d0b5a60e5e40",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "a6ae40e1-c26e-4195-8a02-89d10caceed8",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "6e86cff4-be71-4d30-8e6a-5b11cc3a7e62",
+      "code": "2448A009",
+      "name": "Trương Thị Hải",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "5856df30-96df-43a2-a35e-454044b2c9ed",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "1dc2926e-009c-4a89-9499-93c265c96b0b",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "c56f9fc7-bf9b-4ddf-84ff-e4b462e10cd3",
+      "code": "2448A010",
+      "name": "Đinh Xuân Tuấn",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "ff1160af-da93-4830-a31d-0cce6be4513b",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "e5401369-82c1-482e-ae21-f72c827d0f5a",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "c99dcd4b-06a9-4d4f-b9cd-0755ffcdfd6b",
+      "code": "2448A024",
+      "name": "Vũ Thúy Sơn",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "44959e0f-2e18-4ff4-962c-505e502fb33a",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "9955f7b1-1a9e-4183-a582-4fed4c8deab8",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "76fb11e6-c470-424b-9e75-dc6464491ef3",
+      "code": "2448A030",
+      "name": "Cao Xuân Chi",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "ed9954a3-9f91-4d0e-bf6f-eb787f4317dc",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "e7ae9e27-5ad9-4e84-899c-e85e39e19a77",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "417f66dd-18d9-4116-b241-48e184060c04",
+      "code": "2448A051",
+      "name": "Hoàng Hoàng Việt",
+      "class": "ITK48A",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "15530a8a-e2b9-4eb2-bb7e-46429d5d3c9f",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "564d3455-9522-4ffc-827e-4cb090f95ecd",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "2f2a6192-1cd2-488b-9655-e6da183c2a84",
+      "code": "2448B004",
+      "name": "Lâm Thúy An",
+      "class": "ITK48B",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "3daa82d4-c953-4023-aed4-8bfe02a69bd1",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "4b6b4c95-3216-4013-a510-e414365c141b",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "b0f34f15-f991-46b2-9690-52e5498a6fad",
+      "code": "2448B022",
+      "name": "Trịnh Tuấn Khanh",
+      "class": "ITK48B",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "3331fb61-66ea-4046-8f19-96a02e04e73b",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "cbe9920d-a60d-4bab-8a65-128ae876a91c",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "4a80c580-9039-4112-b7c7-ac563cdc5751",
+      "code": "2448B026",
+      "name": "Đoàn Mai Vỹ",
+      "class": "ITK48B",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "91b34dfe-1343-47c5-b9b8-f81706276f32",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "f9c28d92-5842-443e-aec1-ed666bb50663",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "086c7d2b-2c13-452b-88ea-2ee17fd1c553",
+      "code": "2448B033",
+      "name": "Đoàn Đức Lâm",
+      "class": "ITK48B",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "f1cc26f6-be87-40e4-bb36-9df9690609e6",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "40ed2e82-2942-446b-b4c4-1e70998a5572",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    },
+    {
+      "studentId": "b44d97fa-dd35-40a1-a084-c625e2f06c56",
+      "code": "2448B048",
+      "name": "Cao Hoàng Phong",
+      "class": "ITK48B",
+      "program": "CQ24CT",
+      "warningTerm1": "HK02 (2024-2025)",
+      "warningTerm2": "HK01 (2025-2026)",
+      "firstDecision": [
+        {
+          "id": "abe90cd2-6f05-4f13-a5d5-a9aa612a6b08",
+          "number": "1209/QÐ-ÐHÐL_12092025",
+          "signedAt": "2025-09-12T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK 2, 2024-2025)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "secondDecision": [
+        {
+          "id": "55cf9ab6-a4b3-4e1e-b858-80fc9656a3cc",
+          "number": "340/QÐ-ÐHÐL_03042026",
+          "signedAt": "2026-04-03T00:00:00.000Z",
+          "text": "Cảnh báo học vụ(HK1, 2025-2026)",
+          "basis": "EXPLICIT"
+        }
+      ],
+      "consecutiveWarningsBefore": 2,
+      "followUpTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "followUpTerm": "HK02 (2025-2026)",
+      "followUpIsCurrent": false,
+      "allOfferingCount": 0,
+      "positiveCreditOfferings": 0,
+      "academicOfferings": 0,
+      "summaryPresent": false,
+      "summaryAcademicCredits": 0,
+      "zeroRegistrationCategory": "NO_OFFERINGS",
+      "sourceRecords": [],
+      "followUpAlsoHasWarning": false,
+      "exclusions": [],
+      "needsPriorityReview": true,
+      "relevantOtherDecisions": []
+    }
+  ],
+  "readOnly": true,
+  "apiCheckedAt": "2026-10-12T03:27:06.458Z",
+  "apiChecks": [
+    {
+      "code": "2246B029",
+      "name": "Trịnh Minh Thiện",
+      "apiDecisionRows": 4,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 3,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [
+        {
+          "code": "SHCD-CD1",
+          "name": "Chuyên đề 1",
+          "credits": "0"
+        },
+        {
+          "code": "SHCD-CD2",
+          "name": "Chuyên đề 2",
+          "credits": "0"
+        },
+        {
+          "code": "SHCD-CD3",
+          "name": "Chuyên đề 3",
+          "credits": "0"
+        }
+      ],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2347A049",
+      "name": "Hà Thị Trung",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 3,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [
+        {
+          "code": "SHCD-CD1",
+          "name": "Chuyên đề 1",
+          "credits": "0"
+        },
+        {
+          "code": "SHCD-CD2",
+          "name": "Chuyên đề 2",
+          "credits": "0"
+        },
+        {
+          "code": "SHCD-CD3",
+          "name": "Chuyên đề 3",
+          "credits": "0"
+        }
+      ],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2347C046",
+      "name": "Lâm Tuấn Trang",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448A001",
+      "name": "Lý Ngọc Tùng",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448A009",
+      "name": "Trương Thị Hải",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448A010",
+      "name": "Đinh Xuân Tuấn",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448A024",
+      "name": "Vũ Thúy Sơn",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448A030",
+      "name": "Cao Xuân Chi",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448A051",
+      "name": "Hoàng Hoàng Việt",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448B004",
+      "name": "Lâm Thúy An",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448B022",
+      "name": "Trịnh Tuấn Khanh",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448B026",
+      "name": "Đoàn Mai Vỹ",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448B033",
+      "name": "Đoàn Đức Lâm",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    },
+    {
+      "code": "2448B048",
+      "name": "Cao Hoàng Phong",
+      "apiDecisionRows": 3,
+      "officialDecisionNumbersMatched": [
+        "1209/QÐ-ÐHÐL_12092025",
+        "340/QÐ-ÐHÐL_03042026"
+      ],
+      "allRequiredDecisionsPresent": true,
+      "followUpRows": 0,
+      "positiveCreditRows": 0,
+      "academicRows": 0,
+      "sourceMatchesStoredRegistration": true,
+      "rows": [],
+      "otherDecisionRowsToCheck": 0,
+      "status": "CHECKED"
+    }
+  ],
+  "apiSuccessfulStudents": 14,
+  "apiConfirmedNoPositiveCreditRegistration": 14
+}
