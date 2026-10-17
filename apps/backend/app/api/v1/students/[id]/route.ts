@@ -2,8 +2,9 @@ import { NextRequest } from "next/server";
 import { StudentsService } from "@/lib/services/students";
 import { jsonResponse, errorResponse } from "@/lib/utils/api-response";
 import { inaccessibleStudentTargetIndexes, requireStudentPermission } from "@/lib/auth/data-scope";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 import { recordAudit } from "@/lib/services/audit";
+import { hasPermission } from "@/lib/auth/types";
 
 export async function GET(
   req: NextRequest,
@@ -17,7 +18,8 @@ export async function GET(
     if (!student) {
       return errorResponse("Student not found", "NOT_FOUND", 404);
     }
-    return jsonResponse(student);
+    const { cumulative, termSummaries, ...profile } = student;
+    return jsonResponse(hasPermission(auth.actor, "grade.read") ? { ...profile, cumulative, termSummaries } : profile);
   } catch (err) {
     console.error("Get student error:", err);
     return errorResponse("Internal server error", "INTERNAL_ERROR", 500);
@@ -32,7 +34,7 @@ export async function PATCH(
     const { id } = await params;
     const auth = await requireStudentPermission(req, id, "student.update");
     if (!auth.authorized) return auth.response;
-    const body = await readJsonBody<Record<string, unknown>>(req);
+    const body = await readJsonObject<Record<string, unknown>>(req);
     const current = await StudentsService.getById(id);
     if (!current) return errorResponse("Student not found", "NOT_FOUND", 404);
     const target = {

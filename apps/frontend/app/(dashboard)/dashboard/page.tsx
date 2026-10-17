@@ -127,7 +127,7 @@ export default function DashboardPage() {
         const response = await apiFetch(`/api/v1/dashboard/summary?${params.toString()}`, { signal: controller.signal });
         if (!response.ok) {
           const payload = await response.json().catch(() => null);
-          throw new Error(payload?.error?.message || `Không thể tải dữ liệu tổng quan (HTTP ${response.status})`);
+          throw new Error(payload?.error?.message || "Không thể tải dữ liệu tổng quan. Vui lòng thử lại.");
         }
         const data = await response.json();
         setSummaryData(data);
@@ -641,7 +641,7 @@ export default function DashboardPage() {
               <h3 className="text-sm font-bold text-slate-900" style={{ fontFamily: "Be Vietnam Pro, sans-serif" }}>
                 Tiến độ Hoàn thành CTĐT
               </h3>
-              <p className="text-xs text-slate-500">Tỷ lệ đúng tiến độ / chậm tiến độ (%)</p>
+              <p className="text-xs text-slate-500">{summaryData?.dataContext?.progress?.label} · {summaryData?.dataContext?.progress?.periodLabel}</p>
             </div>
 
             {!isClassAdvisor && (
@@ -692,6 +692,8 @@ export default function DashboardPage() {
                   <Legend wrapperStyle={{ fontSize: 12, paddingTop: 4 }} />
                   <Bar dataKey="pass" name="Đúng tiến độ" stackId="a" fill={THEME_COLORS.green} maxBarSize={36} barSize={isClassAdvisor ? 28 : undefined} />
                   <Bar dataKey="fail" name="Chậm tiến độ" stackId="a" fill={THEME_COLORS.red} maxBarSize={36} barSize={isClassAdvisor ? 28 : undefined} />
+                  <Bar dataKey="pending" name="Chờ kết quả" stackId="a" fill={THEME_COLORS.yellow} maxBarSize={36} />
+                  <Bar dataKey="error" name="Chưa thể kết luận / chưa đến kỳ đánh giá" stackId="a" fill={THEME_COLORS.slate} maxBarSize={36} />
                 </BarChart>
               </ResponsiveContainer>
             )}

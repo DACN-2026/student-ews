@@ -46,15 +46,20 @@ test("K47 summer legacy aliases group one debt obligation without deleting attem
   assert.equal(calculateAcademicDebt([failed("20TN1202", 4), passed("TN1008D", 4)], courses, "CQ24CT").accumulatedDebtCredits, 4);
 });
 
-test("advanced course in the base catalog is review evidence, never an automatic PM obligation or basic-course alias", () => {
+test("pending and failed base-catalog courses outside the current curriculum never create current-program debt", () => {
   const courses = [course("20CT1201", 3, "mandatory", 3)];
   const advanced = { ...course("20CT3112D", 3, "mandatory", 6), courseName: "Cấu trúc dữ liệu và thuật giải nâng cao", catalogProgramCode: "CQ22CT" };
   const attempts = [passed("20CT1201"), { courseCode: "20CT3112D", credits: 3, notScore: true, academicYear: "2024-2025", termCode: "HK02" }];
   const result = calculateAcademicDebt(attempts, courses, "CQ22CT-PM", [advanced]);
   assert.equal(result.accumulatedDebtCredits, 0);
-  assert.equal(result.dataStatus, "PARTIAL");
-  assert.equal(result.reasonCode, "CURRICULUM_SCOPE_REQUIRES_VERIFICATION");
-  assert.deepEqual(result.curriculumReviewCourses, [{ courseCode: "20CT3112D", courseName: advanced.courseName, credits: 3, catalogProgramCode: "CQ22CT", outcome: "pending", academicYear: "2024-2025", termCode: "HK02" }]);
+  assert.equal(result.dataStatus, "COMPLETE");
+  assert.equal(result.reasonCode, null);
+  assert.deepEqual(result.curriculumReviewCourses ?? [], []);
+  assert.equal(result.pendingCourses?.[0].courseCode, "20CT3112D");
+  const finalResult = calculateAcademicDebt([passed("20CT1201"), failed("20CT3112D")], courses, "CQ22CT-PM", [advanced]);
+  assert.equal(finalResult.dataStatus, "COMPLETE");
+  assert.equal(finalResult.reasonCode, null);
+  assert.equal(finalResult.accumulatedDebtCredits, 0);
   assert.equal(courses.length, 1);
   const oldMajor = [failed("20HN1201"), { courseCode: "HN2103D", credits: 3, notScore: true }];
   assert.deepEqual(calculateAcademicDebt(oldMajor, courses, "CQ22CT-PM", [advanced]), calculateAcademicDebt(oldMajor, courses, "CQ22CT-PM"));
@@ -253,10 +258,10 @@ test("summer pass of the corresponding elective settles its own F even without s
   assert.equal(original.letterCode,"F");
 });
 
-test("pending and VT alternatives cannot generate surplus credits", () => {
+test("pending and unpassed VT alternatives cannot generate surplus credits", () => {
   const courses=[...hk4(),course("20QT0001",3,"elective",3)];
   const result=calculateAcademicDebt([...mandatoryPasses(courses),failed("20QT0001"),failed("20NV0002"),passed("20QT0006"),
-    {...passed("20SP0001"),specialCode:"VT",scoreStatus:"pending",notScore:true}],courses,"CQ22CT-PM");
+    {...passed("20SP0001"),isPass:false,specialCode:"VT",scoreStatus:"pending",notScore:true}],courses,"CQ22CT-PM");
   assert.equal(result.accumulatedDebtCredits,3);
   assert.equal(result.semesterSurpluses?.find(row=>row.semesterNo===4)?.surplusCredits,0);
   assert.deepEqual(result.replacements,[]);
@@ -302,13 +307,13 @@ test("pending attempts preserve confirmed debt and passes without making the deb
   }
   assert.equal(calculateAcademicDebt([{courseCode:"20CT4102D",credits:3,scoreStatus:"unknown"}], courses, "CQ22CT-PM").dataStatus, "PARTIAL");
 });
-test("VT cannot create F debt and a later confirmed pass settles its unresolved history", () => {
+test("VT with source IsPass=false creates one debt obligation and a later pass settles it", () => {
   const courses = [course("20CT4102D",3,"mandatory")];
   const vt = { ...failed("20CT4102D"), specialCode: "VT", scoreStatus: "special", score4: null, letterCode: null };
   const debt = calculateAcademicDebt([vt], courses, "CQ22CT-PM");
-  assert.equal(debt.accumulatedDebtCredits, 0);
-  assert.equal(debt.dataStatus, "PARTIAL");
-  assert.equal(debt.reasonCode, "EXAM_ABSENCE_REQUIRES_VERIFICATION");
+  assert.equal(debt.accumulatedDebtCredits, 3);
+  assert.equal(debt.dataStatus, "COMPLETE");
+  assert.equal(debt.reasonCode, null);
   const settled = calculateAcademicDebt([vt,passed("20CT4102D")], courses, "CQ22CT-PM");
   assert.equal(settled.dataStatus, "COMPLETE");
   assert.equal(settled.accumulatedDebtCredits, 0);

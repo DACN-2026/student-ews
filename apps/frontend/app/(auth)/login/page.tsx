@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
+import { safeNextPath } from "@/lib/safe-next-path";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function LoginPage() {
 
     try {
       await login({ username, password });
-      router.push("/dashboard");
+      router.replace(safeNextPath(new URLSearchParams(window.location.search).get("next")));
     } catch (err: unknown) {
       setErrorMessage(err instanceof Error ? err.message : "Tên đăng nhập hoặc mật khẩu không chính xác");
     } finally {
@@ -78,7 +79,7 @@ export default function LoginPage() {
           </h2>
 
           {errorMessage && (
-            <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
+            <div role="alert" className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
                 <line x1="12" y1="8" x2="12" y2="12" />
@@ -90,12 +91,17 @@ export default function LoginPage() {
 
           <form onSubmit={handleRealLogin} className="space-y-4">
             <div>
-              <label className="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider block mb-1.5">
+              <label htmlFor="login-username" className="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider block mb-1.5">
                 Tên đăng nhập
               </label>
               <div className="relative">
                 <input
                   type="text"
+                  id="login-username"
+                  name="username"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -112,12 +118,15 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider block mb-1.5">
+              <label htmlFor="login-password" className="text-xs text-[var(--color-text-secondary)] font-semibold uppercase tracking-wider block mb-1.5">
                 Mật khẩu
               </label>
               <div className="relative">
                 <input
                   type="password"
+                  id="login-password"
+                  name="password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

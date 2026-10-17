@@ -56,7 +56,7 @@ test("reported HK1-HK6 rows total 107 earned / 98 planned, including extra passe
   assert.equal(result.scheduleProgress.expectedCreditsToDate,98);
   assert.equal(result.scheduleProgress.earnedCreditsToDate,107);
   assert.equal(result.scheduleProgress.creditDifference,9);
-  assert.equal(result.scheduleProgress.creditDifferenceText,"Học vượt +9 TC");
+  assert.equal(result.scheduleProgress.creditDifferenceText,"Cao hơn kế hoạch 9 TC");
   assert.deepEqual(semesterMilestoneCredits(result.semesters,6), {
     expectedCreditsToDate:98, earnedCreditsToDate:107, creditDifference:9,
   });

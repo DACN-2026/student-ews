@@ -1,6 +1,7 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { DecisionsService } from "@/lib/services/decisions";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 import { errorResponse, jsonResponse } from "@/lib/utils/api-response";
 import { recordAudit } from "@/lib/services/audit";
 
@@ -13,9 +14,11 @@ function numericId(value: string): number | null {
 
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
+    const access = await requireApiPermission(request);
+    if (!access.authorized) return access.response;
     const id = numericId((await params).id);
     if (!id) return errorResponse("Invalid decision type id", "INVALID_ID", 400);
-    const body = await readJsonBody<{ name?: string; decisionName?: string; category?: string; isActive?: boolean }>(request);
+    const body = await readJsonObject<{ name?: string; decisionName?: string; category?: string; isActive?: boolean }>(request);
     return jsonResponse(await DecisionsService.updateType(id, {
       decisionName: body.name ?? body.decisionName,
       category: body.category,
@@ -28,6 +31,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
+    const access = await requireApiPermission(request);
+    if (!access.authorized) return access.response;
     const id = numericId((await params).id);
     if (!id) return errorResponse("Invalid decision type id", "INVALID_ID", 400);
     await DecisionsService.removeType(id);

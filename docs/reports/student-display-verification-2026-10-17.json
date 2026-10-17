@@ -1,0 +1,833 @@
+{
+  "checkedAt": "2026-10-17T07:07:30.357Z",
+  "sourceFingerprint": [
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    },
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    }
+  ],
+  "sourceUnchanged": true,
+  "warningStudents": 622,
+  "warningGpaDifferences": 0,
+  "latestGraduationScopes": 7,
+  "graduationStudents": 622,
+  "inferredWholeCourseScoresRemoved": 622,
+  "activeStandardCompletionScopes": 40,
+  "mappingReviewResults": 378,
+  "mappingReviewStudents": 378,
+  "mappingReviewScopes": [
+    {
+      "cohort": "K47",
+      "program": "CQ23CT-PM",
+      "period": "HK01 2026-2027",
+      "issues": [
+        "Học phần không thuộc CTĐT nhưng có trong kế hoạch: 20CT4103"
+      ]
+    },
+    {
+      "cohort": "K46",
+      "program": "CQ22CT-PM",
+      "period": "HK01 2026-2027",
+      "issues": [
+        "Học phần bắt buộc chưa có trong kế hoạch: 20CT4201D",
+        "Học phần bắt buộc chưa có trong kế hoạch: 20CT4202D",
+        "Học phần không thuộc CTĐT nhưng có trong kế hoạch: 20CT4201",
+        "Học phần không thuộc CTĐT nhưng có trong kế hoạch: 20CT4202"
+      ]
+    },
+    {
+      "cohort": "K47",
+      "program": "CQ23CT-MMT",
+      "period": "HK01 2026-2027",
+      "issues": [
+        "Học phần bắt buộc chưa có trong kế hoạch: 20CT3220D",
+        "Học phần không thuộc CTĐT nhưng có trong kế hoạch: 20CT3220"
+      ]
+    },
+    {
+      "cohort": "K48",
+      "program": "CQ24CT",
+      "period": "HK01 2026-2027",
+      "issues": [
+        "Học kỳ lộ trình 5 chưa đủ tín chỉ tự chọn: 0/3",
+        "Học phần không thuộc CTĐT nhưng có trong kế hoạch: 20CT3107",
+        "Học phần không thuộc CTĐT nhưng có trong kế hoạch: 20CT3108"
+      ]
+    },
+    {
+      "cohort": "K46",
+      "program": "CQ22CT-MMT",
+      "period": "HK01 2026-2027",
+      "issues": [
+        "Học phần bắt buộc chưa có trong kế hoạch: 20CT4201D",
+        "Học phần bắt buộc chưa có trong kế hoạch: 20CT4202D",
+        "Học phần không thuộc CTĐT nhưng có trong kế hoạch: 20CT4201",
+        "Học phần không thuộc CTĐT nhưng có trong kế hoạch: 20CT4202"
+      ]
+    }
+  ],
+  "retryEvidence": [
+    {
+      "course_groups": 1141,
+      "students": 310
+    }
+  ],
+  "cases": [
+    {
+      "studentCode": "2246B045",
+      "preservedAttempts": 68
+    },
+    {
+      "studentCode": "2347A048",
+      "preservedAttempts": 38
+    },
+    {
+      "studentCode": "2448A025",
+      "preservedAttempts": 29
+    },
+    {
+      "studentCode": "2549A055",
+      "preservedAttempts": 23
+    },
+    {
+      "studentCode": "2347A052",
+      "preservedAttempts": 0
+    }
+  ],
+  "apiChecks": [
+    {
+      "base": "http://localhost:3001",
+      "resource": "profile",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "grade-attempts",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "grade-summary",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "conduct",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "decisions",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "fee-policies",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "registrations",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "dashboard",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "training-progress",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "warning-overview",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "graduation-student",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "profile",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "grade-attempts",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "grade-summary",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "conduct",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "decisions",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "fee-policies",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "registrations",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "dashboard",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "training-progress",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "warning-overview",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "graduation-student",
+      "status": 200,
+      "studentCode": "2246B045"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "profile",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "grade-attempts",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "grade-summary",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "conduct",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "decisions",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "fee-policies",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "registrations",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "dashboard",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "training-progress",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "warning-overview",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "graduation-student",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "profile",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "grade-attempts",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "grade-summary",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "conduct",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "decisions",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "fee-policies",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "registrations",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "dashboard",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "training-progress",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "warning-overview",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "graduation-student",
+      "status": 200,
+      "studentCode": "2347A048"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "profile",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "grade-attempts",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "grade-summary",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "conduct",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "decisions",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "fee-policies",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "registrations",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "dashboard",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "training-progress",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "warning-overview",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "graduation-student",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "profile",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "grade-attempts",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "grade-summary",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "conduct",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "decisions",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "fee-policies",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "registrations",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "dashboard",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "training-progress",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "warning-overview",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "graduation-student",
+      "status": 200,
+      "studentCode": "2448A025"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "profile",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "grade-attempts",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "grade-summary",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "conduct",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "decisions",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "fee-policies",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "registrations",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "dashboard",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "training-progress",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "warning-overview",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "graduation-student",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "profile",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "grade-attempts",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "grade-summary",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "conduct",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "decisions",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "fee-policies",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "registrations",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "dashboard",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "training-progress",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "warning-overview",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "graduation-student",
+      "status": 200,
+      "studentCode": "2549A055"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "profile",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "grade-attempts",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "grade-summary",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "conduct",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "decisions",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "fee-policies",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "registrations",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "dashboard",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "training-progress",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "warning-overview",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "profile",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "grade-attempts",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "grade-summary",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "conduct",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "decisions",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "fee-policies",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "registrations",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "dashboard",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "training-progress",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "warning-overview",
+      "status": 200,
+      "studentCode": "2347A052"
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "dashboard-summary",
+      "status": 200
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "student-list",
+      "status": 200
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "warning-report",
+      "status": 200
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "graduation-list",
+      "status": 200
+    },
+    {
+      "base": "http://localhost:3001",
+      "resource": "student-profile-pdf",
+      "status": 200
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "dashboard-summary",
+      "status": 200
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "student-list",
+      "status": 200
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "warning-report",
+      "status": 200
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "graduation-list",
+      "status": 200
+    },
+    {
+      "base": "http://localhost:3000",
+      "resource": "student-profile-pdf",
+      "status": 200
+    }
+  ],
+  "tests": {
+    "passed": 445,
+    "skipped": 1
+  },
+  "typecheck": "PASS",
+  "lintErrors": 0,
+  "existingLintWarnings": 16,
+  "productionBuild": "PASS",
+  "visualBrowserReview": "NOT_PERFORMED",
+  "smoke": "PASS"
+}

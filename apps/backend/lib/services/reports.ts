@@ -42,8 +42,8 @@ type WarningStudent = {
   academicYear: string | null;
   termCode: string | null;
   assessed: boolean;
-  dataStatus: WarningDataStatus;
-  presentationState: PersistedBusinessStatus;
+  dataStatus: WarningDataStatus | "NOT_APPLICABLE";
+  presentationState: PersistedBusinessStatus | "NOT_APPLICABLE";
   hasPersistedResult: boolean;
   assessmentIssue: string | null;
   assessmentCategory: "APPROVED_LEAVE" | "LEFT_PROGRAM" | "BEFORE_ADMISSION" | "PENDING";
@@ -386,7 +386,7 @@ export class ReportsService {
       const dataStatus = result ? warningDataStatusFromStored(result.dataError) : "INSUFFICIENT";
       const presentationState = result
         ? persistedBusinessStatus(result, dataStatus)
-        : "INSUFFICIENT_DATA";
+        : exclusion ? "NOT_APPLICABLE" : "INSUFFICIENT_DATA";
       const severity: WarningLevel = presentationState === "HIGH_RISK" || presentationState === "VERIFY_REQUIRED"
         ? "high"
         : presentationState === "MONITORING" ? "medium" : "none";
@@ -405,8 +405,8 @@ export class ReportsService {
         resolvedActions: resolvedCounts.get(student.id) || 0,
         academicYear: selectedYear?.sYearCode || null,
         termCode: selectedTerm?.sTermCode || null,
-        assessed: presentationState !== "INSUFFICIENT_DATA",
-        dataStatus,
+        assessed: Boolean(result) && presentationState !== "INSUFFICIENT_DATA",
+        dataStatus: exclusion ? "NOT_APPLICABLE" : dataStatus,
         presentationState,
         hasPersistedResult: Boolean(result),
         regulatoryAssessment: regulatoryAssessment(result ? rulesByResult.get(result.id) : undefined),

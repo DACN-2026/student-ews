@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { FeePoliciesService } from "@/lib/services/fee-policies";
 import { jsonResponse, errorResponse } from "@/lib/utils/api-response";
-import { apiErrorResponse } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 import { requireStudentPermission } from "@/lib/auth/data-scope";
 import { recordAudit } from "@/lib/services/audit";
 
@@ -30,7 +30,7 @@ export async function PATCH(
     const { id, feePolicyId } = await params;
     const auth = await requireStudentPermission(req, id, "fee_policy.update");
     if (!auth.authorized) return auth.response;
-    const body = await req.json();
+    const body = await readJsonObject<Record<string, unknown>>(req);
     const updated = await FeePoliciesService.update(id, feePolicyId, body);
     return jsonResponse(updated);
   } catch (err) {

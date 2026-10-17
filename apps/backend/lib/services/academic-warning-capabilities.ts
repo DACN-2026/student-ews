@@ -172,7 +172,7 @@ export function calculateAssessmentTermFailedCredits(
       else if (outcome !== "passed") { unresolvedOutcomes += 1; unresolvedAbsences += 1; }
       continue;
     }
-    if (!attempt.hasFinalGrade || attempt.isPass == null || attempt.notScore === true || attempt.scoreStatus === "pending") {
+    if (attempt.isPass == null || attempt.notScore === true || attempt.scoreStatus === "pending" || (!attempt.hasFinalGrade && attempt.notScore !== false)) {
       unresolvedOutcomes += 1;
       continue;
     }

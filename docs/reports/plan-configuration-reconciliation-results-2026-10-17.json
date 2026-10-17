@@ -1,0 +1,382 @@
+{
+  "checkedAt": "2026-10-17T07:20:00.762Z",
+  "sourceAndWarningsUnchanged": true,
+  "before": [
+    {
+      "source": "catalog",
+      "count": 144,
+      "hash": "0cc2b692235dd18012ffdbc8c0955980"
+    },
+    {
+      "source": "curriculum",
+      "count": 593,
+      "hash": "83d42abafe53ba7407aae8f7b6048e35"
+    },
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    },
+    {
+      "source": "programs",
+      "count": 11,
+      "hash": "77ba90e3cfb1996872d88b6684576cc9"
+    },
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    },
+    {
+      "source": "warning_runs",
+      "count": 984,
+      "hash": "a4da219e3e52d6364d055c795472f501"
+    },
+    {
+      "source": "warnings",
+      "count": 59997,
+      "hash": "119a7fa4960d42bd3053af4d6ee5d9ac"
+    }
+  ],
+  "after": [
+    {
+      "source": "catalog",
+      "count": 144,
+      "hash": "0cc2b692235dd18012ffdbc8c0955980"
+    },
+    {
+      "source": "curriculum",
+      "count": 593,
+      "hash": "83d42abafe53ba7407aae8f7b6048e35"
+    },
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    },
+    {
+      "source": "programs",
+      "count": 11,
+      "hash": "77ba90e3cfb1996872d88b6684576cc9"
+    },
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    },
+    {
+      "source": "warning_runs",
+      "count": 984,
+      "hash": "a4da219e3e52d6364d055c795472f501"
+    },
+    {
+      "source": "warnings",
+      "count": 59997,
+      "hash": "119a7fa4960d42bd3053af4d6ee5d9ac"
+    }
+  ],
+  "previews": [
+    {
+      "previousId": "53942236-b9d3-4501-8d18-99182cd69a28",
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "cohortCode": "K47",
+      "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "programCode": "CQ23CT-PM",
+      "assessmentAcademicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "assessmentAcademicYear": "2026-2027",
+      "assessmentTermCode": "HK01",
+      "evaluationScope": "milestone_progress",
+      "maxCurriculumSemesterNo": 7,
+      "programFinalReached": false,
+      "summary": {
+        "studentCount": 116,
+        "planCount": 2,
+        "duePlanCount": 1,
+        "coverageValid": true,
+        "evaluationScope": "milestone_progress"
+      },
+      "blockers": []
+    },
+    {
+      "previousId": "31f3c629-2380-4d04-96d4-d15a8b2e5c3b",
+      "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "cohortCode": "K46",
+      "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "programCode": "CQ22CT-PM",
+      "assessmentAcademicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "assessmentAcademicYear": "2026-2027",
+      "assessmentTermCode": "HK01",
+      "evaluationScope": "program_completion",
+      "maxCurriculumSemesterNo": 9,
+      "programFinalReached": true,
+      "summary": {
+        "studentCount": 84,
+        "planCount": 1,
+        "duePlanCount": 1,
+        "coverageValid": true,
+        "evaluationScope": "program_completion"
+      },
+      "blockers": []
+    },
+    {
+      "previousId": "5595a587-57ef-4bac-860d-eb6bc4933d1c",
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "cohortCode": "K47",
+      "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "programCode": "CQ23CT-MMT",
+      "assessmentAcademicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "assessmentAcademicYear": "2026-2027",
+      "assessmentTermCode": "HK01",
+      "evaluationScope": "milestone_progress",
+      "maxCurriculumSemesterNo": 7,
+      "programFinalReached": false,
+      "summary": {
+        "studentCount": 47,
+        "planCount": 2,
+        "duePlanCount": 1,
+        "coverageValid": true,
+        "evaluationScope": "milestone_progress"
+      },
+      "blockers": []
+    },
+    {
+      "previousId": "92ea17ba-abd3-4b63-965f-4cc00ab4346a",
+      "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "cohortCode": "K48",
+      "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "programCode": "CQ24CT",
+      "assessmentAcademicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "assessmentAcademicYear": "2026-2027",
+      "assessmentTermCode": "HK01",
+      "evaluationScope": "milestone_progress",
+      "maxCurriculumSemesterNo": 5,
+      "programFinalReached": false,
+      "summary": {
+        "studentCount": 111,
+        "planCount": 1,
+        "duePlanCount": 1,
+        "coverageValid": true,
+        "evaluationScope": "milestone_progress"
+      },
+      "blockers": []
+    },
+    {
+      "previousId": "c132fc21-0027-4824-a1da-4ea7ce416760",
+      "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "cohortCode": "K46",
+      "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "programCode": "CQ22CT-MMT",
+      "assessmentAcademicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "assessmentAcademicYear": "2026-2027",
+      "assessmentTermCode": "HK01",
+      "evaluationScope": "program_completion",
+      "maxCurriculumSemesterNo": 9,
+      "programFinalReached": true,
+      "summary": {
+        "studentCount": 20,
+        "planCount": 1,
+        "duePlanCount": 1,
+        "coverageValid": true,
+        "evaluationScope": "program_completion"
+      },
+      "blockers": []
+    }
+  ],
+  "registrations": [
+    {
+      "planId": "24f7d421-fb81-43f9-be75-5cb4e9379574",
+      "id": "68b7d57d-16a8-4e4a-a84b-5a40c4bd38c0",
+      "totalStudents": 84,
+      "passStudents": 70,
+      "failStudents": 14,
+      "dataErrorStudents": 0
+    },
+    {
+      "planId": "54af1db6-a692-4c7b-a81e-a358deef6eea",
+      "id": "7ebaa1e3-5ab4-476e-948e-0895760c2619",
+      "totalStudents": 116,
+      "passStudents": 102,
+      "failStudents": 14,
+      "dataErrorStudents": 0
+    },
+    {
+      "planId": "7baf7a9f-2465-4eed-9f99-650db062b816",
+      "id": "7093b671-1331-4be2-a508-81d76a5ef27c",
+      "totalStudents": 111,
+      "passStudents": 88,
+      "failStudents": 23,
+      "dataErrorStudents": 0
+    },
+    {
+      "planId": "047a0b7c-c1a7-4d01-bd5f-eca06efa0d87",
+      "id": "6599ccdf-1cef-4296-9574-717c61f04013",
+      "totalStudents": 20,
+      "passStudents": 19,
+      "failStudents": 1,
+      "dataErrorStudents": 0
+    },
+    {
+      "planId": "e6278bbb-7dda-4cd8-b8d9-2d5f4ae7f112",
+      "id": "161ef1a4-3485-43ea-acc7-3834c164e41e",
+      "totalStudents": 47,
+      "passStudents": 37,
+      "failStudents": 10,
+      "dataErrorStudents": 0
+    }
+  ],
+  "completions": [
+    {
+      "previousId": "53942236-b9d3-4501-8d18-99182cd69a28",
+      "id": "c01bb4b7-73fa-4a5b-a3bb-3a0561d2db70",
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "assessmentAcademicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "totalStudents": 116,
+      "onTrackStudents": 0,
+      "behindScheduleStudents": 14,
+      "pendingResultStudents": 102,
+      "completedStudents": 0,
+      "incompleteStudents": 116,
+      "cannotDetermineStudents": 0,
+      "dataErrorStudents": 0
+    },
+    {
+      "previousId": "31f3c629-2380-4d04-96d4-d15a8b2e5c3b",
+      "id": "b1d0f93f-0934-4451-bfc9-bfdc5f3d82c7",
+      "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "assessmentAcademicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "totalStudents": 84,
+      "onTrackStudents": 0,
+      "behindScheduleStudents": 14,
+      "pendingResultStudents": 70,
+      "completedStudents": 0,
+      "incompleteStudents": 84,
+      "cannotDetermineStudents": 0,
+      "dataErrorStudents": 0
+    },
+    {
+      "previousId": "5595a587-57ef-4bac-860d-eb6bc4933d1c",
+      "id": "e0da23f8-69d4-4d5b-8e4c-14e21d66ce9e",
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "assessmentAcademicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "totalStudents": 47,
+      "onTrackStudents": 0,
+      "behindScheduleStudents": 10,
+      "pendingResultStudents": 37,
+      "completedStudents": 0,
+      "incompleteStudents": 47,
+      "cannotDetermineStudents": 0,
+      "dataErrorStudents": 0
+    },
+    {
+      "previousId": "92ea17ba-abd3-4b63-965f-4cc00ab4346a",
+      "id": "cd479e10-733b-4591-a892-b8d153d9e53c",
+      "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "assessmentAcademicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "totalStudents": 111,
+      "onTrackStudents": 0,
+      "behindScheduleStudents": 23,
+      "pendingResultStudents": 88,
+      "completedStudents": 0,
+      "incompleteStudents": 111,
+      "cannotDetermineStudents": 0,
+      "dataErrorStudents": 0
+    },
+    {
+      "previousId": "c132fc21-0027-4824-a1da-4ea7ce416760",
+      "id": "5f121b83-9b56-4fbe-a43b-a4815c5a3e78",
+      "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "assessmentAcademicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "totalStudents": 20,
+      "onTrackStudents": 0,
+      "behindScheduleStudents": 1,
+      "pendingResultStudents": 19,
+      "completedStudents": 0,
+      "incompleteStudents": 20,
+      "cannotDetermineStudents": 0,
+      "dataErrorStudents": 0
+    }
+  ],
+  "graduations": [
+    {
+      "previousId": "9f206064-326c-4e6f-8f25-1f5c228a8463",
+      "id": "343ecab8-72f5-466f-9463-621526ef59f3",
+      "totalStudents": 111,
+      "statusChanges": 0,
+      "completionRunId": "5dc1559a-61b1-40e0-aae5-0f3299e8c803"
+    },
+    {
+      "previousId": "5555d83a-8e28-4794-be76-a7504626929e",
+      "id": "c20f2022-92d7-416d-86c9-8c1a0e72a027",
+      "totalStudents": 84,
+      "statusChanges": 0,
+      "completionRunId": "4dcb6ef8-567b-4b0d-819c-8f77ca84956d"
+    },
+    {
+      "previousId": "331be104-4184-4a11-bd84-f1f133da57e6",
+      "id": "0fca4603-61ee-420a-8fd2-622b34a7fcf7",
+      "totalStudents": 20,
+      "statusChanges": 0,
+      "completionRunId": "618e1b14-8013-4467-b408-6378568955ff"
+    },
+    {
+      "previousId": "8eeab818-048e-4154-a62e-57e229af561a",
+      "id": "c061004b-8e7e-4d95-ac31-d052d93f2af2",
+      "totalStudents": 47,
+      "statusChanges": 0,
+      "completionRunId": "19879fca-a5ec-459b-b4ee-9638d5b170a4"
+    },
+    {
+      "previousId": "ef2247a8-2ff1-4b61-a947-2b46be680155",
+      "id": "b95b1b79-3dce-47c6-a257-d05b1805e942",
+      "totalStudents": 116,
+      "statusChanges": 0,
+      "completionRunId": "fc4bbd2e-5d9f-451f-8186-bfd4870f14b3"
+    }
+  ],
+  "remainingConfigurationReview": 0
+}

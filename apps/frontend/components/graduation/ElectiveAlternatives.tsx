@@ -40,7 +40,7 @@ export default function ElectiveAlternatives({ id, courseName, group }: {
           <p className="text-slate-500">Bù nợ của học kỳ khác cần tín chỉ đạt dư so với kế hoạch học kỳ. Học hè đạt lại môn tương ứng cũng giải quyết nợ; lịch sử F/VT được giữ nguyên.</p>
         </>
       ) : (
-        <p className="text-slate-600">Chưa xác định được khối tự chọn tương ứng trong CTĐT K44 của chuyên ngành này.</p>
+        <p className="text-slate-600">Chưa xác định được nhóm tự chọn tương ứng trong chương trình đào tạo của sinh viên. Liên hệ giáo vụ để kiểm tra các môn được phép chọn thay thế.</p>
       )}
     </section>
   );

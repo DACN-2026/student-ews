@@ -59,7 +59,7 @@ export async function previewCurrentTermMonitoring(studentId: string) {
     loadEarlyWarningSources([student.id], program.sProgramCode, term.id),
     loadAcademicDebt([student.id], program.id, term.id),
     calculateAcademicWarningProgressSignals({ students: [{ id: student.id }], cohortId: studentClass.cohortId,
-      trainingProgramId: program.id, assessmentTermId: term.id, programCode: program.sProgramCode }),
+      trainingProgramId: program.id, assessmentTermId: term.id, programCode: program.sProgramCode, boundary: "BEFORE_TERM" }),
   ]);
   const summary = summaries[0];
   const evaluated = evaluateQd600ForCohort({ cohortId: studentClass.cohortId, policyDefinition: definition,
@@ -78,7 +78,9 @@ export async function previewCurrentTermMonitoring(studentId: string) {
     policy: { id: policy.id, name: policy.name, version: policy.version },
     registeredCredits: attempts.reduce((sum, attempt) => sum + attempt.credits, 0),
     pendingCourses: attempts.filter(attempt => !attempt.hasFinalGrade).length,
-    failedCourses: attempts.filter(attempt => attempt.isPass === false).length,
-    note: "Theo dõi tham khảo bằng dữ liệu hiện có. Điểm chưa công bố không được tính là không đạt; kết quả này không thay thế đánh giá học kỳ đã lưu.",
+    failedCourses: attempts.filter(attempt => courseOutcome(attempt) === "failed").length,
+    note: "Theo dõi trong kỳ đối chiếu tiến độ đến trước kỳ hiện tại; không coi tín chỉ đang học là chậm tiến độ. Kết quả đạt/không đạt dùng API Trường, điểm chưa công bố không bị tính thành không đạt."
+      + (progress.get(student.id)?.reasonCode === "TRAINING_PROGRESS_MAPPING_REVIEW" ? " Hệ thống còn học phần chưa hoàn tất ánh xạ; mức hiện tại chỉ phản ánh phần đã đối chiếu." : "")
+      + " Kết quả này không thay thế đánh giá học kỳ đã lưu.",
     capturedAt: new Date().toISOString() };
 }

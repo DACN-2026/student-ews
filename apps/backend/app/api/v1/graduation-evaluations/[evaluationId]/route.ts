@@ -9,7 +9,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { evaluationId } = await params;
     const auth = await requireGraduationEvaluationPermission(request, evaluationId, "graduation.read");
     if (!auth.authorized) return auth.response;
-    const evaluation = await GraduationEvaluationsService.getEvaluation(evaluationId);
+    const evaluation = await GraduationEvaluationsService.getEvaluation(evaluationId, auth.actor);
     if (!evaluation) return errorResponse("Graduation evaluation not found", "NOT_FOUND", 404);
     return jsonResponse(evaluation);
   } catch (error) {

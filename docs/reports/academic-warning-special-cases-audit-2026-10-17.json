@@ -1,0 +1,1051 @@
+{
+  "auditedAt": "2026-10-17T01:50:12.986Z",
+  "mode": "READ_ONLY_LOCAL_SOURCE_SNAPSHOT_AND_SYNTHETIC_REPRODUCTIONS",
+  "freshSchoolApiFetch": false,
+  "sourceAuthority": "School API is authoritative; findings concern SEWS interpretation and presentation.",
+  "selectedPolicyEarlyWarningSettings": {
+    "termGpaBelow": 2,
+    "cumulativeGpaBelow": null,
+    "termGpaDrop": 1,
+    "cumulativeGpaDrop": 0.5,
+    "failedCreditRatioFrom": 0.3,
+    "repeatedFailuresFrom": null,
+    "conductScoreBelow": null,
+    "conductScoreDrop": null,
+    "recognizedConductStatusIds": [],
+    "debtMonitoringFrom": 13,
+    "debtHighRiskFrom": 19,
+    "progressMonitoringFrom": 4,
+    "progressHighRiskFrom": 12
+  },
+  "counts": {
+    "activeLatestOfficialResults": 622,
+    "resultPeriods": {
+      "HK02 (2025-2026)": 622
+    },
+    "gpaDifferences": 0,
+    "rulesNotEvaluatedStudents": 19,
+    "latestStatuses": {
+      "HIGH_RISK": 179,
+      "NORMAL": 298,
+      "MONITORING": 145
+    },
+    "notEvaluatedReasons": {
+      "QD600_ACCUMULATED_DEBT_CREDITS:UNRESOLVED_HISTORICAL_ATTEMPTS": 2,
+      "QD600_TERM_GPA:SOURCE_GPA_EMPTY_WITH_VT": 11,
+      "EARLY_LOW_TERM_GPA:SOURCE_GPA_EMPTY_WITH_VT": 11,
+      "EARLY_TERM_GPA_DROP:SOURCE_GPA_EMPTY_WITH_VT": 11,
+      "QD600_TERM_GPA:FIRST_MAIN_SEMESTER_UNRESOLVED": 1,
+      "QD600_ACCUMULATED_DEBT_CREDITS:UNSCOPED_HISTORICAL_ATTEMPTS": 1,
+      "EARLY_TERM_GPA_DROP:PREVIOUS_MAIN_TERM_GPA_MISSING": 2,
+      "EARLY_CUMULATIVE_GPA_DROP:PREVIOUS_CUMULATIVE_GPA_MISSING": 1,
+      "QD600_ACCUMULATED_DEBT_CREDITS:CURRICULUM_SCOPE_REQUIRES_VERIFICATION": 1,
+      "QD600_FAILED_CREDIT_RATIO:SOURCE_PERIOD_CONFLICT": 2,
+      "QD600_TERM_GPA:SOURCE_PERIOD_CONFLICT": 2,
+      "EARLY_LOW_TERM_GPA:SOURCE_PERIOD_CONFLICT": 2,
+      "EARLY_TERM_GPA_DROP:SOURCE_PERIOD_CONFLICT": 2,
+      "EARLY_FAILED_CREDIT_RATIO:SOURCE_PERIOD_CONFLICT": 2,
+      "QD600_CUMULATIVE_GPA_BY_YEAR:SOURCE_PERIOD_CONFLICT": 1,
+      "QD600_CUMULATIVE_GPA_NEAR_THRESHOLD:SOURCE_PERIOD_CONFLICT": 1,
+      "EARLY_CUMULATIVE_GPA_DROP:SOURCE_PERIOD_CONFLICT": 1
+    },
+    "vtAttempts": 1239,
+    "vtOutcomeDifferences": 0,
+    "vtDifferencesBySourceStatus": {},
+    "rawPassNoNumeric": 0,
+    "academicUnscopedStudents": 2,
+    "repeatedFailuresVtCandidates": 18,
+    "decisionEffects": {
+      "UNCLASSIFIED_OR_REVOKED": 731,
+      "ACADEMIC_WARNING": 171,
+      "RETURNED": 4,
+      "APPROVED_LEAVE": 5,
+      "LEFT_PROGRAM": 1
+    },
+    "departureMaterializationMismatches": 0,
+    "nameOnlyPassingOfferingCandidates": 3,
+    "nameOnlyPassingStudents": 1
+  },
+  "departureMaterializationMismatches": [],
+  "nameOnlyCandidates": [
+    {
+      "studentCode": "2246B045",
+      "sourceProgram": "CQ22CT-PM",
+      "currentProgram": "CQ22CT-PM",
+      "sourceCourse": "20HN1104",
+      "targetCourse": "20CT2103",
+      "sourceCredits": 3,
+      "targetCredits": 3
+    },
+    {
+      "studentCode": "2246B045",
+      "sourceProgram": "CQ22CT-PM",
+      "currentProgram": "CQ22CT-PM",
+      "sourceCourse": "LH1001D",
+      "targetCourse": "20LH0001",
+      "sourceCredits": 3,
+      "targetCredits": 3
+    },
+    {
+      "studentCode": "2246B045",
+      "sourceProgram": "CQ22CT-PM",
+      "currentProgram": "CQ22CT-PM",
+      "sourceCourse": "CT2106D",
+      "targetCourse": "20CT1202",
+      "sourceCredits": 4,
+      "targetCredits": 4
+    }
+  ],
+  "livePreviewComparisons": [
+    {
+      "studentCode": "2549C049",
+      "liveProgress": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+        "expectedCreditsToDate": 29,
+        "earnedCreditsToDate": 32,
+        "latestCompletedSemester": 2,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "preview": {
+        "eligible": true,
+        "period": {
+          "id": "2616b2fa-192b-49ed-a03d-b678308c620b",
+          "label": "HK01 (2026-2027)"
+        },
+        "businessStatus": "HIGH_RISK",
+        "rules": [
+          {
+            "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+            "sourceType": "OPERATIONAL",
+            "evaluationStatus": "EVALUATED",
+            "dataStatus": "PARTIAL",
+            "observedValue": 15,
+            "thresholdValue": 12,
+            "margin": 12,
+            "isNearThreshold": false,
+            "isThresholdBreached": true,
+            "capabilityStatus": null,
+            "reasonCode": "TRAINING_PROGRESS_DEFICIT_RED",
+            "explanation": "Thiếu 15 tín chỉ so với kế hoạch đến hết học kỳ 3. Còn 5 học phần bắt buộc chưa hoàn thành (12 TC); tín chỉ tự chọn dư không thay thế các học phần này. Có 7 học phần đang học lại, cải thiện hoặc chờ điểm; chỉ sử dụng tín chỉ đã được công nhận đến mốc xét, không cộng tín chỉ của lượt học chưa đạt. Đánh giá theo phần tiến độ đã xác định; dữ liệu còn chờ kết quả hoặc cấu hình cần đối chiếu được ghi trong chi tiết.",
+            "pendingProgressCourses": [
+              {
+                "courseCode": "20CT1201",
+                "courseName": "Cấu trúc dữ liệu và thuật giải",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT2102",
+                "courseName": "Kiến trúc máy tính",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT2103",
+                "courseName": "Tiếng Anh chuyên ngành",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT3204",
+                "courseName": "Tham quan thực tế",
+                "credits": 1,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20QT0004",
+                "courseName": "Nguyên lý kế toán",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20TN2102",
+                "courseName": "Toán cao cấp B2",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "LC2101D",
+                "courseName": "Chủ nghĩa xã hội khoa học",
+                "credits": 2,
+                "context": "AWAITING_RESULT"
+              }
+            ],
+            "regulatorySource": null,
+            "articleRef": null,
+            "riskLevel": "RED",
+            "expectedCredits": 47,
+            "earnedCredits": 32,
+            "latestCompletedSemester": 3,
+            "progressStatus": "BEHIND",
+            "missingRequiredCredits": 12,
+            "missingRequiredCourses": [
+              {
+                "courseCode": "20CT1201",
+                "courseName": "Cấu trúc dữ liệu và thuật giải",
+                "credits": 3,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "20CT2102",
+                "courseName": "Kiến trúc máy tính",
+                "credits": 3,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "20CT2103",
+                "courseName": "Tiếng Anh chuyên ngành",
+                "credits": 3,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "20CT3204",
+                "courseName": "Tham quan thực tế",
+                "credits": 1,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "LC2101D",
+                "courseName": "Chủ nghĩa xã hội khoa học",
+                "credits": 2,
+                "semesterNo": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentCode": "2347C045",
+      "liveProgress": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+        "expectedCreditsToDate": 98,
+        "earnedCreditsToDate": 98,
+        "latestCompletedSemester": 6,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "preview": {
+        "eligible": true,
+        "period": {
+          "id": "2616b2fa-192b-49ed-a03d-b678308c620b",
+          "label": "HK01 (2026-2027)"
+        },
+        "businessStatus": "HIGH_RISK",
+        "rules": [
+          {
+            "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+            "sourceType": "OPERATIONAL",
+            "evaluationStatus": "EVALUATED",
+            "dataStatus": "PARTIAL",
+            "observedValue": 18,
+            "thresholdValue": 12,
+            "margin": 12,
+            "isNearThreshold": false,
+            "isThresholdBreached": true,
+            "capabilityStatus": null,
+            "reasonCode": "TRAINING_PROGRESS_DEFICIT_RED",
+            "explanation": "Thiếu 18 tín chỉ so với kế hoạch đến hết học kỳ 7. Còn 3 học phần bắt buộc chưa hoàn thành (9 TC); tín chỉ tự chọn dư không thay thế các học phần này. Có 6 học phần đang học lại, cải thiện hoặc chờ điểm; chỉ sử dụng tín chỉ đã được công nhận đến mốc xét, không cộng tín chỉ của lượt học chưa đạt. Đánh giá theo phần tiến độ đã xác định; dữ liệu còn chờ kết quả hoặc cấu hình cần đối chiếu được ghi trong chi tiết.",
+            "pendingProgressCourses": [
+              {
+                "courseCode": "20CT3201",
+                "courseName": "Phát triển ứng dụng web nâng cao",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT3202",
+                "courseName": "Đồ án chuyên ngành",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT3203",
+                "courseName": "Mẫu thiết kế",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT3205",
+                "courseName": "Phân tích và thiết kế phần mềm",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT3206",
+                "courseName": "Kiểm thử phần mềm",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT4103D",
+                "courseName": "Phát triến ứng dụng game nâng cao",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              }
+            ],
+            "regulatorySource": null,
+            "articleRef": null,
+            "riskLevel": "RED",
+            "expectedCredits": 116,
+            "earnedCredits": 98,
+            "latestCompletedSemester": 7,
+            "progressStatus": "BEHIND",
+            "missingRequiredCredits": 9,
+            "missingRequiredCourses": [
+              {
+                "courseCode": "20CT3201",
+                "courseName": "Phát triển ứng dụng web nâng cao",
+                "credits": 3,
+                "semesterNo": 7
+              },
+              {
+                "courseCode": "20CT3202",
+                "courseName": "Đồ án chuyên ngành",
+                "credits": 3,
+                "semesterNo": 7
+              },
+              {
+                "courseCode": "20CT3203",
+                "courseName": "Mẫu thiết kế",
+                "credits": 3,
+                "semesterNo": 7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentCode": "2549B004",
+      "liveProgress": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+        "expectedCreditsToDate": 29,
+        "earnedCreditsToDate": 32,
+        "latestCompletedSemester": 2,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "preview": {
+        "eligible": true,
+        "period": {
+          "id": "2616b2fa-192b-49ed-a03d-b678308c620b",
+          "label": "HK01 (2026-2027)"
+        },
+        "businessStatus": "HIGH_RISK",
+        "rules": [
+          {
+            "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+            "sourceType": "OPERATIONAL",
+            "evaluationStatus": "EVALUATED",
+            "dataStatus": "PARTIAL",
+            "observedValue": 15,
+            "thresholdValue": 12,
+            "margin": 12,
+            "isNearThreshold": false,
+            "isThresholdBreached": true,
+            "capabilityStatus": null,
+            "reasonCode": "TRAINING_PROGRESS_DEFICIT_RED",
+            "explanation": "Thiếu 15 tín chỉ so với kế hoạch đến hết học kỳ 3. Còn 5 học phần bắt buộc chưa hoàn thành (12 TC); tín chỉ tự chọn dư không thay thế các học phần này. Có 6 học phần đang học lại, cải thiện hoặc chờ điểm; chỉ sử dụng tín chỉ đã được công nhận đến mốc xét, không cộng tín chỉ của lượt học chưa đạt. Đánh giá theo phần tiến độ đã xác định; dữ liệu còn chờ kết quả hoặc cấu hình cần đối chiếu được ghi trong chi tiết.",
+            "pendingProgressCourses": [
+              {
+                "courseCode": "20CT1201",
+                "courseName": "Cấu trúc dữ liệu và thuật giải",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT2102",
+                "courseName": "Kiến trúc máy tính",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT2103",
+                "courseName": "Tiếng Anh chuyên ngành",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT3204",
+                "courseName": "Tham quan thực tế",
+                "credits": 1,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20QT0001",
+                "courseName": "Kinh tế học đại cương",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "LC2101D",
+                "courseName": "Chủ nghĩa xã hội khoa học",
+                "credits": 2,
+                "context": "AWAITING_RESULT"
+              }
+            ],
+            "regulatorySource": null,
+            "articleRef": null,
+            "riskLevel": "RED",
+            "expectedCredits": 47,
+            "earnedCredits": 32,
+            "latestCompletedSemester": 3,
+            "progressStatus": "BEHIND",
+            "missingRequiredCredits": 12,
+            "missingRequiredCourses": [
+              {
+                "courseCode": "20CT1201",
+                "courseName": "Cấu trúc dữ liệu và thuật giải",
+                "credits": 3,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "20CT2102",
+                "courseName": "Kiến trúc máy tính",
+                "credits": 3,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "20CT2103",
+                "courseName": "Tiếng Anh chuyên ngành",
+                "credits": 3,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "20CT3204",
+                "courseName": "Tham quan thực tế",
+                "credits": 1,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "LC2101D",
+                "courseName": "Chủ nghĩa xã hội khoa học",
+                "credits": 2,
+                "semesterNo": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "studentCode": "2549B063",
+      "liveProgress": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+        "expectedCreditsToDate": 29,
+        "earnedCreditsToDate": 32,
+        "latestCompletedSemester": 2,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "preview": {
+        "eligible": true,
+        "period": {
+          "id": "2616b2fa-192b-49ed-a03d-b678308c620b",
+          "label": "HK01 (2026-2027)"
+        },
+        "businessStatus": "HIGH_RISK",
+        "rules": [
+          {
+            "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+            "sourceType": "OPERATIONAL",
+            "evaluationStatus": "EVALUATED",
+            "dataStatus": "PARTIAL",
+            "observedValue": 15,
+            "thresholdValue": 12,
+            "margin": 12,
+            "isNearThreshold": false,
+            "isThresholdBreached": true,
+            "capabilityStatus": null,
+            "reasonCode": "TRAINING_PROGRESS_DEFICIT_RED",
+            "explanation": "Thiếu 15 tín chỉ so với kế hoạch đến hết học kỳ 3. Còn 5 học phần bắt buộc chưa hoàn thành (12 TC); tín chỉ tự chọn dư không thay thế các học phần này. Có 6 học phần đang học lại, cải thiện hoặc chờ điểm; chỉ sử dụng tín chỉ đã được công nhận đến mốc xét, không cộng tín chỉ của lượt học chưa đạt. Đánh giá theo phần tiến độ đã xác định; dữ liệu còn chờ kết quả hoặc cấu hình cần đối chiếu được ghi trong chi tiết.",
+            "pendingProgressCourses": [
+              {
+                "courseCode": "20CT1201",
+                "courseName": "Cấu trúc dữ liệu và thuật giải",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT2102",
+                "courseName": "Kiến trúc máy tính",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT2103",
+                "courseName": "Tiếng Anh chuyên ngành",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20CT3204",
+                "courseName": "Tham quan thực tế",
+                "credits": 1,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "20QT0004",
+                "courseName": "Nguyên lý kế toán",
+                "credits": 3,
+                "context": "AWAITING_RESULT"
+              },
+              {
+                "courseCode": "LC2101D",
+                "courseName": "Chủ nghĩa xã hội khoa học",
+                "credits": 2,
+                "context": "AWAITING_RESULT"
+              }
+            ],
+            "regulatorySource": null,
+            "articleRef": null,
+            "riskLevel": "RED",
+            "expectedCredits": 47,
+            "earnedCredits": 32,
+            "latestCompletedSemester": 3,
+            "progressStatus": "BEHIND",
+            "missingRequiredCredits": 12,
+            "missingRequiredCourses": [
+              {
+                "courseCode": "20CT1201",
+                "courseName": "Cấu trúc dữ liệu và thuật giải",
+                "credits": 3,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "20CT2102",
+                "courseName": "Kiến trúc máy tính",
+                "credits": 3,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "20CT2103",
+                "courseName": "Tiếng Anh chuyên ngành",
+                "credits": 3,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "20CT3204",
+                "courseName": "Tham quan thực tế",
+                "credits": 1,
+                "semesterNo": 3
+              },
+              {
+                "courseCode": "LC2101D",
+                "courseName": "Chủ nghĩa xã hội khoa học",
+                "credits": 2,
+                "semesterNo": 3
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "unscopedProgress": [
+    {
+      "studentCode": "2347A048",
+      "period": "HK02 (2025-2026)",
+      "progress": {
+        "margin": 12,
+        "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+        "riskLevel": "RED",
+        "articleRef": null,
+        "dataStatus": "COMPLETE",
+        "reasonCode": "TRAINING_PROGRESS_DEFICIT_RED",
+        "sourceType": "OPERATIONAL",
+        "explanation": "Thiếu 20 tín chỉ so với kế hoạch đến hết học kỳ 6. Còn 6 học phần bắt buộc chưa hoàn thành (20 TC); tín chỉ tự chọn dư không thay thế các học phần này.",
+        "earnedCredits": 78,
+        "observedValue": 20,
+        "progressStatus": "BEHIND",
+        "thresholdValue": 12,
+        "expectedCredits": 98,
+        "isNearThreshold": false,
+        "capabilityStatus": null,
+        "evaluationStatus": "EVALUATED",
+        "regulatorySource": null,
+        "isThresholdBreached": true,
+        "missingRequiredCourses": [
+          {
+            "credits": 3,
+            "courseCode": "20CT1101",
+            "courseName": "Nhập môn ngành CNTT",
+            "semesterNo": 1
+          },
+          {
+            "credits": 4,
+            "courseCode": "20CT1102",
+            "courseName": "Nguyên lý lập trình cấu trúc",
+            "semesterNo": 1
+          },
+          {
+            "credits": 3,
+            "courseCode": "LC1101D",
+            "courseName": "Triết học Mác - Lênin",
+            "semesterNo": 1
+          },
+          {
+            "credits": 4,
+            "courseCode": "20CT1202",
+            "courseName": "Nguyên lý lập trình hướng đối tượng",
+            "semesterNo": 2
+          },
+          {
+            "credits": 4,
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "semesterNo": 2
+          },
+          {
+            "credits": 2,
+            "courseCode": "LC1102D",
+            "courseName": "Kinh tế Chính trị Mác - Lênin",
+            "semesterNo": 2
+          }
+        ],
+        "missingRequiredCredits": 20,
+        "pendingProgressCourses": [],
+        "latestCompletedSemester": 6
+      },
+      "debt": {
+        "margin": null,
+        "ruleCode": "QD600_ACCUMULATED_DEBT_CREDITS",
+        "articleRef": null,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNSCOPED_HISTORICAL_ATTEMPTS",
+        "sourceType": "REGULATORY",
+        "explanation": "Cần đối chiếu lịch sử học lại môn rớt và môn tự chọn thay thế để xác định chính xác số tín chỉ F còn nợ đọng theo Điều 18.",
+        "observedValue": null,
+        "thresholdValue": 24,
+        "assessmentState": "VERIFY_REQUIRED",
+        "isNearThreshold": false,
+        "capabilityStatus": "AVAILABLE",
+        "evaluationStatus": "NOT_EVALUATED",
+        "regulatorySource": null,
+        "pendingDebtCourses": [],
+        "isThresholdBreached": false
+      }
+    }
+  ],
+  "currentProgressForUnscopedStudents": [
+    {
+      "studentCode": "2347A048",
+      "period": "HK02 (2025-2026)",
+      "signal": {
+        "creditDeficit": 20,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+        "expectedCreditsToDate": 98,
+        "earnedCreditsToDate": 78,
+        "latestCompletedSemester": 6,
+        "progressStatus": "BEHIND",
+        "pendingCourses": [],
+        "missingRequiredCredits": 20,
+        "missingRequiredCourses": [
+          {
+            "courseCode": "20CT1101",
+            "courseName": "Nhập môn ngành CNTT",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20CT1102",
+            "courseName": "Nguyên lý lập trình cấu trúc",
+            "credits": 4,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "LC1101D",
+            "courseName": "Triết học Mác - Lênin",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20CT1202",
+            "courseName": "Nguyên lý lập trình hướng đối tượng",
+            "credits": 4,
+            "semesterNo": 2
+          },
+          {
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "credits": 4,
+            "semesterNo": 2
+          },
+          {
+            "courseCode": "LC1102D",
+            "courseName": "Kinh tế Chính trị Mác - Lênin",
+            "credits": 2,
+            "semesterNo": 2
+          }
+        ]
+      },
+      "reconciliationWarnings": [
+        "Có lượt học thiếu phạm vi học kỳ cần đối soát; chưa tính vào kết quả tại mốc xét."
+      ]
+    }
+  ],
+  "repeatedFailuresVtCandidates": [
+    {
+      "studentCode": "2246B020",
+      "courseCode": "20CT1202",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2347C044",
+      "courseCode": "20CT1202",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2246A007",
+      "courseCode": "20CT1103",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2347C030",
+      "courseCode": "20CT2204",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2246A048",
+      "courseCode": "20CT1102",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2246A048",
+      "courseCode": "20LH0001",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2246A048",
+      "courseCode": "20CT1201",
+      "finalizedVtFailures": 3,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2347C033",
+      "courseCode": "20CT2201",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2347B049",
+      "courseCode": "20QT0004",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2347C009",
+      "courseCode": "20CT1203",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2246A028",
+      "courseCode": "20CT3132D",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2347A065",
+      "courseCode": "20TN1202",
+      "finalizedVtFailures": 3,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2246B035",
+      "courseCode": "LC3101D",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2448B042",
+      "courseCode": "20TN1202",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2347A019",
+      "courseCode": "20CT3204",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2347B016",
+      "courseCode": "20CT1202",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2246B008",
+      "courseCode": "20CT1103",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    },
+    {
+      "studentCode": "2246B008",
+      "courseCode": "20TN1202",
+      "finalizedVtFailures": 2,
+      "repeatedRule": null
+    }
+  ],
+  "reproductions": {
+    "vtPending": {
+      "warningOutcome": "pending",
+      "progress": {
+        "status": "FAILED",
+        "signal": {
+          "creditDeficit": 3,
+          "dataStatus": "COMPLETE",
+          "reasonCode": null,
+          "sourceId": "test",
+          "expectedCreditsToDate": 3,
+          "earnedCreditsToDate": 0,
+          "latestCompletedSemester": 1,
+          "progressStatus": "BEHIND",
+          "pendingCourses": [],
+          "missingRequiredCredits": 3,
+          "missingRequiredCourses": [
+            {
+              "courseCode": "NEW101",
+              "courseName": "Same title",
+              "credits": 3,
+              "semesterNo": 1
+            }
+          ]
+        },
+        "earnedCredits": 0
+      },
+      "debt": {
+        "accumulatedDebtCredits": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "outstandingCourses": [],
+        "electiveBlocks": [],
+        "semesterSurpluses": [],
+        "replacements": [],
+        "electiveSelections": [],
+        "pendingCourses": [
+          {
+            "courseCode": "NEW101",
+            "courseName": "Same title",
+            "credits": 3,
+            "previousOutcome": "NONE"
+          }
+        ]
+      }
+    },
+    "vtUnknown": {
+      "warningOutcome": "unknown",
+      "progress": {
+        "status": "FAILED",
+        "signal": {
+          "creditDeficit": 3,
+          "dataStatus": "COMPLETE",
+          "reasonCode": null,
+          "sourceId": "test",
+          "expectedCreditsToDate": 3,
+          "earnedCreditsToDate": 0,
+          "latestCompletedSemester": 1,
+          "progressStatus": "BEHIND",
+          "pendingCourses": [],
+          "missingRequiredCredits": 3,
+          "missingRequiredCourses": [
+            {
+              "courseCode": "NEW101",
+              "courseName": "Same title",
+              "credits": 3,
+              "semesterNo": 1
+            }
+          ]
+        },
+        "earnedCredits": 0
+      },
+      "debt": {
+        "accumulatedDebtCredits": 0,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "EXAM_ABSENCE_REQUIRES_VERIFICATION",
+        "outstandingCourses": [],
+        "electiveBlocks": [],
+        "semesterSurpluses": [],
+        "replacements": [],
+        "electiveSelections": [],
+        "pendingCourses": []
+      }
+    },
+    "sameNameDifferentCode": {
+      "progress": {
+        "status": "PASSED",
+        "signal": {
+          "creditDeficit": 0,
+          "dataStatus": "COMPLETE",
+          "reasonCode": null,
+          "sourceId": "test",
+          "expectedCreditsToDate": 3,
+          "earnedCreditsToDate": 3,
+          "latestCompletedSemester": 1,
+          "progressStatus": "ON_TRACK",
+          "pendingCourses": [],
+          "missingRequiredCredits": 0,
+          "missingRequiredCourses": []
+        },
+        "earnedCredits": 3
+      },
+      "debt": {
+        "accumulatedDebtCredits": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "outstandingCourses": [],
+        "electiveBlocks": [],
+        "semesterSurpluses": [],
+        "replacements": [],
+        "electiveSelections": [],
+        "pendingCourses": []
+      }
+    },
+    "improvementPending": {
+      "status": "PASSED",
+      "signal": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "test",
+        "expectedCreditsToDate": 3,
+        "earnedCreditsToDate": 3,
+        "latestCompletedSemester": 1,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [
+          {
+            "courseCode": "NEW101",
+            "courseName": "Same title",
+            "credits": 3,
+            "context": "IMPROVEMENT"
+          }
+        ],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "earnedCredits": 3
+    },
+    "unfinishedCurrentSemester": {
+      "live": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "test",
+        "expectedCreditsToDate": 0,
+        "earnedCreditsToDate": 0,
+        "latestCompletedSemester": 0,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "preview": {
+        "creditDeficit": 12,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "TRAINING_PROGRESS_AWAITING_RESULTS",
+        "sourceId": "test",
+        "expectedCreditsToDate": 12,
+        "earnedCreditsToDate": 0,
+        "latestCompletedSemester": 1,
+        "progressStatus": "BEHIND",
+        "pendingCourses": [
+          {
+            "courseCode": "A0",
+            "courseName": "A0",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "A1",
+            "courseName": "A1",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "A2",
+            "courseName": "A2",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "A3",
+            "courseName": "A3",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          }
+        ],
+        "missingRequiredCredits": 12,
+        "missingRequiredCourses": [
+          {
+            "courseCode": "A0",
+            "courseName": "A0",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "A1",
+            "courseName": "A1",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "A2",
+            "courseName": "A2",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "A3",
+            "courseName": "A3",
+            "credits": 3,
+            "semesterNo": 1
+          }
+        ]
+      }
+    }
+  },
+  "verification": {
+    "backendTests": {
+      "passed": 156,
+      "failed": 0
+    },
+    "frontendTests": {
+      "passed": 31,
+      "failed": 0
+    },
+    "databaseWrites": false,
+    "warningRunsCreated": false,
+    "visualBrowserCheck": false
+  }
+}

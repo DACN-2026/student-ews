@@ -21,6 +21,7 @@ import type {
   ProgramOption,
 } from "./types";
 import { responseError } from "./types";
+import { completionCoursePresentation } from "@/lib/student-academic-display";
 
 interface CompletionStudentDetail extends CompletionStudentResult {
   studentUuid: string;
@@ -68,7 +69,7 @@ const completionStatus = {
     dotClass: "bg-amber-500",
   },
   cannot_determine: {
-    label: "Cần đối soát thêm",
+    label: "Chưa thể kết luận",
     badgeClass: "border-slate-200 bg-slate-100 text-slate-700",
     dotClass: "bg-slate-400",
   },
@@ -546,7 +547,7 @@ export default function CompletionProgressTab() {
               {studentCounts.review > 0 && (
                 <TextLabel className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
 
-                  <span>Cần đối soát:</span>
+                  <span>Chưa thể kết luận:</span>
                   <strong className="font-mono font-bold text-slate-900">{studentCounts.review}</strong>
                 </TextLabel>
               )}
@@ -750,9 +751,9 @@ export default function CompletionProgressTab() {
                               <p className="font-semibold text-slate-900">
                                 Đạt {student.allPlansPassed} / {student.allPlansTotal} học kỳ
                               </p>
-                              {hasBlockers ? (
+                              {student.programCompletionStatus === "cannot_determine" ? <p className="mt-0.5 text-[11px] text-slate-600">Cần đối chiếu cấu hình; chưa kết luận nợ học phần.</p> : hasBlockers ? (
                                 <p className="mt-0.5 text-[11px] font-medium text-red-700">
-                                  Nợ {student.missingMandatoryCourses} môn bắt buộc, {student.missingRequiredElectiveCourses} môn tự chọn bắt buộc; thiếu{" "}
+                                  Chưa hoàn thành {student.missingMandatoryCourses} môn bắt buộc, {student.missingRequiredElectiveCourses} môn tự chọn bắt buộc; thiếu{" "}
                                   {student.missingElectiveCredits} TC tự chọn
                                 </p>
                               ) : (
@@ -1047,7 +1048,7 @@ function RequirementTree({ student }: { student: CompletionStudentDetail }) {
             {isComplete
               ? "Sinh viên đã hoàn thành yêu cầu học phần đến mốc đánh giá"
               : needsReview
-                ? "Chưa thể kết luận do dữ liệu hoặc cấu trúc CTĐT cần đối soát"
+                ? "Cần kiểm tra kế hoạch đào tạo trước khi kết luận"
                 : hasPendingResults
                   ? "Sinh viên còn học phần đang chờ kết quả"
                   : "Sinh viên chưa hoàn thành các học phần theo CTĐT"}
@@ -1056,7 +1057,7 @@ function RequirementTree({ student }: { student: CompletionStudentDetail }) {
             {isComplete
               ? "Kết luận này chỉ phản ánh học phần và tín chỉ, không thay thế kết quả xét tốt nghiệp."
               : needsReview
-                ? student.dataErrorReason || "Vui lòng kiểm tra lại dữ liệu đầu vào của phiên đánh giá."
+                ? student.dataErrorReason === "program_coverage_mapping_review" ? "Mã học phần trong kế hoạch chưa khớp chương trình đào tạo. Cần giáo vụ xác nhận các học phần tương ứng trước khi xác định sinh viên còn thiếu môn nào." : "Cần giáo vụ kiểm tra chương trình, học kỳ và kế hoạch áp dụng cho lần đánh giá này trước khi kết luận về sinh viên."
                 : `Hiện tại còn thiếu ${student.missingMandatoryCourses} môn bắt buộc, ${student.missingRequiredElectiveCourses} môn tự chọn bắt buộc và ${student.missingElectiveCredits} tín chỉ tự chọn.`}
           </p>
         </div>
@@ -1125,7 +1126,7 @@ function RequirementTree({ student }: { student: CompletionStudentDetail }) {
                       : "border-red-200  text-red-800"
                   }`}
                 >
-                  {plan.isPass ? "Đạt học kỳ này" : "Chưa hoàn thành"}
+                  {needsReview ? "Chưa kết luận" : plan.isPass ? "Đạt học kỳ này" : !plan.isDue ? "Chưa đến hạn" : plan.pendingResultCourses > 0 ? "Chưa hoàn thành · có kết quả đang chờ" : "Chưa hoàn thành"}
                 </TextLabel>
               </header>
 
@@ -1153,24 +1154,16 @@ function RequirementTree({ student }: { student: CompletionStudentDetail }) {
                           Đạt ở {course.evidenceAcademicYear} ({course.evidenceTermCode})
                         </span>
                       ) : (
-                        <span className="text-slate-400">Chưa có kết quả</span>
+                        <span className="text-slate-400">{course.passed ? "Đạt theo nguồn công nhận; không gán kỳ gốc" : course.pendingResult ? "Đang chờ kết quả" : "Chưa có bằng chứng đạt"}</span>
                       )}
                     </div>
 
                     <div className="text-right sm:text-left">
-                      {course.pendingResult ? (
-                        <span className="inline-flex items-center gap-1 text-amber-700 font-medium">
-                          ⏳ Chờ điểm thi
-                        </span>
-                      ) : course.passed ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-700 font-bold">
-                          <CheckCircle2 size={14} /> Đã tích lũy
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-red-700 font-bold">
-                          <XCircle size={14} /> Chưa đạt / Nợ môn
-                        </span>
-                      )}
+                      {(() => {
+                        const status = completionCoursePresentation(course, plan.isDue, needsReview);
+                        const color = status.tone === "passed" ? "text-emerald-700" : status.tone === "pending" ? "text-amber-700" : status.tone === "required" ? "text-red-700" : "text-slate-500";
+                        return <span className={`inline-flex items-center gap-1 font-medium ${color}`}>{status.label}</span>;
+                      })()}
                     </div>
                   </div>
                 ))}

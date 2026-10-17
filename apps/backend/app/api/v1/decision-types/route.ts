@@ -1,10 +1,13 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { DecisionsService } from "@/lib/services/decisions";
 import { jsonResponse, errorResponse } from "@/lib/utils/api-response";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 
 export async function GET(request: NextRequest) {
   try {
+    const access = await requireApiPermission(request);
+    if (!access.authorized) return access.response;
     const q = (request.nextUrl.searchParams.get("q") || "").trim().toLocaleLowerCase();
     const types = (await DecisionsService.listTypes()).filter((type) =>
       !q || String(type.id).includes(q) || type.name.toLocaleLowerCase().includes(q)
@@ -18,7 +21,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await readJsonBody<{
+    const access = await requireApiPermission(request);
+    if (!access.authorized) return access.response;
+    const body = await readJsonObject<{
       id?: number;
       name?: string;
       decisionTypeId?: number;

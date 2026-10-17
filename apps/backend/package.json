@@ -16,6 +16,8 @@
     "db:seed": "prisma db seed",
     "db:import-apidog": "node scripts/import-apidog-data.cjs --apply",
     "db:check-apidog": "node scripts/import-apidog-data.cjs",
+    "db:check-plan-catalog": "node --env-file=.env.local --require ./scripts/node-platform-shim.cjs --import tsx scripts/reconcile-plan-catalog.ts",
+    "db:repair-plan-catalog": "node --env-file=.env.local --require ./scripts/node-platform-shim.cjs --import tsx scripts/reconcile-plan-catalog.ts --apply",
     "db:check-student-departures": "node --env-file=.env.local --require ./scripts/node-platform-shim.cjs --import tsx scripts/sync-student-departures.ts",
     "db:sync-student-departures": "node --env-file=.env.local --require ./scripts/node-platform-shim.cjs --import tsx scripts/sync-student-departures.ts --apply",
     "db:check-student-study-suspensions": "node --env-file=.env.local --require ./scripts/node-platform-shim.cjs --import tsx scripts/sync-student-study-suspensions.ts",

@@ -51,6 +51,10 @@ const unavailableMetric = () => ({
   reason: "Chưa có dữ liệu cho bộ lọc đã chọn.",
 });
 
+export function dashboardProgressStatus(status: string) {
+  return status === "ON_TRACK" ? "on_track" : status === "BEHIND" ? "behind_schedule" : "data_error";
+}
+
 function percentage(pass: number, total: number) {
   return total ? availableMetric((pass * 100) / total, pass, total) : unavailableMetric();
 }
@@ -230,6 +234,23 @@ export class DashboardService {
         });
       }
     }
+    // Resolve an explicit year to a term; never silently use today's progress
+    // under a historical filter. With no reporting period, use the current one.
+    if (!selectedTerm) {
+      selectedTerm = await prisma.academicTerm.findFirst({
+        where: { deletedAt: null, ...(selectedYear ? { academicYearId: selectedYear.id } : { isCurrent: true }) },
+        orderBy: [{ isCurrent: "desc" }, { sTermOrder: "desc" }],
+      });
+      if (selectedTerm && !selectedYear) selectedYear = await prisma.academicYear.findFirst({ where: { id: selectedTerm.academicYearId, deletedAt: null } });
+    }
+    const progressAssessment = selectedTerm && selectedYear && !selectedTerm.isCurrent
+      ? { academicYear: selectedYear.sYearCode, termCode: selectedTerm.sTermCode, termOrder: selectedTerm.sTermOrder, boundary: "END_OF_TERM" as const }
+      : undefined;
+    const progressStudentWhere: Prisma.StudentWhereInput = { AND: [
+      monitoredStudentWhere(progressAssessment ? { yearCode: progressAssessment.academicYear, termOrder: progressAssessment.termOrder } : undefined),
+      studentScope,
+      ...(Array.isArray(studentWhere.AND) ? studentWhere.AND.slice(2) : []),
+    ] };
     const directGpaRows = !scopedStudentIds.length
       ? []
       : gpaScope === "term"
@@ -385,13 +406,14 @@ export class DashboardService {
 
     const progressFilter: Prisma.TrainingProgressCompletionRunWhereInput = {
       status: "completed",
+      publicationStatus: "active", evaluationMode: "standard",
       ...(filters.cohortId ? { cohortId: filters.cohortId } : {}),
       ...(selectedProgram
         ? { trainingProgramId: selectedProgram.id }
         : filters.trainingProgramId || filters.programCode
         ? { trainingProgramId: { in: [] } }
         : {}),
-      ...(hasExplicitTermFilter && selectedTerm ? { assessmentAcademicTermId: selectedTerm.id } : {}),
+      ...(selectedTerm ? { assessmentAcademicTermId: selectedTerm.id } : {}),
     };
 
     const gradEvalFilter: Prisma.GraduationEvaluationWhereInput = {
@@ -549,7 +571,8 @@ export class DashboardService {
           })
         : [],
       StudentTrainingProgressService.getDepartmentProgressOverview({
-        scopeWhere: studentWhere,
+        scopeWhere: progressStudentWhere,
+        assessment: progressAssessment,
         page: 1,
         pageSize: 1,
         progressStatus: "ALL",
@@ -569,7 +592,7 @@ export class DashboardService {
       if (!latestCompletionByStudent.has(row.studentId)) latestCompletionByStudent.set(row.studentId, row);
     }
     const completionRows = [...latestCompletionByStudent.values()];
-    const progressRows = liveEvaluations.length > 0
+    const progressRows = liveProgressOverview !== null
       ? liveEvaluations.map((item) => ({
           studentId: item.id,
           sStudentId: item.studentId,
@@ -577,9 +600,9 @@ export class DashboardService {
           sClassName: item.className,
           cohortCode: item.cohortCode,
           sProgramCode: item.programCode,
-          scheduleStatus: item.progressStatus === "ON_TRACK" ? "on_track" : "behind_schedule",
+          scheduleStatus: dashboardProgressStatus(item.progressStatus),
         }))
-      : (completionRows.length > 0 ? completionRows : latestWarnings);
+      : completionRows;
 
     // Registration rows: prioritize TrainingProgressStudentResult, fallback to warningRows
     const latestCalcByStudent = new Map<string, (typeof calcStudentRows)[number]>();
@@ -817,15 +840,17 @@ export class DashboardService {
           unassessedStudents: liveWarningReport.counts.unassessed,
         } : { code: "permission_required", label: "Yêu cầu academic_warning.read" },
         progress: {
-          code: completionRows.length > 0 ? "completion_run_evaluations" : "warning_run_snapshot",
-          label: completionRows.length > 0
-            ? "Đánh giá tiến độ CTĐT và hoàn thành theo đợt"
-            : "Đăng ký và tiến độ từ lần tính cảnh báo theo run",
+          code: liveProgressOverview !== null ? "curriculum_progress_at_period" : "completion_run_evaluations",
+          label: liveProgressOverview !== null
+            ? progressAssessment ? "Đối chiếu yêu cầu học phần đến hết kỳ đã chọn" : "Đối chiếu yêu cầu học phần trước kỳ hiện tại"
+            : "Đánh giá tiến độ chuẩn đã công bố của kỳ đã chọn",
           academicTermId: selectedTerm?.id || null,
-          runIds: completionRows.length > 0 ? latestCompletionRuns.map((run) => run.id) : latestRuns.map((run) => run.id),
-          cutoff: completionRows.length > 0
-            ? latestCompletionRuns[0]?.completedAt || null
-            : latestRuns[0]?.sourceCapturedAt || latestRuns[0]?.completedAt || null,
+          periodLabel: selectedTerm && selectedYear ? `${selectedTerm.sTermCode} ${selectedYear.sYearCode}` : null,
+          boundary: progressAssessment ? "END_OF_TERM" : "BEFORE_TERM",
+          evaluatedStudents: progressRows.length,
+          reviewStudents: scheduleAll.error,
+          runIds: liveProgressOverview !== null ? [] : latestCompletionRuns.map((run) => run.id),
+          cutoff: liveProgressOverview !== null ? null : latestCompletionRuns[0]?.completedAt || null,
           reasonCodes: ["PROGRAM_PROGRESS_BEHIND"],
         },
         conduct: {

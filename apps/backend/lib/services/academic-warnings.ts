@@ -191,7 +191,7 @@ export function projectQd600EvaluationForPersistence(result: Qd600EvaluationResu
       : "none";
   const titleForRule = (rule: Qd600RuleEvaluation) => {
     const earlyTitles: Record<string, string> = {
-      EARLY_EXAM_ABSENCE: "Học phần vắng thi (VT) cần xác minh",
+      EARLY_EXAM_ABSENCE: "Vắng thi trong kỳ (VT)",
       EARLY_LOW_TERM_GPA: "GPA học kỳ dưới ngưỡng theo dõi sớm", EARLY_LOW_CUMULATIVE_GPA: "GPA tích lũy dưới ngưỡng theo dõi sớm",
       EARLY_TERM_GPA_DROP: "GPA học kỳ suy giảm", EARLY_CUMULATIVE_GPA_DROP: "GPA tích lũy suy giảm",
       EARLY_FAILED_CREDIT_RATIO: "Tỷ lệ tín chỉ không đạt cần theo dõi", EARLY_REPEATED_COURSE_FAILURE: "Học phần còn nợ không đạt nhiều lần",
@@ -327,7 +327,7 @@ async function loadAssessmentTermCourseAttempts(
       credits: Number(row.credits),
       scoreStatus: row.score_status,
       hasFinalGrade: row.has_final_grade,
-      isPass: row.special_code?.trim().toUpperCase() === "VT" ? sourcePassOutcome(row.source_payload) : row.is_pass,
+      isPass: row.source_payload == null ? row.is_pass : sourcePassOutcome(row.source_payload),
       specialCode: row.special_code,
       notScore: row.not_score,
       courseCode: row.course_code,
@@ -515,10 +515,15 @@ async function loadWarningContext(
       JOIN academic_terms t ON t.id = s.academic_term_id AND t.deleted_at IS NULL AND NOT t.s_is_summer
       JOIN academic_years y ON y.id = t.academic_year_id AND y.deleted_at IS NULL
       JOIN cohorts co ON co.id = ${cohortId}::uuid
+      JOIN academic_terms assessed ON assessed.id = ${assessmentTermId}::uuid
+      JOIN academic_years assessed_year ON assessed_year.id = assessed.academic_year_id
       WHERE s.student_id = ANY(${studentIds}::uuid[])
-        AND co.s_cohort_code ~ '^K[0-9]+$'
-        AND LEFT(y.s_year_code, 4)::int = 1976 + SUBSTRING(co.s_cohort_code FROM 2)::int
-        AND t.s_term_order = 1
+        AND s.s_program_code = ${program.sProgramCode}
+        AND ((co.s_cohort_code ~ '^K[0-9]+$'
+          AND LEFT(y.s_year_code, 4)::int = 1976 + SUBSTRING(co.s_cohort_code FROM 2)::int
+          AND t.s_term_order = 1)
+          OR y.s_year_code < assessed_year.s_year_code
+          OR (y.s_year_code = assessed_year.s_year_code AND t.s_term_order < assessed.s_term_order))
       ORDER BY s.student_id, y.s_year_code, t.s_term_order, t.id
     `;
     for (const row of firstTermRows) firstMainTermIds.set(row.student_id, row.academic_term_id);

@@ -1,0 +1,1678 @@
+{
+  "checkedAt": "2026-10-17T06:39:28.000Z",
+  "engineVersion": "academic-warning-qd600-article18-and-progress-v23",
+  "validation": {
+    "testsPassed": 433,
+    "testsSkipped": 1,
+    "typecheck": "PASS",
+    "productionBuild": "PASS",
+    "lintErrors": 0,
+    "existingLintWarnings": 17,
+    "smoke": "PASS",
+    "visualBrowserReview": "NOT_PERFORMED"
+  },
+  "caseBefore": {
+    "studentCode": "2246B045",
+    "engineVersion": "academic-warning-qd600-article18-and-progress-v22",
+    "progress": {
+      "dataStatus": "PARTIAL",
+      "observedValue": null,
+      "reasonCode": "TRAINING_PROGRESS_MAPPING_REVIEW",
+      "evaluationStatus": "NOT_EVALUATED"
+    }
+  },
+  "refreshed": [
+    {
+      "previousRunId": "57773255-ff14-4d3f-8db2-9dd5ecbeef19",
+      "runId": "db6904a4-de6b-4073-a05c-6336557da82f",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "b6b7c63a-1edc-44fb-9cde-4fb3078a4bfd",
+      "runId": "bdb45c88-5d15-494c-8d02-855aab3c204a",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "d5fb5faf-fde9-4197-8175-bcd41bc8546b",
+      "runId": "bfeb660b-6f6b-48fe-892b-98a7f5fedbbe",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "e65dd175-ff28-4beb-a9b9-85294579103d",
+      "runId": "91fffa36-2e59-48f0-97bd-2fd0c799811b",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "de8fcfef-fd66-4ea0-8fbd-e316140bdc4b",
+      "runId": "25bb6882-4376-4ffb-976d-129a0865ef51",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "18d697c7-3a64-49ae-98c3-96060828fbf4",
+      "runId": "90072672-e33a-4fa0-bc24-336d59afa393",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "e991e4c5-3684-4553-a476-eeeca5eee277",
+      "runId": "48a27ecf-87d6-44ea-b086-ee7e69ae2b1f",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "e8648ba5-f0c9-4f89-bdf7-28615a0f44f0",
+      "runId": "26e175f8-2422-418a-b5b7-00ae7041f86d",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "d2d7593e-72e7-4ec4-920e-7e5fc5eca818",
+      "runId": "e4558bae-fe45-4653-bdee-f25ea14ce1b8",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "d05ca91b-628a-4c91-a277-a75511eb0128",
+      "runId": "17afbf4d-a14d-43ff-9748-8578239d662c",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "28aea45f-123a-4d71-bf11-929f48e75af8",
+      "runId": "2300a6fb-1f32-4340-a1e8-0a736eec9d2d",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "ee83c563-373b-42dd-aa54-373b41080b56",
+      "runId": "1403aa02-92d3-470d-9191-7e36860d77d7",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "87bad0aa-db39-494e-b22a-c3184164eb6b",
+      "runId": "08c44b7f-4a32-40b8-93f0-2520bc229ec4",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "f3ddbad2-6fe7-46fc-9718-26a0c069f021",
+      "runId": "21fad36c-bc31-43a7-9370-5514981c6e19",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "b8035d26-6e63-4eaf-8f28-47bc2fdc88cb",
+      "runId": "7b468fcb-cea2-4811-afb7-29b01be474b3",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "8ef48814-87b5-48b0-ab60-1eef2b8ede1d",
+      "runId": "1fb82e82-db34-45a6-97ee-89eb8b9f7449",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "e3816d4f-23ac-443c-bccb-8e453bf7f7c2",
+      "runId": "2731b90c-53f9-441a-a3cb-57f115b80a03",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "8a2b80d9-b1b2-45f7-87ce-bc4f60701a87",
+      "runId": "15a43b73-7ddc-4239-8d7b-d331dfb29d8f",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "7493dca7-8889-4028-8fe3-7351480b2950",
+      "runId": "1de8b567-ae55-4a2c-85c2-d76319ca303a",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "0c5a95af-501d-4e12-939e-8f5911bea21b",
+      "runId": "fd99e25c-9e7a-4f63-aa0d-1aa2e800b3d4",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "cd5fe1f8-3d8b-4719-9d31-b6a0cdccc4cd",
+      "runId": "0e72a249-ccee-4d50-a8fd-d5582c885259",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "238a8cc7-605d-432d-9653-dcd3ffe9e9ff",
+      "runId": "97548a73-0f36-4a79-b18e-9de4f2800f0c",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "b4c4e56b-2ec3-41e0-8e77-7d1777d52221",
+      "runId": "c022ad9c-5d36-4608-a37f-6759b6d64b72",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "e02ea6c7-34d9-4e47-87e8-d90d917dd337",
+      "runId": "9ee1d208-6d5c-442e-9aed-a44313f27c92",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "2c66a17a-d07c-4e24-9d2b-ecf04cfffcc3",
+      "runId": "f55166ba-887a-418d-8a02-4d2c04d10b36",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "a783a2b4-9b37-425d-991e-f8a5edd1c781",
+      "runId": "9ca8020c-eeda-41bb-bd1c-5e19e1ba307e",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "47d1a2b4-4f53-4a9a-9980-a7269786c0c8",
+      "runId": "d31a0460-719e-4292-971e-6ad15b926d3f",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "f0368899-5189-46d8-8155-b64635ecf83c",
+      "runId": "766eb28f-bfa4-44dc-97f8-de49621c28bb",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "ab09fbe9-871c-43cf-9f95-ebf91d4f8042",
+      "runId": "2b339870-c3d3-4011-869d-8a23c5e0c39c",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "8d67e57b-16e9-4eb5-8a1e-c2faf9283962",
+      "runId": "d8b40fe2-8336-40f0-8ff6-0e0baca0303a",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "7426630d-bac9-43dc-b9b1-a776c9772c38",
+      "runId": "9822c2ed-b91d-4c88-b101-f4c1158d92f2",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "11418e86-4732-4eef-bc98-b4f1d6c03cbe",
+      "runId": "e21aa487-9c7d-4666-b897-ad8dbb9c7abf",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "c7d9b2c2-6a97-4302-ac7f-e80740a205bd",
+      "runId": "4d8a9e7a-8e2e-4e63-ab4b-2109740037c8",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "f99c4909-8023-4f3b-8bfe-d3ad2a80f12b",
+      "runId": "c465fa2d-e863-48e3-9e14-bdd5363661a3",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "52927aff-ae3c-49b8-a24f-8407eb912d5f",
+      "runId": "86ee0b73-087d-4411-807a-f0bf5c253142",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "3f1bca56-ce9a-42aa-a553-a68398532c19",
+      "runId": "0f465ad7-2a72-4814-b2a9-9be69c9822e9",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "06aa8382-cfda-4588-89f4-8a44f5230288",
+      "runId": "838fffa4-1f71-4320-98a3-82c78067e18d",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "4cef460e-196f-4f7d-8847-02497112f972",
+      "runId": "6c6a2cf9-9adc-4ed4-99af-d30e21372921",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "7fdd887d-08c7-44bb-b6bf-1edfd0a8d2cc",
+      "runId": "ef2c6b8f-a477-41c2-92a0-64286a8e1286",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "c4fc3d31-7f28-4b1c-b706-3d261d07dc88",
+      "runId": "f0509613-2ee2-48e0-b42d-0a3ee44dd41e",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "153dab6f-dfdb-459d-ad26-3828be3795c1",
+      "runId": "1a32f507-b73b-426f-a72e-61158676a2f3",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "c847e4ac-bd06-4fab-917c-66e0b27a7a8e",
+      "runId": "362e7ef3-16cd-4beb-ac9f-f41a7bb8f872",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "2ea77901-9cb3-45f1-8923-93bd0d209727",
+      "runId": "f37570f0-dc81-43d7-9045-651d97c3b306",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "ec877a03-d89c-45bc-bb5f-7e028314ab3c",
+      "runId": "1fc0ebbf-9bcc-4ae8-ae14-f9eaf273a8dc",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "faf29f14-c6fc-450f-bfb2-c192cceb34cf",
+      "runId": "618c6814-4506-4493-abc7-f202cec38164",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "8d048f2e-6a85-45f7-9d23-7dc21b17eef6",
+      "runId": "21504c38-ac50-4de2-a523-2e9b2bd077f7",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "78ac8deb-0256-42e9-90d5-95e7498ffcc6",
+      "runId": "711026a6-3db1-430a-b440-21c6a326ede0",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "6c5750a1-bfd4-414f-86dd-bd8eedf946aa",
+      "runId": "ac8b967e-b36a-496e-b230-e0372890f713",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "ae939774-3ea0-4cfa-8a9a-cee057515ea2",
+      "runId": "939a8cd0-65e9-481a-a10a-2e221a942d40",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01"
+    },
+    {
+      "previousRunId": "148b8686-71e1-4784-b0bc-3aa6918f914a",
+      "runId": "72ded42a-82ab-45c5-a217-d9bcd2f67a01",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "6bd170e7-2ffe-4567-b152-be166b491bbd",
+      "runId": "e1b23e59-7718-41a6-8ae9-affb9a4ebbc4",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "483092ff-b7c2-4d26-afcc-fc3c46cb90e2",
+      "runId": "f0205f7b-6442-412f-a934-97c72823cd66",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "43077c82-d586-453b-8138-1a83afdce2b8",
+      "runId": "0b2fb5b8-8bcc-4a3b-bca2-944e9acc5b62",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "86e453b0-5c96-4355-ab7b-051af5470644",
+      "runId": "56c1ced3-aee9-47b8-ae30-24fcf4536a22",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "e5723bf7-1574-442f-87a7-0a820baa9071",
+      "runId": "164faa25-1180-4f47-b723-8ea35b17aa8b",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02"
+    },
+    {
+      "previousRunId": "2069b85c-9bb1-4907-b2de-7b2bd059b781",
+      "runId": "5dcab5cc-40f4-4a57-a3f7-2ab43fdcbfc6",
+      "policyId": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02"
+    }
+  ],
+  "skipped": [
+    {
+      "id": "5c8c41c8-8a8a-493a-8800-68eb70a23854",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "f5e7445f-4113-4d8c-97a3-02d0be3ab40c",
+      "assessment_academic_term_id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "policy_id": "4c7432f3-d208-4c12-b511-8b8c7c9b0ddc",
+      "year": "2025-2026",
+      "term": "HK02",
+      "eligible": false
+    }
+  ],
+  "preservedOriginalPolicies": true,
+  "sourceFingerprint": [
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    },
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    }
+  ],
+  "sourceUnchanged": true,
+  "latestStudents": 622,
+  "latestNewVersion": 622,
+  "gpaDifferences": 0,
+  "latestStatuses": {
+    "HIGH_RISK": 178,
+    "NORMAL": 298,
+    "MONITORING": 146
+  },
+  "changedResults": [
+    {
+      "studentCode": "2246B045",
+      "beforeStatus": "MONITORING",
+      "afterStatus": "MONITORING"
+    }
+  ],
+  "caseEvidence": [
+    {
+      "year": "2023-2024",
+      "term": "HK02",
+      "courses": [
+        {
+          "courseCode": "20LH0001",
+          "status": "NOT_COMPLETED",
+          "attemptCount": 0,
+          "passedAcademicYear": null,
+          "passedTermCode": null
+        },
+        {
+          "courseCode": "20CT1202",
+          "status": "NOT_COMPLETED",
+          "attemptCount": 0,
+          "passedAcademicYear": null,
+          "passedTermCode": null
+        },
+        {
+          "courseCode": "20CT2103",
+          "status": "NOT_COMPLETED",
+          "attemptCount": 0,
+          "passedAcademicYear": null,
+          "passedTermCode": null
+        }
+      ],
+      "progress": {
+        "creditDeficit": null,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "TRAINING_PROGRESS_MAPPING_REVIEW",
+        "sourceId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+        "reconciliation": {
+          "status": "REVIEW_REQUIRED",
+          "issues": [
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "20HN1104",
+                "20CT2103"
+              ],
+              "message": "Học phần 20HN1104 có tên giống 20CT2103; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            },
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "LH1001D",
+                "20LH0001"
+              ],
+              "message": "Học phần LH1001D có tên giống 20LH0001; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            },
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "CT2106D",
+                "20CT1202"
+              ],
+              "message": "Học phần CT2106D có tên giống 20CT1202; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            }
+          ],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2023-2024",
+          "termCode": "HK02",
+          "termOrder": 2,
+          "boundary": "END_OF_TERM",
+          "programCode": "CQ22CT-PM"
+        },
+        "expectedCreditsToDate": 63,
+        "earnedCreditsToDate": 26,
+        "latestCompletedSemester": 4,
+        "progressStatus": "UNKNOWN",
+        "pendingCourses": [],
+        "missingRequiredCredits": 28,
+        "missingRequiredCourses": [
+          {
+            "courseCode": "20CT1101",
+            "courseName": "Nhập môn ngành CNTT",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20CT1102",
+            "courseName": "Nguyên lý lập trình cấu trúc",
+            "credits": 4,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20LH0001",
+            "courseName": "Pháp luật đại cương",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "credits": 4,
+            "semesterNo": 2
+          },
+          {
+            "courseCode": "20CT1202",
+            "courseName": "Nguyên lý lập trình hướng đối tượng",
+            "credits": 4,
+            "semesterNo": 2
+          },
+          {
+            "courseCode": "20CT1201",
+            "courseName": "Cấu trúc dữ liệu và thuật giải",
+            "credits": 3,
+            "semesterNo": 3
+          },
+          {
+            "courseCode": "20CT2102",
+            "courseName": "Kiến trúc máy tính",
+            "credits": 3,
+            "semesterNo": 3
+          },
+          {
+            "courseCode": "20CT2103",
+            "courseName": "Tiếng Anh chuyên ngành",
+            "credits": 3,
+            "semesterNo": 3
+          },
+          {
+            "courseCode": "20CT3204",
+            "courseName": "Tham quan thực tế",
+            "credits": 1,
+            "semesterNo": 3
+          }
+        ]
+      },
+      "debt": {
+        "accumulatedDebtCredits": 0,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [],
+        "electiveBlocks": [
+          {
+            "block": "A7",
+            "requiredCredits": 6,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "debtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 3,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 2,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "plannedCredits": 18,
+            "passedCredits": 2,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "plannedCredits": 16,
+            "passedCredits": 19,
+            "surplusCredits": 3
+          }
+        ],
+        "replacements": [],
+        "electiveSelections": [
+          {
+            "semesterNo": 4,
+            "requiredCredits": 3,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "initialDebtCredits": 0,
+            "remainingDebtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          }
+        ],
+        "pendingCourses": [],
+        "curriculumReviewCourses": [
+          {
+            "courseCode": "20HN1104",
+            "courseName": "Tiếng Anh chuyên ngành",
+            "credits": 3,
+            "catalogProgramCode": "CQ22CT-PM",
+            "outcome": "passed",
+            "academicYear": "2022-2023",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "LH1001D",
+            "courseName": "Pháp luật đại cương",
+            "credits": 3,
+            "catalogProgramCode": "CQ22CT-PM",
+            "outcome": "passed",
+            "academicYear": "2022-2023",
+            "termCode": "HK02"
+          },
+          {
+            "courseCode": "CT2106D",
+            "courseName": "Nguyên lý lập trình hướng đối tượng",
+            "credits": 4,
+            "catalogProgramCode": "CQ22CT-PM",
+            "outcome": "passed",
+            "academicYear": "2023-2024",
+            "termCode": "HK01"
+          }
+        ]
+      }
+    },
+    {
+      "year": "2023-2024",
+      "term": "HK03",
+      "courses": [
+        {
+          "courseCode": "20LH0001",
+          "status": "NOT_COMPLETED",
+          "attemptCount": 0,
+          "passedAcademicYear": null,
+          "passedTermCode": null
+        },
+        {
+          "courseCode": "20CT1202",
+          "status": "PASSED",
+          "attemptCount": 1,
+          "passedAcademicYear": "2023-2024",
+          "passedTermCode": "HK03"
+        },
+        {
+          "courseCode": "20CT2103",
+          "status": "NOT_COMPLETED",
+          "attemptCount": 0,
+          "passedAcademicYear": null,
+          "passedTermCode": null
+        }
+      ],
+      "progress": {
+        "creditDeficit": null,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "TRAINING_PROGRESS_MAPPING_REVIEW",
+        "sourceId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+        "reconciliation": {
+          "status": "REVIEW_REQUIRED",
+          "issues": [
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "20HN1104",
+                "20CT2103"
+              ],
+              "message": "Học phần 20HN1104 có tên giống 20CT2103; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            },
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "LH1001D",
+                "20LH0001"
+              ],
+              "message": "Học phần LH1001D có tên giống 20LH0001; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            }
+          ],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2023-2024",
+          "termCode": "HK03",
+          "termOrder": 3,
+          "boundary": "END_OF_TERM",
+          "programCode": "CQ22CT-PM"
+        },
+        "expectedCreditsToDate": 47,
+        "earnedCreditsToDate": 11,
+        "latestCompletedSemester": 3,
+        "progressStatus": "UNKNOWN",
+        "pendingCourses": [],
+        "missingRequiredCredits": 24,
+        "missingRequiredCourses": [
+          {
+            "courseCode": "20CT1101",
+            "courseName": "Nhập môn ngành CNTT",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20CT1102",
+            "courseName": "Nguyên lý lập trình cấu trúc",
+            "credits": 4,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20LH0001",
+            "courseName": "Pháp luật đại cương",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "credits": 4,
+            "semesterNo": 2
+          },
+          {
+            "courseCode": "20CT1201",
+            "courseName": "Cấu trúc dữ liệu và thuật giải",
+            "credits": 3,
+            "semesterNo": 3
+          },
+          {
+            "courseCode": "20CT2102",
+            "courseName": "Kiến trúc máy tính",
+            "credits": 3,
+            "semesterNo": 3
+          },
+          {
+            "courseCode": "20CT2103",
+            "courseName": "Tiếng Anh chuyên ngành",
+            "credits": 3,
+            "semesterNo": 3
+          },
+          {
+            "courseCode": "20CT3204",
+            "courseName": "Tham quan thực tế",
+            "credits": 1,
+            "semesterNo": 3
+          }
+        ]
+      },
+      "debt": {
+        "accumulatedDebtCredits": 0,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [],
+        "electiveBlocks": [
+          {
+            "block": "A7",
+            "requiredCredits": 6,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "debtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 3,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 6,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "plannedCredits": 18,
+            "passedCredits": 2,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "plannedCredits": 16,
+            "passedCredits": 19,
+            "surplusCredits": 3
+          }
+        ],
+        "replacements": [],
+        "electiveSelections": [
+          {
+            "semesterNo": 4,
+            "requiredCredits": 3,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "initialDebtCredits": 0,
+            "remainingDebtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          }
+        ],
+        "pendingCourses": [],
+        "curriculumReviewCourses": [
+          {
+            "courseCode": "20HN1104",
+            "courseName": "Tiếng Anh chuyên ngành",
+            "credits": 3,
+            "catalogProgramCode": "CQ22CT-PM",
+            "outcome": "passed",
+            "academicYear": "2022-2023",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "LH1001D",
+            "courseName": "Pháp luật đại cương",
+            "credits": 3,
+            "catalogProgramCode": "CQ22CT-PM",
+            "outcome": "passed",
+            "academicYear": "2022-2023",
+            "termCode": "HK02"
+          }
+        ]
+      }
+    },
+    {
+      "year": "2024-2025",
+      "term": "HK01",
+      "courses": [
+        {
+          "courseCode": "20LH0001",
+          "status": "PASSED",
+          "attemptCount": 1,
+          "passedAcademicYear": "2024-2025",
+          "passedTermCode": "HK01"
+        },
+        {
+          "courseCode": "20CT1202",
+          "status": "PASSED",
+          "attemptCount": 1,
+          "passedAcademicYear": "2023-2024",
+          "passedTermCode": "HK03"
+        },
+        {
+          "courseCode": "20CT2103",
+          "status": "PASSED",
+          "attemptCount": 1,
+          "passedAcademicYear": "2024-2025",
+          "passedTermCode": "HK01"
+        }
+      ],
+      "progress": {
+        "creditDeficit": 26,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2024-2025",
+          "termCode": "HK01",
+          "termOrder": 1,
+          "boundary": "END_OF_TERM",
+          "programCode": "CQ22CT-PM"
+        },
+        "expectedCreditsToDate": 79,
+        "earnedCreditsToDate": 53,
+        "latestCompletedSemester": 5,
+        "progressStatus": "BEHIND",
+        "pendingCourses": [],
+        "missingRequiredCredits": 17,
+        "missingRequiredCourses": [
+          {
+            "courseCode": "20CT1101",
+            "courseName": "Nhập môn ngành CNTT",
+            "credits": 3,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20CT1102",
+            "courseName": "Nguyên lý lập trình cấu trúc",
+            "credits": 4,
+            "semesterNo": 1
+          },
+          {
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "credits": 4,
+            "semesterNo": 2
+          },
+          {
+            "courseCode": "20CT1201",
+            "courseName": "Cấu trúc dữ liệu và thuật giải",
+            "credits": 3,
+            "semesterNo": 3
+          },
+          {
+            "courseCode": "20CT2102",
+            "courseName": "Kiến trúc máy tính",
+            "credits": 3,
+            "semesterNo": 3
+          }
+        ]
+      },
+      "debt": {
+        "accumulatedDebtCredits": 0,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [],
+        "electiveBlocks": [
+          {
+            "block": "A7",
+            "requiredCredits": 6,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "debtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          },
+          {
+            "block": "B3",
+            "requiredCredits": 6,
+            "passedCredits": 3,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 6,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 6,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "plannedCredits": 18,
+            "passedCredits": 6,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "plannedCredits": 16,
+            "passedCredits": 19,
+            "surplusCredits": 3
+          },
+          {
+            "semesterNo": 5,
+            "plannedCredits": 16,
+            "passedCredits": 16,
+            "surplusCredits": 0
+          }
+        ],
+        "replacements": [],
+        "electiveSelections": [
+          {
+            "semesterNo": 4,
+            "requiredCredits": 3,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "initialDebtCredits": 0,
+            "remainingDebtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          }
+        ],
+        "pendingCourses": []
+      }
+    },
+    {
+      "year": "2025-2026",
+      "term": "HK02",
+      "courses": [
+        {
+          "courseCode": "20LH0001",
+          "status": "PASSED",
+          "attemptCount": 1,
+          "passedAcademicYear": "2024-2025",
+          "passedTermCode": "HK01"
+        },
+        {
+          "courseCode": "20CT1202",
+          "status": "PASSED",
+          "attemptCount": 1,
+          "passedAcademicYear": "2023-2024",
+          "passedTermCode": "HK03"
+        },
+        {
+          "courseCode": "20CT2103",
+          "status": "PASSED",
+          "attemptCount": 1,
+          "passedAcademicYear": "2024-2025",
+          "passedTermCode": "HK01"
+        }
+      ],
+      "progress": {
+        "creditDeficit": 2,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2025-2026",
+          "termCode": "HK02",
+          "termOrder": 2,
+          "boundary": "END_OF_TERM",
+          "programCode": "CQ22CT-PM"
+        },
+        "expectedCreditsToDate": 134,
+        "earnedCreditsToDate": 132,
+        "latestCompletedSemester": 8,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "debt": {
+        "accumulatedDebtCredits": 0,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "UNRESOLVED_HISTORICAL_ATTEMPTS",
+        "outstandingCourses": [],
+        "electiveBlocks": [
+          {
+            "block": "A7",
+            "requiredCredits": 6,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "debtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          },
+          {
+            "block": "B3",
+            "requiredCredits": 6,
+            "passedCredits": 6,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "A6",
+            "requiredCredits": 9,
+            "passedCredits": 9,
+            "failedCredits": 0,
+            "debtCredits": 0,
+            "failedCourseCodes": []
+          },
+          {
+            "block": "B2",
+            "requiredCredits": 25,
+            "passedCredits": 25,
+            "failedCredits": 3,
+            "debtCredits": 0,
+            "failedCourseCodes": [
+              "20CT4104D"
+            ]
+          }
+        ],
+        "semesterSurpluses": [
+          {
+            "semesterNo": 1,
+            "plannedCredits": 13,
+            "passedCredits": 13,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 2,
+            "plannedCredits": 16,
+            "passedCredits": 16,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 3,
+            "plannedCredits": 18,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 4,
+            "plannedCredits": 16,
+            "passedCredits": 19,
+            "surplusCredits": 3
+          },
+          {
+            "semesterNo": 5,
+            "plannedCredits": 16,
+            "passedCredits": 16,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 6,
+            "plannedCredits": 19,
+            "passedCredits": 22,
+            "surplusCredits": 3
+          },
+          {
+            "semesterNo": 7,
+            "plannedCredits": 18,
+            "passedCredits": 15,
+            "surplusCredits": 0
+          },
+          {
+            "semesterNo": 8,
+            "plannedCredits": 18,
+            "passedCredits": 16,
+            "surplusCredits": 0
+          }
+        ],
+        "replacements": [
+          {
+            "semesterNo": 6,
+            "donorCourseCode": "20CT3104D",
+            "donorCredits": 3,
+            "block": "B2",
+            "settledDebtCredits": 2,
+            "settledCourses": [
+              {
+                "courseCode": "20CT4104D",
+                "credits": 2
+              }
+            ]
+          }
+        ],
+        "electiveSelections": [
+          {
+            "semesterNo": 4,
+            "requiredCredits": 3,
+            "passedCredits": 6,
+            "failedCredits": 3,
+            "initialDebtCredits": 0,
+            "remainingDebtCredits": 0,
+            "failedCourseCodes": [
+              "20NV0002"
+            ]
+          },
+          {
+            "semesterNo": 8,
+            "requiredCredits": 12,
+            "passedCredits": 10,
+            "failedCredits": 3,
+            "initialDebtCredits": 2,
+            "remainingDebtCredits": 0,
+            "failedCourseCodes": [
+              "20CT4104D"
+            ]
+          }
+        ],
+        "pendingCourses": []
+      }
+    }
+  ],
+  "interventionSync": [
+    {
+      "runId": "db6904a4-de6b-4073-a05c-6336557da82f",
+      "processedResults": 80,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 80
+    },
+    {
+      "runId": "bdb45c88-5d15-494c-8d02-855aab3c204a",
+      "processedResults": 5,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 5
+    },
+    {
+      "runId": "bfeb660b-6f6b-48fe-892b-98a7f5fedbbe",
+      "processedResults": 76,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 76
+    },
+    {
+      "runId": "91fffa36-2e59-48f0-97bd-2fd0c799811b",
+      "processedResults": 42,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 42
+    },
+    {
+      "runId": "25bb6882-4376-4ffb-976d-129a0865ef51",
+      "processedResults": 137,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 137
+    },
+    {
+      "runId": "90072672-e33a-4fa0-bc24-336d59afa393",
+      "processedResults": 56,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 56
+    },
+    {
+      "runId": "48a27ecf-87d6-44ea-b086-ee7e69ae2b1f",
+      "processedResults": 12,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 12
+    },
+    {
+      "runId": "26e175f8-2422-418a-b5b7-00ae7041f86d",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "e4558bae-fe45-4653-bdee-f25ea14ce1b8",
+      "processedResults": 5,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 5
+    },
+    {
+      "runId": "17afbf4d-a14d-43ff-9748-8578239d662c",
+      "processedResults": 75,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 75
+    },
+    {
+      "runId": "2300a6fb-1f32-4340-a1e8-0a736eec9d2d",
+      "processedResults": 42,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 42
+    },
+    {
+      "runId": "1403aa02-92d3-470d-9191-7e36860d77d7",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "08c44b7f-4a32-40b8-93f0-2520bc229ec4",
+      "processedResults": 56,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 56
+    },
+    {
+      "runId": "21fad36c-bc31-43a7-9370-5514981c6e19",
+      "processedResults": 12,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 12
+    },
+    {
+      "runId": "7b468fcb-cea2-4811-afb7-29b01be474b3",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "1fb82e82-db34-45a6-97ee-89eb8b9f7449",
+      "processedResults": 6,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 6
+    },
+    {
+      "runId": "2731b90c-53f9-441a-a3cb-57f115b80a03",
+      "processedResults": 75,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 75
+    },
+    {
+      "runId": "15a43b73-7ddc-4239-8d7b-d331dfb29d8f",
+      "processedResults": 42,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 42
+    },
+    {
+      "runId": "1de8b567-ae55-4a2c-85c2-d76319ca303a",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "fd99e25c-9e7a-4f63-aa0d-1aa2e800b3d4",
+      "processedResults": 56,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 56
+    },
+    {
+      "runId": "0e72a249-ccee-4d50-a8fd-d5582c885259",
+      "processedResults": 12,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 12
+    },
+    {
+      "runId": "97548a73-0f36-4a79-b18e-9de4f2800f0c",
+      "processedResults": 80,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 80
+    },
+    {
+      "runId": "c022ad9c-5d36-4608-a37f-6759b6d64b72",
+      "processedResults": 5,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 5
+    },
+    {
+      "runId": "9ee1d208-6d5c-442e-9aed-a44313f27c92",
+      "processedResults": 75,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 75
+    },
+    {
+      "runId": "f55166ba-887a-418d-8a02-4d2c04d10b36",
+      "processedResults": 42,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 42
+    },
+    {
+      "runId": "9ca8020c-eeda-41bb-bd1c-5e19e1ba307e",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "d31a0460-719e-4292-971e-6ad15b926d3f",
+      "processedResults": 56,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 56
+    },
+    {
+      "runId": "766eb28f-bfa4-44dc-97f8-de49621c28bb",
+      "processedResults": 12,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 12
+    },
+    {
+      "runId": "2b339870-c3d3-4011-869d-8a23c5e0c39c",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "d8b40fe2-8336-40f0-8ff6-0e0baca0303a",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "9822c2ed-b91d-4c88-b101-f4c1158d92f2",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "e21aa487-9c7d-4666-b897-ad8dbb9c7abf",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "4d8a9e7a-8e2e-4e63-ab4b-2109740037c8",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "c465fa2d-e863-48e3-9e14-bdd5363661a3",
+      "processedResults": 56,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 56
+    },
+    {
+      "runId": "86ee0b73-087d-4411-807a-f0bf5c253142",
+      "processedResults": 12,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 12
+    },
+    {
+      "runId": "0f465ad7-2a72-4814-b2a9-9be69c9822e9",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "838fffa4-1f71-4320-98a3-82c78067e18d",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "6c6a2cf9-9adc-4ed4-99af-d30e21372921",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "ef2c6b8f-a477-41c2-92a0-64286a8e1286",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "f0509613-2ee2-48e0-b42d-0a3ee44dd41e",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "1a32f507-b73b-426f-a72e-61158676a2f3",
+      "processedResults": 56,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 56
+    },
+    {
+      "runId": "362e7ef3-16cd-4beb-ac9f-f41a7bb8f872",
+      "processedResults": 12,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 12
+    },
+    {
+      "runId": "f37570f0-dc81-43d7-9045-651d97c3b306",
+      "processedResults": 80,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 80
+    },
+    {
+      "runId": "1fc0ebbf-9bcc-4ae8-ae14-f9eaf273a8dc",
+      "processedResults": 5,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 5
+    },
+    {
+      "runId": "618c6814-4506-4493-abc7-f202cec38164",
+      "processedResults": 75,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 75
+    },
+    {
+      "runId": "21504c38-ac50-4de2-a523-2e9b2bd077f7",
+      "processedResults": 42,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 42
+    },
+    {
+      "runId": "711026a6-3db1-430a-b440-21c6a326ede0",
+      "processedResults": 0,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "ac8b967e-b36a-496e-b230-e0372890f713",
+      "processedResults": 56,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 56
+    },
+    {
+      "runId": "939a8cd0-65e9-481a-a10a-2e221a942d40",
+      "processedResults": 12,
+      "createdCases": 0,
+      "updatedCases": 0,
+      "unchangedResults": 12
+    },
+    {
+      "runId": "72ded42a-82ab-45c5-a217-d9bcd2f67a01",
+      "processedResults": 80,
+      "createdCases": 0,
+      "updatedCases": 80,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "e1b23e59-7718-41a6-8ae9-affb9a4ebbc4",
+      "processedResults": 6,
+      "createdCases": 0,
+      "updatedCases": 6,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "f0205f7b-6442-412f-a934-97c72823cd66",
+      "processedResults": 76,
+      "createdCases": 0,
+      "updatedCases": 76,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "0b2fb5b8-8bcc-4a3b-bca2-944e9acc5b62",
+      "processedResults": 42,
+      "createdCases": 0,
+      "updatedCases": 42,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "56c1ced3-aee9-47b8-ae30-24fcf4536a22",
+      "processedResults": 137,
+      "createdCases": 0,
+      "updatedCases": 137,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "164faa25-1180-4f47-b723-8ea35b17aa8b",
+      "processedResults": 56,
+      "createdCases": 0,
+      "updatedCases": 56,
+      "unchangedResults": 0
+    },
+    {
+      "runId": "5dcab5cc-40f4-4a57-a3f7-2ab43fdcbfc6",
+      "processedResults": 12,
+      "createdCases": 0,
+      "updatedCases": 12,
+      "unchangedResults": 0
+    }
+  ],
+  "apiChecks": [
+    {
+      "base": "http://localhost:3001",
+      "endpoint": "training-progress",
+      "historical": true,
+      "status": 200,
+      "reconciliation": "READY"
+    },
+    {
+      "base": "http://localhost:3001",
+      "endpoint": "training-progress",
+      "historical": false,
+      "status": 200,
+      "reconciliation": "READY"
+    },
+    {
+      "base": "http://localhost:3001",
+      "endpoint": "student-warning",
+      "status": 200,
+      "deficit": 2,
+      "progressDataStatus": "COMPLETE"
+    },
+    {
+      "base": "http://localhost:3000",
+      "endpoint": "training-progress",
+      "historical": true,
+      "status": 200,
+      "reconciliation": "READY"
+    },
+    {
+      "base": "http://localhost:3000",
+      "endpoint": "training-progress",
+      "historical": false,
+      "status": 200,
+      "reconciliation": "READY"
+    },
+    {
+      "base": "http://localhost:3000",
+      "endpoint": "student-warning",
+      "status": 200,
+      "deficit": 2,
+      "progressDataStatus": "COMPLETE"
+    }
+  ]
+}

@@ -38,13 +38,16 @@ export type CourseOutcomeInput = {
   letterCode?: string | null;
   letterGrade?: string | null;
   specialCode?: string | null;
+  sourcePayload?: unknown;
+  isRecognized?: boolean;
 };
 
 /** API checkbox encoding: blank is unchecked, while null/missing is unknown.
  * Use this for VT so the database's default false cannot invent a result. */
 export function sourcePassOutcome(payload: unknown): boolean | null {
-  if (!payload || typeof payload !== "object" || Array.isArray(payload) || !("IsPass" in payload)) return null;
-  const value = (payload as Record<string, unknown>).IsPass;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const row = payload as Record<string, unknown>;
+  const value = "IsPass" in row ? row.IsPass : row.isPass;
   if (typeof value === "boolean") return value;
   if (value === 1 || value === 0) return value === 1;
   if (typeof value !== "string") return null;
@@ -54,23 +57,21 @@ export function sourcePassOutcome(payload: unknown): boolean | null {
   return null;
 }
 
-/** Warning credit calculations use a finalized source pass/fail outcome.
- * VT remains VT in the transcript; it never supplies a numeric GPA. */
+/** All credit calculations share the School's outcome. VT describes attendance,
+ * not a replacement for IsPass, and never supplies a numeric GPA. */
 export function warningCourseOutcome(grade: CourseOutcomeInput): "passed" | "failed" | "pending" | "unknown" {
-  const letter = (grade.specialCode || grade.letterCode || grade.letterGrade || "").trim().toUpperCase();
-  if (letter !== "VT") return courseOutcome(grade);
-  if (grade.notScore === true || grade.scoreStatus === "pending") return "pending";
-  const passed = grade.isPass ?? grade.isPassed;
-  if (grade.notScore !== false || typeof passed !== "boolean" || !["special", "graded"].includes(grade.scoreStatus || "")) return "unknown";
-  return passed ? "passed" : "failed";
+  return courseOutcome(grade);
 }
 
 export function courseOutcome(grade: CourseOutcomeInput): "passed" | "failed" | "pending" | "unknown" {
   const letter = (grade.specialCode || grade.letterCode || grade.letterGrade || "").trim().toUpperCase();
-  // Absence is final even if a contradictory source pending flag is present.
-  if (letter === "VT") return "failed";
+  const pass = grade.sourcePayload !== undefined ? sourcePassOutcome(grade.sourcePayload) : grade.isPass ?? grade.isPassed;
+  if ((letter === "VT" || grade.isRecognized) && typeof pass === "boolean") return pass ? "passed" : "failed";
   if (grade.notScore === true || grade.scoreStatus === "pending") return "pending";
-  const pass = grade.isPass ?? grade.isPassed;
+  if (letter === "VT") return "unknown";
+  // IsPass is the School's outcome. Numeric scores may legitimately be blank;
+  // an explicit non-pending outcome must not become a missing-data warning.
+  if (grade.notScore === false && typeof pass === "boolean") return pass ? "passed" : "failed";
   if (grade.scoreStatus === "graded" && pass === true) return "passed";
   if (grade.scoreStatus === "graded" && pass === false &&
       (grade.score10 != null || grade.score4 != null || Boolean(letter))) return "failed";

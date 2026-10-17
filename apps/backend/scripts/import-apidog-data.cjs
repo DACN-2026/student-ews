@@ -1259,6 +1259,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  fetchSourceData,
   createSourceClient, mapLimit, clean, normalizeTerm, validYear, parseNumber, parseInteger, marker, scoreParts, parseDate,
   deduplicateCurricula,
   legacyAcademicWarningPolicyDefinition,

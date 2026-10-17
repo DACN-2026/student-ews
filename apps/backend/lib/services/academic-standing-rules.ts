@@ -129,6 +129,17 @@ export function assessAcademicStanding(source: StandingSources): StandingAssessm
     appealStatus: "NOT_ASSESSED", rules: [] };
   if (!assessment || assessment.isSummer) return result;
   if (source.beforeAdmission || assessment.beforeAdmission) { result.excluded = true; return result; }
+  // Incoming transfer is an individual admission boundary, not an exemption
+  // from later study. A cohort's earlier semesters are not this student's
+  // missing registrations before their signed admission to the School.
+  const incomingTransfers = source.decisions.flatMap(decision => {
+    const title = normalized(`${decision.typeName} ${decision.name} ${decision.fullText || ""}`);
+    if (!/tiep nhan chuyen truong|chuyen truong den/.test(title) || isRevokedStandingDecision(decision)
+      || !decision.number.trim() || !decision.signedAt || !Number.isFinite(Date.parse(decision.signedAt)) || Date.parse(decision.signedAt) > Date.now()) return [];
+    const period = standingDecisionPeriod(decision, source.terms);
+    return period.from ? [period.from] : [];
+  }).sort(compareAcademicTerms);
+  if (incomingTransfers[0] && compareAcademicTerms(assessment, incomingTransfers[0]) < 0) { result.excluded = true; return result; }
   const decisions = source.decisions.flatMap(decision => {
     const effect = standingDecisionEffect(decision);
     const period = standingDecisionPeriod(decision, source.terms, effect);

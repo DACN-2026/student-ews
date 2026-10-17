@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { studentIdWhere } from "@/lib/utils/is-uuid";
 import { ReportsService } from "@/lib/services/reports";
 import { classMembershipWhere, studentIsInClass, suspensionInfo, suspensionWhere } from "../student-monitoring-scope";
+import { ApiError } from "@/lib/utils/api-error";
 
 export interface StudentFilter {
   search?: string;
@@ -28,6 +29,28 @@ export interface StudentUpsertInput {
   isInClass?: boolean;
   classStudentId?: string | null;
   studyProgramId?: string | null;
+}
+
+function validateStudentInput(input: Partial<StudentUpsertInput>, partial = false) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw new ApiError("Hồ sơ sinh viên phải là một đối tượng.", "INVALID_REQUEST", 400);
+  for (const [key, max] of [["studentId", 32], ["firstName", 120], ["lastName", 200], ["fullName", 320]] as const) {
+    const value = input[key];
+    if ((value !== undefined || !partial && key !== "fullName") && (typeof value !== "string" || !value.trim() || value.length > max)) {
+      throw new ApiError(`Trường ${key} phải có từ 1 đến ${max} ký tự.`, "INVALID_REQUEST", 400);
+    }
+  }
+  if (input.birthDate !== undefined || !partial) {
+    const date = new Date(input.birthDate!);
+    if (!input.birthDate || Number.isNaN(date.getTime()) || typeof input.birthDate === "string" && !/^\d{4}-\d{2}-\d{2}$/.test(input.birthDate)) {
+      throw new ApiError("Ngày sinh phải có định dạng YYYY-MM-DD hợp lệ.", "INVALID_REQUEST", 400);
+    }
+    if (typeof input.birthDate === "string" && date.toISOString().slice(0, 10) !== input.birthDate) throw new ApiError("Ngày sinh không hợp lệ.", "INVALID_REQUEST", 400);
+  }
+  for (const key of ["birthPlace", "gender", "permanentResidence", "classStudentId", "studyProgramId"] as const) {
+    if (input[key] != null && typeof input[key] !== "string") throw new ApiError(`Trường ${key} phải là chuỗi hoặc null.`, "INVALID_REQUEST", 400);
+  }
+  if (input.isInClass !== undefined && typeof input.isInClass !== "boolean") throw new ApiError("isInClass phải là true hoặc false.", "INVALID_REQUEST", 400);
+  if (input.classRoleId !== undefined && (!Number.isInteger(input.classRoleId) || input.classRoleId < 0 || input.classRoleId > 32767)) throw new ApiError("Vai trò lớp không hợp lệ.", "INVALID_REQUEST", 400);
 }
 
 async function orderedStudentPage(where: Prisma.StudentWhereInput, skip = 0, take?: number) {
@@ -61,14 +84,7 @@ async function orderedStudentPage(where: Prisma.StudentWhereInput, skip = 0, tak
   return { total: matching.length, items: rows };
 }
 
-export class StudentsService {
-  static async list(
-    filter: StudentFilter = {},
-    page = 1,
-    pageSize = 20,
-    scope: Prisma.StudentWhereInput = {},
-    includeAcademicWarnings = false,
-  ) {
+async function filteredStudentScope(filter: StudentFilter, scope: Prisma.StudentWhereInput, includeAcademicWarnings: boolean) {
     const where: Prisma.StudentWhereInput = {
       deletedAt: null,
       AND: [scope],
@@ -103,7 +119,7 @@ export class StudentsService {
     }
 
     if (filter.classStudentId) {
-      where.sClassStudentId = filter.classStudentId;
+      where.AND = [...(where.AND as Prisma.StudentWhereInput[]), { sClassStudentId: filter.classStudentId }];
     }
 
     if (filter.isInClass !== undefined) {
@@ -139,6 +155,19 @@ export class StudentsService {
       const matchingIds = warningFilterReport.items.map((warning) => warning.studentId);
       where.id = { in: matchingIds };
     }
+
+    return { where, warningFilterReport };
+}
+
+export class StudentsService {
+  static async list(
+    filter: StudentFilter = {},
+    page = 1,
+    pageSize = 20,
+    scope: Prisma.StudentWhereInput = {},
+    includeAcademicWarnings = false,
+  ) {
+    const { where, warningFilterReport } = await filteredStudentScope(filter, scope, includeAcademicWarnings);
 
     const skip = (page - 1) * pageSize;
     const take = pageSize;
@@ -222,7 +251,7 @@ export class StudentsService {
 
     const [cumulative, terms] = await Promise.all([
       prisma.studentCumulativeSummary.findFirst({
-        where: { studentId: student.id },
+        where: { studentId: student.id, sProgramCode: student.sStudyProgramId || "" },
       }),
       prisma.studentTermSummary.findMany({
         where: { studentId: student.id },
@@ -270,6 +299,7 @@ export class StudentsService {
       termSummaries: terms.map((t) => ({
         id: t.id,
         academicTermId: t.academicTermId,
+        programCode: t.sProgramCode,
         gpa4: t.gpa4 != null ? Number(t.gpa4) : null,
         gpa10: t.gpa10 != null ? Number(t.gpa10) : null,
         creditsEarned: t.creditsEarned != null ? Number(t.creditsEarned) : null,
@@ -302,14 +332,15 @@ export class StudentsService {
   }
 
   static async create(input: StudentUpsertInput) {
-    const fullName = input.fullName || `${input.lastName} ${input.firstName}`.trim();
+    validateStudentInput(input);
+    const fullName = input.fullName?.trim() || `${input.firstName.trim()} ${input.lastName.trim()}`;
     const birthDate = new Date(input.birthDate);
 
     const created = await prisma.student.create({
       data: {
-        sStudentId: input.studentId,
-        sFirstName: input.firstName,
-        sLastName: input.lastName,
+        sStudentId: input.studentId.trim(),
+        sFirstName: input.firstName.trim(),
+        sLastName: input.lastName.trim(),
         sFullName: fullName,
         sBirthDate: birthDate,
         sBirthPlace: input.birthPlace || null,
@@ -326,11 +357,12 @@ export class StudentsService {
   }
 
   static async update(id: string, input: Partial<StudentUpsertInput>) {
+    validateStudentInput(input, true);
     const data: Prisma.StudentUpdateInput = {};
 
-    if (input.studentId) data.sStudentId = input.studentId;
-    if (input.firstName) data.sFirstName = input.firstName;
-    if (input.lastName) data.sLastName = input.lastName;
+    if (input.studentId) data.sStudentId = input.studentId.trim();
+    if (input.firstName) data.sFirstName = input.firstName.trim();
+    if (input.lastName) data.sLastName = input.lastName.trim();
     if (input.fullName) data.sFullName = input.fullName;
     if (input.birthDate) data.sBirthDate = new Date(input.birthDate);
     if (input.birthPlace !== undefined) data.sBirthPlace = input.birthPlace;
@@ -346,6 +378,10 @@ export class StudentsService {
     });
 
     if (!student) throw new Error("Student not found");
+
+    if (!input.fullName && (input.firstName !== undefined || input.lastName !== undefined)) {
+      data.sFullName = `${input.firstName?.trim() ?? student.sFirstName} ${input.lastName?.trim() ?? student.sLastName}`.trim();
+    }
 
     const updated = await prisma.student.update({
       where: { id: student.id },
@@ -368,15 +404,18 @@ export class StudentsService {
     return true;
   }
 
-  static async exportAll(scope: Prisma.StudentWhereInput = {}) {
-    const { items } = await orderedStudentPage({ deletedAt: null, AND: [scope] });
+  static async exportAll(scope: Prisma.StudentWhereInput = {}, filter: StudentFilter = {}, includeAcademicWarnings = false) {
+    const { where } = await filteredStudentScope(filter, scope, includeAcademicWarnings);
+    const { items } = await orderedStudentPage(where);
     return items.map((s) => mapStudent(s));
   }
 
-  static async importBatch(items: StudentUpsertInput[], scope: Prisma.StudentWhereInput = {}) {
+  static async importBatch(items: StudentUpsertInput[], scope: Prisma.StudentWhereInput = {}, preview = false) {
     const errors: { studentId: string; message: string }[] = [];
     const unique = new Map<string, StudentUpsertInput>();
     for (const item of items) {
+      try { validateStudentInput(item); }
+      catch (error) { errors.push({ studentId: typeof item?.studentId === "string" ? item.studentId : "", message: error instanceof Error ? error.message : "Hồ sơ không hợp lệ" }); continue; }
       const code = item.studentId?.trim();
       const birthDate = new Date(item.birthDate);
       if (!code || !item.firstName?.trim() || !item.lastName?.trim() || Number.isNaN(birthDate.getTime())) {
@@ -392,7 +431,7 @@ export class StudentsService {
     const validItems = [...unique.values()];
     const existing = await prisma.student.findMany({
       where: { sStudentId: { in: validItems.map((item) => item.studentId) } },
-      select: { id: true, sStudentId: true },
+      select: { id: true, sStudentId: true, deletedAt: true },
     });
     const accessibleExisting = await prisma.student.findMany({
       where: { AND: [{ sStudentId: { in: validItems.map((item) => item.studentId) } }, scope] },
@@ -405,30 +444,34 @@ export class StudentsService {
     for (const code of outsideScope) errors.push({ studentId: code, message: "Existing student is outside data scope" });
     const scopedItems = validItems.filter((item) => !outsideScope.has(item.studentId));
     const existingByCode = new Map(existing.map((student) => [student.sStudentId, student.id]));
-    const dataFor = (item: StudentUpsertInput) => ({
+    const archivedCodes = new Set(existing.filter(student => student.deletedAt).map(student => student.sStudentId));
+    for (const code of archivedCodes) errors.push({ studentId: code, message: "Hồ sơ đã xóa; cần khôi phục riêng trước khi nhập cập nhật." });
+    const importableItems = scopedItems.filter(item => !archivedCodes.has(item.studentId));
+    const dataFor = (item: StudentUpsertInput, updating = false) => ({
       sStudentId: item.studentId,
       sFirstName: item.firstName.trim(),
       sLastName: item.lastName.trim(),
-      sFullName: item.fullName?.trim() || `${item.lastName} ${item.firstName}`.trim(),
+      sFullName: item.fullName?.trim() || `${item.firstName.trim()} ${item.lastName.trim()}`,
       sBirthDate: new Date(item.birthDate),
-      sBirthPlace: item.birthPlace || null,
-      sGender: item.gender || null,
-      sClassRoleId: item.classRoleId ?? 0,
-      sPermanentResidence: item.permanentResidence || null,
-      sIsInClass: item.isInClass ?? true,
-      sClassStudentId: item.classStudentId || null,
-      sStudyProgramId: item.studyProgramId || null,
-      deletedAt: null,
+      sBirthPlace: updating && item.birthPlace === undefined ? undefined : item.birthPlace || null,
+      sGender: updating && item.gender === undefined ? undefined : item.gender || null,
+      sClassRoleId: updating && item.classRoleId === undefined ? undefined : item.classRoleId ?? 0,
+      sPermanentResidence: updating && item.permanentResidence === undefined ? undefined : item.permanentResidence || null,
+      sIsInClass: updating && item.isInClass === undefined ? undefined : item.isInClass ?? true,
+      sClassStudentId: updating && item.classStudentId === undefined ? undefined : item.classStudentId || null,
+      sStudyProgramId: updating && item.studyProgramId === undefined ? undefined : item.studyProgramId || null,
     });
-    await prisma.$transaction(async (tx) => {
-      const newRows = scopedItems.filter((item) => !existingByCode.has(item.studentId)).map(dataFor);
+    if (!preview) await prisma.$transaction(async (tx) => {
+      const newRows = importableItems.filter((item) => !existingByCode.has(item.studentId)).map(item => dataFor(item));
       if (newRows.length) await tx.student.createMany({ data: newRows });
-      for (const item of scopedItems) {
+      for (const item of importableItems) {
         const id = existingByCode.get(item.studentId);
-        if (id) await tx.student.update({ where: { id }, data: dataFor(item) });
+        if (id) await tx.student.update({ where: { id }, data: dataFor(item, true) });
       }
     });
-    return { total: items.length, imported: scopedItems.length, errors };
+    return { total: items.length, imported: preview ? 0 : importableItems.length, eligible: importableItems.length,
+      created: importableItems.filter(item => !existingByCode.has(item.studentId)).length,
+      updated: importableItems.filter(item => existingByCode.has(item.studentId)).length, preview, errors };
   }
 }
 
@@ -438,7 +481,7 @@ function mapStudent(
   classMeta?: { className?: string | null; cohortCode?: string | null },
   includeAcademicWarnings = false,
 ) {
-  let warningLevel: "red" | "yellow" | "green" | "insufficient" = "green";
+  let warningLevel: "red" | "yellow" | "green" | "insufficient" = warningResult ? "green" : "insufficient";
   if (warningResult?.presentationState === "HIGH_RISK" || warningResult?.presentationState === "VERIFY_REQUIRED") {
     warningLevel = "red";
   } else if (warningResult?.presentationState === "MONITORING") {

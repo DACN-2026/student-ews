@@ -1,10 +1,13 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { TrainingProgramsService } from "@/lib/services/training-programs";
 import { jsonResponse, errorResponse, parsePagination } from "@/lib/utils/api-response";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 
 export async function GET(req: NextRequest) {
   try {
+    const access = await requireApiPermission(req);
+    if (!access.authorized) return access.response;
     const { searchParams } = req.nextUrl;
     const { page, pageSize } = parsePagination(searchParams);
     return jsonResponse(await TrainingProgramsService.listAcademicYears(searchParams.get("q") || "", page, pageSize));
@@ -16,7 +19,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await readJsonBody<{
+    const access = await requireApiPermission(req);
+    if (!access.authorized) return access.response;
+    const body = await readJsonObject<{
       yearCode?: string;
       startDate?: string;
       endDate?: string;

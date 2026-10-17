@@ -12,7 +12,7 @@ interface ForbiddenStateProps {
 
 export default function ForbiddenState({
   title = "Không có quyền truy cập",
-  description = "Tài khoản của bạn chưa được cấp quyền để truy cập trang này theo phân quyền dữ liệu (RBAC).",
+  description = "Tài khoản của bạn chưa được cấp quyền truy cập trang này. Liên hệ quản trị viên nếu bạn cần sử dụng chức năng này.",
   requiredPermission,
 }: ForbiddenStateProps) {
   const { user } = useAuthStore();

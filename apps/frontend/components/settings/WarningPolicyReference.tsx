@@ -38,7 +38,7 @@ export default function WarningPolicyReference({ regulatory }: { regulatory: War
     <section className="px-1 text-xs leading-5 text-slate-600" aria-labelledby="assessment-principles-title"><h2 id="assessment-principles-title" className="mb-3 text-sm font-semibold text-slate-900">Cách hệ thống áp dụng</h2>
       <ul className="space-y-3"><li><strong className="font-medium text-slate-800">Xét học kỳ chính trước.</strong> GPA là điểm trung bình học tập; TC là tín chỉ. Trình độ năm học được xác định từ tín chỉ đã tích lũy.</li>
         <li><strong className="font-medium text-slate-800">Ưu tiên mức nguy cơ cao nhất.</strong> Một sinh viên có thể có nhiều tín hiệu cần hỗ trợ.</li>
-        <li><strong className="font-medium text-slate-800">Xác minh dữ liệu thiếu và vắng thi (VT).</strong> Thiếu dữ liệu không được quy thành GPA bằng 0. Sinh viên chưa đăng ký học phần cần được liên hệ xác minh.</li>
+        <li><strong className="font-medium text-slate-800">Phân biệt chờ kết quả, không đăng ký và vắng thi (VT).</strong> Giữ điểm trung bình (GPA) do Trường cung cấp. Với học phần VT, sử dụng kết quả đạt hoặc không đạt do Trường ghi nhận. Kỳ không đăng ký học phần không được tự coi là có GPA bằng 0.</li>
         <li><strong className="font-medium text-slate-800">Đối chiếu quyết định nghỉ học.</strong> Hồ sơ đang nghỉ tạm thời được đóng băng đến khi quyết định học lại có hiệu lực; hồ sơ đã rời lớp được giữ để tra cứu lịch sử.</li>
       </ul>
     </section>

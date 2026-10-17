@@ -1,0 +1,740 @@
+{
+  "checkedAt": "2026-10-17T07:18:42.830Z",
+  "applied": true,
+  "batchId": "ff8d0da6-41dc-4fb7-8569-8224d481992a",
+  "inspectedPlans": 12,
+  "changedPlans": 10,
+  "changedCourseSnapshots": 41,
+  "blockers": [],
+  "sameCourseIds": true,
+  "creditRequirementsUnchanged": true,
+  "sourceUnchanged": true,
+  "sourceBefore": [
+    {
+      "source": "catalog",
+      "count": 144,
+      "hash": "0cc2b692235dd18012ffdbc8c0955980"
+    },
+    {
+      "source": "curriculum",
+      "count": 593,
+      "hash": "83d42abafe53ba7407aae8f7b6048e35"
+    },
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    },
+    {
+      "source": "programs",
+      "count": 11,
+      "hash": "77ba90e3cfb1996872d88b6684576cc9"
+    },
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    }
+  ],
+  "sourceAfter": [
+    {
+      "source": "catalog",
+      "count": 144,
+      "hash": "0cc2b692235dd18012ffdbc8c0955980"
+    },
+    {
+      "source": "curriculum",
+      "count": 593,
+      "hash": "83d42abafe53ba7407aae8f7b6048e35"
+    },
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    },
+    {
+      "source": "programs",
+      "count": 11,
+      "hash": "77ba90e3cfb1996872d88b6684576cc9"
+    },
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    }
+  ],
+  "plans": [
+    {
+      "previousPlanId": "3639fc23-f49e-4347-acfe-4b39bc0fa233",
+      "cohort": "K47",
+      "program": "CQ23CT-PM",
+      "semesterNo": 8,
+      "originalStatus": "locked",
+      "originalVersion": 2,
+      "changes": [
+        {
+          "planCourseId": "376e83b6-467b-408e-801c-9c9a8f0449c0",
+          "courseId": "0f3ca409-2fa3-4ab5-83d2-9e561b326b00",
+          "beforeCode": "20CT4104",
+          "afterCode": "20CT4104D",
+          "beforeName": "Các công nghệ mới trong phát triển phần mềm",
+          "afterName": "Các công nghệ mới trong phát triển phần mềm",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "4eea9e6d-f279-4529-9a08-ff73dbb6d81c",
+          "courseId": "a010618a-704e-45af-83ab-20a360984c96",
+          "beforeCode": "20CT4101",
+          "afterCode": "20CT4101D",
+          "beforeName": "Quản trị dự án công nghệ thông tin",
+          "afterName": "Quản trị dự án công nghệ thông tin",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "722bc414-befc-4a35-9ed4-8865826268b9",
+          "courseId": "5f7bac34-1e07-47c7-92c5-18229372d744",
+          "beforeCode": "20CT3113",
+          "afterCode": "20CT3113D",
+          "beforeName": "Các phương pháp học máy",
+          "afterName": "Các phương pháp học máy",
+          "credits": 4,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "7e26bace-f359-4cf2-bed2-bf735ea75077",
+          "courseId": "56d64e85-60d3-4352-96f3-3b416496be33",
+          "beforeCode": "20CT4106",
+          "afterCode": "20CT4106D",
+          "beforeName": "Phát triển ứng dụng di động nâng cao",
+          "afterName": "Phát triển ứng dụng di động nâng cao",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "cf5c4a6e-8918-4741-afdb-3908b6dce069",
+          "courseId": "82de7c1d-4368-4116-967b-20510a1fe865",
+          "beforeCode": "20CT4107",
+          "afterCode": "20CT4107D",
+          "beforeName": "Thương mại điện tử",
+          "afterName": "Thương mại điện tử",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "d2e2c77c-12e8-4cbb-97d2-c058f2b64d50",
+          "courseId": "4fc009fc-4c3a-436a-8e57-0c990bae70bb",
+          "beforeCode": "20CT4105",
+          "afterCode": "20CT4105D",
+          "beforeName": "Dịch vụ web",
+          "afterName": "Dịch vụ web",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "e0dc8bf3-e625-4b38-b99b-b273fd0c3255",
+          "courseId": "b583182d-5fe3-482c-94cf-354499987ece",
+          "beforeCode": "20CT4102",
+          "afterCode": "20CT4102D",
+          "beforeName": "Phát triển ứng dụng mã nguồn mở",
+          "afterName": "Phát triển ứng dụng mã nguồn mở",
+          "credits": 3,
+          "semesterNo": 8
+        }
+      ]
+    },
+    {
+      "previousPlanId": "4e0f19ed-3e5c-4b39-a9a1-3e066999ece1",
+      "cohort": "K48",
+      "program": "CQ24CT-PM",
+      "semesterNo": 6,
+      "originalStatus": "locked",
+      "originalVersion": 1,
+      "changes": [
+        {
+          "planCourseId": "0a90a4ed-796d-4679-9ad2-725cad0b04ee",
+          "courseId": "6827619b-a694-4014-8883-b125106b4a17",
+          "beforeCode": "20CT3106",
+          "afterCode": "20CT3106D",
+          "beforeName": "Lập trình python",
+          "afterName": "Lập trình python",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "199b05c2-99ca-4861-9a05-3f2c3c095b4a",
+          "courseId": "cea9fef2-463a-48ed-9f82-eb6cae878baa",
+          "beforeCode": "20CT3132",
+          "afterCode": "20CT3132D",
+          "beforeName": "Phát triển ứng dụng di động",
+          "afterName": "Phát triển ứng dụng di động",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "26ffe28e-b062-4b53-b97b-096f2950cbee",
+          "courseId": "a22c8d30-76c7-4e89-acba-5a284df9188d",
+          "beforeCode": "20CT3101",
+          "afterCode": "20CT3101D",
+          "beforeName": "Công nghệ phần mềm",
+          "afterName": "Công nghệ phần mềm",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "572d8e66-f445-419a-b3cc-c25c8b9363b7",
+          "courseId": "2b125f47-690b-4350-bd1f-bfe56f00ecb0",
+          "beforeCode": "20CT3104",
+          "afterCode": "20CT3104D",
+          "beforeName": "Thiết kế giao diện",
+          "afterName": "Thiết kế giao diện",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "8778ba95-2e34-4091-a0be-e0a574ec599f",
+          "courseId": "c33aca66-ebf3-4e27-8e59-ecacd0315212",
+          "beforeCode": "20CT3105",
+          "afterCode": "20CT3105D",
+          "beforeName": "Lập trình Java",
+          "afterName": "Lập trình Java",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "890f3b3b-156e-493a-b070-a45e87f1e6a4",
+          "courseId": "643bc163-3e91-4074-9cbd-fbcd4153341c",
+          "beforeCode": "20CT3103",
+          "afterCode": "20CT3103D",
+          "beforeName": "Phát triển ứng dụng Web",
+          "afterName": "Phát triển ứng dụng Web",
+          "credits": 4,
+          "semesterNo": 6
+        }
+      ]
+    },
+    {
+      "previousPlanId": "54b70c37-f46e-47e4-ac87-b6926eded118",
+      "cohort": "K46",
+      "program": "CQ22CT-PM",
+      "semesterNo": 9,
+      "originalStatus": "locked",
+      "originalVersion": 2,
+      "changes": [
+        {
+          "planCourseId": "cda200a6-a859-4c16-8b8c-b2a59562cad2",
+          "courseId": "19c998ad-b50c-495b-8a9f-eb2f7a69bfc6",
+          "beforeCode": "20CT4201",
+          "afterCode": "20CT4201D",
+          "beforeName": "Thực tập nghề nghiệp",
+          "afterName": "Thực tập nghề nghiệp",
+          "credits": 8,
+          "semesterNo": 9
+        },
+        {
+          "planCourseId": "e8f983b2-8032-499e-b8af-c0399545ff72",
+          "courseId": "a2b95333-9db0-43c4-94a3-24caaa68cd10",
+          "beforeCode": "20CT4202",
+          "afterCode": "20CT4202D",
+          "beforeName": "Đồ án tốt nghiệp",
+          "afterName": "Đồ án tốt nghiệp",
+          "credits": 10,
+          "semesterNo": 9
+        }
+      ]
+    },
+    {
+      "previousPlanId": "635da9e0-4ea5-4f80-9a42-76babe5b62b5",
+      "cohort": "K47",
+      "program": "CQ23CT-PM",
+      "semesterNo": 7,
+      "originalStatus": "locked",
+      "originalVersion": 2,
+      "changes": [
+        {
+          "planCourseId": "b287d724-59e6-448c-b105-46cb380c49af",
+          "courseId": "91ded3cc-c099-4473-b87b-c0a45a90d485",
+          "beforeCode": "20CT4103",
+          "afterCode": "20CT4103D",
+          "beforeName": "Phát triến ứng dụng game nâng cao",
+          "afterName": "Phát triến ứng dụng game nâng cao",
+          "credits": 3,
+          "semesterNo": 7
+        }
+      ]
+    },
+    {
+      "previousPlanId": "6f1de278-317b-4414-a36e-aa049cad7f4f",
+      "cohort": "K48",
+      "program": "CQ24CT",
+      "semesterNo": 5,
+      "originalStatus": "locked",
+      "originalVersion": 2,
+      "changes": [
+        {
+          "planCourseId": "5c126c4d-fc5b-45b2-80b3-d8769dfb359a",
+          "courseId": "9942fd69-f517-45fe-bbf2-a3be4354667d",
+          "beforeCode": "20CT3107",
+          "afterCode": "20CT3107D",
+          "beforeName": "Lập trình mạng",
+          "afterName": "Lập trình mạng",
+          "credits": 3,
+          "semesterNo": 5
+        },
+        {
+          "planCourseId": "a8518062-55e1-40d1-af41-eaf2e34b18f7",
+          "courseId": "a9d0e8d5-09f9-44d3-ac9f-9a1286a3f5cd",
+          "beforeCode": "20CT3108",
+          "afterCode": "20CT3108D",
+          "beforeName": "Phương pháp nghiên cứu khoa học",
+          "afterName": "Phương pháp nghiên cứu khoa học",
+          "credits": 3,
+          "semesterNo": 5
+        }
+      ]
+    },
+    {
+      "previousPlanId": "86f98588-57f8-49eb-ae00-11ed43a8ccfe",
+      "cohort": "K48",
+      "program": "CQ24CT-KHDL",
+      "semesterNo": 6,
+      "originalStatus": "draft",
+      "originalVersion": 1,
+      "changes": [
+        {
+          "planCourseId": "1e789603-f51d-4fb1-af37-596144b92b00",
+          "courseId": "27ce3638-d253-49ee-b3ab-83f2fbd02de0",
+          "beforeCode": "20CT3112",
+          "afterCode": "20CT3112D",
+          "beforeName": "Cấu trúc dữ liệu và thuật giải nâng cao",
+          "afterName": "Cấu trúc dữ liệu và thuật giải nâng cao",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "225564b3-82f1-4607-8000-4a6ca4849513",
+          "courseId": "6827619b-a694-4014-8883-b125106b4a17",
+          "beforeCode": "20CT3106",
+          "afterCode": "20CT3106D",
+          "beforeName": "Lập trình python",
+          "afterName": "Lập trình python",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "33b489a0-3c05-40b4-ae37-ad5032fbc8ff",
+          "courseId": "cea9fef2-463a-48ed-9f82-eb6cae878baa",
+          "beforeCode": "20CT3132",
+          "afterCode": "20CT3132D",
+          "beforeName": "Phát triển ứng dụng di động",
+          "afterName": "Phát triển ứng dụng di động",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "51276c3c-7e55-40a6-8333-8cd572d25b0d",
+          "courseId": "5f7bac34-1e07-47c7-92c5-18229372d744",
+          "beforeCode": "20CT3113",
+          "afterCode": "20CT3113D",
+          "beforeName": "Các phương pháp học máy",
+          "afterName": "Các phương pháp học máy",
+          "credits": 4,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "ba779fa6-4c81-4b5e-830d-79486ac7d900",
+          "courseId": "643bc163-3e91-4074-9cbd-fbcd4153341c",
+          "beforeCode": "20CT3103",
+          "afterCode": "20CT3103D",
+          "beforeName": "Phát triển ứng dụng Web",
+          "afterName": "Phát triển ứng dụng Web",
+          "credits": 4,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "fea36173-e3b2-40e3-a5cc-6fc10e2a5cff",
+          "courseId": "ad66e475-6e82-4a7c-870c-db876733603a",
+          "beforeCode": "20CT3123",
+          "afterCode": "20CT3123D",
+          "beforeName": "Mật mã học và mã hóa thông tin",
+          "afterName": "Mật mã học và mã hóa thông tin",
+          "credits": 4,
+          "semesterNo": 6
+        }
+      ]
+    },
+    {
+      "previousPlanId": "a975a0a4-b967-4553-b82c-960274df8181",
+      "cohort": "K47",
+      "program": "CQ23CT-MMT",
+      "semesterNo": 8,
+      "originalStatus": "locked",
+      "originalVersion": 2,
+      "changes": [
+        {
+          "planCourseId": "3768a9a7-d806-4cbc-af5e-aa2eb3f43972",
+          "courseId": "82de7c1d-4368-4116-967b-20510a1fe865",
+          "beforeCode": "20CT4107",
+          "afterCode": "20CT4107D",
+          "beforeName": "Thương mại điện tử",
+          "afterName": "Thương mại điện tử",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "3a91c505-3506-403a-90a7-8ce787fc5c37",
+          "courseId": "ce83415c-b92f-4b85-aa89-498e5b0142e7",
+          "beforeCode": "20CT4125",
+          "afterCode": "20CT4125D",
+          "beforeName": "Mạng thế hệ mới",
+          "afterName": "Mạng thế hệ mới",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "4cbf7975-abc1-4bd4-ba48-d9c3b5504153",
+          "courseId": "16106c8d-1ff8-4bb8-b843-9184fada85ef",
+          "beforeCode": "20CT4126",
+          "afterCode": "20CT4126D",
+          "beforeName": "Voice over IP",
+          "afterName": "Voice over IP",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "68f4ebaf-6252-4fd9-b477-e29a8c13bfbd",
+          "courseId": "413d2c8e-ae37-4246-ae90-d7b0c1178b42",
+          "beforeCode": "20CT4121",
+          "afterCode": "20CT4121D",
+          "beforeName": "Bảo mật mạng",
+          "afterName": "Bảo mật mạng",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "7fc69954-7f77-4d58-9562-c33e29978568",
+          "courseId": "4e0f849d-ada0-4002-81b0-f6dfabab7595",
+          "beforeCode": "20CT4120",
+          "afterCode": "20CT4120D",
+          "beforeName": "Hệ thống phân tán",
+          "afterName": "Hệ thống phân tán",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "8a1dcbf1-2816-448d-aaea-535d322ca046",
+          "courseId": "08aff7e6-dcaa-468c-ac29-8fbb0681373a",
+          "beforeCode": "20CT4124",
+          "afterCode": "20CT4124D",
+          "beforeName": "Chuyên đề mạng máy tính 2",
+          "afterName": "Chuyên đề mạng máy tính 2",
+          "credits": 3,
+          "semesterNo": 8
+        },
+        {
+          "planCourseId": "958ee3df-2a92-43d1-9304-49e092ca8a83",
+          "courseId": "11b6cc64-0c44-4ed3-b741-260f81875b4f",
+          "beforeCode": "20CT4122",
+          "afterCode": "20CT4122D",
+          "beforeName": "Triển khai hệ thống tích hợp",
+          "afterName": "Triển khai hệ thống tích hợp",
+          "credits": 3,
+          "semesterNo": 8
+        }
+      ]
+    },
+    {
+      "previousPlanId": "bc533db2-39b2-400b-aa8f-4704905bd04a",
+      "cohort": "K46",
+      "program": "CQ22CT-MMT",
+      "semesterNo": 9,
+      "originalStatus": "locked",
+      "originalVersion": 2,
+      "changes": [
+        {
+          "planCourseId": "3fe11ee1-3eca-4244-a31f-6d138be36975",
+          "courseId": "a2b95333-9db0-43c4-94a3-24caaa68cd10",
+          "beforeCode": "20CT4202",
+          "afterCode": "20CT4202D",
+          "beforeName": "Đồ án tốt nghiệp",
+          "afterName": "Đồ án tốt nghiệp",
+          "credits": 10,
+          "semesterNo": 9
+        },
+        {
+          "planCourseId": "5798b648-99e4-49ce-b80c-65c7c0d3675a",
+          "courseId": "19c998ad-b50c-495b-8a9f-eb2f7a69bfc6",
+          "beforeCode": "20CT4201",
+          "afterCode": "20CT4201D",
+          "beforeName": "Thực tập nghề nghiệp",
+          "afterName": "Thực tập nghề nghiệp",
+          "credits": 8,
+          "semesterNo": 9
+        }
+      ]
+    },
+    {
+      "previousPlanId": "ca20303d-132f-4ef4-8bc9-1a6cec8add98",
+      "cohort": "K47",
+      "program": "CQ23CT-MMT",
+      "semesterNo": 7,
+      "originalStatus": "locked",
+      "originalVersion": 2,
+      "changes": [
+        {
+          "planCourseId": "3b0e7a7f-2e34-4967-8daf-8653ed935949",
+          "courseId": "9fe13fc0-e01e-4ba6-9e15-ddc14bca08a0",
+          "beforeCode": "20CT3220",
+          "afterCode": "20CT3220D",
+          "beforeName": "Thiết kế mạng",
+          "afterName": "Thiết kế mạng",
+          "credits": 3,
+          "semesterNo": 7
+        }
+      ]
+    },
+    {
+      "previousPlanId": "d04e55a7-c683-45d5-8853-810897a02648",
+      "cohort": "K48",
+      "program": "CQ24CT-MMT",
+      "semesterNo": 6,
+      "originalStatus": "locked",
+      "originalVersion": 1,
+      "changes": [
+        {
+          "planCourseId": "191a3f46-97a3-4864-8148-82e4365c47e5",
+          "courseId": "ad66e475-6e82-4a7c-870c-db876733603a",
+          "beforeCode": "20CT3123",
+          "afterCode": "20CT3123D",
+          "beforeName": "Mật mã học và mã hóa thông tin",
+          "afterName": "Mật mã học và mã hóa thông tin",
+          "credits": 4,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "25d5d961-224c-47fc-9c7e-2d355825ff6b",
+          "courseId": "aa1c882c-5a19-4735-adb4-f0f569fff90c",
+          "beforeCode": "20CT3120",
+          "afterCode": "20CT3120D",
+          "beforeName": "Hệ điều hành mã nguồn mở",
+          "afterName": "Hệ điều hành mã nguồn mở",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "3467f10a-17d5-4467-86f4-0ed5c842d416",
+          "courseId": "b2a7e494-5a52-487e-a32f-7e599f001c90",
+          "beforeCode": "20CT3122",
+          "afterCode": "20CT3122D",
+          "beforeName": "Định tuyến mạng",
+          "afterName": "Định tuyến mạng",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "a1b87102-c884-458c-89b2-8363ca84cc82",
+          "courseId": "e18e10ef-b099-453b-bb3c-66ef2b305ea9",
+          "beforeCode": "20CT3121",
+          "afterCode": "20CT3121D",
+          "beforeName": "Quản trị mạng Windows",
+          "afterName": "Quản trị mạng Windows",
+          "credits": 4,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "a789c48b-cde2-41c0-95e2-70292bf8281b",
+          "courseId": "840b346a-2b30-4c7e-adbe-3439a3afe427",
+          "beforeCode": "20CT3124",
+          "afterCode": "20CT3124D",
+          "beforeName": "Chuyên đề mạng máy tính 1",
+          "afterName": "Chuyên đề mạng máy tính 1",
+          "credits": 4,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "efd2127a-74c3-4e10-b5af-b6dfadee2660",
+          "courseId": "6827619b-a694-4014-8883-b125106b4a17",
+          "beforeCode": "20CT3106",
+          "afterCode": "20CT3106D",
+          "beforeName": "Lập trình python",
+          "afterName": "Lập trình python",
+          "credits": 3,
+          "semesterNo": 6
+        },
+        {
+          "planCourseId": "f2aeae5f-2537-4d8f-8099-5e28dfc2eae9",
+          "courseId": "643bc163-3e91-4074-9cbd-fbcd4153341c",
+          "beforeCode": "20CT3103",
+          "afterCode": "20CT3103D",
+          "beforeName": "Phát triển ứng dụng Web",
+          "afterName": "Phát triển ứng dụng Web",
+          "credits": 4,
+          "semesterNo": 6
+        }
+      ]
+    }
+  ],
+  "created": [
+    {
+      "previousPlanId": "3639fc23-f49e-4347-acfe-4b39bc0fa233",
+      "planId": "d4048264-16c2-45ae-9474-ad7d431f3c41",
+      "previousVersion": 2,
+      "version": 3,
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "academicTermId": "26976fff-81c9-47dd-96a9-738d212637f1",
+      "status": "locked",
+      "isCurrent": true,
+      "changedSnapshots": 7
+    },
+    {
+      "previousPlanId": "4e0f19ed-3e5c-4b39-a9a1-3e066999ece1",
+      "planId": "ded0f8cf-b1d3-497d-b425-101c827debcb",
+      "previousVersion": 1,
+      "version": 2,
+      "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "trainingProgramId": "f5e7445f-4113-4d8c-97a3-02d0be3ab40c",
+      "academicTermId": "26976fff-81c9-47dd-96a9-738d212637f1",
+      "status": "locked",
+      "isCurrent": true,
+      "changedSnapshots": 6
+    },
+    {
+      "previousPlanId": "54b70c37-f46e-47e4-ac87-b6926eded118",
+      "planId": "24f7d421-fb81-43f9-be75-5cb4e9379574",
+      "previousVersion": 2,
+      "version": 3,
+      "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "trainingProgramId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "academicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "status": "locked",
+      "isCurrent": true,
+      "changedSnapshots": 2
+    },
+    {
+      "previousPlanId": "635da9e0-4ea5-4f80-9a42-76babe5b62b5",
+      "planId": "54af1db6-a692-4c7b-a81e-a358deef6eea",
+      "previousVersion": 2,
+      "version": 3,
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "trainingProgramId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "academicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "status": "locked",
+      "isCurrent": true,
+      "changedSnapshots": 1
+    },
+    {
+      "previousPlanId": "6f1de278-317b-4414-a36e-aa049cad7f4f",
+      "planId": "7baf7a9f-2465-4eed-9f99-650db062b816",
+      "previousVersion": 2,
+      "version": 3,
+      "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "trainingProgramId": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "academicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "status": "locked",
+      "isCurrent": true,
+      "changedSnapshots": 2
+    },
+    {
+      "previousPlanId": "86f98588-57f8-49eb-ae00-11ed43a8ccfe",
+      "planId": "17156d63-ae92-48fa-a7c1-e8b5e265101a",
+      "previousVersion": 1,
+      "version": 2,
+      "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "trainingProgramId": "1ad471cb-da28-4db3-8bda-77bb20cc2d8f",
+      "academicTermId": "26976fff-81c9-47dd-96a9-738d212637f1",
+      "status": "draft",
+      "isCurrent": false,
+      "changedSnapshots": 6
+    },
+    {
+      "previousPlanId": "a975a0a4-b967-4553-b82c-960274df8181",
+      "planId": "a428a0e9-5e74-4ba4-aab2-b7d9f4b9c816",
+      "previousVersion": 2,
+      "version": 3,
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "academicTermId": "26976fff-81c9-47dd-96a9-738d212637f1",
+      "status": "locked",
+      "isCurrent": true,
+      "changedSnapshots": 7
+    },
+    {
+      "previousPlanId": "bc533db2-39b2-400b-aa8f-4704905bd04a",
+      "planId": "047a0b7c-c1a7-4d01-bd5f-eca06efa0d87",
+      "previousVersion": 2,
+      "version": 3,
+      "cohortId": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "trainingProgramId": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "academicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "status": "locked",
+      "isCurrent": true,
+      "changedSnapshots": 2
+    },
+    {
+      "previousPlanId": "ca20303d-132f-4ef4-8bc9-1a6cec8add98",
+      "planId": "e6278bbb-7dda-4cd8-b8d9-2d5f4ae7f112",
+      "previousVersion": 2,
+      "version": 3,
+      "cohortId": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "trainingProgramId": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "academicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+      "status": "locked",
+      "isCurrent": true,
+      "changedSnapshots": 1
+    },
+    {
+      "previousPlanId": "d04e55a7-c683-45d5-8853-810897a02648",
+      "planId": "304b7928-794c-40e6-87b0-e897a1598e8c",
+      "previousVersion": 1,
+      "version": 2,
+      "cohortId": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "trainingProgramId": "2d363e8f-195e-49a9-b108-146b3ec83058",
+      "academicTermId": "26976fff-81c9-47dd-96a9-738d212637f1",
+      "status": "locked",
+      "isCurrent": true,
+      "changedSnapshots": 7
+    }
+  ]
+}

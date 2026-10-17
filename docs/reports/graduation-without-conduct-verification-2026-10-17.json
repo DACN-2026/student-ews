@@ -1,0 +1,549 @@
+{
+  "checkedAt": "2026-10-17T13:02:24.175Z",
+  "apiChecks": 106,
+  "allPassed": true,
+  "studentsPerSurface": 622,
+  "currentManualReview": 1,
+  "pendingGrades": 76,
+  "legacyResultsConsistent": true,
+  "profileConductRetained": true,
+  "exportsWithoutConduct": true,
+  "checks": [
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations?latestPerScope=true&pageSize=100",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222/students/2347A033",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/b95b1b79-3dce-47c6-a257-d05b1805e942",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/b95b1b79-3dce-47c6-a257-d05b1805e942/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/b95b1b79-3dce-47c6-a257-d05b1805e942/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/17570a00-ee4e-4f89-b387-a07c0e564799",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/17570a00-ee4e-4f89-b387-a07c0e564799/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/17570a00-ee4e-4f89-b387-a07c0e564799/students/2347A035",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/c061004b-8e7e-4d95-ac31-d052d93f2af2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/c061004b-8e7e-4d95-ac31-d052d93f2af2/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/17570a00-ee4e-4f89-b387-a07c0e564799/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/e25ca632-1eb9-4be9-9a8e-194e7eccdb2a",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/e25ca632-1eb9-4be9-9a8e-194e7eccdb2a/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/e25ca632-1eb9-4be9-9a8e-194e7eccdb2a/students/2246A048",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/0fca4603-61ee-420a-8fd2-622b34a7fcf7",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/0fca4603-61ee-420a-8fd2-622b34a7fcf7/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/e25ca632-1eb9-4be9-9a8e-194e7eccdb2a/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/82691ac7-80d4-48e5-867c-a6d95031cf37",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/82691ac7-80d4-48e5-867c-a6d95031cf37/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/82691ac7-80d4-48e5-867c-a6d95031cf37/students/2246A053",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/c20f2022-92d7-416d-86c9-8c1a0e72a027",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/c20f2022-92d7-416d-86c9-8c1a0e72a027/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/82691ac7-80d4-48e5-867c-a6d95031cf37/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/da542069-c290-4203-b3ae-2f5ae407da4e",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/da542069-c290-4203-b3ae-2f5ae407da4e/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/da542069-c290-4203-b3ae-2f5ae407da4e/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/da542069-c290-4203-b3ae-2f5ae407da4e/students/2448A056",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/343ecab8-72f5-466f-9463-621526ef59f3",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/343ecab8-72f5-466f-9463-621526ef59f3/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/343ecab8-72f5-466f-9463-621526ef59f3/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/da542069-c290-4203-b3ae-2f5ae407da4e/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a/students?pageSize=100&page=3",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a/students/2549A078",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/e2941a54-d984-46c1-a694-8ef32ff7b7c4",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/e2941a54-d984-46c1-a694-8ef32ff7b7c4/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/e2941a54-d984-46c1-a694-8ef32ff7b7c4/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/e2941a54-d984-46c1-a694-8ef32ff7b7c4/students?pageSize=100&page=3",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/cbc2ba31-f248-4476-a370-df0d029a0d80",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/cbc2ba31-f248-4476-a370-df0d029a0d80/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/cbc2ba31-f248-4476-a370-df0d029a0d80/students/2347A049",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/2efe026a-3c65-41b5-a146-fc7bacceb3a4",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/2efe026a-3c65-41b5-a146-fc7bacceb3a4/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/cbc2ba31-f248-4476-a370-df0d029a0d80/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/students/2347A001/conduct",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3101",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222/export?format=pdf",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations?latestPerScope=true&pageSize=100",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222/students/2347A033",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/b95b1b79-3dce-47c6-a257-d05b1805e942",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/b95b1b79-3dce-47c6-a257-d05b1805e942/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/b95b1b79-3dce-47c6-a257-d05b1805e942/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/17570a00-ee4e-4f89-b387-a07c0e564799",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/17570a00-ee4e-4f89-b387-a07c0e564799/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/17570a00-ee4e-4f89-b387-a07c0e564799/students/2347A035",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/c061004b-8e7e-4d95-ac31-d052d93f2af2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/c061004b-8e7e-4d95-ac31-d052d93f2af2/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/17570a00-ee4e-4f89-b387-a07c0e564799/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/e25ca632-1eb9-4be9-9a8e-194e7eccdb2a",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/e25ca632-1eb9-4be9-9a8e-194e7eccdb2a/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/e25ca632-1eb9-4be9-9a8e-194e7eccdb2a/students/2246A048",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/0fca4603-61ee-420a-8fd2-622b34a7fcf7",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/0fca4603-61ee-420a-8fd2-622b34a7fcf7/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/e25ca632-1eb9-4be9-9a8e-194e7eccdb2a/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/82691ac7-80d4-48e5-867c-a6d95031cf37",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/82691ac7-80d4-48e5-867c-a6d95031cf37/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/82691ac7-80d4-48e5-867c-a6d95031cf37/students/2246A053",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/c20f2022-92d7-416d-86c9-8c1a0e72a027",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/c20f2022-92d7-416d-86c9-8c1a0e72a027/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/82691ac7-80d4-48e5-867c-a6d95031cf37/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/da542069-c290-4203-b3ae-2f5ae407da4e",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/da542069-c290-4203-b3ae-2f5ae407da4e/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/da542069-c290-4203-b3ae-2f5ae407da4e/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/da542069-c290-4203-b3ae-2f5ae407da4e/students/2448A056",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/343ecab8-72f5-466f-9463-621526ef59f3",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/343ecab8-72f5-466f-9463-621526ef59f3/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/343ecab8-72f5-466f-9463-621526ef59f3/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/da542069-c290-4203-b3ae-2f5ae407da4e/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a/students?pageSize=100&page=3",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a/students/2549A078",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/e2941a54-d984-46c1-a694-8ef32ff7b7c4",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/e2941a54-d984-46c1-a694-8ef32ff7b7c4/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/e2941a54-d984-46c1-a694-8ef32ff7b7c4/students?pageSize=100&page=2",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/e2941a54-d984-46c1-a694-8ef32ff7b7c4/students?pageSize=100&page=3",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/cbc2ba31-f248-4476-a370-df0d029a0d80",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/cbc2ba31-f248-4476-a370-df0d029a0d80/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/cbc2ba31-f248-4476-a370-df0d029a0d80/students/2347A049",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/2efe026a-3c65-41b5-a146-fc7bacceb3a4",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/2efe026a-3c65-41b5-a146-fc7bacceb3a4/students?pageSize=100&page=1",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/cbc2ba31-f248-4476-a370-df0d029a0d80/export?format=xlsx",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/students/2347A001/conduct",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3100",
+      "path": "/api/v1/graduation-evaluations/9d673c29-b22d-47fb-8919-632293e68222/export?format=pdf",
+      "passed": true
+    }
+  ],
+  "renderChecks": {
+    "action": true,
+    "curriculum": true,
+    "summary": true,
+    "ignoresLegacyConductProps": true
+  }
+}

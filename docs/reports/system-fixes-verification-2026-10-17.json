@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-17",
+  "studentWrites": 0,
+  "checks": [
+    {
+      "check": "backend and frontend proxy",
+      "result": "pass"
+    },
+    {
+      "check": "complete course catalog",
+      "result": "pass",
+      "details": {
+        "received": 144,
+        "total": 144
+      }
+    },
+    {
+      "check": "archived plans available",
+      "result": "pass",
+      "details": {
+        "archived": 35,
+        "total": 47
+      }
+    },
+    {
+      "check": "historical F retained after later pass",
+      "result": "pass",
+      "details": {
+        "returnedAttempts": 1
+      }
+    },
+    {
+      "check": "absent identity rejected by catalog handler",
+      "result": "pass"
+    },
+    {
+      "check": "current database permission overrides outdated JWT claims",
+      "result": "pass"
+    },
+    {
+      "check": "advisor statistics match accessible students and stale admin claims cannot manage users",
+      "result": "pass",
+      "details": [
+        {
+          "listedTotal": 7,
+          "accessibleTotal": 7
+        },
+        {
+          "listedTotal": 50,
+          "accessibleTotal": 50
+        }
+      ]
+    },
+    {
+      "check": "import preview performs no profile writes",
+      "result": "pass"
+    },
+    {
+      "check": "student export respects selected class",
+      "result": "pass",
+      "details": {
+        "exported": 57
+      }
+    }
+  ]
+}

@@ -1,0 +1,400 @@
+{
+  "checkedAt": "2026-10-17T13:26:17.842Z",
+  "calculationVersion": "curriculum-gap-v6",
+  "runs": [
+    {
+      "previousId": "cbc2ba31-f248-4476-a370-df0d029a0d80",
+      "id": "a8d35556-68f4-4022-8c21-52c52b6afdfc"
+    },
+    {
+      "previousId": "63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a",
+      "id": "0dbd96ce-79d3-4ed2-bc80-3f1b134489e3"
+    },
+    {
+      "previousId": "da542069-c290-4203-b3ae-2f5ae407da4e",
+      "id": "de9025b4-9422-43b2-9712-9a2e5c69594e"
+    },
+    {
+      "previousId": "82691ac7-80d4-48e5-867c-a6d95031cf37",
+      "id": "a20e4090-c13e-4a46-97f6-f915e949dc6d"
+    },
+    {
+      "previousId": "e25ca632-1eb9-4be9-9a8e-194e7eccdb2a",
+      "id": "39042761-3432-44ac-b6bb-489c4eedaa5d"
+    },
+    {
+      "previousId": "17570a00-ee4e-4f89-b387-a07c0e564799",
+      "id": "e40fb991-8fbc-432e-8661-0295e960dea8"
+    },
+    {
+      "previousId": "9d673c29-b22d-47fb-8919-632293e68222",
+      "id": "8ea71734-d57d-46f9-9a81-af5e255aeb00"
+    }
+  ],
+  "studentsChecked": 622,
+  "changes": [
+    {
+      "studentCode": "2347A048",
+      "from": "MANUAL_REVIEW",
+      "to": "NOT_ELIGIBLE",
+      "reviewBefore": true,
+      "reviewAfter": true
+    }
+  ],
+  "metricsUnchanged": true,
+  "sourceDataUnchanged": true,
+  "beforeHashes": [
+    {
+      "table": "students",
+      "count": 625,
+      "hash": "3b5b3465fa3b824544ee4be8768471ff"
+    },
+    {
+      "table": "student_course_offerings",
+      "count": 31141,
+      "hash": "3b52b49f8bed6a54786967cf0b509f32"
+    },
+    {
+      "table": "student_course_grades",
+      "count": 31141,
+      "hash": "7d5cb5dcfe031ff7756028b2d3318e47"
+    },
+    {
+      "table": "student_term_summaries",
+      "count": 3456,
+      "hash": "d80ecd21f9b5b306d8d972fdab10449b"
+    },
+    {
+      "table": "unscoped_grade_records",
+      "count": 16,
+      "hash": "b48b60757ac38435ab9fad979d06d81a"
+    },
+    {
+      "table": "student_decisions",
+      "count": 912,
+      "hash": "b617b78f968558fce66fd6ff574190c6"
+    },
+    {
+      "table": "courses",
+      "count": 144,
+      "hash": "bdfb414d81a6c7bb294640d389a3d953"
+    },
+    {
+      "table": "training_programs",
+      "count": 11,
+      "hash": "eaac549af8bae7b94c301a081a29dd46"
+    },
+    {
+      "table": "training_program_courses",
+      "count": 593,
+      "hash": "1415b4109148486ac82bd669c76476ad"
+    },
+    {
+      "table": "student_conduct_records",
+      "count": 9375,
+      "hash": "dba7dbe5f4fa5e97daae3728ccad6137"
+    },
+    {
+      "table": "student_cumulative_summaries",
+      "count": 624,
+      "hash": "18456ad104b41aa300e301ab9c8c5a4c"
+    },
+    {
+      "table": "student_graduation_requirements",
+      "count": 0,
+      "hash": null
+    },
+    {
+      "table": "academic_warning_student_results",
+      "count": 59997,
+      "hash": "0d93a973c694e6982c6adae940b8206f"
+    }
+  ],
+  "afterHashes": [
+    {
+      "table": "students",
+      "count": 625,
+      "hash": "3b5b3465fa3b824544ee4be8768471ff"
+    },
+    {
+      "table": "student_course_offerings",
+      "count": 31141,
+      "hash": "3b52b49f8bed6a54786967cf0b509f32"
+    },
+    {
+      "table": "student_course_grades",
+      "count": 31141,
+      "hash": "7d5cb5dcfe031ff7756028b2d3318e47"
+    },
+    {
+      "table": "student_term_summaries",
+      "count": 3456,
+      "hash": "d80ecd21f9b5b306d8d972fdab10449b"
+    },
+    {
+      "table": "unscoped_grade_records",
+      "count": 16,
+      "hash": "b48b60757ac38435ab9fad979d06d81a"
+    },
+    {
+      "table": "student_decisions",
+      "count": 912,
+      "hash": "b617b78f968558fce66fd6ff574190c6"
+    },
+    {
+      "table": "courses",
+      "count": 144,
+      "hash": "bdfb414d81a6c7bb294640d389a3d953"
+    },
+    {
+      "table": "training_programs",
+      "count": 11,
+      "hash": "eaac549af8bae7b94c301a081a29dd46"
+    },
+    {
+      "table": "training_program_courses",
+      "count": 593,
+      "hash": "1415b4109148486ac82bd669c76476ad"
+    },
+    {
+      "table": "student_conduct_records",
+      "count": 9375,
+      "hash": "dba7dbe5f4fa5e97daae3728ccad6137"
+    },
+    {
+      "table": "student_cumulative_summaries",
+      "count": 624,
+      "hash": "18456ad104b41aa300e301ab9c8c5a4c"
+    },
+    {
+      "table": "student_graduation_requirements",
+      "count": 0,
+      "hash": null
+    },
+    {
+      "table": "academic_warning_student_results",
+      "count": 59997,
+      "hash": "0d93a973c694e6982c6adae940b8206f"
+    }
+  ],
+  "student": {
+    "studentId": "7e39c118-ef54-46a3-ae37-e46032c41d18",
+    "studentCode": "2347A048",
+    "evaluationId": "8ea71734-d57d-46f9-9a81-af5e255aeb00",
+    "finalStatus": "NOT_ELIGIBLE",
+    "needsManualReview": true,
+    "reconciliation": {
+      "status": "READY",
+      "issues": []
+    },
+    "pendingRegistrations": [
+      {
+        "id": "c599d314-667b-44dc-a6fb-d76766e22115",
+        "score4": null,
+        "credits": 3,
+        "score10": null,
+        "isGather": true,
+        "isPassed": null,
+        "notScore": true,
+        "termCode": "HK01",
+        "studentId": "2347A048",
+        "capturedAt": "2026-10-17T13:26:11.150Z",
+        "courseCode": "TN1001D",
+        "courseName": "Toán cao cấp B1",
+        "courseGroup": "NC",
+        "letterGrade": null,
+        "programCode": "CQ23CT-PM",
+        "scoreStatus": "pending",
+        "specialCode": null,
+        "academicYear": "2026-2027"
+      }
+    ],
+    "remainingReview": [
+      {
+        "ruleCode": "NATIONAL_DEFENSE",
+        "result": "NOT_AVAILABLE",
+        "reason": "Chưa có dữ liệu chứng chỉ Giáo dục quốc phòng và an ninh."
+      }
+    ]
+  },
+  "apiVerification": {
+    "checks": 28,
+    "studentsPerSurface": 622,
+    "results": [
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/students/7e39c118-ef54-46a3-ae37-e46032c41d18/grades?view=attempts",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/students/7e39c118-ef54-46a3-ae37-e46032c41d18/training-progress",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/8ea71734-d57d-46f9-9a81-af5e255aeb00/students/7e39c118-ef54-46a3-ae37-e46032c41d18",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/a8d35556-68f4-4022-8c21-52c52b6afdfc/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/0dbd96ce-79d3-4ed2-bc80-3f1b134489e3/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/0dbd96ce-79d3-4ed2-bc80-3f1b134489e3/students?pageSize=100&page=2",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/0dbd96ce-79d3-4ed2-bc80-3f1b134489e3/students?pageSize=100&page=3",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/de9025b4-9422-43b2-9712-9a2e5c69594e/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/de9025b4-9422-43b2-9712-9a2e5c69594e/students?pageSize=100&page=2",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/a20e4090-c13e-4a46-97f6-f915e949dc6d/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/39042761-3432-44ac-b6bb-489c4eedaa5d/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/e40fb991-8fbc-432e-8661-0295e960dea8/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/8ea71734-d57d-46f9-9a81-af5e255aeb00/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3101",
+        "path": "/api/v1/graduation-evaluations/8ea71734-d57d-46f9-9a81-af5e255aeb00/students?pageSize=100&page=2",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/students/7e39c118-ef54-46a3-ae37-e46032c41d18/grades?view=attempts",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/students/7e39c118-ef54-46a3-ae37-e46032c41d18/training-progress",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/8ea71734-d57d-46f9-9a81-af5e255aeb00/students/7e39c118-ef54-46a3-ae37-e46032c41d18",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/a8d35556-68f4-4022-8c21-52c52b6afdfc/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/0dbd96ce-79d3-4ed2-bc80-3f1b134489e3/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/0dbd96ce-79d3-4ed2-bc80-3f1b134489e3/students?pageSize=100&page=2",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/0dbd96ce-79d3-4ed2-bc80-3f1b134489e3/students?pageSize=100&page=3",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/de9025b4-9422-43b2-9712-9a2e5c69594e/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/de9025b4-9422-43b2-9712-9a2e5c69594e/students?pageSize=100&page=2",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/a20e4090-c13e-4a46-97f6-f915e949dc6d/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/39042761-3432-44ac-b6bb-489c4eedaa5d/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/e40fb991-8fbc-432e-8661-0295e960dea8/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/8ea71734-d57d-46f9-9a81-af5e255aeb00/students?pageSize=100&page=1",
+        "status": 200
+      },
+      {
+        "base": "http://127.0.0.1:3100",
+        "path": "/api/v1/graduation-evaluations/8ea71734-d57d-46f9-9a81-af5e255aeb00/students?pageSize=100&page=2",
+        "status": 200
+      }
+    ]
+  },
+  "renderVerification": [
+    {
+      "name": "profile-transcript",
+      "passed": true
+    },
+    {
+      "name": "progress-detail",
+      "passed": true
+    },
+    {
+      "name": "graduation-action",
+      "passed": true
+    },
+    {
+      "name": "graduation-enrolled",
+      "passed": true
+    },
+    {
+      "name": "graduation-curriculum",
+      "passed": true
+    },
+    {
+      "name": "graduation-summary",
+      "passed": true
+    }
+  ],
+  "validation": {
+    "backendTestsPassed": 408,
+    "frontendTestsPassed": 54,
+    "skipped": 1,
+    "backendProductionBuild": true,
+    "frontendProductionBuild": true,
+    "typescript": true
+  }
+}

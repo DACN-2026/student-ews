@@ -1,10 +1,13 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { RbacService } from "@/lib/services/rbac";
 import { jsonResponse, errorResponse } from "@/lib/utils/api-response";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const access = await requireApiPermission(request);
+    if (!access.authorized) return access.response;
     const users = await RbacService.listUsers();
     return jsonResponse({ items: users, total: users.length });
   } catch (err) {
@@ -15,7 +18,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await readJsonBody<{
+    const access = await requireApiPermission(req);
+    if (!access.authorized) return access.response;
+    const body = await readJsonObject<{
       username?: string;
       fullName?: string;
       password?: string;

@@ -1,20 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-function safeNextPath(): string {
-  const candidate = new URLSearchParams(window.location.search).get("next") || "/dashboard";
-  if (!candidate.startsWith("/") || candidate.startsWith("//") || candidate.startsWith("/renew")) {
-    return "/dashboard";
-  }
-  return candidate;
-}
+import { safeNextPath } from "@/lib/safe-next-path";
 
 export default function RenewSessionPage() {
   const [message, setMessage] = useState("Đang khôi phục phiên đăng nhập…");
 
   useEffect(() => {
-    const next = safeNextPath();
+    const next = safeNextPath(new URLSearchParams(window.location.search).get("next"));
     void fetch("/api/v1/auth/refresh", {
       method: "POST",
       credentials: "same-origin",

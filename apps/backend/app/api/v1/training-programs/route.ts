@@ -1,10 +1,13 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { TrainingProgramsService } from "@/lib/services/training-programs";
 import { jsonResponse, errorResponse, parsePagination } from "@/lib/utils/api-response";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 
 export async function GET(request: NextRequest) {
   try {
+    const access = await requireApiPermission(request);
+    if (!access.authorized) return access.response;
     const { searchParams } = request.nextUrl;
     const { page, pageSize } = parsePagination(searchParams);
     return jsonResponse(await TrainingProgramsService.listPrograms(
@@ -21,7 +24,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await readJsonBody<{
+    const access = await requireApiPermission(request);
+    if (!access.authorized) return access.response;
+    const body = await readJsonObject<{
       programCode?: string;
       programName?: string;
       degreeLevel?: string;

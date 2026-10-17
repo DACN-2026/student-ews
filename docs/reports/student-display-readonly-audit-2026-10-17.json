@@ -1,0 +1,935 @@
+{
+  "checkedAt": "2026-10-17T07:30:40.081Z",
+  "readOnly": true,
+  "latestGraduationScopes": 7,
+  "graduationStudents": 622,
+  "vtDisplayedAsF": {
+    "rows": 779,
+    "students": 180,
+    "examples": [
+      {
+        "student": "2448B006",
+        "course": "20TN2102",
+        "name": "Toán cao cấp B2",
+        "type": "Tự Chọn",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "state": "failed",
+        "evaluationId": "343ecab8-72f5-466f-9463-621526ef59f3"
+      },
+      {
+        "student": "2347A049",
+        "course": "20CT2201",
+        "name": "Cơ sở dữ liệu",
+        "type": "Bắt Buộc",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "state": "failed",
+        "evaluationId": "2efe026a-3c65-41b5-a146-fc7bacceb3a4"
+      },
+      {
+        "student": "2347A049",
+        "course": "20CT2203",
+        "name": "Mạng máy tính",
+        "type": "Bắt Buộc",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "state": "failed",
+        "evaluationId": "2efe026a-3c65-41b5-a146-fc7bacceb3a4"
+      },
+      {
+        "student": "2347A049",
+        "course": "20CT2204",
+        "name": "Hệ điều hành",
+        "type": "Bắt Buộc",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "state": "failed",
+        "evaluationId": "2efe026a-3c65-41b5-a146-fc7bacceb3a4"
+      },
+      {
+        "student": "2347A049",
+        "course": "LC2102D",
+        "name": "Lịch sử Đảng Cộng sản Việt Nam",
+        "type": "Bắt Buộc",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "state": "failed",
+        "evaluationId": "2efe026a-3c65-41b5-a146-fc7bacceb3a4"
+      },
+      {
+        "student": "2347A049",
+        "course": "20NV0002",
+        "name": "Kỹ năng soạn thảo văn bản hành chính",
+        "type": "Tự Chọn",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "state": "failed",
+        "evaluationId": "2efe026a-3c65-41b5-a146-fc7bacceb3a4"
+      }
+    ]
+  },
+  "liveProgress": {
+    "kpi": {
+      "totalStudents": 622,
+      "onTrackCount": 300,
+      "behindCount": 321,
+      "unknownCount": 1,
+      "onTrackPercentage": 48,
+      "behindPercentage": 52,
+      "avgDeficitCredits": 15.2
+    },
+    "unknownExamples": [
+      {
+        "student": "2347A048",
+        "program": "CQ23CT-PM",
+        "reason": "Chưa hoàn tất đối chiếu ánh xạ học phần hoặc mốc công nhận trong hệ thống.",
+        "credits": -4
+      }
+    ]
+  },
+  "profileWrongRun": {
+    "count": 316,
+    "examples": [
+      {
+        "s_student_id": "2246A002",
+        "standard_status": "pending_result",
+        "picked_status": "behind_schedule",
+        "evaluation_mode": "graduation_forecast",
+        "publication_status": "active",
+        "picked_run": "618e1b14-8013-4467-b408-6378568955ff",
+        "standard_run": "5f121b83-9b56-4fbe-a43b-a4815c5a3e78",
+        "profileCompletion": {
+          "available": true,
+          "reason": "",
+          "scheduleStatus": "behind_schedule",
+          "programCompletionStatus": "incomplete",
+          "duePlansTotal": 1,
+          "duePlansPassed": 0,
+          "missingMandatoryCourses": 2,
+          "missingElectiveCredits": 0
+        },
+        "period": {
+          "academicYear": "2026-2027",
+          "termCode": "HK01",
+          "termName": "Học kỳ 1",
+          "termOrder": 1
+        }
+      },
+      {
+        "s_student_id": "2347A001",
+        "standard_status": "pending_result",
+        "picked_status": "behind_schedule",
+        "evaluation_mode": "graduation_forecast",
+        "publication_status": "active",
+        "picked_run": "fc4bbd2e-5d9f-451f-8186-bfd4870f14b3",
+        "standard_run": "c01bb4b7-73fa-4a5b-a3bb-3a0561d2db70",
+        "profileCompletion": {
+          "available": true,
+          "reason": "",
+          "scheduleStatus": "behind_schedule",
+          "programCompletionStatus": "incomplete",
+          "duePlansTotal": 1,
+          "duePlansPassed": 0,
+          "missingMandatoryCourses": 3,
+          "missingElectiveCredits": 9
+        },
+        "period": {
+          "academicYear": "2026-2027",
+          "termCode": "HK01",
+          "termName": "Học kỳ 1",
+          "termOrder": 1
+        }
+      }
+    ]
+  },
+  "dashboardPeriods": [
+    {
+      "filter": {
+        "academicYear": "2026-2027",
+        "termCode": "HK01",
+        "gpaScope": "cumulative",
+        "gpaAggregation": "median"
+      },
+      "total": 622,
+      "completionMetric": {
+        "value": 48.231511254019296,
+        "numerator": 300,
+        "denominator": 622,
+        "status": "available"
+      },
+      "progressGroups": [
+        {
+          "code": "all",
+          "name": "Toàn Khoa",
+          "total": 622,
+          "pass": 300,
+          "fail": 322,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K46",
+          "name": "Khóa 46 (2022-2026)",
+          "total": 104,
+          "pass": 71,
+          "fail": 33,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K47",
+          "name": "Khóa 47 (2023-2027)",
+          "total": 169,
+          "pass": 73,
+          "fail": 96,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K48",
+          "name": "Khóa 48 (2024-2028)",
+          "total": 111,
+          "pass": 30,
+          "fail": 81,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K49",
+          "name": "Khóa 49 (2025-2029)",
+          "total": 238,
+          "pass": 126,
+          "fail": 112,
+          "pending": 0,
+          "error": 0
+        }
+      ],
+      "source": {
+        "code": "completion_run_evaluations",
+        "label": "Đánh giá tiến độ CTĐT và hoàn thành theo đợt",
+        "academicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+        "runIds": [
+          "fc4bbd2e-5d9f-451f-8186-bfd4870f14b3",
+          "19879fca-a5ec-459b-b4ee-9638d5b170a4",
+          "618e1b14-8013-4467-b408-6378568955ff",
+          "4dcb6ef8-567b-4b0d-819c-8f77ca84956d",
+          "5dc1559a-61b1-40e0-aae5-0f3299e8c803",
+          "4612f968-9a40-43b3-9862-281a74c65c3f",
+          "3757e864-9537-4363-b4d0-58254f676727"
+        ],
+        "cutoff": "2026-10-17T07:19:50.313Z",
+        "reasonCodes": [
+          "PROGRAM_PROGRESS_BEHIND"
+        ]
+      }
+    },
+    {
+      "filter": {
+        "academicYear": "2025-2026",
+        "termCode": "HK02",
+        "gpaScope": "cumulative",
+        "gpaAggregation": "median"
+      },
+      "total": 622,
+      "completionMetric": {
+        "value": 48.231511254019296,
+        "numerator": 300,
+        "denominator": 622,
+        "status": "available"
+      },
+      "progressGroups": [
+        {
+          "code": "all",
+          "name": "Toàn Khoa",
+          "total": 622,
+          "pass": 300,
+          "fail": 322,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K46",
+          "name": "Khóa 46 (2022-2026)",
+          "total": 104,
+          "pass": 71,
+          "fail": 33,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K47",
+          "name": "Khóa 47 (2023-2027)",
+          "total": 169,
+          "pass": 73,
+          "fail": 96,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K48",
+          "name": "Khóa 48 (2024-2028)",
+          "total": 111,
+          "pass": 30,
+          "fail": 81,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K49",
+          "name": "Khóa 49 (2025-2029)",
+          "total": 238,
+          "pass": 126,
+          "fail": 112,
+          "pending": 0,
+          "error": 0
+        }
+      ],
+      "source": {
+        "code": "completion_run_evaluations",
+        "label": "Đánh giá tiến độ CTĐT và hoàn thành theo đợt",
+        "academicTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+        "runIds": [
+          "ce93898c-0ff6-4b1d-8337-e3a724ea6a6b",
+          "4d2d27dd-c30b-47ba-9742-643ee8fa9787",
+          "b8094699-fd50-408c-a05d-e68389b3925b",
+          "14a87ea0-dbf6-45a3-8aef-b618b10a5484",
+          "88d1d70e-0d5c-44e0-8249-3c8fc575744f",
+          "06448168-5d07-4f07-9705-66038ee18782"
+        ],
+        "cutoff": "2026-10-17T06:57:36.227Z",
+        "reasonCodes": [
+          "PROGRAM_PROGRESS_BEHIND"
+        ]
+      }
+    },
+    {
+      "filter": {
+        "academicYear": "2024-2025",
+        "termCode": "HK02",
+        "gpaScope": "cumulative",
+        "gpaAggregation": "median"
+      },
+      "total": 622,
+      "completionMetric": {
+        "value": 48.231511254019296,
+        "numerator": 300,
+        "denominator": 622,
+        "status": "available"
+      },
+      "progressGroups": [
+        {
+          "code": "all",
+          "name": "Toàn Khoa",
+          "total": 622,
+          "pass": 300,
+          "fail": 322,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K46",
+          "name": "Khóa 46 (2022-2026)",
+          "total": 104,
+          "pass": 71,
+          "fail": 33,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K47",
+          "name": "Khóa 47 (2023-2027)",
+          "total": 169,
+          "pass": 73,
+          "fail": 96,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K48",
+          "name": "Khóa 48 (2024-2028)",
+          "total": 111,
+          "pass": 30,
+          "fail": 81,
+          "pending": 0,
+          "error": 0
+        },
+        {
+          "code": "K49",
+          "name": "Khóa 49 (2025-2029)",
+          "total": 238,
+          "pass": 126,
+          "fail": 112,
+          "pending": 0,
+          "error": 0
+        }
+      ],
+      "source": {
+        "code": "completion_run_evaluations",
+        "label": "Đánh giá tiến độ CTĐT và hoàn thành theo đợt",
+        "academicTermId": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+        "runIds": [
+          "bde1d281-a91d-4a4d-9356-2bcba06cce1c",
+          "96d9eaea-3a29-4f73-a35e-c9039fbad3c9",
+          "c0cc3024-d45d-4c98-a3ce-a6985058b019",
+          "8aa3f538-7d8c-44ab-8a1c-f50c42fb0db9",
+          "85c247b8-4cfc-4c52-9be2-9692fabd47c9"
+        ],
+        "cutoff": "2026-10-17T06:57:35.597Z",
+        "reasonCodes": [
+          "PROGRAM_PROGRESS_BEHIND"
+        ]
+      }
+    }
+  ],
+  "progressExport": {
+    "rowCount": 622,
+    "examples": [
+      {
+        "student": "2246A002",
+        "status": "behind_schedule",
+        "completion": "incomplete"
+      },
+      {
+        "student": "2347A001",
+        "status": "behind_schedule",
+        "completion": "incomplete"
+      }
+    ]
+  },
+  "departedList": {
+    "total": 2,
+    "examples": [
+      {
+        "student": "2347A052",
+        "isInClass": false,
+        "isSuspended": false,
+        "listWarning": "green",
+        "listWarningInfo": null,
+        "profileWarning": "insufficient",
+        "profileState": "INSUFFICIENT_DATA"
+      },
+      {
+        "student": "2549A044",
+        "isInClass": false,
+        "isSuspended": false,
+        "listWarning": "green",
+        "listWarningInfo": null,
+        "profileWarning": "red",
+        "profileState": "HIGH_RISK"
+      }
+    ]
+  },
+  "validations": {
+    "sourceFingerprints": [
+      {
+        "source": "catalog",
+        "count": 144,
+        "hash": "0cc2b692235dd18012ffdbc8c0955980"
+      },
+      {
+        "source": "curriculum",
+        "count": 593,
+        "hash": "83d42abafe53ba7407aae8f7b6048e35"
+      },
+      {
+        "source": "decisions",
+        "count": 912,
+        "hash": "5a56ff8398433fb61526927179d25b7e"
+      },
+      {
+        "source": "grades",
+        "count": 31141,
+        "hash": "0e99e4e2665f198346c8eeb14da98e94"
+      },
+      {
+        "source": "offerings",
+        "count": 31141,
+        "hash": "9f0471082e43f786b10cc98abba3e284"
+      },
+      {
+        "source": "programs",
+        "count": 11,
+        "hash": "77ba90e3cfb1996872d88b6684576cc9"
+      },
+      {
+        "source": "students",
+        "count": 625,
+        "hash": "025a222d70cd0000c41127e064e87ffb"
+      },
+      {
+        "source": "summaries",
+        "count": 3456,
+        "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+      },
+      {
+        "source": "unscoped",
+        "count": 16,
+        "hash": "9d8cfbab16aacb6e710ba688565744c7"
+      }
+    ],
+    "sizes": [
+      {
+        "conduct": 9375,
+        "fees": 41,
+        "decisions": 912,
+        "cumulative_summaries": 624
+      }
+    ],
+    "currentCompletion": [
+      {
+        "students": 616,
+        "pending": 435,
+        "behind": 181,
+        "configuration_review": 0
+      }
+    ],
+    "optionalLabelCounts": [
+      {
+        "rows": 878,
+        "students": 482
+      }
+    ],
+    "optionalExamples": [
+      {
+        "s_student_id": "2347A001",
+        "s_course_code": "20CT4103D",
+        "s_course_name": "Phát triến ứng dụng game nâng cao",
+        "choice_group_code": "CHUYEN_NGANH:9",
+        "is_registration_required": false
+      },
+      {
+        "s_student_id": "2347A002",
+        "s_course_code": "20CT4103D",
+        "s_course_name": "Phát triến ứng dụng game nâng cao",
+        "choice_group_code": "CHUYEN_NGANH:9",
+        "is_registration_required": false
+      },
+      {
+        "s_student_id": "2347A003",
+        "s_course_code": "20CT3207",
+        "s_course_name": "Lập trình Java nâng cao",
+        "choice_group_code": "CHUYEN_NGANH:9",
+        "is_registration_required": false
+      },
+      {
+        "s_student_id": "2347A004",
+        "s_course_code": "20CT3207",
+        "s_course_name": "Lập trình Java nâng cao",
+        "choice_group_code": "CHUYEN_NGANH:9",
+        "is_registration_required": false
+      }
+    ],
+    "warningGpa": [
+      {
+        "students": 622,
+        "missing_matching_summary": 33,
+        "mismatches": 0
+      }
+    ],
+    "sourceUnchangedSincePlanRepair": true,
+    "gradePassMismatch": 0,
+    "vtAttempts": 1239,
+    "monitoredStudents": 622,
+    "optionalNeverRegistered": [
+      {
+        "rows": 878,
+        "students": 482
+      }
+    ]
+  },
+  "graduationServiceChecks": {
+    "counts": {
+      "students": 622,
+      "vtCourses": 779,
+      "vtStudents": 180,
+      "mandatoryVt": 469,
+      "electiveVt": 310,
+      "nullCompletedCredits": 0,
+      "nonNullInferredHeader": 0
+    },
+    "vtExamples": [
+      {
+        "student": "2347A049",
+        "course": "20CT2201",
+        "name": "Cơ sở dữ liệu",
+        "type": "Bắt Buộc",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "apiState": "failed"
+      },
+      {
+        "student": "2347A049",
+        "course": "20CT2203",
+        "name": "Mạng máy tính",
+        "type": "Bắt Buộc",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "apiState": "failed"
+      },
+      {
+        "student": "2347A049",
+        "course": "20CT2204",
+        "name": "Hệ điều hành",
+        "type": "Bắt Buộc",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "apiState": "failed"
+      },
+      {
+        "student": "2347A049",
+        "course": "LC2102D",
+        "name": "Lịch sử Đảng Cộng sản Việt Nam",
+        "type": "Bắt Buộc",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "apiState": "failed"
+      },
+      {
+        "student": "2347A049",
+        "course": "20NV0002",
+        "name": "Kỹ năng soạn thảo văn bản hành chính",
+        "type": "Tự Chọn",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "apiState": "failed"
+      },
+      {
+        "student": "2347A049",
+        "course": "20SP0001",
+        "name": "Tâm lý học đại cương",
+        "type": "Tự Chọn",
+        "letter": "VT",
+        "special": "VT",
+        "isPass": false,
+        "apiState": "failed"
+      }
+    ],
+    "creditExamples": [],
+    "errors": []
+  },
+  "specialCases": [
+    {
+      "student": "2246B045",
+      "isInClass": true,
+      "isSuspended": false,
+      "historicalOnly": false,
+      "status": "ON_TRACK",
+      "netCredits": -2,
+      "reconciliation": {
+        "status": "READY",
+        "issues": [],
+        "recognizedCourses": []
+      }
+    },
+    {
+      "student": "2347A048",
+      "isInClass": true,
+      "isSuspended": false,
+      "historicalOnly": false,
+      "status": "UNKNOWN",
+      "netCredits": -4,
+      "reconciliation": {
+        "status": "REVIEW_REQUIRED",
+        "issues": [
+          {
+            "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+            "courseCodes": [
+              "TN1001D",
+              "20TN1201"
+            ],
+            "message": "Học phần TN1001D có tên giống 20TN1201; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+          }
+        ],
+        "recognizedCourses": [
+          {
+            "courseCode": "20CT1101",
+            "credits": 3,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "20CT1102",
+            "credits": 4,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "20CT2102",
+            "credits": 3,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "LC1101D",
+            "credits": 3,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "LC1102D",
+            "credits": 2,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "TC1001D",
+            "credits": 1,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "TC1004D",
+            "credits": 1,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          }
+        ]
+      }
+    },
+    {
+      "student": "2347B045",
+      "isInClass": true,
+      "isSuspended": true,
+      "historicalOnly": true,
+      "historyCutoff": "HK01 (2025-2026)",
+      "status": "BEHIND",
+      "netCredits": -26,
+      "reconciliation": {
+        "status": "READY",
+        "issues": [],
+        "recognizedCourses": []
+      }
+    },
+    {
+      "student": "2448A025",
+      "isInClass": true,
+      "isSuspended": false,
+      "historicalOnly": false,
+      "status": "BEHIND",
+      "netCredits": -8,
+      "reconciliation": {
+        "status": "READY",
+        "issues": [],
+        "recognizedCourses": [
+          {
+            "courseCode": "QP2101D",
+            "credits": 3,
+            "academicYear": "",
+            "termCode": "",
+            "kind": "UNDATED_CERTIFICATE"
+          },
+          {
+            "courseCode": "QP2102D",
+            "credits": 2,
+            "academicYear": "",
+            "termCode": "",
+            "kind": "UNDATED_CERTIFICATE"
+          },
+          {
+            "courseCode": "QP2103D",
+            "credits": 2,
+            "academicYear": "",
+            "termCode": "",
+            "kind": "UNDATED_CERTIFICATE"
+          },
+          {
+            "courseCode": "QP2104D",
+            "credits": 2,
+            "academicYear": "",
+            "termCode": "",
+            "kind": "UNDATED_CERTIFICATE"
+          }
+        ]
+      }
+    },
+    {
+      "student": "2549A055",
+      "isInClass": true,
+      "isSuspended": false,
+      "historicalOnly": false,
+      "status": "ON_TRACK",
+      "netCredits": 3,
+      "reconciliation": {
+        "status": "READY",
+        "issues": [],
+        "recognizedCourses": [
+          {
+            "courseCode": "QP2103D",
+            "credits": 2,
+            "academicYear": "",
+            "termCode": "",
+            "kind": "UNDATED_CERTIFICATE"
+          },
+          {
+            "courseCode": "QP2104D",
+            "credits": 2,
+            "academicYear": "",
+            "termCode": "",
+            "kind": "UNDATED_CERTIFICATE"
+          }
+        ]
+      }
+    }
+  ],
+  "completedAt": "2026-10-17T07:32:49.809Z",
+  "mixedProgressDefinitions": {
+    "students": 10,
+    "examples": [
+      {
+        "student": "2246A018",
+        "program": "CQ22CT-PM",
+        "status": "ON_TRACK",
+        "expected": 134,
+        "earned": 132,
+        "difference": -2,
+        "text": "Chậm 2 TC",
+        "reason": "Đúng tiến độ đào tạo"
+      },
+      {
+        "student": "2246B045",
+        "program": "CQ22CT-PM",
+        "status": "ON_TRACK",
+        "expected": 134,
+        "earned": 132,
+        "difference": -2,
+        "text": "Chậm 2 TC",
+        "reason": "Đúng tiến độ đào tạo"
+      },
+      {
+        "student": "2347B039",
+        "program": "CQ23CT-PM",
+        "status": "ON_TRACK",
+        "expected": 98,
+        "earned": 95,
+        "difference": -3,
+        "text": "Chậm 3 TC",
+        "reason": "Đúng tiến độ đào tạo"
+      },
+      {
+        "student": "2347C019",
+        "program": "CQ23CT-PM",
+        "status": "ON_TRACK",
+        "expected": 98,
+        "earned": 95,
+        "difference": -3,
+        "text": "Chậm 3 TC",
+        "reason": "Đúng tiến độ đào tạo"
+      },
+      {
+        "student": "2347C041",
+        "program": "CQ23CT-PM",
+        "status": "ON_TRACK",
+        "expected": 98,
+        "earned": 95,
+        "difference": -3,
+        "text": "Chậm 3 TC",
+        "reason": "Đúng tiến độ đào tạo"
+      },
+      {
+        "student": "2549B060",
+        "program": "CQ25CT",
+        "status": "ON_TRACK",
+        "expected": 29,
+        "earned": 26,
+        "difference": -3,
+        "text": "Chậm 3 TC",
+        "reason": "Đúng tiến độ đào tạo"
+      }
+    ]
+  },
+  "optionalRuntimeExample": {
+    "student": "2347A001",
+    "schedule": "pending_result",
+    "course": {
+      "courseId": "91ded3cc-c099-4473-b87b-c0a45a90d485",
+      "courseCode": "20CT4103D",
+      "courseName": "Phát triến ứng dụng game nâng cao",
+      "credits": 3,
+      "requirementType": "elective",
+      "choiceGroupCode": "CHUYEN_NGANH:9",
+      "isRegistrationRequired": false,
+      "passed": false,
+      "pendingResult": false,
+      "evidenceOfferingId": null,
+      "evidenceAcademicYear": null,
+      "evidenceTermCode": null,
+      "evidenceScoreStatus": null
+    }
+  },
+  "auditScope": {
+    "students": 625,
+    "offerings": 31141,
+    "termSummaries": 3456,
+    "conduct": 9375,
+    "decisions": 912,
+    "feePolicies": 41,
+    "graduationStudentsChecked": 622,
+    "sourceRecordChanges": 0,
+    "codeEdits": 0,
+    "externalApiRefetched": false,
+    "browserVisualQA": false
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "issue": "Profile and progress exports select graduation forecast runs instead of standard progress results",
+      "affectedStudents": 316
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "issue": "Dashboard historical filters use current live progress",
+      "testedPeriods": [
+        "HK01 2026-2027",
+        "HK02 2025-2026",
+        "HK02 2024-2025"
+      ]
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "issue": "Dashboard converts unknown progress into behind",
+      "affectedStudents": 1,
+      "student": "2347A048"
+    },
+    {
+      "id": "F4",
+      "severity": "high",
+      "issue": "Graduation labels and advice describe VT failures as F",
+      "affectedStudents": 180,
+      "affectedStudentCourses": 779
+    },
+    {
+      "id": "F5",
+      "severity": "medium",
+      "issue": "Unregistered optional alternatives labeled as debt",
+      "affectedStudents": 482,
+      "affectedStudentCourses": 878
+    },
+    {
+      "id": "F6",
+      "severity": "medium",
+      "issue": "On track and negative plan-credit difference presented without distinction",
+      "affectedStudents": 10
+    },
+    {
+      "id": "F7",
+      "severity": "medium",
+      "issue": "Departed students show default normal warning badge despite no current assessment",
+      "affectedStudents": 2
+    }
+  ]
+}

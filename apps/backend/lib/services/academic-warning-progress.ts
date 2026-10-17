@@ -16,6 +16,8 @@ export type AcademicWarningProgressSignal = {
   missingRequiredCredits?: number;
   missingRequiredCourses?: Array<{ courseCode: string; courseName: string; credits: number; semesterNo: number }>;
   pendingCourses?: Array<{ courseCode: string; courseName: string; credits: number; context: "IMPROVEMENT" | "RETAKE" | "AWAITING_RESULT" }>;
+  reconciliation?: StudentTrainingProgressOutput["reconciliation"];
+  assessmentContext?: StudentTrainingProgressOutput["assessmentContext"];
 };
 
 /** Use the visible semester milestone, keeping mandatory debt separate. */
@@ -24,9 +26,9 @@ export function academicWarningProgressSignal(
   sourceId: string,
 ): AcademicWarningProgressSignal {
   const progress = evaluation.scheduleProgress;
-  const dueCourses = evaluation.semesters.filter(semester => semester.semesterNo <= progress.latestCompletedSemester)
-    .flatMap(semester => semester.courses).filter(course => !course.isConditional);
-  const pendingCourses: NonNullable<AcademicWarningProgressSignal["pendingCourses"]> = dueCourses
+  const allCourses = evaluation.semesters.flatMap(semester => semester.courses).filter(course => !course.isConditional);
+  const dueCourses = allCourses.filter(course => course.semesterNo <= progress.latestCompletedSemester);
+  const pendingCourses: NonNullable<AcademicWarningProgressSignal["pendingCourses"]> = allCourses
     .filter(course => course.hasPendingAttempt || course.isCurrentlyStudying || course.status === "NO_SCORE")
     .map(course => ({ courseCode: course.courseCode, courseName: course.courseName, credits: course.credits,
       context: course.confirmedOutcome === "PASSED" || course.status === "PASSED" ? "IMPROVEMENT"
@@ -36,13 +38,17 @@ export function academicWarningProgressSignal(
     warning.includes("UNKNOWN_REQUIREMENT") || warning.includes("chưa có danh mục"),
   );
   const progressUnknown = progress.progressStatus === "UNKNOWN";
+  const mappingReview = evaluation.reconciliation?.status === "REVIEW_REQUIRED";
+  const awaitingDue = dueCourses.some(course => (course.hasPendingAttempt || course.status === "NO_SCORE") && (!course.confirmedOutcome || course.confirmedOutcome === "NONE"));
   return {
-    creditDeficit: hasUnknownOutcome || progressUnknown ? null : Math.max(0, -progress.creditDifference),
-    dataStatus: configurationIncomplete || progressUnknown || hasUnknownOutcome || pendingCourses.some(course => course.context === "AWAITING_RESULT") ? "PARTIAL" : "COMPLETE",
-    reasonCode: progressUnknown || hasUnknownOutcome ? "TRAINING_PROGRESS_EVIDENCE_INSUFFICIENT" : pendingCourses.some(course => course.context === "AWAITING_RESULT")
+    creditDeficit: mappingReview || hasUnknownOutcome || progressUnknown ? null : Math.max(0, -progress.creditDifference),
+    dataStatus: mappingReview || configurationIncomplete || progressUnknown || hasUnknownOutcome || awaitingDue ? "PARTIAL" : "COMPLETE",
+    reasonCode: mappingReview ? "TRAINING_PROGRESS_MAPPING_REVIEW" : progressUnknown || hasUnknownOutcome ? "TRAINING_PROGRESS_EVIDENCE_INSUFFICIENT" : awaitingDue
       ? "TRAINING_PROGRESS_AWAITING_RESULTS"
       : configurationIncomplete ? "TRAINING_PROGRESS_ELECTIVE_CONFIGURATION_PARTIAL" : null,
     sourceId,
+    reconciliation: evaluation.reconciliation,
+    assessmentContext: evaluation.assessmentContext,
     expectedCreditsToDate: progress.expectedCreditsToDate,
     earnedCreditsToDate: progress.earnedCreditsToDate,
     latestCompletedSemester: progress.latestCompletedSemester,
@@ -61,6 +67,7 @@ export async function calculateAcademicWarningProgressSignals(input: {
   trainingProgramId: string;
   assessmentTermId: string;
   programCode: string;
+  boundary?: "END_OF_TERM" | "BEFORE_TERM";
 }) {
   const signals = new Map<string, AcademicWarningProgressSignal>();
   if (!input.students.length) return signals;
@@ -87,6 +94,9 @@ export async function calculateAcademicWarningProgressSignals(input: {
         academicYear: year.sYearCode,
         termCode: term.sTermCode,
         termOrder: term.sTermOrder,
+        boundary: input.boundary ?? "END_OF_TERM",
+        programCode: input.programCode,
+        cohortId: input.cohortId,
       });
       if (evaluation) signals.set(student.id, academicWarningProgressSignal(evaluation, input.trainingProgramId));
     }));

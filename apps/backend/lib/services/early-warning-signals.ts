@@ -2,7 +2,7 @@ import type { EarlyWarningSettings } from "./early-warning-settings";
 import type { Qd600RuleEvaluation } from "./academic-warning-qd600-rules";
 
 export type EarlyWarningSources = {
-  examAbsences?: Array<{ offeringId: string; courseCode: string; courseName: string; credits: number; conditional: boolean }>;
+  examAbsences?: Array<{ offeringId: string; courseCode: string; courseName: string; credits: number; conditional: boolean; isPass?: boolean | null }>;
   previousTermId: string | null;
   previousTermGpa4: number | null;
   previousCumulativeGpa4: number | null;
@@ -31,8 +31,8 @@ export function evaluateEarlyWarningSignals(input: {
   if (absences.length) result.push({
     ruleCode: "EARLY_EXAM_ABSENCE", sourceType: "ADVISORY", evaluationStatus: "EVALUATED", dataStatus: "COMPLETE",
     observedValue: absences.length, thresholdValue: 1, margin: null,
-    isNearThreshold: true, isThresholdBreached: false, capabilityStatus: null, reasonCode: "EXAM_ABSENCE_REQUIRES_VERIFICATION",
-    explanation: `Kỳ xét có ${absences.length} học phần VT (${absences.reduce((sum, course) => sum + course.credits, 0)} tín chỉ). GVCN/CVHT cần xác minh lý do vắng thi, phê duyệt hoãn thi và kết quả bổ sung. Đây là tín hiệu theo dõi, không phải quyết định cảnh báo học vụ. Phép tính tín chỉ dùng kết quả đạt/không đạt đã có từ nguồn; giữ nguyên mã VT và không tự gán GPA bằng 0.`,
+    isNearThreshold: true, isThresholdBreached: false, capabilityStatus: null, reasonCode: "EXAM_ABSENCE_RECORDED",
+    explanation: `Kỳ xét ghi nhận ${absences.length} lượt vắng thi VT (${absences.reduce((sum, course) => sum + course.credits, 0)} tín chỉ). Kết quả đạt/không đạt dùng isPass của API Trường; VT là thông tin vắng thi, không phải dấu hiệu thiếu dữ liệu. Theo dõi việc thi bổ sung hoặc học lại theo kết quả nguồn; không tự đổi VT thành điểm F/0 hoặc tính lại GPA.`,
     regulatorySource: null, articleRef: null, riskLevel: "YELLOW",
     absenceCourseCount: absences.length, absenceCredits: absences.reduce((sum, course) => sum + course.credits, 0), absenceCourses: absences,
   });

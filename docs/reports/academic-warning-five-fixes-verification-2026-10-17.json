@@ -1,0 +1,1223 @@
+{
+  "checkedAt": "2026-10-17T02:19:58.268Z",
+  "sourceFingerprint": [
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    },
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    }
+  ],
+  "sourceUnchanged": true,
+  "gpaDifferences": 0,
+  "latestStudents": 622,
+  "latestVersion22": 622,
+  "latestStatuses": {
+    "HIGH_RISK": 178,
+    "NORMAL": 298,
+    "MONITORING": 146
+  },
+  "preview": [
+    {
+      "studentCode": "2246B045",
+      "live": {
+        "creditDeficit": null,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "TRAINING_PROGRESS_MAPPING_REVIEW",
+        "sourceId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+        "reconciliation": {
+          "status": "REVIEW_REQUIRED",
+          "issues": [
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "20HN1104",
+                "20CT2103"
+              ],
+              "message": "Học phần 20HN1104 có tên giống 20CT2103; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            },
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "LH1001D",
+                "20LH0001"
+              ],
+              "message": "Học phần LH1001D có tên giống 20LH0001; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            },
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "CT2106D",
+                "20CT1202"
+              ],
+              "message": "Học phần CT2106D có tên giống 20CT1202; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            }
+          ],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2026-2027",
+          "termCode": "HK01",
+          "termOrder": 1,
+          "boundary": "BEFORE_TERM",
+          "programCode": "CQ22CT-PM"
+        },
+        "expectedCreditsToDate": 134,
+        "earnedCreditsToDate": 132,
+        "latestCompletedSemester": 8,
+        "progressStatus": "UNKNOWN",
+        "pendingCourses": [
+          {
+            "courseCode": "20CT4201D",
+            "courseName": "Thực tập nghề nghiệp",
+            "credits": 8,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT4202D",
+            "courseName": "Đồ án tốt nghiệp",
+            "credits": 10,
+            "context": "AWAITING_RESULT"
+          }
+        ],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "historic": {
+        "creditDeficit": null,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "TRAINING_PROGRESS_MAPPING_REVIEW",
+        "sourceId": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+        "reconciliation": {
+          "status": "REVIEW_REQUIRED",
+          "issues": [
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "20HN1104",
+                "20CT2103"
+              ],
+              "message": "Học phần 20HN1104 có tên giống 20CT2103; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            },
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "LH1001D",
+                "20LH0001"
+              ],
+              "message": "Học phần LH1001D có tên giống 20LH0001; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            },
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "CT2106D",
+                "20CT1202"
+              ],
+              "message": "Học phần CT2106D có tên giống 20CT1202; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            }
+          ],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2025-2026",
+          "termCode": "HK02",
+          "termOrder": 2,
+          "boundary": "END_OF_TERM",
+          "programCode": "CQ22CT-PM"
+        },
+        "expectedCreditsToDate": 134,
+        "earnedCreditsToDate": 132,
+        "latestCompletedSemester": 8,
+        "progressStatus": "UNKNOWN",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "recognition": {
+        "status": "REVIEW_REQUIRED",
+        "issues": [
+          {
+            "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+            "courseCodes": [
+              "20HN1104",
+              "20CT2103"
+            ],
+            "message": "Học phần 20HN1104 có tên giống 20CT2103; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+          },
+          {
+            "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+            "courseCodes": [
+              "LH1001D",
+              "20LH0001"
+            ],
+            "message": "Học phần LH1001D có tên giống 20LH0001; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+          },
+          {
+            "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+            "courseCodes": [
+              "CT2106D",
+              "20CT1202"
+            ],
+            "message": "Học phần CT2106D có tên giống 20CT1202; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+          }
+        ],
+        "recognizedCourses": []
+      },
+      "debt": {
+        "credits": 0,
+        "status": "PARTIAL",
+        "reason": "UNRESOLVED_HISTORICAL_ATTEMPTS"
+      },
+      "current": {
+        "period": {
+          "id": "2616b2fa-192b-49ed-a03d-b678308c620b",
+          "label": "HK01 (2026-2027)"
+        },
+        "status": "NORMAL",
+        "progress": {
+          "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+          "sourceType": "OPERATIONAL",
+          "evaluationStatus": "NOT_EVALUATED",
+          "dataStatus": "PARTIAL",
+          "observedValue": null,
+          "thresholdValue": 4,
+          "margin": 12,
+          "isNearThreshold": false,
+          "isThresholdBreached": false,
+          "capabilityStatus": null,
+          "reasonCode": "TRAINING_PROGRESS_MAPPING_REVIEW",
+          "explanation": "Hệ thống chưa hoàn tất ánh xạ học phần hoặc mốc công nhận chuyển miễn. Giữ nguyên dữ liệu Trường; không quy phần chưa ánh xạ thành thiếu tín chỉ hoặc kết luận chậm tiến độ.",
+          "regulatorySource": null,
+          "articleRef": null
+        }
+      }
+    },
+    {
+      "studentCode": "2347A048",
+      "live": {
+        "creditDeficit": null,
+        "dataStatus": "PARTIAL",
+        "reasonCode": "TRAINING_PROGRESS_MAPPING_REVIEW",
+        "sourceId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+        "reconciliation": {
+          "status": "REVIEW_REQUIRED",
+          "issues": [
+            {
+              "code": "COURSE_EQUIVALENCE_NOT_CONFIGURED",
+              "courseCodes": [
+                "TN1001D",
+                "20TN1201"
+              ],
+              "message": "Học phần TN1001D có tên giống 20TN1201; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ."
+            }
+          ],
+          "recognizedCourses": [
+            {
+              "courseCode": "20CT1101",
+              "credits": 3,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "20CT1102",
+              "credits": 4,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "20CT2102",
+              "credits": 3,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "LC1101D",
+              "credits": 3,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "LC1102D",
+              "credits": 2,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "TC1001D",
+              "credits": 1,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "TC1004D",
+              "credits": 1,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            }
+          ]
+        },
+        "assessmentContext": {
+          "academicYear": "2026-2027",
+          "termCode": "HK01",
+          "termOrder": 1,
+          "boundary": "BEFORE_TERM",
+          "programCode": "CQ23CT-PM"
+        },
+        "expectedCreditsToDate": 98,
+        "earnedCreditsToDate": 94,
+        "latestCompletedSemester": 6,
+        "progressStatus": "UNKNOWN",
+        "pendingCourses": [
+          {
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "credits": 4,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3201",
+            "courseName": "Phát triển ứng dụng web nâng cao",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3202",
+            "courseName": "Đồ án chuyên ngành",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3203",
+            "courseName": "Mẫu thiết kế",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3205",
+            "courseName": "Phân tích và thiết kế phần mềm",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3206",
+            "courseName": "Kiểm thử phần mềm",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT4103D",
+            "courseName": "Phát triến ứng dụng game nâng cao",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          }
+        ],
+        "missingRequiredCredits": 4,
+        "missingRequiredCourses": [
+          {
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "credits": 4,
+            "semesterNo": 2
+          }
+        ]
+      },
+      "historic": {
+        "creditDeficit": 8,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": [
+            {
+              "courseCode": "20CT1101",
+              "credits": 3,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "20CT1102",
+              "credits": 4,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "20CT2102",
+              "credits": 3,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "LC1101D",
+              "credits": 3,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "LC1102D",
+              "credits": 2,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "TC1001D",
+              "credits": 1,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            },
+            {
+              "courseCode": "TC1004D",
+              "credits": 1,
+              "academicYear": "2024-2025",
+              "termCode": "HK01"
+            }
+          ]
+        },
+        "assessmentContext": {
+          "academicYear": "2025-2026",
+          "termCode": "HK02",
+          "termOrder": 2,
+          "boundary": "END_OF_TERM",
+          "programCode": "CQ23CT-PM"
+        },
+        "expectedCreditsToDate": 98,
+        "earnedCreditsToDate": 90,
+        "latestCompletedSemester": 6,
+        "progressStatus": "BEHIND",
+        "pendingCourses": [],
+        "missingRequiredCredits": 8,
+        "missingRequiredCourses": [
+          {
+            "courseCode": "20CT1202",
+            "courseName": "Nguyên lý lập trình hướng đối tượng",
+            "credits": 4,
+            "semesterNo": 2
+          },
+          {
+            "courseCode": "20TN1202",
+            "courseName": "Toán rời rạc",
+            "credits": 4,
+            "semesterNo": 2
+          }
+        ]
+      },
+      "recognition": {
+        "status": "READY",
+        "issues": [],
+        "recognizedCourses": [
+          {
+            "courseCode": "20CT1101",
+            "credits": 3,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "20CT1102",
+            "credits": 4,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "20CT2102",
+            "credits": 3,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "LC1101D",
+            "credits": 3,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "LC1102D",
+            "credits": 2,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "TC1001D",
+            "credits": 1,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          },
+          {
+            "courseCode": "TC1004D",
+            "credits": 1,
+            "academicYear": "2024-2025",
+            "termCode": "HK01"
+          }
+        ]
+      },
+      "debt": {
+        "credits": 0,
+        "status": "COMPLETE",
+        "reason": null
+      },
+      "current": {
+        "period": {
+          "id": "2616b2fa-192b-49ed-a03d-b678308c620b",
+          "label": "HK01 (2026-2027)"
+        },
+        "status": "NORMAL",
+        "progress": {
+          "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+          "sourceType": "OPERATIONAL",
+          "evaluationStatus": "NOT_EVALUATED",
+          "dataStatus": "PARTIAL",
+          "observedValue": null,
+          "thresholdValue": 4,
+          "margin": 12,
+          "isNearThreshold": false,
+          "isThresholdBreached": false,
+          "capabilityStatus": null,
+          "reasonCode": "TRAINING_PROGRESS_MAPPING_REVIEW",
+          "explanation": "Hệ thống chưa hoàn tất ánh xạ học phần hoặc mốc công nhận chuyển miễn. Giữ nguyên dữ liệu Trường; không quy phần chưa ánh xạ thành thiếu tín chỉ hoặc kết luận chậm tiến độ.",
+          "regulatorySource": null,
+          "articleRef": null
+        }
+      }
+    },
+    {
+      "studentCode": "2347C045",
+      "live": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2026-2027",
+          "termCode": "HK01",
+          "termOrder": 1,
+          "boundary": "BEFORE_TERM",
+          "programCode": "CQ23CT-PM"
+        },
+        "expectedCreditsToDate": 98,
+        "earnedCreditsToDate": 98,
+        "latestCompletedSemester": 6,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [
+          {
+            "courseCode": "20CT3201",
+            "courseName": "Phát triển ứng dụng web nâng cao",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3202",
+            "courseName": "Đồ án chuyên ngành",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3203",
+            "courseName": "Mẫu thiết kế",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3205",
+            "courseName": "Phân tích và thiết kế phần mềm",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3206",
+            "courseName": "Kiểm thử phần mềm",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT4103D",
+            "courseName": "Phát triến ứng dụng game nâng cao",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          }
+        ],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "historic": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2025-2026",
+          "termCode": "HK02",
+          "termOrder": 2,
+          "boundary": "END_OF_TERM",
+          "programCode": "CQ23CT-PM"
+        },
+        "expectedCreditsToDate": 98,
+        "earnedCreditsToDate": 98,
+        "latestCompletedSemester": 6,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "recognition": {
+        "status": "READY",
+        "issues": [],
+        "recognizedCourses": []
+      },
+      "debt": {
+        "credits": 0,
+        "status": "COMPLETE",
+        "reason": null
+      },
+      "current": {
+        "period": {
+          "id": "2616b2fa-192b-49ed-a03d-b678308c620b",
+          "label": "HK01 (2026-2027)"
+        },
+        "status": "NORMAL",
+        "progress": {
+          "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+          "sourceType": "OPERATIONAL",
+          "evaluationStatus": "EVALUATED",
+          "dataStatus": "COMPLETE",
+          "observedValue": 0,
+          "thresholdValue": 4,
+          "margin": 4,
+          "isNearThreshold": false,
+          "isThresholdBreached": false,
+          "capabilityStatus": null,
+          "reasonCode": null,
+          "explanation": "Thiếu 0 tín chỉ so với kế hoạch đến hết học kỳ 6. Có 6 học phần đang học lại, cải thiện hoặc chờ điểm; chỉ sử dụng tín chỉ đã được công nhận đến mốc xét, không cộng tín chỉ của lượt học chưa đạt.",
+          "pendingProgressCourses": [
+            {
+              "courseCode": "20CT3201",
+              "courseName": "Phát triển ứng dụng web nâng cao",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT3202",
+              "courseName": "Đồ án chuyên ngành",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT3203",
+              "courseName": "Mẫu thiết kế",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT3205",
+              "courseName": "Phân tích và thiết kế phần mềm",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT3206",
+              "courseName": "Kiểm thử phần mềm",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT4103D",
+              "courseName": "Phát triến ứng dụng game nâng cao",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            }
+          ],
+          "regulatorySource": null,
+          "articleRef": null,
+          "riskLevel": "GREEN",
+          "expectedCredits": 98,
+          "earnedCredits": 98,
+          "latestCompletedSemester": 6,
+          "progressStatus": "ON_TRACK",
+          "missingRequiredCredits": 0,
+          "missingRequiredCourses": []
+        }
+      }
+    },
+    {
+      "studentCode": "2549B004",
+      "live": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2026-2027",
+          "termCode": "HK01",
+          "termOrder": 1,
+          "boundary": "BEFORE_TERM",
+          "programCode": "CQ25CT"
+        },
+        "expectedCreditsToDate": 29,
+        "earnedCreditsToDate": 32,
+        "latestCompletedSemester": 2,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [
+          {
+            "courseCode": "20CT1201",
+            "courseName": "Cấu trúc dữ liệu và thuật giải",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT2102",
+            "courseName": "Kiến trúc máy tính",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT2103",
+            "courseName": "Tiếng Anh chuyên ngành",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3204",
+            "courseName": "Tham quan thực tế",
+            "credits": 1,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20QT0001",
+            "courseName": "Kinh tế học đại cương",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "LC2101D",
+            "courseName": "Chủ nghĩa xã hội khoa học",
+            "credits": 2,
+            "context": "AWAITING_RESULT"
+          }
+        ],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "historic": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2025-2026",
+          "termCode": "HK02",
+          "termOrder": 2,
+          "boundary": "END_OF_TERM",
+          "programCode": "CQ25CT"
+        },
+        "expectedCreditsToDate": 29,
+        "earnedCreditsToDate": 32,
+        "latestCompletedSemester": 2,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "recognition": {
+        "status": "READY",
+        "issues": [],
+        "recognizedCourses": []
+      },
+      "debt": {
+        "credits": 0,
+        "status": "COMPLETE",
+        "reason": null
+      },
+      "current": {
+        "period": {
+          "id": "2616b2fa-192b-49ed-a03d-b678308c620b",
+          "label": "HK01 (2026-2027)"
+        },
+        "status": "NORMAL",
+        "progress": {
+          "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+          "sourceType": "OPERATIONAL",
+          "evaluationStatus": "EVALUATED",
+          "dataStatus": "COMPLETE",
+          "observedValue": 0,
+          "thresholdValue": 4,
+          "margin": 4,
+          "isNearThreshold": false,
+          "isThresholdBreached": false,
+          "capabilityStatus": null,
+          "reasonCode": null,
+          "explanation": "Thiếu 0 tín chỉ so với kế hoạch đến hết học kỳ 2. Có 6 học phần đang học lại, cải thiện hoặc chờ điểm; chỉ sử dụng tín chỉ đã được công nhận đến mốc xét, không cộng tín chỉ của lượt học chưa đạt.",
+          "pendingProgressCourses": [
+            {
+              "courseCode": "20CT1201",
+              "courseName": "Cấu trúc dữ liệu và thuật giải",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT2102",
+              "courseName": "Kiến trúc máy tính",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT2103",
+              "courseName": "Tiếng Anh chuyên ngành",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT3204",
+              "courseName": "Tham quan thực tế",
+              "credits": 1,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20QT0001",
+              "courseName": "Kinh tế học đại cương",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "LC2101D",
+              "courseName": "Chủ nghĩa xã hội khoa học",
+              "credits": 2,
+              "context": "AWAITING_RESULT"
+            }
+          ],
+          "regulatorySource": null,
+          "articleRef": null,
+          "riskLevel": "GREEN",
+          "expectedCredits": 29,
+          "earnedCredits": 32,
+          "latestCompletedSemester": 2,
+          "progressStatus": "ON_TRACK",
+          "missingRequiredCredits": 0,
+          "missingRequiredCourses": []
+        }
+      }
+    },
+    {
+      "studentCode": "2549B063",
+      "live": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2026-2027",
+          "termCode": "HK01",
+          "termOrder": 1,
+          "boundary": "BEFORE_TERM",
+          "programCode": "CQ25CT"
+        },
+        "expectedCreditsToDate": 29,
+        "earnedCreditsToDate": 32,
+        "latestCompletedSemester": 2,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [
+          {
+            "courseCode": "20CT1201",
+            "courseName": "Cấu trúc dữ liệu và thuật giải",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT2102",
+            "courseName": "Kiến trúc máy tính",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT2103",
+            "courseName": "Tiếng Anh chuyên ngành",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3204",
+            "courseName": "Tham quan thực tế",
+            "credits": 1,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20QT0004",
+            "courseName": "Nguyên lý kế toán",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "LC2101D",
+            "courseName": "Chủ nghĩa xã hội khoa học",
+            "credits": 2,
+            "context": "AWAITING_RESULT"
+          }
+        ],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "historic": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2025-2026",
+          "termCode": "HK02",
+          "termOrder": 2,
+          "boundary": "END_OF_TERM",
+          "programCode": "CQ25CT"
+        },
+        "expectedCreditsToDate": 29,
+        "earnedCreditsToDate": 32,
+        "latestCompletedSemester": 2,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "recognition": {
+        "status": "READY",
+        "issues": [],
+        "recognizedCourses": []
+      },
+      "debt": {
+        "credits": 0,
+        "status": "COMPLETE",
+        "reason": null
+      },
+      "current": {
+        "period": {
+          "id": "2616b2fa-192b-49ed-a03d-b678308c620b",
+          "label": "HK01 (2026-2027)"
+        },
+        "status": "NORMAL",
+        "progress": {
+          "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+          "sourceType": "OPERATIONAL",
+          "evaluationStatus": "EVALUATED",
+          "dataStatus": "COMPLETE",
+          "observedValue": 0,
+          "thresholdValue": 4,
+          "margin": 4,
+          "isNearThreshold": false,
+          "isThresholdBreached": false,
+          "capabilityStatus": null,
+          "reasonCode": null,
+          "explanation": "Thiếu 0 tín chỉ so với kế hoạch đến hết học kỳ 2. Có 6 học phần đang học lại, cải thiện hoặc chờ điểm; chỉ sử dụng tín chỉ đã được công nhận đến mốc xét, không cộng tín chỉ của lượt học chưa đạt.",
+          "pendingProgressCourses": [
+            {
+              "courseCode": "20CT1201",
+              "courseName": "Cấu trúc dữ liệu và thuật giải",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT2102",
+              "courseName": "Kiến trúc máy tính",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT2103",
+              "courseName": "Tiếng Anh chuyên ngành",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT3204",
+              "courseName": "Tham quan thực tế",
+              "credits": 1,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20QT0004",
+              "courseName": "Nguyên lý kế toán",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "LC2101D",
+              "courseName": "Chủ nghĩa xã hội khoa học",
+              "credits": 2,
+              "context": "AWAITING_RESULT"
+            }
+          ],
+          "regulatorySource": null,
+          "articleRef": null,
+          "riskLevel": "GREEN",
+          "expectedCredits": 29,
+          "earnedCredits": 32,
+          "latestCompletedSemester": 2,
+          "progressStatus": "ON_TRACK",
+          "missingRequiredCredits": 0,
+          "missingRequiredCourses": []
+        }
+      }
+    },
+    {
+      "studentCode": "2549C049",
+      "live": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2026-2027",
+          "termCode": "HK01",
+          "termOrder": 1,
+          "boundary": "BEFORE_TERM",
+          "programCode": "CQ25CT"
+        },
+        "expectedCreditsToDate": 29,
+        "earnedCreditsToDate": 32,
+        "latestCompletedSemester": 2,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [
+          {
+            "courseCode": "20CT1201",
+            "courseName": "Cấu trúc dữ liệu và thuật giải",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT2102",
+            "courseName": "Kiến trúc máy tính",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT2103",
+            "courseName": "Tiếng Anh chuyên ngành",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20CT3204",
+            "courseName": "Tham quan thực tế",
+            "credits": 1,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20QT0004",
+            "courseName": "Nguyên lý kế toán",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "20TN2102",
+            "courseName": "Toán cao cấp B2",
+            "credits": 3,
+            "context": "AWAITING_RESULT"
+          },
+          {
+            "courseCode": "LC2101D",
+            "courseName": "Chủ nghĩa xã hội khoa học",
+            "credits": 2,
+            "context": "AWAITING_RESULT"
+          }
+        ],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "historic": {
+        "creditDeficit": 0,
+        "dataStatus": "COMPLETE",
+        "reasonCode": null,
+        "sourceId": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+        "reconciliation": {
+          "status": "READY",
+          "issues": [],
+          "recognizedCourses": []
+        },
+        "assessmentContext": {
+          "academicYear": "2025-2026",
+          "termCode": "HK02",
+          "termOrder": 2,
+          "boundary": "END_OF_TERM",
+          "programCode": "CQ25CT"
+        },
+        "expectedCreditsToDate": 29,
+        "earnedCreditsToDate": 32,
+        "latestCompletedSemester": 2,
+        "progressStatus": "ON_TRACK",
+        "pendingCourses": [],
+        "missingRequiredCredits": 0,
+        "missingRequiredCourses": []
+      },
+      "recognition": {
+        "status": "READY",
+        "issues": [],
+        "recognizedCourses": []
+      },
+      "debt": {
+        "credits": 0,
+        "status": "COMPLETE",
+        "reason": null
+      },
+      "current": {
+        "period": {
+          "id": "2616b2fa-192b-49ed-a03d-b678308c620b",
+          "label": "HK01 (2026-2027)"
+        },
+        "status": "NORMAL",
+        "progress": {
+          "ruleCode": "TRAINING_PROGRESS_CREDIT_DEFICIT",
+          "sourceType": "OPERATIONAL",
+          "evaluationStatus": "EVALUATED",
+          "dataStatus": "COMPLETE",
+          "observedValue": 0,
+          "thresholdValue": 4,
+          "margin": 4,
+          "isNearThreshold": false,
+          "isThresholdBreached": false,
+          "capabilityStatus": null,
+          "reasonCode": null,
+          "explanation": "Thiếu 0 tín chỉ so với kế hoạch đến hết học kỳ 2. Có 7 học phần đang học lại, cải thiện hoặc chờ điểm; chỉ sử dụng tín chỉ đã được công nhận đến mốc xét, không cộng tín chỉ của lượt học chưa đạt.",
+          "pendingProgressCourses": [
+            {
+              "courseCode": "20CT1201",
+              "courseName": "Cấu trúc dữ liệu và thuật giải",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT2102",
+              "courseName": "Kiến trúc máy tính",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT2103",
+              "courseName": "Tiếng Anh chuyên ngành",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20CT3204",
+              "courseName": "Tham quan thực tế",
+              "credits": 1,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20QT0004",
+              "courseName": "Nguyên lý kế toán",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "20TN2102",
+              "courseName": "Toán cao cấp B2",
+              "credits": 3,
+              "context": "AWAITING_RESULT"
+            },
+            {
+              "courseCode": "LC2101D",
+              "courseName": "Chủ nghĩa xã hội khoa học",
+              "credits": 2,
+              "context": "AWAITING_RESULT"
+            }
+          ],
+          "regulatorySource": null,
+          "articleRef": null,
+          "riskLevel": "GREEN",
+          "expectedCredits": 29,
+          "earnedCredits": 32,
+          "latestCompletedSemester": 2,
+          "progressStatus": "ON_TRACK",
+          "missingRequiredCredits": 0,
+          "missingRequiredCourses": []
+        }
+      }
+    }
+  ],
+  "productionApiChecks": {
+    "passed": 10,
+    "checks": [
+      "3001: pinned warning period and R credits",
+      "3001: separate current period",
+      "3001: cross-student result rejected",
+      "3001: malformed context rejected",
+      "3001: no false high risk from ongoing term",
+      "3000: pinned warning period and R credits",
+      "3000: separate current period",
+      "3000: cross-student result rejected",
+      "3000: malformed context rejected",
+      "3000: no false high risk from ongoing term"
+    ]
+  },
+  "validation": {
+    "backend": {
+      "passed": 382,
+      "skipped": 1,
+      "failed": 0
+    },
+    "frontend": {
+      "passed": 48,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "lintErrors": 0,
+    "existingLintWarnings": 17,
+    "smoke": "passed",
+    "visualBrowserCheck": false
+  }
+}

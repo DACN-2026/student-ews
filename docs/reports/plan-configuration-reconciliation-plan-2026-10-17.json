@@ -1,0 +1,56 @@
+{
+  "checkedAt": "2026-10-17T07:19:34.648Z",
+  "applied": false,
+  "inspectedPlans": 12,
+  "changedPlans": 0,
+  "changedCourseSnapshots": 0,
+  "blockers": [],
+  "sourceFingerprint": [
+    {
+      "source": "catalog",
+      "count": 144,
+      "hash": "0cc2b692235dd18012ffdbc8c0955980"
+    },
+    {
+      "source": "curriculum",
+      "count": 593,
+      "hash": "83d42abafe53ba7407aae8f7b6048e35"
+    },
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    },
+    {
+      "source": "programs",
+      "count": 11,
+      "hash": "77ba90e3cfb1996872d88b6684576cc9"
+    },
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    }
+  ],
+  "plans": []
+}

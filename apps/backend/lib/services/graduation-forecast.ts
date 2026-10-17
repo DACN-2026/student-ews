@@ -1,4 +1,6 @@
 import { courseOutcome, isConditionalCourse, normalizeProgramCourseCode, curriculumElectiveGroup, isK44StandardProgram, K44_ELECTIVE_GROUPS, normalizeCourseName } from "../academic-course-rules";
+import { matchProgramCourse, passedProgramCourseCodes, suggestProgramCourses } from "../course-recognition";
+import type { CourseOutcomeInput } from "../academic-course-rules";
 export { COURSE_CODE_ALIASES, normalizeCourseCode, normalizeCourseName } from "../academic-course-rules";
 
 export type ForecastCourse = {
@@ -9,9 +11,12 @@ export type ForecastCourse = {
   requirementType: string;
   semesterNo: number | null;
 };
-export type ForecastGrade = {
+export type ForecastGrade = CourseOutcomeInput & {
+  academicYear?: string | null;
+  termCode?: string | null;
   courseCode?: string | null;
   courseName?: string | null;
+  credits?: number | null;
   isPassed?: boolean | null;
   scoreStatus?: string | null;
   notScore?: boolean | null;
@@ -65,18 +70,9 @@ export function buildGraduationForecast(input: {
     warnings.push(`Nhiều mã học phần cùng tên trong CTĐT: ${sameName.map((item) => item.courseCode).join(", ")}. Không tự coi là tương đương.`);
   }
   if (allCourses.length === 0) warnings.push("CTĐT chưa có học phần để đối chiếu.");
-  const byCode = new Map(allCourses.map((course) => [normalizeCourseCode(course.courseCode), course]));
-  const byName = new Map<string, ForecastCourse[]>();
-  for (const course of allCourses) {
-    const key = normalizeCourseName(course.courseName);
-    if (key) byName.set(key, [...(byName.get(key) ?? []), course]);
-  }
-  const match = (code?: string | null, name?: string | null) => {
-    const exact = byCode.get(normalizeCourseCode(code));
-    if (exact) return exact;
-    const candidates = byName.get(normalizeCourseName(name)) ?? [];
-    return candidates.length === 1 ? candidates[0] : null;
-  };
+  const match = (code?: string | null) => matchProgramCourse(code, allCourses, input.programCode);
+  const passedCodes = passedProgramCourseCodes(input.grades.map(g => ({ ...g, courseCode: g.courseCode ?? "" })), allCourses, input.programCode);
+  const recognitionIssues: Array<{ code: string; courseCodes: string[]; message: string }> = [];
   const gradeMap = new Map<string, ForecastGrade[]>();
   const unmatchedGrades: ForecastGrade[] = [];
   for (const grade of input.grades) {
@@ -84,22 +80,36 @@ export function buildGraduationForecast(input: {
     const code = String(grade.courseCode || "").toUpperCase();
     const name = String(grade.courseName || "").toLowerCase();
     if (code.startsWith("SHCD") || name.includes("sinh hoạt công dân")) continue;
-    const course = match(grade.courseCode, grade.courseName);
-    if (!course) { unmatchedGrades.push(grade); continue; }
+    const course = match(grade.courseCode);
+    if (!course) {
+      const candidates = suggestProgramCourses(grade.courseName, allCourses).filter(c => !passedCodes.has(normalizeCourseCode(c.courseCode)));
+      // A cross-cohort registration with no result is not a credit-recognition
+      // conflict. Keep it pending under its source code, without granting credits.
+      if (courseOutcome(grade) !== "pending" && candidates.length && !recognitionIssues.some(i => i.courseCodes.includes(grade.courseCode || ""))) recognitionIssues.push({
+        code: "COURSE_EQUIVALENCE_NOT_CONFIGURED", courseCodes: [grade.courseCode || "", ...candidates.map(c => c.courseCode)],
+        message: "Trùng tên chưa xác nhận tương đương; cần đối chiếu ánh xạ của hệ thống, không tự quy đổi tín chỉ.",
+      });
+      unmatchedGrades.push(grade); continue;
+    }
+    if (grade.credits != null && grade.credits !== course.credits) {
+      recognitionIssues.push({ code: "COURSE_CREDIT_MAPPING_REVIEW", courseCodes: [course.courseCode], message: `Cần đối chiếu tín chỉ ${course.courseCode}: nguồn ${grade.credits}, CTĐT ${course.credits}.` });
+      unmatchedGrades.push(grade); continue;
+    }
     gradeMap.set(course.courseId, [...(gradeMap.get(course.courseId) ?? []), grade]);
   }
   const scheduleMap = new Map<string, ForecastSchedule>();
   for (const entry of input.schedule ?? []) {
-    const course = allCourses.find((item) => item.courseId === entry.courseId) ?? match(entry.courseCode, entry.courseName);
+    const course = allCourses.find((item) => item.courseId === entry.courseId) ?? match(entry.courseCode);
     if (course && !scheduleMap.has(course.courseId)) scheduleMap.set(course.courseId, entry);
   }
   const assessed = allCourses.map((course) => {
     const attempts = gradeMap.get(course.courseId) ?? [];
     const hasPass = attempts.some((grade) => courseOutcome(grade) === "passed");
     const hasFail = attempts.some((grade) => courseOutcome(grade) === "failed");
+    const hasPendingAttempt = attempts.some(grade => courseOutcome(grade) === "pending");
     if (attempts.some((grade) => courseOutcome(grade) === "unknown")) warnings.push(`Kết quả học phần ${course.courseCode} chưa đủ dữ liệu để đối soát; không coi là đang chờ điểm.`);
-    const state: CourseState = hasPass ? "passed" : hasFail ? "failed" : attempts.some((grade) => courseOutcome(grade) === "pending") ? "no_score" : "not_completed";
-    return { ...course, state, schedule: scheduleMap.get(course.courseId) ?? null };
+    const state: CourseState = hasPass ? "passed" : hasPendingAttempt ? "no_score" : hasFail ? "failed" : "not_completed";
+    return { ...course, state, hasPendingAttempt, confirmedOutcome: hasPass ? "PASSED" : hasFail ? "FAILED" : "NONE", schedule: scheduleMap.get(course.courseId) ?? null };
   });
   const mandatory = assessed.filter((course) => /bắt buộc|mandatory/i.test(course.requirementType));
   const elective = assessed.filter((course) => /tự chọn|elective/i.test(course.requirementType));
@@ -165,7 +175,7 @@ export function buildGraduationForecast(input: {
   const completedCredits = requiredCredits === null || creditedElectiveCredits === null || electiveGroups.some((group) => group.requiredCredits === null) ? null : Math.min(completedMandatoryCredits + creditedElectiveCredits, requiredCredits);
   const remainingCredits = requiredCredits === null || completedCredits === null || !coverageValid ? null : Math.max(0, requiredCredits - completedCredits);
 
-  const curriculumComplete = (requiredCredits === null || creditedElectiveCredits === null || !coverageValid || electiveGroups.some((g) => g.status === "UNKNOWN"))
+  const curriculumComplete = (recognitionIssues.length > 0 || requiredCredits === null || creditedElectiveCredits === null || !coverageValid || electiveGroups.some((g) => g.status === "UNKNOWN"))
     ? null
     : (missingRequiredCourses.length === 0 &&
        (remainingElectiveCredits === null || remainingElectiveCredits === 0) &&
@@ -202,6 +212,10 @@ export function buildGraduationForecast(input: {
     electiveCourses: elective,
     remainingBySemester,
     unmatchedGrades,
+    pendingRegistrations: unmatchedGrades.filter(grade => courseOutcome(grade) === "pending"),
+    reconciliation: { status: recognitionIssues.length ? "REVIEW_REQUIRED" : "READY", issues: recognitionIssues },
+    // Display alongside the individual course obligations; do not call the
+    // estimate an official recognition of differently coded source credits.
     warnings,
   };
 }

@@ -217,6 +217,8 @@ export class StudentDashboardService {
   private static async completionProgress(studentId: string, programCode: string, target: DashboardTerm) {
     const rows: Array<Record<string, unknown>> = await prisma.$queryRaw`
       SELECT sr.schedule_status AS "scheduleStatus",
+             r.id AS "runId", y.s_year_code AS "assessmentAcademicYear",
+             t.s_term_code AS "assessmentTermCode", r.completed_at AS "assessedAt",
              sr.program_completion_status AS "programCompletionStatus",
              sr.due_plans_total AS "duePlansTotal",
              sr.due_plans_passed AS "duePlansPassed",
@@ -227,6 +229,7 @@ export class StudentDashboardService {
       JOIN academic_terms t ON t.id = r.assessment_academic_term_id
       JOIN academic_years y ON y.id = t.academic_year_id
       WHERE sr.student_id = ${studentId}::uuid
+        AND r.evaluation_mode = 'standard' AND r.publication_status = 'active'
         AND (y.s_year_code < ${target.academicYear}
           OR (y.s_year_code = ${target.academicYear} AND t.s_term_order <= ${target.termOrder}))
         AND (${programCode} = '' OR sr.s_program_code = ${programCode})

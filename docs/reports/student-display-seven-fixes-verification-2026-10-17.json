@@ -1,0 +1,466 @@
+{
+  "checkedAt": "2026-10-17T08:11:03.964Z",
+  "allPassed": true,
+  "profilesMatchingStandard": 616,
+  "exportsMatchingStandard": 616,
+  "pendingStudentsPreserved": 435,
+  "dashboard": [
+    {
+      "academicYear": "2026-2027",
+      "termCode": "HK01",
+      "counts": {
+        "code": "all",
+        "name": "Toàn Khoa",
+        "total": 622,
+        "pass": 300,
+        "fail": 321,
+        "pending": 0,
+        "error": 1
+      },
+      "context": {
+        "code": "curriculum_progress_at_period",
+        "label": "Đối chiếu yêu cầu học phần trước kỳ hiện tại",
+        "academicTermId": "2616b2fa-192b-49ed-a03d-b678308c620b",
+        "periodLabel": "HK01 2026-2027",
+        "boundary": "BEFORE_TERM",
+        "evaluatedStudents": 622,
+        "reviewStudents": 1,
+        "runIds": [],
+        "cutoff": null,
+        "reasonCodes": [
+          "PROGRAM_PROGRESS_BEHIND"
+        ]
+      }
+    },
+    {
+      "academicYear": "2025-2026",
+      "termCode": "HK02",
+      "counts": {
+        "code": "all",
+        "name": "Toàn Khoa",
+        "total": 622,
+        "pass": 294,
+        "fail": 328,
+        "pending": 0,
+        "error": 0
+      },
+      "context": {
+        "code": "curriculum_progress_at_period",
+        "label": "Đối chiếu yêu cầu học phần đến hết kỳ đã chọn",
+        "academicTermId": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+        "periodLabel": "HK02 2025-2026",
+        "boundary": "END_OF_TERM",
+        "evaluatedStudents": 622,
+        "reviewStudents": 0,
+        "runIds": [],
+        "cutoff": null,
+        "reasonCodes": [
+          "PROGRAM_PROGRESS_BEHIND"
+        ]
+      }
+    },
+    {
+      "academicYear": "2024-2025",
+      "termCode": "HK02",
+      "counts": {
+        "code": "all",
+        "name": "Toàn Khoa",
+        "total": 383,
+        "pass": 199,
+        "fail": 184,
+        "pending": 0,
+        "error": 0
+      },
+      "context": {
+        "code": "curriculum_progress_at_period",
+        "label": "Đối chiếu yêu cầu học phần đến hết kỳ đã chọn",
+        "academicTermId": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+        "periodLabel": "HK02 2024-2025",
+        "boundary": "END_OF_TERM",
+        "evaluatedStudents": 383,
+        "reviewStudents": 0,
+        "runIds": [],
+        "cutoff": null,
+        "reasonCodes": [
+          "PROGRAM_PROGRESS_BEHIND"
+        ]
+      }
+    }
+  ],
+  "graduationStudents": 622,
+  "vtLabelsVerified": 779,
+  "vtStudents": 180,
+  "optionalAlternativesCorrected": 878,
+  "distinctComparisonLabels": 10,
+  "departedStudentsWithoutNormalDefault": 2,
+  "sourceUnchanged": true,
+  "sourceFingerprints": [
+    {
+      "source": "catalog",
+      "count": 144,
+      "hash": "0cc2b692235dd18012ffdbc8c0955980"
+    },
+    {
+      "source": "curriculum",
+      "count": 593,
+      "hash": "83d42abafe53ba7407aae8f7b6048e35"
+    },
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    },
+    {
+      "source": "programs",
+      "count": 11,
+      "hash": "77ba90e3cfb1996872d88b6684576cc9"
+    },
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    }
+  ],
+  "graduationSampleEvaluations": [
+    "2efe026a-3c65-41b5-a146-fc7bacceb3a4"
+  ],
+  "apiChecks": [
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2246A002/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2246A002/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2347A001/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2347A001/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2347A048/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2347A048/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2246B045/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2246B045/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2347B045/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2347B045/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2448A025/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2448A025/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2549A055/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students/2549A055/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/dashboard/summary?academicYear=2026-2027&termCode=HK01",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/dashboard/summary?academicYear=2025-2026&termCode=HK02",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/dashboard/summary?academicYear=2024-2025&termCode=HK02",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/students?isInClass=false&pageSize=100",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/5f121b83-9b56-4fbe-a43b-a4815c5a3e78/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/5f121b83-9b56-4fbe-a43b-a4815c5a3e78/students/2246A048",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/4612f968-9a40-43b3-9862-281a74c65c3f/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/4612f968-9a40-43b3-9862-281a74c65c3f/students/2549A078",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/c01bb4b7-73fa-4a5b-a3bb-3a0561d2db70/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/c01bb4b7-73fa-4a5b-a3bb-3a0561d2db70/students/2347A033",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/b1d0f93f-0934-4451-bfc9-bfdc5f3d82c7/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/b1d0f93f-0934-4451-bfc9-bfdc5f3d82c7/students/2246A053",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/e0da23f8-69d4-4d5b-8e4c-14e21d66ce9e/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/e0da23f8-69d4-4d5b-8e4c-14e21d66ce9e/students/2347A035",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/cd479e10-733b-4591-a892-b8d153d9e53c/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/training-progress/completion-runs/cd479e10-733b-4591-a892-b8d153d9e53c/students/2448A056",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3001",
+      "url": "/api/v1/graduation-evaluations/2efe026a-3c65-41b5-a146-fc7bacceb3a4/students/2347A049",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2246A002/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2246A002/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2347A001/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2347A001/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2347A048/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2347A048/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2246B045/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2246B045/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2347B045/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2347B045/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2448A025/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2448A025/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2549A055/dashboard",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students/2549A055/training-progress",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/dashboard/summary?academicYear=2026-2027&termCode=HK01",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/dashboard/summary?academicYear=2025-2026&termCode=HK02",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/dashboard/summary?academicYear=2024-2025&termCode=HK02",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/students?isInClass=false&pageSize=100",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/5f121b83-9b56-4fbe-a43b-a4815c5a3e78/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/5f121b83-9b56-4fbe-a43b-a4815c5a3e78/students/2246A048",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/4612f968-9a40-43b3-9862-281a74c65c3f/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/4612f968-9a40-43b3-9862-281a74c65c3f/students/2549A078",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/c01bb4b7-73fa-4a5b-a3bb-3a0561d2db70/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/c01bb4b7-73fa-4a5b-a3bb-3a0561d2db70/students/2347A033",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/b1d0f93f-0934-4451-bfc9-bfdc5f3d82c7/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/b1d0f93f-0934-4451-bfc9-bfdc5f3d82c7/students/2246A053",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/e0da23f8-69d4-4d5b-8e4c-14e21d66ce9e/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/e0da23f8-69d4-4d5b-8e4c-14e21d66ce9e/students/2347A035",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/cd479e10-733b-4591-a892-b8d153d9e53c/students?pageSize=1000",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/training-progress/completion-runs/cd479e10-733b-4591-a892-b8d153d9e53c/students/2448A056",
+      "passed": true
+    },
+    {
+      "base": "http://localhost:3000",
+      "url": "/api/v1/graduation-evaluations/2efe026a-3c65-41b5-a146-fc7bacceb3a4/students/2347A049",
+      "passed": true
+    }
+  ],
+  "apiCheckCount": 62,
+  "productionApiPassed": true,
+  "renderChecks": {
+    "vtAction": true,
+    "vtCurriculum": true,
+    "separateCreditMeaning": true
+  }
+}

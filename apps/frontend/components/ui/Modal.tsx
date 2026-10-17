@@ -2,6 +2,7 @@
 
 import React, { useEffect, useId, useRef } from "react";
 import { lockBodyScroll } from "./body-scroll-lock";
+import { useDialogClose } from "./use-dialog-close";
 
 interface ModalProps {
   isOpen: boolean;
@@ -11,6 +12,8 @@ interface ModalProps {
   children: React.ReactNode;
   maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl";
   footer?: React.ReactNode;
+  busy?: boolean;
+  hasUnsavedChanges?: boolean;
 }
 
 const maxWidthMap = {
@@ -33,15 +36,18 @@ export default function Modal({
   children,
   maxWidth = "lg",
   footer,
+  busy = false,
+  hasUnsavedChanges,
 }: ModalProps) {
+  const { requestClose, markChanged } = useDialogClose(isOpen, onClose, busy, hasUnsavedChanges);
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const onCloseRef = useRef(onClose);
+  const onCloseRef = useRef(requestClose);
 
   useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
+    onCloseRef.current = requestClose;
+  }, [requestClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -93,13 +99,14 @@ export default function Modal({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 transition-opacity animate-in fade-in duration-200"
-        onClick={onClose}
+        onClick={requestClose}
         aria-hidden="true"
       />
 
       {/* Modal Dialog */}
       <div
         ref={dialogRef}
+        onChangeCapture={markChanged}
         className={`relative flex max-h-[calc(100dvh-2rem)] w-full flex-col sm:max-h-[calc(100dvh-3rem)] ${maxWidthMap[maxWidth]} bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-10 transition-all transform animate-in zoom-in-95 duration-200`}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -125,7 +132,8 @@ export default function Modal({
           <button
             ref={closeButtonRef}
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
+            disabled={busy}
             className="shrink-0 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600"
             aria-label="Đóng"
           >

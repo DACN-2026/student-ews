@@ -27,7 +27,7 @@ test("delayed student studies HK7, not the cohort's HK9; benchmark and overdue c
 
 test("old pending courses, VT, and condition courses never create a current-study semester", () => {
   const result = evaluate([course("OLD", 7), course("VT", 8), course("QP2101D", 1, true)], [
-    pending("OLD", "2025-2026"), { ...pending("VT"), specialCode: "VT" }, pending("QP2101D"),
+    pending("OLD", "2025-2026"), { ...pending("VT"), specialCode: "VT", isPass: false }, pending("QP2101D"),
   ]);
   assert.deepEqual(result.scheduleProgress.studyingSemesterNos, []);
   assert.equal(result.courseStatus.noScore.find(c => c.courseCode === "OLD")?.isCurrentlyStudying, false);

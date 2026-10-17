@@ -1,6 +1,7 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { RbacService } from "@/lib/services/rbac";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 import { errorResponse, jsonResponse } from "@/lib/utils/api-response";
 import { recordAudit } from "@/lib/services/audit";
 
@@ -8,6 +9,8 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
+    const access = await requireApiPermission(_request);
+    if (!access.authorized) return access.response;
     const { id } = await params;
     return jsonResponse(await RbacService.listUserRoles(id));
   } catch (error) {
@@ -17,8 +20,10 @@ export async function GET(_request: NextRequest, { params }: Params) {
 
 export async function POST(request: NextRequest, { params }: Params) {
   try {
+    const access = await requireApiPermission(request);
+    if (!access.authorized) return access.response;
     const { id } = await params;
-    const body = await readJsonBody<{ roleCode?: unknown }>(request);
+    const body = await readJsonObject<{ roleCode?: unknown }>(request);
     if (typeof body.roleCode !== "string" || !body.roleCode.trim()) {
       return errorResponse("roleCode is required", "INVALID_REQUEST", 400);
     }

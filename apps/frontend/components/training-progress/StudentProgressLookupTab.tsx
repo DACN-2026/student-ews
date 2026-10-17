@@ -292,9 +292,9 @@ export default function StudentProgressLookupTab() {
 
   const unknownCount = kpi.unknownCount ?? Math.max(0, kpi.totalStudents - kpi.onTrackCount - kpi.behindCount);
   const progressDistribution = [
-    { label: "Đúng tiến độ", count: kpi.onTrackCount, color: "bg-emerald-500" },
+    { label: "Đáp ứng yêu cầu đến mốc", count: kpi.onTrackCount, color: "bg-emerald-500" },
     { label: "Chậm tiến độ", count: kpi.behindCount, color: "bg-rose-500" },
-    { label: "Cần đối soát", count: unknownCount, color: "bg-amber-500" },
+    { label: "Chưa thể kết luận", count: unknownCount, color: "bg-amber-500" },
   ].map(group => ({ ...group, percentage: kpi.totalStudents > 0 ? group.count / kpi.totalStudents * 100 : 0 }));
 
   // Calculate items display bounds
@@ -347,10 +347,10 @@ export default function StudentProgressLookupTab() {
               ? "border-emerald-400 bg-emerald-50/40 ring-2 ring-emerald-200"
               : "border-slate-200 bg-white hover:border-emerald-300"
           }`}
-          title="Bấm để lọc danh sách Đúng tiến độ"
+          title="Bấm để lọc sinh viên đáp ứng yêu cầu đến mốc"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Đúng tiến độ</span>
+            <span className="text-xs font-semibold text-slate-500">Đáp ứng yêu cầu đến mốc</span>
             <CheckCircle2 size={16} className="text-emerald-600" />
           </div>
           <div className="mt-2.5 flex items-baseline justify-between gap-1">
@@ -362,7 +362,7 @@ export default function StudentProgressLookupTab() {
             </TextLabel>
           </div>
           <div className="mt-2 text-[11px] text-slate-500 flex items-center justify-between">
-            <span>Đạt chuẩn mốc đào tạo</span>
+            <span>Đáp ứng yêu cầu học phần đến mốc</span>
             {selectedStatus === "ON_TRACK" && (
               <span className="text-emerald-700 font-semibold">Đang lọc</span>
             )}
@@ -524,7 +524,7 @@ export default function StudentProgressLookupTab() {
                 className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50/70 px-3 text-xs font-medium text-slate-800 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-100 transition"
               >
                 <option value="ALL">Tất cả trạng thái</option>
-                <option value="ON_TRACK">Đúng tiến độ</option>
+                <option value="ON_TRACK">Đáp ứng yêu cầu đến mốc</option>
                 <option value="BEHIND">Chậm tiến độ</option>
               </select>
             </div>
@@ -586,7 +586,7 @@ export default function StudentProgressLookupTab() {
                           : "bg-rose-50 text-rose-800 "
                       }`}
                     >
-                      Trạng thái: {selectedStatus === "ON_TRACK" ? "Đúng tiến độ" : "Chậm tiến độ"}
+                      Trạng thái: {selectedStatus === "ON_TRACK" ? "Đáp ứng yêu cầu đến mốc" : "Chậm tiến độ"}
                       <button type="button" onClick={() => handleStatusChange("ALL")}>
                         <X size={12} className="hover:opacity-75 cursor-pointer" />
                       </button>
@@ -661,6 +661,7 @@ export default function StudentProgressLookupTab() {
           </div>
         </div>
 
+        <p className="px-4 py-2 text-xs leading-5 text-slate-500">Chênh lệch tín chỉ được tính so với kế hoạch học kỳ; số âm không tự xác nhận nợ môn.</p>
         {/* Table or Empty/Loading States */}
         {loading ? (
           <div className="p-4"><LoadingState label="Đang tải và đối chiếu tiến độ sinh viên…" /></div>
@@ -693,17 +694,13 @@ export default function StudentProgressLookupTab() {
                   <th className="py-3 px-3.5 whitespace-nowrap text-left table-cell-left">Họ và tên</th>
                   <th className="py-3 px-3 whitespace-nowrap text-center table-cell-center">Khóa / Lớp</th>
                   <th className="py-3 px-3 whitespace-nowrap text-center table-cell-center">Mốc đánh giá</th>
-                  <th className="py-3 px-3 text-center whitespace-nowrap table-cell-center">TC kế hoạch</th>
-                  <th className="py-3 px-3 text-center whitespace-nowrap table-cell-center">TC đã đạt</th>
                   <th className="py-3 px-3 text-center whitespace-nowrap table-cell-center">Chênh lệch</th>
                   <th className="py-3 px-3 text-center whitespace-nowrap table-cell-center">HP bắt buộc thiếu</th>
-                  <th className="py-3 px-3 text-center whitespace-nowrap table-cell-center">Trạng thái</th>
                   <th className="py-3 px-3.5 text-center whitespace-nowrap table-cell-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
                 {students.map((st) => {
-                  const isOnTrack = st.progressStatus === "ON_TRACK";
                   return (
                     <tr
                       key={st.id}
@@ -745,20 +742,10 @@ export default function StudentProgressLookupTab() {
                         </span>
                       </td>
 
-                      {/* Expected Credits */}
-                      <td className="py-3 px-3 text-center whitespace-nowrap font-mono text-slate-600 table-cell-center">
-                        {st.expectedCredits} TC
-                      </td>
-
-                      {/* Earned Credits */}
-                      <td className="py-3 px-3 text-center whitespace-nowrap font-mono font-bold text-slate-900 table-cell-center">
-                        {st.earnedCredits} TC
-                      </td>
-
                       {/* Credit Difference */}
                       <td className="py-3 px-3 text-center whitespace-nowrap font-mono font-bold table-cell-center">
                         {st.creditDifference < 0 ? (
-                          <span className="text-rose-600">{st.creditDifferenceText}</span>
+                          <span className="text-rose-600">{st.creditDifference} TC</span>
                         ) : (
                           <span className="text-emerald-600">
                             {st.creditDifference > 0 ? `+${st.creditDifference} TC` : "0 TC"}
@@ -774,24 +761,6 @@ export default function StudentProgressLookupTab() {
                           </TextLabel>
                         ) : (
                           <span className="text-slate-400 font-mono">0</span>
-                        )}
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3 px-3 text-center whitespace-nowrap table-cell-center">
-                        {isOnTrack ? (
-                          <TextLabel className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-
-                            <span>Đúng tiến độ</span>
-                          </TextLabel>
-                        ) : (
-                          <TextLabel
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-rose-700"
-                            title={st.statusReason}
-                          >
-
-                            <span>{st.progressStatus === "UNKNOWN" ? "Cần đối soát" : "Chậm tiến độ"}</span>
-                          </TextLabel>
                         )}
                       </td>
 

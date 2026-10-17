@@ -25,6 +25,7 @@ test("progress summary updates immediately when a student leaves or rejoins, whi
     { id: "departed", sStudentId: "departed", sFullName: "Departed" },
   ];
   const cleanup = [
+    replace(StudentTrainingProgressService, "loadProgressBatch", async () => undefined),
     replace(prisma.student, "findMany", async ({ where }: TestQuery) => {
       if (where.OR && !where.AND) return departed ? [{ id: "departed" }] : [];
       const matches = (student: typeof students[number], clause: TestWhere): boolean =>
@@ -65,6 +66,7 @@ test("saved operational results exclude departed students before pagination and 
   };
   let aggregateQueries = 0;
   const cleanup = [
+    replace(GraduationEvaluationsService, "getStatusOverrides", async () => []),
     replace(prisma.student, "findMany", async () => [{ id: "departed" }]),
     ...[prisma.trainingProgressStudentResult, prisma.trainingProgressCompletionStudentResult,
       prisma.academicWarningStudentResult, prisma.graduationEvaluationStudent].flatMap(model => [

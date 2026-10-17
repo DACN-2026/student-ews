@@ -6,6 +6,7 @@ import TableAction from "@/components/ui/TableAction";
 import { Pencil, Trash2 } from "lucide-react";
 import TextLabel from "@/components/ui/TextLabel";
 import { useState, useEffect, useMemo, useCallback, use } from "react";
+import { fetchAllApiItems, readApiJson } from "@/lib/api-data";
 import { apiFetch, invalidateApiCache } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import FilterBar from "@/components/ui/FilterBar";
@@ -59,6 +60,7 @@ export default function TrainingProgramDetailPage({
   const [program, setProgram] = useState<TrainingProgramDetail | null>(null);
   const [plans, setPlans] = useState<ApiData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [activeTab, setActiveTab] = useState<"curriculum" | "plans">("curriculum");
 
   // Filters
@@ -99,31 +101,16 @@ export default function TrainingProgramDetailPage({
   const loadProgramData = useCallback(async () => {
     try {
       setLoading(true);
-      const [pRes, plRes, cRes, yRes] = await Promise.all([
-        apiFetch(`/api/v1/training-programs/${programId}`),
-        apiFetch(`/api/v1/training-progress/plans?trainingProgramId=${programId}`),
-        apiFetch(`/api/v1/courses?pageSize=200`),
-        apiFetch(`/api/v1/academic-years`),
+      setLoadError("");
+      const [programData, planItems, courseItems, yearItems] = await Promise.all([
+        apiFetch(`/api/v1/training-programs/${programId}`).then(readApiJson<TrainingProgramDetail>),
+        fetchAllApiItems<ApiData>(`/api/v1/training-progress/plans?trainingProgramId=${programId}&includeArchived=true`),
+        fetchAllApiItems<ApiData>("/api/v1/courses"),
+        fetchAllApiItems<ApiData>("/api/v1/academic-years"),
       ]);
-
-      if (pRes.ok) {
-        setProgram(await pRes.json());
-      }
-      if (plRes.ok) {
-        const plJson = await plRes.json();
-        setPlans(Array.isArray(plJson.items) ? plJson.items : Array.isArray(plJson) ? plJson : []);
-      }
-      if (cRes.ok) {
-        const cJson = await cRes.json();
-        setCatalogCourses(Array.isArray(cJson.items) ? cJson.items : Array.isArray(cJson) ? cJson : []);
-      }
-      if (yRes.ok) {
-        const yJson = await yRes.json();
-        const years = Array.isArray(yJson.items) ? yJson.items : Array.isArray(yJson) ? yJson : [];
-        setAcademicYears(years);
-      }
+      setProgram(programData); setPlans(planItems); setCatalogCourses(courseItems); setAcademicYears(yearItems);
     } catch (err) {
-      console.error("Error loading program details:", err);
+      setLoadError(err instanceof Error ? err.message : "Không thể tải chương trình đào tạo. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
@@ -310,6 +297,8 @@ export default function TrainingProgramDetailPage({
   if (loading) {
     return <div className="mx-auto max-w-7xl p-4 sm:p-6"><LoadingState variant="page" label="Đang tải khung chương trình đào tạo…" /></div>;
   }
+
+  if (loadError) return <div role="alert" className="mx-auto max-w-3xl space-y-4 p-6"><p className="text-sm text-red-700">{loadError}</p><button type="button" onClick={() => void loadProgramData()} className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50">Thử lại</button></div>;
 
   if (!program) {
     return (

@@ -4,6 +4,8 @@ import { k44ElectiveMembership, type K44ElectiveBlock } from "../k44-elective-bl
 import { teachingSemesterSurplus } from "../semester-teaching-requirements";
 import { loadProgramCurriculum, loadProgramCurriculumCatalog, type CurriculumCatalogCourse } from "./program-curriculum";
 import type { ForecastCourse } from "./graduation-forecast";
+import { passedProgramCourseCodes, suggestProgramCourses } from "../course-recognition";
+import { loadSourceCreditRecognitions } from "./source-credit-recognition";
 
 export type DebtAttempt = CourseOutcomeInput & { courseCode: string; courseName?: string | null; credits: number; academicYear?: string; termCode?: string };
 export type CurriculumReviewCourse = {
@@ -71,6 +73,7 @@ export function calculateAcademicDebt(attempts: DebtAttempt[], courses: Forecast
     if (!previous) byCode.set(key, course);
   }
   const states = new Map<string, { course: ForecastCourse; failed: boolean; passed: boolean; unresolved: boolean; pending: boolean; absence: boolean }>();
+  const passedCodes = passedProgramCourseCodes(attempts, courses, programCode);
   const curriculumReviewCourses: CurriculumReviewCourse[] = [];
   const reviewKeys = new Set<string>();
   let uncertain = false;
@@ -80,6 +83,26 @@ export function calculateAcademicDebt(attempts: DebtAttempt[], courses: Forecast
     const absence = (attempt.specialCode || attempt.letterCode || "").trim().toUpperCase() === "VT";
     const outcome = warningCourseOutcome(attempt);
     if (!course) {
+      // An ongoing cross-cohort registration neither creates debt nor settles
+      // an existing obligation. Preserve the source code in pendingCourses below.
+      if (outcome === "pending") continue;
+      const suggestions = suggestProgramCourses(attempt.courseName, courses);
+      const outstandingSuggestions = suggestions.filter(course => !passedCodes.has(normalizeProgramCourseCode(course.courseCode, programCode)));
+      // Do not let a different code outside this curriculum reopen obligations
+      // already passed under their own source codes at this assessment cutoff.
+      if (suggestions.length && !outstandingSuggestions.length) continue;
+      // A failed course outside this curriculum grants no current-program
+      // credits and is not an unresolved current-program debt obligation.
+      if (outcome === "failed" && !outstandingSuggestions.length) continue;
+      if (outstandingSuggestions.length) {
+        uncertain = true;
+        for (const suggestion of outstandingSuggestions) {
+          if (!curriculumReviewCourses.some(item => item.courseCode === attempt.courseCode)) curriculumReviewCourses.push({
+            courseCode: attempt.courseCode, courseName: attempt.courseName || suggestion.courseName, credits: attempt.credits,
+            catalogProgramCode: programCode, outcome: absence ? "VT" : outcome,
+            academicYear: attempt.academicYear, termCode: attempt.termCode });
+        }
+      }
       const recognized = catalog.find(item => identity(item.courseCode) === identity(attempt.courseCode));
       const reviewKey = `${attempt.courseCode}|${attempt.academicYear || ""}|${attempt.termCode || ""}|${absence ? "VT" : outcome}`;
       if (recognized && !reviewKeys.has(reviewKey)) {
@@ -88,7 +111,7 @@ export function calculateAcademicDebt(attempts: DebtAttempt[], courses: Forecast
           catalogProgramCode: recognized.catalogProgramCode, outcome: absence ? "VT" : outcome,
           ...(attempt.academicYear ? { academicYear: attempt.academicYear } : {}), ...(attempt.termCode ? { termCode: attempt.termCode } : {}) });
       }
-      if (outcome === "failed" || outcome === "unknown" || outcome === "pending" || k44ElectiveMembership(attempt.courseCode, programCode)) uncertain = true;
+      if (outcome === "failed" || outcome === "unknown" || k44ElectiveMembership(attempt.courseCode, programCode)) uncertain = true;
       continue;
     }
     if (attempt.credits !== course.credits || conflictingCourses.has(identity(course.courseCode))) uncertain = true;
@@ -103,6 +126,12 @@ export function calculateAcademicDebt(attempts: DebtAttempt[], courses: Forecast
   }
   let debt = 0;
   const pendingCourses: NonNullable<AcademicDebtCalculation["pendingCourses"]> = [];
+  for (const attempt of attempts) {
+    if (!isConditionalCourse(attempt.courseCode, attempt.courseName) && !byCode.has(identity(attempt.courseCode)) && warningCourseOutcome(attempt) === "pending") {
+      pendingCourses.push({ courseCode: attempt.courseCode, courseName: attempt.courseName || attempt.courseCode,
+        credits: attempt.credits, previousOutcome: "NONE" });
+    }
+  }
   let unresolvedAbsence = false;
   const outstandingCourses: string[] = [];
   const groups = new Map<K44ElectiveBlock, { requiredCredits: number; passedCredits: number; failures: ElectiveFailure[] }>();
@@ -237,14 +266,12 @@ export async function loadAcademicDebt(studentIds: string[], programId: string, 
     WHERE o.student_id = ANY(${studentIds}::uuid[]) AND (y.s_year_code < ${year.sYearCode}
       OR (y.s_year_code = ${year.sYearCode} AND t.s_term_order <= ${term.sTermOrder}))
   `;
-  const unscoped = new Set((await prisma.unscopedGradeRecord.findMany({ where: { studentId: { in: studentIds } },
-    select: { studentId: true, sCourseCode: true, sCourseName: true, reason: true } }))
-    // GDTC/GDQP remain unresolved certificate evidence; they do not affect academic F debt.
-    .filter(row => !isConditionalCourse(row.sCourseCode, row.sCourseName)).map((row) => row.studentId));
+  const recognition = await loadSourceCreditRecognitions(studentIds, program.sProgramCode, { academicYear: year.sYearCode, termCode: term.sTermCode, termOrder: term.sTermOrder });
   for (const studentId of studentIds) {
-    const debt = calculateAcademicDebt(rows.filter((row) => row.student_id === studentId).map(row =>
-      row.specialCode?.trim().toUpperCase() === "VT" ? { ...row, isPass: sourcePassOutcome(row.source_payload) } : row), courses, program.sProgramCode, catalog);
-    if (unscoped.has(studentId)) { debt.dataStatus = "PARTIAL"; debt.reasonCode = "UNSCOPED_HISTORICAL_ATTEMPTS"; }
+    const recognized = recognition.get(studentId)!;
+    const debt = calculateAcademicDebt([...rows.filter((row) => row.student_id === studentId).map(row =>
+      ({ ...row, sourcePayload: row.source_payload ?? undefined, isPass: row.source_payload == null ? row.isPass : sourcePassOutcome(row.source_payload) })), ...recognized.attempts], courses, program.sProgramCode, catalog);
+    if (recognized.unresolvedCourseCodes.some(code => !isConditionalCourse(code))) { debt.dataStatus = "PARTIAL"; debt.reasonCode = "SOURCE_RECORD_MAPPING_REVIEW"; }
     result.set(studentId, debt);
   }
   return result;

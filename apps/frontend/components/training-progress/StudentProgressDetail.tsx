@@ -1,11 +1,14 @@
 "use client";
 
 import LoadingState from "@/components/ui/LoadingState";
+import TranscriptContext from "@/components/students/TranscriptContext";
 
 import TextLabel from "@/components/ui/TextLabel";
 import React, { useCallback, useEffect, useState } from "react";
 import { AlertCircle, ChevronDown, ChevronRight, Layers, RefreshCw } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import { studentProgressEndpoint } from "@/lib/student-progress-context";
+import { academicExplanation } from "@/lib/academic-explanation";
 import { semesterMilestoneCredits, semesterProgressDisplay } from "@/lib/semester-progress-display";
 import { semesterGradeSummary, type StudentTermGradeSummary } from "@/lib/semester-grade-summary";
 import type {
@@ -16,6 +19,7 @@ import type {
 
 interface Props {
   studentId?: string;
+  warningResultId?: string;
   initialData?: StudentTrainingProgressData | null;
   onRefresh?: () => void;
   showStudentHeader?: boolean;
@@ -25,6 +29,7 @@ interface Props {
 
 export default function StudentProgressDetail({
   studentId,
+  warningResultId,
   initialData = null,
   onRefresh,
   showStudentHeader = true,
@@ -60,7 +65,7 @@ export default function StudentProgressDetail({
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch(`/api/v1/students/${encodeURIComponent(studentId)}/training-progress`, { cache: "reload" });
+      const res = await apiFetch(studentProgressEndpoint(studentId, warningResultId), { cache: "reload" });
       if (!res.ok) {
         const errJson = await res.json().catch(() => null);
         throw new Error(
@@ -92,7 +97,7 @@ export default function StudentProgressDetail({
     } finally {
       setLoading(false);
     }
-  }, [studentId]);
+  }, [studentId, warningResultId]);
 
   useEffect(() => {
     if (initialData || !studentId) return;
@@ -100,7 +105,7 @@ export default function StudentProgressDetail({
 
     async function run() {
       try {
-        const res = await apiFetch(`/api/v1/students/${encodeURIComponent(studentId!)}/training-progress`);
+        const res = await apiFetch(studentProgressEndpoint(studentId!, warningResultId));
         if (!res.ok) {
           const errJson = await res.json().catch(() => null);
           throw new Error(
@@ -139,7 +144,7 @@ export default function StudentProgressDetail({
     return () => {
       active = false;
     };
-  }, [initialData, studentId]);
+  }, [initialData, studentId, warningResultId]);
 
   const toggleSemester = (semNo: number) => {
     setExpandedSemesters((prev) => ({
@@ -244,7 +249,7 @@ export default function StudentProgressDetail({
 
   const { expectedCreditsToDate, earnedCreditsToDate, creditDifference } = semesterMilestoneCredits(semesters, effectiveLastCompletedSem);
   const creditDifferenceText = progressStatus === "UNKNOWN" ? "Chưa đủ dữ liệu" : (
-    creditDifference < 0 ? `Chậm ${Math.abs(creditDifference)} TC` : creditDifference > 0 ? `Học vượt +${creditDifference} TC` : "Đúng kế hoạch"
+    creditDifference < 0 ? `Thấp hơn kế hoạch ${Math.abs(creditDifference)} TC` : creditDifference > 0 ? `Cao hơn kế hoạch ${creditDifference} TC` : "Bằng kế hoạch"
   );
 
   const missingRequiredCourses = scheduleProgress.missingRequiredCourses ?? [];
@@ -255,6 +260,15 @@ export default function StudentProgressDetail({
 
   return (
     <div className="space-y-6">
+      {student.isInClass === false && <p className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-700">Đã ngừng theo dõi. Các học phần bên dưới được giữ để tra cứu lịch sử; không dùng làm cảnh báo tiến độ hiện tại.</p>}
+      {view === "progress" && <TranscriptContext
+        label="Thông tin bổ sung cho tiến độ học tập"
+        context={data.assessmentContext}
+        pendingRegistrations={data.courseStatus?.pendingRegistrations}
+        recognizedCourses={data.reconciliation?.recognizedCourses}
+        historicalWarning={Boolean(warningResultId)}
+      />}
+      {data.reconciliation?.issues.length ? <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs leading-6 text-amber-900"><strong>Học phần cần kiểm tra trước khi tính tiến độ</strong><ul className="mt-1 list-disc pl-4">{data.reconciliation.issues.map((issue, index) => <li key={`${issue.code}:${index}`}>{academicExplanation(issue.message)}</li>)}</ul></div> : null}
       {/* Student Top Header Banner (Optional) */}
       {showStudentHeader && (
         <div className="rounded-2xl border border-slate-200 bg-linear-to-r from-slate-900 via-slate-800 to-slate-900 p-5 text-white shadow-xs">
@@ -332,15 +346,15 @@ export default function StudentProgressDetail({
 
           {/* Status Badges */}
           <div className="flex flex-wrap items-center gap-2">
-            {isOnTrack ? (
+            {student.isInClass === false ? <TextLabel className="text-xs font-semibold text-slate-600">Đã ngừng theo dõi</TextLabel> : isOnTrack ? (
               <TextLabel className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800">
 
-                Đúng tiến độ
+                Đáp ứng yêu cầu đến mốc
               </TextLabel>
             ) : (
               <TextLabel className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-800">
 
-                {progressStatus === "UNKNOWN" ? "Cần đối soát" : "Chậm tiến độ"}
+                {progressStatus === "UNKNOWN" ? "Chưa thể kết luận tiến độ" : "Chậm tiến độ"}
               </TextLabel>
             )}
 
@@ -353,6 +367,7 @@ export default function StudentProgressDetail({
           </div>
         </div>
 
+        <p className="text-xs leading-5 text-slate-500">Tiến độ xét cả môn bắt buộc và số tín chỉ cần hoàn thành của từng nhóm. Chênh lệch bên dưới so với kế hoạch đến học kỳ đánh giá; số âm chỉ thể hiện thiếu so với kế hoạch, chưa phải số tín chỉ còn thiếu để tốt nghiệp.</p>
         {/* 4 Minimalist Metric Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           <div className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/70">
@@ -412,7 +427,7 @@ export default function StudentProgressDetail({
                       <td className="py-2 px-3 text-center font-mono text-slate-700 table-cell-center">HK {mc.semesterNo}</td>
                       <td className="py-2 px-3 text-center table-cell-center">
                         <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800">
-                          {mc.reason}
+                          {mc.reason ? academicExplanation(mc.reason) : "Chưa hoàn thành"}
                         </TextLabel>
                       </td>
                     </tr>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useId, useRef } from "react";
 import { lockBodyScroll } from "./body-scroll-lock";
+import { useDialogClose } from "./use-dialog-close";
 
 interface SlideOverDrawerProps {
   isOpen: boolean;
@@ -13,6 +14,8 @@ interface SlideOverDrawerProps {
   width?: "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "full";
   extra?: React.ReactNode;
   footer?: React.ReactNode;
+  busy?: boolean;
+  hasUnsavedChanges?: boolean;
 }
 
 const widthClasses = {
@@ -36,17 +39,20 @@ export default function SlideOverDrawer({
   width = "3xl",
   extra,
   footer,
+  busy = false,
+  hasUnsavedChanges,
 }: SlideOverDrawerProps) {
+  const { requestClose, markChanged } = useDialogClose(isOpen, onClose, busy, hasUnsavedChanges);
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const onCloseRef = useRef(onClose);
+  const onCloseRef = useRef(requestClose);
   const wasSuspended = useRef(false);
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
+    onCloseRef.current = requestClose;
+  }, [requestClose]);
 
   useEffect(() => {
     if (suspended) { wasSuspended.current = true; return; }
@@ -103,13 +109,14 @@ export default function SlideOverDrawer({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/40 transition-opacity animate-in fade-in duration-300"
-        onClick={onClose}
+        onClick={requestClose}
         aria-hidden="true"
       />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10">
         <div
           ref={dialogRef}
+          onChangeCapture={markChanged}
           className={`min-h-0 w-screen ${widthClasses[width]} bg-white shadow-2xl border-l border-slate-200 flex flex-col transform transition-transform animate-in slide-in-from-right duration-300 ease-out`}
           onClick={(e) => e.stopPropagation()}
           role="dialog"
@@ -136,7 +143,8 @@ export default function SlideOverDrawer({
               <button
                 ref={closeButtonRef}
                 type="button"
-                onClick={onClose}
+                onClick={requestClose}
+                disabled={busy}
                 className="shrink-0 p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600"
                 aria-label="Đóng bảng chi tiết can thiệp"
               >

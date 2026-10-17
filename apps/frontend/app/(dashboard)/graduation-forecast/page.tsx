@@ -56,8 +56,8 @@ const STATUS_META: Record<
     icon: AlertTriangle,
   },
   MANUAL_REVIEW: {
-    label: "Cần đối soát",
-    short: "Đối soát",
+    label: "Cần kiểm tra điều kiện",
+    short: "Cần kiểm tra",
     tone: "bg-slate-100 text-slate-700 border-slate-200",
     pillBg: "bg-slate-200 text-slate-700 border-slate-300",
     textColor: "text-slate-600",
@@ -79,8 +79,8 @@ function formatNumber(value: unknown, digits = 0) {
 function configuredThreshold(sourceSnapshot: ApiData, ruleCode: string, fallback: number | null) {
   const rules = Array.isArray(sourceSnapshot?.rules) ? sourceSnapshot.rules : [];
   const raw = rules.find((rule: ApiData) => rule.code === ruleCode)?.requiredValue;
-  const value = raw == null ? NaN : Number(raw);
-  return Number.isFinite(value) ? value : fallback;
+  const value = raw == null || typeof raw === "string" && !raw.trim() ? NaN : Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 /**
@@ -93,41 +93,9 @@ function configuredThreshold(sourceSnapshot: ApiData, ruleCode: string, fallback
  * - K50: Năm 1
  */
 function getCohortStudyYearInfo(run: ApiData | null): { yearNumber: number; isFinalYear: boolean; label: string } {
-  if (!run) return { yearNumber: 5, isFinalYear: true, label: "Năm cuối (Năm 5)" };
-  if (run.targetType === "final_year" || run.targetType === "overdue") {
-    return { yearNumber: 5, isFinalYear: true, label: "Năm cuối (Năm 5)" };
-  }
-
-  const cohortCode = String(run.cohortCode || "").toUpperCase();
-  const matchK = cohortCode.match(/^K(\d+)/);
-  if (matchK) {
-    const kNum = parseInt(matchK[1], 10);
-    // K46 và các khóa trước đó là sinh viên năm cuối (Năm 5) / tốt nghiệp
-    if (kNum <= 46) {
-      return { yearNumber: 5, isFinalYear: true, label: "Năm cuối (Năm 5)" };
-    }
-    // K47 là sinh viên năm 4
-    if (kNum === 47) {
-      return { yearNumber: 4, isFinalYear: false, label: "Năm 4" };
-    }
-    // K48 là sinh viên năm 3
-    if (kNum === 48) {
-      return { yearNumber: 3, isFinalYear: false, label: "Năm 3" };
-    }
-    // K49 là sinh viên năm 2
-    if (kNum === 49) {
-      return { yearNumber: 2, isFinalYear: false, label: "Năm 2" };
-    }
-    return { yearNumber: 1, isFinalYear: false, label: "Năm 1" };
-  }
-
-  // Fallback check
-  const isFinal = cohortCode.includes("K46") || cohortCode.includes("K45") || cohortCode.includes("K44");
-  return {
-    yearNumber: isFinal ? 5 : 3,
-    isFinalYear: isFinal,
-    label: isFinal ? "Năm cuối (Năm 5)" : "Năm 2 - Năm 4",
-  };
+  const timeline = studyTimeline(run?.cohortCode, run?.assessmentAcademicYear, run?.assessmentTermCode);
+  if (!timeline) return { yearNumber: 0, isFinalYear: false, label: "Chưa xác định năm học tại mốc đánh giá" };
+  return { yearNumber: timeline.studyYear, isFinalYear: !timeline.isOngoing, label: `Năm ${timeline.studyYear} tại mốc đánh giá` };
 }
 
 export default function GraduationForecastPage() {
@@ -443,7 +411,7 @@ export default function GraduationForecastPage() {
     return categoryRuns.filter((r) => r.cohortCode === cohortFilter);
   }, [categoryRuns, cohortFilter]);
 
-  const selectedTotalCreditsThreshold = configuredThreshold(selectedRun?.sourceSnapshot, "TOTAL_CREDITS", 150) || 150;
+  const selectedTotalCreditsThreshold = configuredThreshold(selectedRun?.sourceSnapshot, "TOTAL_CREDITS", null);
 
   // Graduation status options, counted within the selected class scope.
   const finalYearStatusOptions = useMemo(() => [
@@ -705,7 +673,7 @@ export default function GraduationForecastPage() {
               <p className="mt-0.5 text-xs text-slate-500 pl-8">
                 Đợt xét: {selectedRun.assessmentTermCode} ({selectedRun.assessmentAcademicYear}) • Tổng số:{" "}
                 <strong className="text-slate-800">{statisticsReady ? statusCounts.all : "…"} sinh viên {classFilter !== "all" && `(Lớp ${batchClasses.find((cls) => cls.classId === classFilter)?.className || classFilter})`}</strong>
-                {" • "}Chuẩn CTĐT: <strong className="text-slate-800">{selectedTotalCreditsThreshold} tín chỉ</strong>
+                {" • "}Chuẩn CTĐT: <strong className="text-slate-800">{selectedTotalCreditsThreshold == null ? "Chưa có định mức" : `${selectedTotalCreditsThreshold} tín chỉ`}</strong>
               </p>
             </div>
 
@@ -994,9 +962,9 @@ export default function GraduationForecastPage() {
                     ) : (
                       filteredStudents.map((student) => {
                         const meta = statusMeta(student.finalStatus);
-                        const credits = student.totalCredits == null ? 0 : Number(student.totalCredits);
+                        const credits = student.totalCredits == null ? null : Number(student.totalCredits);
                         const pendingCourses = Number(student.pendingResultCourses || 0);
-                        const completionPercent = selectedTotalCreditsThreshold > 0 ? Math.min(100, Math.round((credits / selectedTotalCreditsThreshold) * 100)) : 0;
+                        const completionPercent = credits != null && selectedTotalCreditsThreshold != null && selectedTotalCreditsThreshold > 0 ? Math.min(100, Math.round((credits / selectedTotalCreditsThreshold) * 100)) : null;
 
                         return (
                           <tr
@@ -1023,10 +991,10 @@ export default function GraduationForecastPage() {
                             <td className="px-3 py-3.5 text-center table-cell-center">
                               <div className="inline-flex flex-col items-center">
                                 <div>
-                                  <span className="font-mono text-sm font-bold text-slate-900">{credits}</span>
-                                  <span className="text-slate-400 text-xs"> / {selectedTotalCreditsThreshold}</span>
+                                  <span className="font-mono text-sm font-bold text-slate-900">{formatNumber(credits)}</span>
+                                  <span className="text-slate-400 text-xs"> / {selectedTotalCreditsThreshold ?? "—"}</span>
                                 </div>
-                                <div className="w-20 bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                                {completionPercent != null ? <div className="w-20 bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
                                   <div
                                     className={`h-full rounded-full ${
                                       completionPercent >= 100
@@ -1037,7 +1005,7 @@ export default function GraduationForecastPage() {
                                     }`}
                                     style={{ width: `${completionPercent}%` }}
                                   />
-                                </div>
+                                </div> : <span className="mt-1 text-[11px] text-slate-500">Chưa đủ căn cứ tính tỷ lệ</span>}
                               </div>
                             </td>
 
@@ -1290,7 +1258,7 @@ export default function GraduationForecastPage() {
                 <p>Tổng sinh viên xét: <strong>{preview.summary?.studentCount ?? preview.dataReadiness?.studentCount ?? "—"}</strong></p>
                 <p>Số kế hoạch CTĐT: <strong>{preview.summary?.planCount ?? "—"}</strong></p>
                 <p>Thiếu GPA: <strong>{preview.dataReadiness?.missingGpa ?? "—"}</strong></p>
-                <p>Thiếu hồ sơ xác minh: <strong>{preview.dataReadiness?.missingVerifiedRequirements ?? "—"}</strong></p>
+                <p>Chờ xác nhận GDTC/GDQP: <strong>{preview.dataReadiness?.missingVerifiedRequirements ?? "—"}</strong></p>
               </div>
               {Array.isArray(preview.blockers) && preview.blockers.length > 0 && (
                 <ul className="space-y-1 text-[11px] text-rose-700">

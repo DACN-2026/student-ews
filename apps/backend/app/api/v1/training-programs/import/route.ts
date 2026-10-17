@@ -1,3 +1,4 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { TrainingProgramsService } from "@/lib/services/training-programs";
 import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
@@ -5,6 +6,8 @@ import { errorResponse, jsonResponse } from "@/lib/utils/api-response";
 
 export async function POST(request: NextRequest) {
   try {
+    const access = await requireApiPermission(request);
+    if (!access.authorized) return access.response;
     const body = await readJsonBody<unknown>(request, 10 * 1024 * 1024);
     if (!Array.isArray(body)) return errorResponse("Expected an array of training-program rows", "INVALID_JSON", 400);
     return jsonResponse(await TrainingProgramsService.importPrograms(body));

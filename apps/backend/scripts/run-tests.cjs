@@ -11,7 +11,13 @@ const cli = require.resolve("tsx/cli");
 const requestedTests = process.argv.slice(2);
 const testFiles = requestedTests.length ? requestedTests : [
   "tests/backend.test.ts",
+  "tests/system-integrity.test.ts",
+  "tests/student-display-integrity.test.ts",
+  "tests/student-display-seven-fixes.test.ts",
+  "tests/plan-course-snapshot.test.ts",
+  "tests/academic-warning-special-cases.test.ts",
   "tests/lazy-loading.test.ts",
+  "tests/performance-loading.test.ts",
   "tests/student-list-order.test.ts",
   "tests/student-monitoring-scope.test.ts",
   "tests/student-class-departure.test.ts",
@@ -29,6 +35,7 @@ const testFiles = requestedTests.length ? requestedTests : [
   "tests/warning-report-coverage.test.ts",
   "tests/academic-warning-evidence.test.ts",
   "tests/graduation-spec.test.ts",
+  "tests/graduation-without-conduct.test.ts",
   "tests/intervention-api.test.ts",
   "tests/intervention-cases.test.ts",
   "tests/warning-history-display.test.ts",

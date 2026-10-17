@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { FeePoliciesService } from "@/lib/services/fee-policies";
 import { jsonResponse, errorResponse, parsePagination } from "@/lib/utils/api-response";
 import { requireStudentPermission } from "@/lib/auth/data-scope";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 
 export async function GET(
   req: NextRequest,
@@ -40,14 +41,13 @@ export async function POST(
     const { id } = await params;
     const auth = await requireStudentPermission(req, id, "fee_policy.create");
     if (!auth.authorized) return auth.response;
-    const body = await req.json();
+    const body = await readJsonObject<Record<string, unknown>>(req);
     if (!body.policyTypeId && !body.feePolicyTypeId && !body.feeObjectDicId) {
       return errorResponse("feeObjectDicId is required", "INVALID_REQUEST", 400);
     }
     const created = await FeePoliciesService.create(id, body);
     return jsonResponse(created, 201);
   } catch (err) {
-    console.error("Create fee policy error:", err);
-    return errorResponse("Internal server error", "INTERNAL_ERROR", 500);
+    return apiErrorResponse(err, "Không thể lưu chính sách học phí.");
   }
 }

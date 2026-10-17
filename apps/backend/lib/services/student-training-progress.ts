@@ -1,13 +1,18 @@
 import { orderedStudentResultPage } from "../student-list-order";
 import { monitoredStudentWhere, departedStudentIds, studentIsInClass, studentSuspension, suspensionInfo } from "../student-monitoring-scope";
 import { loadSemesterCreditPlans } from "./semester-credit-plans";
-import { courseOutcome, isConditionalCourse, normalizeProgramCourseCode, curriculumElectiveGroup, isK44StandardProgram, K44_ELECTIVE_GROUPS, normalizeCourseCode, normalizeCourseName } from "../academic-course-rules";
+import { courseOutcome, sourcePassOutcome, isConditionalCourse, normalizeProgramCourseCode, curriculumElectiveGroup, isK44StandardProgram, K44_ELECTIVE_GROUPS, normalizeCourseCode } from "../academic-course-rules";
 import { assessTeachingSemester, teachingSemesterCredits } from "../semester-teaching-requirements";
 export { COURSE_CODE_ALIASES, normalizeCourseCode, normalizeCourseName, isConditionalCourse } from "../academic-course-rules";
 import { prisma } from "@/lib/prisma";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { studentIdWhere } from "@/lib/utils/is-uuid";
 import { inferStudentProgressCohort, studentProgressCohort } from "../student-progress-cohort";
+import { isBeforeCohortAdmission } from "./academic-standing";
+import { matchProgramCourse, passedProgramCourseCodes, suggestProgramCourses } from "../course-recognition";
+import { loadSourceCreditRecognitions, type RecognitionPeriod, type RecognizedCreditAttempt } from "./source-credit-recognition";
+import { loadStudentProgressBatch, progressPassPayload, type ProgressOffering, type StudentProgressBatch } from "./student-progress-loader";
+import { InFlightRequests } from "../utils/in-flight";
 
 // ============================================================================
 // Types
@@ -38,6 +43,9 @@ export type StudentGradeAttempt = {
   isPass?: boolean | null;
   notScore?: boolean | null;
   scoreStatus?: string | null;
+  sourcePayload?: unknown;
+  isRecognized?: boolean;
+  recognition?: RecognizedCreditAttempt["recognition"];
 };
 
 export type CourseProgressStatus =
@@ -65,6 +73,7 @@ export type AssessedCourse = TrainingProgressCourse & {
   passedAcademicYear?: string | null;
   passedTermCode?: string | null;
   isConditional?: boolean;
+  recognition?: RecognizedCreditAttempt["recognition"];
 };
 
 export type ElectiveGroupProgress = {
@@ -102,6 +111,12 @@ export type SemesterProgress = {
 };
 
 export type StudentTrainingProgressOutput = {
+  assessmentContext?: RecognitionPeriod & { boundary: "END_OF_TERM" | "BEFORE_TERM"; programCode: string };
+  reconciliation?: {
+    status: "READY" | "REVIEW_REQUIRED";
+    issues: Array<{ code: string; message: string; courseCodes: string[] }>;
+    recognizedCourses: Array<{ courseCode: string; credits: number; academicYear: string; termCode: string; kind?: "UNDATED_CERTIFICATE" }>;
+  };
   student: {
     id: string;
     studentCode: string;
@@ -170,6 +185,7 @@ export type StudentTrainingProgressOutput = {
   };
   semesters: SemesterProgress[];
   courseStatus: {
+    pendingRegistrations: StudentGradeAttempt[];
     passed: AssessedCourse[];
     failed: AssessedCourse[];
     noScore: AssessedCourse[];
@@ -258,26 +274,9 @@ export function evaluateStudentTrainingProgress(input: {
     warnings.push("CTĐT chưa có danh mục học phần để đối soát tiến độ.");
   }
 
-  // 2. Build index for course matching (Mã -> Alias -> Tên duy nhất)
-  const byCode = new Map<string, TrainingProgressCourse>();
-  const byName = new Map<string, TrainingProgressCourse[]>();
-
-  for (const c of deduplicatedCurriculum) {
-    byCode.set(normalizeCourseCode(c.courseCode), c);
-    const normName = normalizeCourseName(c.courseName);
-    if (normName) {
-      const list = byName.get(normName) || [];
-      list.push(c);
-      byName.set(normName, list);
-    }
-  }
-
-  const matchCourse = (code?: string | null, name?: string | null): TrainingProgressCourse | null => {
-    const exact = byCode.get(normalizeCourseCode(code));
-    if (exact) return exact;
-    const candidates = byName.get(normalizeCourseName(name)) || [];
-    return candidates.length === 1 ? candidates[0] : null;
-  };
+  // 2. Index requirements already passed under their own codes or verified aliases.
+  const recognitionIssues: NonNullable<StudentTrainingProgressOutput["reconciliation"]>["issues"] = [];
+  const passedCodes = passedProgramCourseCodes(input.grades, deduplicatedCurriculum, input.student.programCode);
 
   // 3. Match grade attempts to curriculum courses
   const gradeAttemptsByCourse = new Map<string, StudentGradeAttempt[]>();
@@ -285,12 +284,28 @@ export function evaluateStudentTrainingProgress(input: {
 
   for (const grade of input.grades) {
     if (!grade || typeof grade !== "object") continue;
-    const matched = matchCourse(grade.courseCode, grade.courseName);
+    const matched = matchProgramCourse(grade.courseCode, deduplicatedCurriculum, input.student.programCode);
     if (!matched) {
+      const sameName = suggestProgramCourses(grade.courseName, deduplicatedCurriculum);
+      const candidates = sameName.filter(course => !passedCodes.has(normalizeCourseCode(course.courseCode)));
+      const pending = courseOutcome(grade) === "pending";
+      if (!pending && candidates.length && !recognitionIssues.some(issue => issue.courseCodes.includes(grade.courseCode))) {
+        recognitionIssues.push({ code: "COURSE_EQUIVALENCE_NOT_CONFIGURED", courseCodes: [grade.courseCode, ...candidates.map(course => course.courseCode)],
+          message: `Học phần ${grade.courseCode} có tên giống ${candidates.map(course => course.courseCode).join(", ")}; hệ thống chưa có ánh xạ công nhận theo mã. Không tự quy đổi tín chỉ.` });
+      }
       unmatchedGrades.push({
         ...grade,
-        reason: "Học phần không thuộc CTĐT của sinh viên",
+        reason: pending ? "Đăng ký khác mã đang chờ kết quả theo API; chưa quy đổi hoặc cộng tín chỉ vào CTĐT."
+          : sameName.length && !candidates.length
+          ? "Giữ lịch sử mã khác; học phần CTĐT cùng tên đã có kết quả đạt riêng, không cần xét tương đương hoặc cộng thêm tín chỉ."
+          : "Học phần không thuộc CTĐT của sinh viên",
       });
+      continue;
+    }
+    if (grade.credits != null && grade.credits !== matched.credits && !isConditionalCourse(matched.courseCode, matched.courseName)) {
+      recognitionIssues.push({ code: "COURSE_CREDIT_MAPPING_REVIEW", courseCodes: [matched.courseCode],
+        message: `Hệ thống cần đối chiếu cấu hình tín chỉ ${matched.courseCode}: nguồn ${grade.credits} TC, yêu cầu CTĐT ${matched.credits} TC; không tự quy đổi.` });
+      unmatchedGrades.push({ ...grade, reason: "Chưa hoàn tất ánh xạ tín chỉ" });
       continue;
     }
     const list = gradeAttemptsByCourse.get(matched.courseId) || [];
@@ -298,8 +313,10 @@ export function evaluateStudentTrainingProgress(input: {
     gradeAttemptsByCourse.set(matched.courseId, list);
   }
 
-  if (unmatchedGrades.length > 0) {
-    warnings.push(`Phát hiện ${unmatchedGrades.length} lượt học phần trong bảng điểm không khớp CTĐT (được ghi nhận ở mục ngoài CTĐT).`);
+  const pendingRegistrations = unmatchedGrades.filter(grade => courseOutcome(grade) === "pending");
+  const unmatchedResults = unmatchedGrades.length - pendingRegistrations.length;
+  if (unmatchedResults > 0) {
+    warnings.push(`Phát hiện ${unmatchedResults} lượt kết quả học phần không khớp CTĐT (được ghi nhận ở mục ngoài CTĐT).`);
   }
 
   // 4. Assess each curriculum course (PASS / FAIL / NO_SCORE / NOT_COMPLETED, no double-count)
@@ -366,6 +383,7 @@ export function evaluateStudentTrainingProgress(input: {
       ...course,
       requirementType,
       isConditional: isCond,
+      recognition: passingAttempt?.recognition,
       isCurrentlyStudying,
       status,
       timelineCategory,
@@ -629,9 +647,9 @@ export function evaluateStudentTrainingProgress(input: {
   const creditDifference = earnedCreditsToDate - expectedCreditsToDate;
   let creditDifferenceText = "Đúng kế hoạch";
   if (creditDifference < 0) {
-    creditDifferenceText = `Chậm ${Math.abs(creditDifference)} TC`;
+    creditDifferenceText = `Thấp hơn kế hoạch ${Math.abs(creditDifference)} TC`;
   } else if (creditDifference > 0) {
-    creditDifferenceText = `Học vượt +${creditDifference} TC`;
+    creditDifferenceText = `Cao hơn kế hoạch ${creditDifference} TC`;
   }
 
   // Evaluate Progress Status: ONLY 2 levels: ON_TRACK | BEHIND
@@ -646,7 +664,7 @@ export function evaluateStudentTrainingProgress(input: {
       : "BEHIND";
 
   // Status reason
-  let statusReason = progressStatus === "UNKNOWN" ? "Chưa đủ dữ liệu hoặc yêu cầu CTĐT để xác nhận tiến độ; cần đối soát." : "Đúng tiến độ đào tạo";
+  let statusReason = progressStatus === "UNKNOWN" ? "Chưa đủ dữ liệu hoặc yêu cầu CTĐT để xác nhận tiến độ; cần đối soát." : "Đáp ứng yêu cầu học phần đến mốc";
   if (progressStatus === "BEHIND") {
     const reasons: string[] = [];
     if (isCreditDeficient) {
@@ -660,7 +678,7 @@ export function evaluateStudentTrainingProgress(input: {
     }
     statusReason = reasons.join(" • ");
   } else if (progressStatus === "ON_TRACK" && creditDifference > 0) {
-    statusReason = `Đúng tiến độ (Học vượt +${creditDifference} TC)`;
+    statusReason = `Đáp ứng yêu cầu học phần đến mốc; cao hơn kế hoạch ${creditDifference} TC`;
   }
 
   // Overdue credits: total credits deficient from past semesters
@@ -794,6 +812,8 @@ export function evaluateStudentTrainingProgress(input: {
   if (unconfirmedPastSemesters.length) warnings.push(`Chưa đủ danh mục học phần hoặc chuyên ngành để xác nhận ${unconfirmedPastSemesters.join(", ")}; không đánh dấu các kỳ này đã đạt.`);
 
   return {
+    reconciliation: { status: recognitionIssues.length ? "REVIEW_REQUIRED" : "READY", issues: recognitionIssues,
+      recognizedCourses: input.grades.filter(grade => grade.recognition).map(grade => ({ courseCode: grade.courseCode, credits: grade.credits ?? 0, academicYear: grade.recognition!.academicYear, termCode: grade.recognition!.termCode, ...(grade.recognition!.kind ? { kind: grade.recognition!.kind } : {}) })) },
     student: {
       id: input.student.id,
       studentCode: input.student.studentCode,
@@ -854,6 +874,7 @@ export function evaluateStudentTrainingProgress(input: {
     },
     semesters,
     courseStatus: {
+      pendingRegistrations,
       passed: completedCourses,
       failed: failedCourses,
       noScore: noScoreCourses,
@@ -871,7 +892,17 @@ export function evaluateStudentTrainingProgress(input: {
 // Database Loader Service
 // ============================================================================
 
+type ProgressProgramConfiguration = {
+  timestamp: number;
+  program: { id: string; sProgramCode: string; sProgramName: string } | null;
+  curriculum: TrainingProgressCourse[];
+  requiredTotalCredits: number | null;
+  requiredElectiveCredits: number | null;
+  semesterPlansMap?: Map<number, number>;
+};
+
 export class StudentTrainingProgressService {
+  private static loadProgressBatch = loadStudentProgressBatch;
   /**
    * Determine expected cohort milestone (Year and SemesterNo)
    * Example: Academic Year 2026-2027 HK01
@@ -933,17 +964,8 @@ export class StudentTrainingProgressService {
     termOrder: number;
   } | null = null;
 
-  private static programConfigCache = new Map<
-    string,
-    {
-      timestamp: number;
-      program: { id: string; sProgramCode: string; sProgramName: string } | null;
-      curriculum: TrainingProgressCourse[];
-      requiredTotalCredits: number | null;
-      requiredElectiveCredits: number | null;
-      semesterPlansMap?: Map<number, number>;
-    }
-  >();
+  private static programConfigCache = new Map<string, ProgressProgramConfiguration>();
+  private static programConfigLoads = new InFlightRequests<ProgressProgramConfiguration>();
 
   private static readonly CONFIG_CACHE_TTL = 120 * 1000; // 2 minutes
 
@@ -954,10 +976,11 @@ export class StudentTrainingProgressService {
 
     studentIdentifier: string,
     allowedClassIds?: string[] | null,
-    assessment?: { academicYear: string; termCode: string; termOrder: number },
+    assessment?: RecognitionPeriod & { boundary?: "END_OF_TERM" | "BEFORE_TERM"; programCode?: string; cohortId?: string },
+    batch?: StudentProgressBatch,
   ): Promise<StudentTrainingProgressOutput | null> {
     // 1. Load Student with class & cohort
-    const student = await prisma.student.findFirst({
+    const student = batch ? batch.students.get(studentIdentifier) ?? null : await prisma.student.findFirst({
       where: {
         ...studentIdWhere(studentIdentifier),
         deletedAt: null,
@@ -970,15 +993,19 @@ export class StudentTrainingProgressService {
     let cohort: { id: string; sCohortCode: string; sCohortName: string } | null = null;
 
     if (student.sClassStudentId) {
-      studentClass = await prisma.class.findFirst({
+      studentClass = batch ? batch.classes.get(student.sClassStudentId) ?? null : await prisma.class.findFirst({
         where: { classId: student.sClassStudentId, deletedAt: null },
       });
       if (studentClass?.cohortId) {
-        cohort = await prisma.cohort.findFirst({
+        cohort = batch ? batch.cohorts.get(studentClass.cohortId) ?? null : await prisma.cohort.findFirst({
           where: { id: studentClass.cohortId, deletedAt: null },
         });
       }
     }
+    if (assessment?.cohortId && assessment.cohortId !== cohort?.id) {
+      cohort = batch ? batch.cohorts.get(assessment.cohortId) ?? null : await prisma.cohort.findFirst({ where: { id: assessment.cohortId, deletedAt: null } });
+    }
+    if (assessment && isBeforeCohortAdmission(assessment.academicYear, cohort?.sCohortName || "")) return null;
 
     // Class scope check if provided
     if (
@@ -1063,7 +1090,7 @@ export class StudentTrainingProgressService {
     const configuredStudyCohort = studentProgressCohort(student, currentYearCode);
 
     // 3. Resolve Training Program (CTĐT) & Rules (cached per programCode + cohortId)
-    const programCode = student.sStudyProgramId || "";
+    const programCode = assessment?.programCode || student.sStudyProgramId || "";
     const configCacheKey = `${programCode}__${cohort?.id || ""}`;
 
     let program: { id: string; sProgramCode: string; sProgramName: string } | null = null;
@@ -1083,173 +1110,169 @@ export class StudentTrainingProgressService {
       requiredElectiveCredits = cachedConfig.requiredElectiveCredits;
       semesterPlansMap = cachedConfig.semesterPlansMap;
     } else {
-      program = programCode
-        ? await prisma.trainingProgram.findFirst({
-            where: { sProgramCode: programCode, deletedAt: null },
-          })
-        : null;
+      const configuration = await this.programConfigLoads.run(configCacheKey, async () => {
+        program = programCode
+          ? await prisma.trainingProgram.findFirst({
+              where: { sProgramCode: programCode, deletedAt: null },
+            })
+          : null;
 
-      let rawCurriculumCourses: Array<{
-        course_id: string;
-        s_course_code: string;
-        s_course_name: string;
-        s_credits: number;
-        s_requirement_type: string;
-        s_semester_no: number;
-      }> = [];
+        let rawCurriculumCourses: Array<{
+          course_id: string;
+          s_course_code: string;
+          s_course_name: string;
+          s_credits: number;
+          s_requirement_type: string;
+          s_semester_no: number;
+        }> = [];
 
-      if (program) {
-        rawCurriculumCourses = await prisma.$queryRaw`
-          SELECT c.id::text as course_id, c.s_course_code, c.s_course_name,
-                 pc.s_credits, pc.s_requirement_type, pc.s_semester_no
-          FROM training_program_courses pc
-          JOIN courses c ON c.id = pc.course_id AND c.deleted_at IS NULL
-          WHERE pc.training_program_id = ${program.id}::uuid
-          ORDER BY pc.s_semester_no, c.s_course_code
-        `;
+        if (program) {
+          rawCurriculumCourses = await prisma.$queryRaw`
+            SELECT c.id::text as course_id, c.s_course_code, c.s_course_name,
+                   pc.s_credits, pc.s_requirement_type, pc.s_semester_no
+            FROM training_program_courses pc
+            JOIN courses c ON c.id = pc.course_id AND c.deleted_at IS NULL
+            WHERE pc.training_program_id = ${program.id}::uuid
+            ORDER BY pc.s_semester_no, c.s_course_code
+          `;
 
-        if (programCode.includes("-")) {
-          const baseCode = programCode.split("-")[0];
-          const baseProgram = await prisma.trainingProgram.findFirst({
-            where: { sProgramCode: baseCode, deletedAt: null },
-          });
-          if (baseProgram) {
-            const baseCourses = await prisma.$queryRaw<Array<{
-              course_id: string;
-              s_course_code: string;
-              s_course_name: string;
-              s_credits: number;
-              s_requirement_type: string;
-              s_semester_no: number;
-            }>>`
-              SELECT c.id::text as course_id, c.s_course_code, c.s_course_name,
-                     pc.s_credits, pc.s_requirement_type, pc.s_semester_no
-              FROM training_program_courses pc
-              JOIN courses c ON c.id = pc.course_id AND c.deleted_at IS NULL
-              WHERE pc.training_program_id = ${baseProgram.id}::uuid
-              ORDER BY pc.s_semester_no, c.s_course_code
-            `;
-
-            const nonSem1Semesters = rawCurriculumCourses
-              .map((c) => Number(c.s_semester_no))
-              .filter((s) => s > 1);
-            const minSpecializedSemester = nonSem1Semesters.length > 0 ? Math.min(...nonSem1Semesters) : 5;
-
-            const baseCourseMap = new Map(
-              baseCourses.map((c) => [normalizeProgramCourseCode(c.s_course_code, programCode), c])
-            );
-
-            rawCurriculumCourses = rawCurriculumCourses.map((c) => {
-              const base = baseCourseMap.get(normalizeProgramCourseCode(c.s_course_code, programCode));
-              if (c.s_semester_no === 1 && base && base.s_semester_no > 1 && base.s_semester_no < minSpecializedSemester) {
-                return { ...c, s_semester_no: base.s_semester_no };
-              }
-              return c;
+          if (programCode.includes("-")) {
+            const baseCode = programCode.split("-")[0];
+            const baseProgram = await prisma.trainingProgram.findFirst({
+              where: { sProgramCode: baseCode, deletedAt: null },
             });
+            if (baseProgram) {
+              const baseCourses = await prisma.$queryRaw<Array<{
+                course_id: string;
+                s_course_code: string;
+                s_course_name: string;
+                s_credits: number;
+                s_requirement_type: string;
+                s_semester_no: number;
+              }>>`
+                SELECT c.id::text as course_id, c.s_course_code, c.s_course_name,
+                       pc.s_credits, pc.s_requirement_type, pc.s_semester_no
+                FROM training_program_courses pc
+                JOIN courses c ON c.id = pc.course_id AND c.deleted_at IS NULL
+                WHERE pc.training_program_id = ${baseProgram.id}::uuid
+                ORDER BY pc.s_semester_no, c.s_course_code
+              `;
 
-            const existingCodes = new Set(
-              rawCurriculumCourses.map((c) => normalizeProgramCourseCode(c.s_course_code, programCode))
-            );
-            for (const baseCourse of baseCourses) {
-              const normCode = normalizeProgramCourseCode(baseCourse.s_course_code, programCode);
-              if (!existingCodes.has(normCode) && baseCourse.s_semester_no < minSpecializedSemester) {
-                rawCurriculumCourses.push(baseCourse);
-                existingCodes.add(normCode);
+              const nonSem1Semesters = rawCurriculumCourses
+                .map((c) => Number(c.s_semester_no))
+                .filter((s) => s > 1);
+              const minSpecializedSemester = nonSem1Semesters.length > 0 ? Math.min(...nonSem1Semesters) : 5;
+
+              const baseCourseMap = new Map(
+                baseCourses.map((c) => [normalizeProgramCourseCode(c.s_course_code, programCode), c])
+              );
+
+              rawCurriculumCourses = rawCurriculumCourses.map((c) => {
+                const base = baseCourseMap.get(normalizeProgramCourseCode(c.s_course_code, programCode));
+                if (c.s_semester_no === 1 && base && base.s_semester_no > 1 && base.s_semester_no < minSpecializedSemester) {
+                  return { ...c, s_semester_no: base.s_semester_no };
+                }
+                return c;
+              });
+
+              const existingCodes = new Set(
+                rawCurriculumCourses.map((c) => normalizeProgramCourseCode(c.s_course_code, programCode))
+              );
+              for (const baseCourse of baseCourses) {
+                const normCode = normalizeProgramCourseCode(baseCourse.s_course_code, programCode);
+                if (!existingCodes.has(normCode) && baseCourse.s_semester_no < minSpecializedSemester) {
+                  rawCurriculumCourses.push(baseCourse);
+                  existingCodes.add(normCode);
+                }
               }
             }
           }
         }
-      }
 
-      let choiceGroupsFromPlans: Array<{ sCourseCode: string; choiceGroupCode: string | null }> = [];
-      if (program && cohort) {
-        const planIds = (await prisma.trainingProgressPlan.findMany({
-          where: { cohortId: cohort.id, trainingProgramId: program.id, status: "locked", isCurrent: true },
-          select: { id: true },
-        })).map((p) => p.id);
-        if (planIds.length > 0) {
-          choiceGroupsFromPlans = await prisma.trainingProgressPlanCourse.findMany({
-            where: {
-              planId: { in: planIds },
-              choiceGroupCode: { not: null },
-            },
-            select: { sCourseCode: true, choiceGroupCode: true },
-            distinct: ["sCourseCode", "choiceGroupCode"],
-          });
+        let choiceGroupsFromPlans: Array<{ sCourseCode: string; choiceGroupCode: string | null }> = [];
+        if (program && cohort) {
+          const planIds = (await prisma.trainingProgressPlan.findMany({
+            where: { cohortId: cohort.id, trainingProgramId: program.id, status: "locked", isCurrent: true },
+            select: { id: true },
+          })).map((p) => p.id);
+          if (planIds.length > 0) {
+            choiceGroupsFromPlans = await prisma.trainingProgressPlanCourse.findMany({
+              where: {
+                planId: { in: planIds },
+                choiceGroupCode: { not: null },
+              },
+              select: { sCourseCode: true, choiceGroupCode: true },
+              distinct: ["sCourseCode", "choiceGroupCode"],
+            });
+          }
         }
-      }
 
-      const choiceGroupMap = new Map(
-        choiceGroupsFromPlans.map((item) => [normalizeCourseCode(item.sCourseCode), item.choiceGroupCode]),
-      );
+        const choiceGroupMap = new Map(
+          choiceGroupsFromPlans.map((item) => [normalizeCourseCode(item.sCourseCode), item.choiceGroupCode]),
+        );
 
-      curriculum = rawCurriculumCourses.map((row) => {
-        const isCond = isConditionalCourse(row.s_course_code, row.s_course_name);
-        return {
-          courseId: row.course_id,
-          courseCode: row.s_course_code,
-          courseName: row.s_course_name,
-          credits: Number(row.s_credits),
-          requirementType: isCond ? "conditional" : row.s_requirement_type,
-          semesterNo: Number(row.s_semester_no),
-          choiceGroupCode: choiceGroupMap.get(normalizeCourseCode(row.s_course_code)) || null,
-          isConditional: isCond,
-        };
-      });
-
-      if (program) {
-        const rules = await prisma.graduationRule.findMany({
-          where: {
-            trainingProgramId: program.id,
-            status: "active",
-            ruleCode: { in: ["TOTAL_CREDITS", "ELECTIVE_CREDITS"] },
-            OR: [{ cohortId: cohort?.id ?? null }, { cohortId: null }],
-          },
+        curriculum = rawCurriculumCourses.map((row) => {
+          const isCond = isConditionalCourse(row.s_course_code, row.s_course_name);
+          return {
+            courseId: row.course_id,
+            courseCode: row.s_course_code,
+            courseName: row.s_course_name,
+            credits: Number(row.s_credits),
+            requirementType: isCond ? "conditional" : row.s_requirement_type,
+            semesterNo: Number(row.s_semester_no),
+            choiceGroupCode: choiceGroupMap.get(normalizeCourseCode(row.s_course_code)) || null,
+            isConditional: isCond,
+          };
         });
-        for (const rule of rules) {
-          if (rule.ruleCode === "TOTAL_CREDITS" && rule.requiredValue) {
-            const val = Number(rule.requiredValue);
-            if (Number.isFinite(val) && val > 0) requiredTotalCredits = val;
-          }
-          if (rule.ruleCode === "ELECTIVE_CREDITS" && rule.requiredValue) {
-            const val = Number(rule.requiredValue);
-            if (Number.isFinite(val) && val >= 0) requiredElectiveCredits = val;
+
+        if (program) {
+          const rules = await prisma.graduationRule.findMany({
+            where: {
+              trainingProgramId: program.id,
+              status: "active",
+              ruleCode: { in: ["TOTAL_CREDITS", "ELECTIVE_CREDITS"] },
+              OR: [{ cohortId: cohort?.id ?? null }, { cohortId: null }],
+            },
+          });
+          for (const rule of rules) {
+            if (rule.ruleCode === "TOTAL_CREDITS" && rule.requiredValue) {
+              const val = Number(rule.requiredValue);
+              if (Number.isFinite(val) && val > 0) requiredTotalCredits = val;
+            }
+            if (rule.ruleCode === "ELECTIVE_CREDITS" && rule.requiredValue) {
+              const val = Number(rule.requiredValue);
+              if (Number.isFinite(val) && val >= 0) requiredElectiveCredits = val;
+            }
           }
         }
-      }
 
-      if (program && cohort) semesterPlansMap = await loadSemesterCreditPlans(cohort.id, program.id);
+        if (program && cohort) semesterPlansMap = await loadSemesterCreditPlans(cohort.id, program.id);
 
-      this.programConfigCache.set(configCacheKey, {
-        timestamp: Date.now(),
-        program,
-        curriculum,
-        requiredTotalCredits,
-        requiredElectiveCredits,
-        semesterPlansMap,
+        const configuration = {
+          timestamp: Date.now(),
+          program,
+          curriculum,
+          requiredTotalCredits,
+          requiredElectiveCredits,
+          semesterPlansMap,
+        };
+        this.programConfigCache.set(configCacheKey, configuration);
+        return configuration;
       });
+      program = configuration.program;
+      curriculum = configuration.curriculum;
+      requiredTotalCredits = configuration.requiredTotalCredits;
+      requiredElectiveCredits = configuration.requiredElectiveCredits;
+      semesterPlansMap = configuration.semesterPlansMap;
     }
 
 
     // 4. Load Student Course Offerings & Grades
-    const offerings: Array<{
-      s_curriculum_id: string;
-      s_course_name: string;
-      s_credits: number;
-      s_year_code: string;
-      s_term_code: string;
-      s_term_order: number;
-      score_10: unknown;
-      score_4: unknown;
-      letter_code: string | null;
-      special_code: string | null;
-      is_pass: boolean | null;
-      not_score: boolean | null;
-      score_status: string | null;
-    }> = await prisma.$queryRaw`
+    const offerings: ProgressOffering[] = await prisma.$queryRaw`
       SELECT o.s_curriculum_id, o.s_course_name, o.s_credits,
              y.s_year_code, t.s_term_code, t.s_term_order,
-             g.score_10, g.score_4, g.letter_code, g.special_code, g.is_pass, g.not_score, g.score_status
+             g.score_10, g.score_4, g.letter_code, g.special_code, g.is_pass, g.not_score, g.score_status,
+             ${batch && !batch.fullSourceStudentIds.has(student.id) ? progressPassPayload : Prisma.sql`g.source_payload`}
       FROM student_course_offerings o
       LEFT JOIN student_course_grades g ON g.offering_id = o.id
       JOIN academic_terms t ON t.id = o.academic_term_id
@@ -1277,14 +1300,17 @@ export class StudentTrainingProgressService {
         score4: r.score_4 != null ? Number(r.score_4) : null,
         letterCode: r.letter_code || r.special_code || null,
         specialCode: r.special_code || null,
-        isPass: r.is_pass,
+        isPass: r.source_payload != null ? sourcePassOutcome(r.source_payload) : r.is_pass,
         notScore: r.not_score,
         scoreStatus: r.score_status,
       }));
 
+    const recognition = (await loadSourceCreditRecognitions([student.id], programCode, { academicYear: currentYearCode, termCode: currentTermCode, termOrder: currentTermOrder }, { includeUndatedConditional: !assessment && !historicalOnly }, batch?.recognitions)).get(student.id)!;
+    grades.push(...recognition.attempts);
+
     const inferredSchedule = configuredStudyCohort ? null : inferStudentProgressCohort({
       administrativeCohortCode: cohort?.sCohortCode ?? null, programCode,
-      currentAcademicYear: currentYearCode, currentTermCode, curriculum, registrations: grades,
+      currentAcademicYear: currentYearCode, currentTermCode, curriculum, registrations: grades.filter(grade => !grade.recognition),
     });
     const studyCohortCode = configuredStudyCohort || inferredSchedule?.cohortCode || null;
     const studyTimeline = studyCohortCode
@@ -1292,13 +1318,14 @@ export class StudentTrainingProgressService {
       : administrativeTimeline;
     // A finalized assessment includes that semester; the live screen includes
     // only semesters preceding the current one. Both use the same evaluator.
-    const expectedSemesterNo = studyTimeline.expectedSemesterNo + (assessment ? 1 : 0);
+    const includeAssessmentTerm = Boolean(assessment && assessment.boundary !== "BEFORE_TERM");
+    const expectedSemesterNo = studyTimeline.expectedSemesterNo + (includeAssessmentTerm ? 1 : 0);
     const timeline = {
       ...studyTimeline,
       expectedSemesterNo,
       expectedYear: Math.ceil(expectedSemesterNo / 2),
       expectedSemester: expectedSemesterNo % 2 === 1 ? "HK1" : "HK2",
-      administrativeSemesterNo: administrativeTimeline.expectedSemesterNo + (assessment ? 1 : 0),
+      administrativeSemesterNo: administrativeTimeline.expectedSemesterNo + (includeAssessmentTerm ? 1 : 0),
     };
 
     // 5. Run Pure Engine
@@ -1323,7 +1350,17 @@ export class StudentTrainingProgressService {
       semesterPlans: semesterPlansMap,
     });
 
-    const reconciliation = await prisma.unscopedGradeRecord.findMany({ where: { studentId: student.id }, select: { reason: true, sCourseCode: true } });
+    result.assessmentContext = { academicYear: currentYearCode, termCode: currentTermCode, termOrder: currentTermOrder,
+      boundary: includeAssessmentTerm ? "END_OF_TERM" : "BEFORE_TERM", programCode };
+    const unresolvedCodes = recognition.unresolvedCourseCodes.filter(code => !isConditionalCourse(code));
+    if (unresolvedCodes.length) result.reconciliation!.issues.push({ code: "SOURCE_RECORD_MAPPING_REVIEW", courseCodes: unresolvedCodes,
+      message: `Hệ thống chưa hoàn tất đối chiếu mốc công nhận/phạm vi của ${unresolvedCodes.join(", ")}. Dữ liệu nguồn được giữ nguyên; không tự gán kỳ hoặc quy thành nợ.` });
+    if (result.reconciliation!.issues.length) {
+      result.reconciliation!.status = "REVIEW_REQUIRED";
+      result.scheduleProgress.progressStatus = "UNKNOWN";
+      result.scheduleProgress.statusReason = "Chưa hoàn tất đối chiếu ánh xạ học phần hoặc mốc công nhận trong hệ thống.";
+      result.warnings.push(...result.reconciliation!.issues.map(issue => issue.message));
+    }
     result.student.isInClass = studentIsInClass(student);
     result.student.historicalOnly = historicalOnly;
     result.student.historicalReason = historicalReason;
@@ -1334,8 +1371,7 @@ export class StudentTrainingProgressService {
       ? `Đang nghỉ học tạm thời / bảo lưu từ HK${pause!.fromTerm} ${pause!.fromYear}, theo quyết định ${pause!.decisionNumber}. Tiến độ được đóng băng tại ${currentTermCode} ${currentYearCode}; chỉ mở lại khi quyết định tiếp nhận học lại có hiệu lực.`
       : `Sinh viên đã rời lớp từ HK${student.leftClassFromTerm} ${student.leftClassFromYear}. Chỉ đối chiếu lịch sử đến ${currentTermCode} ${currentYearCode}; không tiếp tục theo dõi ở các kỳ sau.`);
     if (!grades.length) result.warnings.push("API chưa có bảng điểm trong phạm vi CTĐT của sinh viên; chưa đủ dữ liệu để xác nhận các học phần đã hoàn thành.");
-    if (reconciliation.some((row) => row.reason === "API_PROGRAM_SCOPE_CONFLICT")) result.warnings.push("API mã CTĐT chung trả rỗng, hai mã chuyên ngành trả cùng ba đăng ký chưa có điểm. Cần đối soát phạm vi nguồn; chưa tự gán chuyên ngành hoặc tích lũy tín chỉ.");
-    if (reconciliation.some((row) => row.reason !== "API_PROGRAM_SCOPE_CONFLICT")) result.warnings.push("Có lượt học thiếu phạm vi học kỳ cần đối soát; chưa tính vào kết quả tại mốc xét.");
+    if (recognition.attempts.length) result.warnings.push(`Đã tính ${recognition.attempts.length} học phần chuyển/miễn theo kết quả đạt. R dùng mốc quyết định tiếp nhận; M không gắn kỳ gốc chỉ xác nhận trong góc nhìn hiện tại. Không tạo lượt đăng ký hoặc tính lại GPA.`);
 
     if (program) {
       result.curriculum.programId = program.id;
@@ -1361,6 +1397,7 @@ export class StudentTrainingProgressService {
     progressStatus?: "ALL" | "ON_TRACK" | "BEHIND";
     lazy?: boolean;
     scopeWhere?: Prisma.StudentWhereInput;
+    assessment?: RecognitionPeriod & { boundary?: "END_OF_TERM" | "BEFORE_TERM" };
   }): Promise<DepartmentProgressOverviewResult> {
     const page = Math.max(1, params.page || 1);
     const pageSize = Math.max(1, Math.min(100, params.pageSize || 20));
@@ -1370,8 +1407,8 @@ export class StudentTrainingProgressService {
     const studyProgramId = params.studyProgramId?.trim();
     const progressStatus = params.progressStatus || "ALL";
 
-    const lazyPage = params.lazy === true && progressStatus === "ALL";
-    const departed = lazyPage ? [] : await departedStudentIds();
+    let lazyPage = params.lazy === true && progressStatus === "ALL";
+    const departed = await departedStudentIds();
     // Membership changes invalidate scope statistics, including reactivation.
     // Cache key based on scope filter (not page/pageSize/progressStatus)
     const scopeCacheKey = JSON.stringify({
@@ -1381,20 +1418,22 @@ export class StudentTrainingProgressService {
       studyProgramId: studyProgramId || "",
       scopeWhere: params.scopeWhere || {},
       departed,
+      assessment: params.assessment || null,
     });
 
     let scopeTotal = 0;
     let safeLazyPage = page;
     let evaluatedList: DepartmentProgressStudentItem[] | null = null;
     const cached = overviewCache.get(scopeCacheKey);
-    if (!lazyPage && cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
       evaluatedList = cached.evaluatedList;
+      lazyPage = false;
     }
 
     if (!evaluatedList) {
       const where: Prisma.StudentWhereInput = {
         AND: [
-          monitoredStudentWhere(),
+          monitoredStudentWhere(params.assessment ? { yearCode: params.assessment.academicYear, termOrder: params.assessment.termOrder } : undefined),
           params.scopeWhere || {},
         ],
       };
@@ -1469,12 +1508,13 @@ export class StudentTrainingProgressService {
       // Concurrently evaluate in batches of 25
       const allEvaluations: DepartmentProgressStudentItem[] = [];
       const batchSize = 25;
+      const batchData = students.length ? await this.loadProgressBatch(students.map(student => student.id)) : undefined;
       for (let i = 0; i < students.length; i += batchSize) {
         const batch = students.slice(i, i + batchSize);
         const batchResults = await Promise.all(
           batch.map(async (st) => {
             try {
-              const res = await StudentTrainingProgressService.getStudentTrainingProgress(st.id);
+              const res = await StudentTrainingProgressService.getStudentTrainingProgress(st.id, undefined, params.assessment, batchData);
               if (!res) {
                 if (lazyPage) throw new Error("Không thể tính tiến độ sinh viên trong trang.");
                 return null;
@@ -1501,13 +1541,13 @@ export class StudentTrainingProgressService {
                 creditDifferenceText:
                   sp.creditDifferenceText ||
                   (sp.creditDifference != null && sp.creditDifference < 0
-                    ? `Chậm ${Math.abs(sp.creditDifference)} TC`
+                    ? `Thấp hơn kế hoạch ${Math.abs(sp.creditDifference)} TC`
                     : sp.creditDifference != null && sp.creditDifference > 0
-                    ? `Học vượt +${sp.creditDifference} TC`
+                    ? `Cao hơn kế hoạch ${sp.creditDifference} TC`
                     : "Đúng kế hoạch"),
                 missingRequiredCoursesCount: sp.missingRequiredCoursesCount ?? 0,
                 missingRequiredCredits: sp.missingRequiredCredits ?? 0,
-                progressStatus: sp.progressStatus ?? "ON_TRACK",
+                progressStatus: sp.progressStatus ?? "UNKNOWN",
                 statusReason: sp.statusReason || "",
               };
               return item;

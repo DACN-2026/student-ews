@@ -1,9 +1,10 @@
+import { parseStudentFilter } from "@/lib/services/student-filters";
 import { NextRequest } from "next/server";
 import { StudentsService } from "@/lib/services/students";
 import { jsonResponse, errorResponse, parsePagination } from "@/lib/utils/api-response";
 import { requirePermission } from "@/lib/auth/authorize";
 import { inaccessibleStudentTargetIndexes, studentScopeWhere } from "@/lib/auth/data-scope";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 import { hasPermission } from "@/lib/auth/types";
 
 export async function GET(req: NextRequest) {
@@ -12,30 +13,8 @@ export async function GET(req: NextRequest) {
     if (!auth.authorized) return auth.response;
     const { searchParams } = new URL(req.url);
     const { page, pageSize } = parsePagination(searchParams);
-    const classRoleValue = searchParams.get("class_role_id") ?? searchParams.get("classRoleId");
-    const inClassValue = searchParams.get("is_in_class") ?? searchParams.get("isInClass");
-    if (classRoleValue !== null && (!/^\d+$/.test(classRoleValue) || Number(classRoleValue) > 32767)) {
-      return errorResponse("class_role_id must be a non-negative integer", "INVALID_REQUEST", 400);
-    }
-    if (inClassValue !== null && inClassValue !== "true" && inClassValue !== "false") {
-      return errorResponse("is_in_class must be true or false", "INVALID_REQUEST", 400);
-    }
-
     const canReadWarnings = hasPermission(auth.actor, "academic_warning.read");
-    const warningLevel = searchParams.get("warningLevel") || undefined;
-    if (warningLevel && !canReadWarnings) {
-      return errorResponse("academic_warning.read is required for warning filters", "FORBIDDEN", 403);
-    }
-    const filter = {
-      search: searchParams.get("q") || searchParams.get("search") || undefined,
-      cohortId: searchParams.get("cohortId") || searchParams.get("cohort_id") || undefined,
-      classStudentId: searchParams.get("class_student_id") || searchParams.get("classStudentId") || undefined,
-      gender: searchParams.get("gender") || undefined,
-      studyProgramId: searchParams.get("studyProgramId") || undefined,
-      classRoleId: classRoleValue === null ? undefined : Number(classRoleValue),
-      isInClass: inClassValue === null ? undefined : inClassValue === "true",
-      warningLevel,
-    };
+    const filter = parseStudentFilter(searchParams, auth.actor);
 
     const result = await StudentsService.list(
       filter,
@@ -46,8 +25,7 @@ export async function GET(req: NextRequest) {
     );
     return jsonResponse(result);
   } catch (err) {
-    console.error("List students error:", err);
-    return errorResponse("Internal server error", "INTERNAL_ERROR", 500);
+    return apiErrorResponse(err, "Không thể tải danh sách sinh viên.");
   }
 }
 
@@ -55,7 +33,7 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await requirePermission("student.create", req);
     if (!auth.authorized) return auth.response;
-    const body = await readJsonBody<{
+    const body = await readJsonObject<{
       studentId?: string;
       firstName?: string;
       lastName?: string;

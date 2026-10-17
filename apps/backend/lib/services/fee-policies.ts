@@ -3,6 +3,20 @@ import { isUUID, studentIdWhere } from "@/lib/utils/is-uuid";
 import { ApiError } from "@/lib/utils/api-error";
 import { Prisma } from "@prisma/client";
 
+function reductionPercent(data: { reductionPercent?: unknown; coefficient?: unknown }): number | undefined {
+  if (data.reductionPercent === undefined && data.coefficient === undefined) return undefined;
+  const percent = data.reductionPercent !== undefined ? data.reductionPercent : typeof data.coefficient === "number" ? data.coefficient * 100 : NaN;
+  if (typeof percent !== "number" || !Number.isFinite(percent) || percent < 0 || percent > 100) throw new ApiError("Tỷ lệ miễn giảm phải từ 0 đến 100%.", "INVALID_REQUEST", 400);
+  return Math.round(percent * 100) / 100;
+}
+
+async function requirePolicyType(code: unknown) {
+  if (typeof code !== "string" || !code.trim()) throw new ApiError("Cần chọn đối tượng chính sách.", "INVALID_REQUEST", 400);
+  const type = await prisma.feePolicyType.findFirst({ where: { feeObjectDicId: code.trim(), deletedAt: null, isActive: true } });
+  if (!type) throw new ApiError("Đối tượng chính sách không tồn tại hoặc đã ngừng áp dụng.", "INVALID_REFERENCE", 400);
+  return type;
+}
+
 export class FeePoliciesService {
   static async listTypes() {
     return prisma.feePolicyType.findMany({
@@ -94,6 +108,11 @@ export class FeePoliciesService {
   }
 
   static async create(studentId: string, data: any) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) throw new ApiError("Chính sách không hợp lệ.", "INVALID_REQUEST", 400);
+    const type = await requirePolicyType(data.feeObjectDicId);
+    const percent = reductionPercent(data);
+    if (percent === undefined) throw new ApiError("Cần nhập tỷ lệ miễn giảm.", "INVALID_REQUEST", 400);
+    if (typeof data.decisionNumber !== "string" || !data.decisionNumber.trim()) throw new ApiError("Cần nhập số quyết định.", "INVALID_REQUEST", 400);
     const student = await prisma.student.findFirst({
       where: {
         ...studentIdWhere(studentId),
@@ -115,17 +134,15 @@ export class FeePoliciesService {
         studentId: student.id,
         academicYearId: term.academicYearId,
         academicTermId: term.id,
-        feeObjectDicId: data.feeObjectDicId || "DEFAULT",
+        feeObjectDicId: type.feeObjectDicId,
         sStudentId: student.sStudentId,
         sFeeObjectId: uniqueSourceId(),
         sYearStudy: data.yearStudy || year?.sYearCode || "",
         sTermId: data.termId || term.sTermCode,
-        sFeeObjectDicName: data.policyName || data.feeObjectDicName || "Chính sách học phí",
-        sCoefficient: String(data.coefficient ?? "1.0"),
-        coefficientPercent: data.reductionPercent !== undefined
-          ? Number(data.reductionPercent)
-          : Math.round(Number(data.coefficient ?? 1) * 100),
-        sDecisionNumber: data.decisionNumber || "",
+        sFeeObjectDicName: type.feeObjectDicName,
+        sCoefficient: String(percent / 100),
+        coefficientPercent: percent,
+        sDecisionNumber: data.decisionNumber.trim(),
       },
     });
 
@@ -133,12 +150,17 @@ export class FeePoliciesService {
   }
 
   static async update(studentIdentifier: string, feePolicyId: string, data: any) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) throw new ApiError("Chính sách không hợp lệ.", "INVALID_REQUEST", 400);
     const existing = await this.getById(feePolicyId, studentIdentifier);
     if (!existing) throw new ApiError("Fee policy not found for student", "NOT_FOUND", 404);
     const updateData: any = {};
-    if (data.feeObjectDicId) updateData.feeObjectDicId = data.feeObjectDicId;
-    if (data.policyName) updateData.sFeeObjectDicName = data.policyName;
-    if (data.reductionPercent !== undefined) updateData.coefficientPercent = Number(data.reductionPercent);
+    if (data.feeObjectDicId !== undefined) {
+      const type = await requirePolicyType(data.feeObjectDicId);
+      updateData.feeObjectDicId = type.feeObjectDicId;
+      updateData.sFeeObjectDicName = type.feeObjectDicName;
+    }
+    const percent = reductionPercent(data);
+    if (percent !== undefined) { updateData.coefficientPercent = percent; updateData.sCoefficient = String(percent / 100); }
     if (data.decisionNumber) updateData.sDecisionNumber = data.decisionNumber;
 
     const updated = await prisma.studentFeePolicy.update({

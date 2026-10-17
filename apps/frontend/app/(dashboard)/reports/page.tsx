@@ -30,7 +30,7 @@ import { INTERVENTION_STATUS_LABELS } from "@/lib/intervention-workflow";
 
 type ReportTab = "overview" | "queue" | "history";
 
-type WarningBusinessStatus = "NORMAL" | "PARTIAL_NO_RISK" | "MONITORING" | "HIGH_RISK" | "VERIFY_REQUIRED" | "INSUFFICIENT_DATA";
+type WarningBusinessStatus = "NORMAL" | "PARTIAL_NO_RISK" | "MONITORING" | "HIGH_RISK" | "VERIFY_REQUIRED" | "INSUFFICIENT_DATA" | "NOT_APPLICABLE";
 type InterventionStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "ESCALATED" | "REOPENED";
 
 interface InterventionCaseItem {
@@ -181,6 +181,7 @@ const BUSINESS_STATUS_LABELS: Record<string, string> = {
   HIGH_RISK: "Nguy cơ cao",
   VERIFY_REQUIRED: "Nguy cơ cao",
   INSUFFICIENT_DATA: "Chưa đủ dữ liệu",
+  NOT_APPLICABLE: "Không thuộc phạm vi đánh giá kỳ này",
 };
 
 const BUSINESS_STATUS_STYLE: Record<string, { bg: string; text: string; border: string; dot: string }> = {
@@ -406,6 +407,10 @@ export default function ReportsPage() {
   const summaryTermRef = useRef(report?.latestPeriod?.academicTermId || "");
   const summaryRequestRef = useRef(0);
   const overviewRequestRef = useRef(0);
+  const overviewController = useRef<AbortController | null>(null);
+  const summaryController = useRef<AbortController | null>(null);
+  const queueController = useRef<AbortController | null>(null);
+  const historyController = useRef<AbortController | null>(null);
   const [summary, setSummary] = useState<InterventionSummary | null>(() => report?.latestPeriod ? peekApiData(`/api/v1/academic-warnings/interventions/summary?academicTermId=${report.latestPeriod.academicTermId}`, true) : null);
   const [summaryLoading, setSummaryLoading] = useState(() => !report?.latestPeriod || !hasApiData(`/api/v1/academic-warnings/interventions/summary?academicTermId=${report.latestPeriod.academicTermId}`));
   const [assessmentListOpen, setAssessmentListOpen] = useState(false);
@@ -473,27 +478,33 @@ export default function ReportsPage() {
   const loadSummary = useCallback(async (termIdOverride?: string) => {
     const termId = termIdOverride ?? summaryTermRef.current;
     if (!termId) return;
+    summaryController.current?.abort();
+    const controller = new AbortController();
+    summaryController.current = controller;
     const requestId = ++summaryRequestRef.current;
     const endpoint = `/api/v1/academic-warnings/interventions/summary?academicTermId=${termId}`;
     await Promise.resolve();
     try {
       setSummaryLoading(!hasApiData(endpoint));
       setSummaryError("");
-      const res = await apiFetch(endpoint);
-      if (requestId !== summaryRequestRef.current) return;
+      const res = await apiFetch(endpoint, { signal: controller.signal });
+      if (controller.signal.aborted || requestId !== summaryRequestRef.current) return;
       if (res.status === 403) { setSummary(null); throw new Error("Không có quyền xem tổng hợp công việc can thiệp."); }
       if (!res.ok) throw new Error("Không thể tải tổng hợp công việc can thiệp.");
       const nextSummary: InterventionSummary = await res.json();
-      if (requestId === summaryRequestRef.current) setSummary(nextSummary);
+      if (!controller.signal.aborted && requestId === summaryRequestRef.current) setSummary(nextSummary);
     } catch (error) {
-      if (requestId !== summaryRequestRef.current) return;
+      if (controller.signal.aborted || requestId !== summaryRequestRef.current) return;
       setSummaryError(error instanceof Error ? error.message : "Không thể tải tổng hợp công việc can thiệp.");
     } finally {
-      if (requestId === summaryRequestRef.current) setSummaryLoading(false);
+      if (!controller.signal.aborted && requestId === summaryRequestRef.current) setSummaryLoading(false);
     }
   }, []);
 
   const loadOverview = useCallback(async (termIdOverride?: string) => {
+    overviewController.current?.abort();
+    const controller = new AbortController();
+    overviewController.current = controller;
     const requestId = ++overviewRequestRef.current;
     await Promise.resolve();
     try {
@@ -502,24 +513,27 @@ export default function ReportsPage() {
       const termId = termIdOverride ?? selectedTermId;
       if (termId) params.set("academicTermId", termId);
       setOverviewLoading(!hasApiData(`/api/v1/reports/academic-warnings?${params.toString()}`));
-      const response = await apiFetch(`/api/v1/reports/academic-warnings?${params.toString()}`);
-      if (requestId !== overviewRequestRef.current) return;
+      const response = await apiFetch(`/api/v1/reports/academic-warnings?${params.toString()}`, { signal: controller.signal });
+      if (controller.signal.aborted || requestId !== overviewRequestRef.current) return;
       if (response.status === 403) { setReport(null); setSummary(null); throw new Error("403: Forbidden"); }
       if (!response.ok) throw new Error("Không thể tải dữ liệu cảnh báo học vụ");
       const nextReport: WarningReport = await response.json();
-      if (requestId !== overviewRequestRef.current) return;
+      if (controller.signal.aborted || requestId !== overviewRequestRef.current) return;
       setReport(nextReport);
       summaryTermRef.current = nextReport.latestPeriod?.academicTermId || "";
       if (summaryTermRef.current) void loadSummary(summaryTermRef.current);
       else { setSummary(null); setSummaryLoading(false); }
     } catch (error) {
-      if (requestId === overviewRequestRef.current) setLoadError(error instanceof Error ? error.message : "Không thể tải báo cáo");
+      if (!controller.signal.aborted && requestId === overviewRequestRef.current) setLoadError(error instanceof Error ? error.message : "Không thể tải báo cáo");
     } finally {
-      if (requestId === overviewRequestRef.current) setOverviewLoading(false);
+      if (!controller.signal.aborted && requestId === overviewRequestRef.current) setOverviewLoading(false);
     }
   }, [selectedTermId, loadSummary]);
 
   const loadQueue = useCallback(async (page: number, filters: typeof queueFilters) => {
+    queueController.current?.abort();
+    const controller = new AbortController();
+    queueController.current = controller;
     await Promise.resolve();
     try {
       setQueueError("");
@@ -531,18 +545,22 @@ export default function ReportsPage() {
       if (filters.overdue === "true") params.set("overdue", "true");
       if (filters.search.trim()) params.set("search", filters.search.trim());
       setQueueLoading(!hasApiData(`/api/v1/academic-warnings/interventions?${params.toString()}`));
-      const res = await apiFetch(`/api/v1/academic-warnings/interventions?${params.toString()}`);
+      const res = await apiFetch(`/api/v1/academic-warnings/interventions?${params.toString()}`, { signal: controller.signal });
       if (res.status === 403) throw new Error("Không có quyền xem danh sách can thiệp này.");
       if (!res.ok) throw new Error("Không thể tải danh sách can thiệp");
-      setQueueData(await res.json());
+      const data: InterventionListResponse = await res.json();
+      if (!controller.signal.aborted) setQueueData(data);
     } catch (error) {
-      setQueueError(error instanceof Error ? error.message : "Lỗi tải dữ liệu");
+      if (!controller.signal.aborted) setQueueError(error instanceof Error ? error.message : "Lỗi tải dữ liệu");
     } finally {
-      setQueueLoading(false);
+      if (!controller.signal.aborted) setQueueLoading(false);
     }
   }, []);
 
   const loadHistory = useCallback(async (page: number, filters: typeof historyFilters) => {
+    historyController.current?.abort();
+    const controller = new AbortController();
+    historyController.current = controller;
     await Promise.resolve();
     try {
       setHistoryError("");
@@ -552,14 +570,15 @@ export default function ReportsPage() {
       if (filters.academicTermId) params.set("academicTermId", filters.academicTermId);
       if (filters.search.trim()) params.set("search", filters.search.trim());
       setHistoryLoading(!hasApiData(`/api/v1/academic-warnings/interventions?${params.toString()}`));
-      const res = await apiFetch(`/api/v1/academic-warnings/interventions?${params.toString()}`);
+      const res = await apiFetch(`/api/v1/academic-warnings/interventions?${params.toString()}`, { signal: controller.signal });
       if (res.status === 403) throw new Error("Không có quyền xem lịch sử can thiệp này.");
       if (!res.ok) throw new Error("Không thể tải lịch sử can thiệp");
-      setHistoryData(await res.json());
+      const data: InterventionListResponse = await res.json();
+      if (!controller.signal.aborted) setHistoryData(data);
     } catch (error) {
-      setHistoryError(error instanceof Error ? error.message : "Lỗi tải dữ liệu");
+      if (!controller.signal.aborted) setHistoryError(error instanceof Error ? error.message : "Lỗi tải dữ liệu");
     } finally {
-      setHistoryLoading(false);
+      if (!controller.signal.aborted) setHistoryLoading(false);
     }
   }, []);
 
@@ -654,6 +673,10 @@ export default function ReportsPage() {
   }, []);
 
   useEffect(() => () => {
+    overviewController.current?.abort();
+    summaryController.current?.abort();
+    queueController.current?.abort();
+    historyController.current?.abort();
     drawerLoadController.current?.abort();
     if (queueSearchDebounce.current) clearTimeout(queueSearchDebounce.current);
     if (historySearchDebounce.current) clearTimeout(historySearchDebounce.current);
@@ -939,7 +962,7 @@ export default function ReportsPage() {
         <div className="space-y-6">
           {reconcilingHistory && (
             <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs text-emerald-800">
-              Đang tự động đối soát các học kỳ chính đã qua có dữ liệu điểm và cập nhật lịch sử cảnh báo…
+              Đang đánh giá cảnh báo cho các học kỳ chính đã kết thúc và cập nhật lịch sử sinh viên…
             </div>
           )}
           {!reconcilingHistory && reconciliationError && (
@@ -1039,7 +1062,7 @@ export default function ReportsPage() {
                     <div>
                       <h2 className="text-sm font-bold text-slate-900">Chưa có đợt đánh giá cảnh báo học tập nào được hoàn tất.</h2>
                       <p className="mt-1 text-xs leading-5 text-slate-600">
-                        Hệ thống đang tự đối soát các học kỳ chính đã qua có dữ liệu điểm. Kết quả sẽ được lưu theo học kỳ, năm học và xuất hiện trong lịch sử của từng sinh viên.
+                        Hệ thống đang đánh giá cảnh báo cho các học kỳ chính đã kết thúc và đã có kết quả học tập. Kết quả được lưu theo học kỳ, năm học và hiển thị trong lịch sử của từng sinh viên.
                       </p>
                     </div>
                   </div>

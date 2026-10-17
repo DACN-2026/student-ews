@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api-client";
 import { LoadingIndicator } from "@/components/ui/LoadingState";
 
 type EvidenceCheck = { key: string; label: string; status: "MATCHED" | "CHANGED" | "UNAVAILABLE"; recorded: number | null; current: number | null };
-type Course = { courseCode: string; courseName: string; credits: number; semesterNo?: number | null; status?: string; letter?: string | null; requirementType?: string; score10?: number | null; score4?: number | null; attemptCount?: number; passedAcademicYear?: string | null; passedTermCode?: string | null };
+type Course = { isPass?: boolean | null; courseCode: string; courseName: string; credits: number; semesterNo?: number | null; status?: string; letter?: string | null; requirementType?: string; score10?: number | null; score4?: number | null; attemptCount?: number; passedAcademicYear?: string | null; passedTermCode?: string | null };
 type CreditReason = { reasonCode: string; observedValue: string | number | null; thresholdValue: string | number | null; sourceType: string | null; severity: string; thresholdBreached: boolean; nearThreshold: boolean; details: Record<string, unknown> };
 export type WarningEvidence = {
   context: { resultId: string; academicYear: string; termCode: string; programCode: string | null; capturedAt: string; checkedAt: string };
@@ -62,14 +62,14 @@ function CheckStatus({ check }: { check?: EvidenceCheck }) {
   if (!check) return null;
   return <span className={`inline-flex shrink-0 items-center gap-1 text-[11px] font-medium ${check.status === "MATCHED" ? "text-emerald-700" : check.status === "CHANGED" ? "text-red-700" : "text-slate-500"}`}>
     {check.status === "MATCHED" ? <CheckCircle2 size={13} /> : <AlertCircle size={13} />}
-    {check.status === "MATCHED" ? "Khớp nguồn" : check.status === "CHANGED" ? "Số liệu khác" : "Chưa đối chiếu đủ"}
+    {check.status === "MATCHED" ? "Khớp dữ liệu kỳ xét" : check.status === "CHANGED" ? "Khác kết quả đã lưu" : "Chưa hoàn tất kiểm tra"}
   </span>;
 }
 
 export function WarningVerificationOverview() {
   const { data, error, retry } = useContext(VerificationContext);
   if (error) return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><p>{error}</p><button type="button" onClick={retry} className="mt-2 inline-flex items-center gap-1 font-semibold underline cursor-pointer"><RefreshCw size={12} />Thử đối chiếu lại</button></div>;
-  if (!data) return <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><LoadingIndicator label="Đang đối chiếu nguồn tại học kỳ cảnh báo…" /></div>;
+  if (!data) return <div className="rounded-xl border border-slate-200 bg-slate-50 p-3"><LoadingIndicator label="Đang kiểm tra dữ liệu của học kỳ cảnh báo…" /></div>;
   const changed = data.checks.filter((check) => check.status === "CHANGED");
   const matched = data.checks.filter((check) => check.status === "MATCHED");
   const unavailable = data.checks.filter((check) => check.status === "UNAVAILABLE");
@@ -77,7 +77,7 @@ export function WarningVerificationOverview() {
     <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-slate-900">Cảnh báo tại {period(data.context.academicYear, data.context.termCode)}</h3><span className="text-slate-500">CTĐT: {data.context.programCode || "Chưa xác định"}</span></div>
     <p className="text-[11px] text-slate-500">Ghi nhận {date(data.context.capturedAt)} · Đối chiếu {date(data.context.checkedAt)}</p>
     {(changed.length > 0 || matched.length === 0 || unavailable.length > 0 || data.unavailableSources.length > 0) && <div className="border-t border-slate-200 pt-2.5 space-y-1.5">
-      {changed.length > 0 ? <p className="font-semibold text-red-700">Có {changed.length} số liệu khác với nguồn hiện tại. Cần kiểm tra trước khi kết luận.</p> : matched.length === 0 ? <p className="font-medium text-slate-600">Chưa có đủ nguồn để xác nhận số liệu cảnh báo.</p> : null}
+      {changed.length > 0 ? <p className="font-semibold text-red-700">Có {changed.length} chỉ số khác giữa kết quả cảnh báo đã lưu và dữ liệu hiện tại của kỳ xét. Cần kiểm tra thay đổi trước khi kết luận.</p> : matched.length === 0 ? <p className="font-medium text-slate-600">Chưa hoàn tất kiểm tra số liệu của lần cảnh báo này. Hãy thử đối chiếu lại.</p> : null}
       {(unavailable.length > 0 || data.unavailableSources.length > 0) && <p className="text-amber-800">Chưa đối chiếu đủ: {[...new Set([...unavailable.map((check) => check.label), ...data.unavailableSources])].join(", ")}.</p>}
     </div>}
   </section>;
@@ -117,11 +117,11 @@ function DebtEvidence({ data }: { data: WarningEvidence }) {
 
 function GradeEvidence({ data, cumulative, ratio }: { data: WarningEvidence; cumulative: boolean; ratio: boolean }) {
   return <div className="space-y-3">
-    <p className="text-slate-700 leading-relaxed">{ratio ? `${numeric(data.term.failedCredits)} TC không đạt / ${numeric(data.term.registeredCredits)} TC đăng ký trong học kỳ đánh giá.` : `GPA ${cumulative ? "tích lũy" : "học kỳ"} hệ 4: ${numeric(cumulative ? data.term.cumulativeGpa4 : data.term.gpa4)}, theo bảng tổng hợp điểm của nguồn đào tạo.`}</p>
-    <p className="text-[11px] leading-relaxed text-slate-500">Bảng dưới là các lượt học ở {period(data.context.academicYear, data.context.termCode)} đang lưu trong nguồn. GPA tổng hợp không được thay thế bằng điểm tốt nhất của một môn qua nhiều lần học.</p>
+    <p className="text-slate-700 leading-relaxed">{ratio ? `${numeric(data.term.failedCredits)} TC không đạt / ${numeric(data.term.registeredCredits)} TC đăng ký trong học kỳ đánh giá.` : `Điểm trung bình (GPA) ${cumulative ? "tích lũy" : "học kỳ"} hệ 4: ${numeric(cumulative ? data.term.cumulativeGpa4 : data.term.gpa4)}, theo bảng tổng hợp điểm của Trường.`}</p>
+    <p className="text-[11px] leading-relaxed text-slate-500">Bảng dưới hiển thị từng lần học trong {period(data.context.academicYear, data.context.termCode)} do Trường ghi nhận. GPA giữ theo kết quả tổng hợp của Trường, không tính lại bằng điểm tốt nhất qua các lần học.</p>
     {data.term.courses.length === 0 ? <p className="text-slate-500">Chưa có bảng điểm học phần ở học kỳ này.</p> : <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">{data.term.courses.map((course) => <li key={course.id} className="px-3 py-2.5 space-y-1">
       <p className="font-medium text-slate-800 leading-relaxed">{course.courseName}</p>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500"><span className="font-mono">{course.courseCode}</span><span>{course.credits} TC</span><span>Điểm 10: <strong className="text-slate-700">{numeric(course.score10)}</strong></span><span>Điểm 4: <strong className="text-slate-700">{numeric(course.score4)}</strong></span><span className={course.status === "FAILED" ? "font-semibold text-red-700" : course.status === "PASSED" ? "font-semibold text-emerald-700" : "text-slate-500"}>{course.letter === "VT" ? "Vắng thi (VT)" : course.status === "PASSED" ? `Đạt${course.letter ? ` (${course.letter})` : ""}` : course.status === "FAILED" ? `Không đạt${course.letter ? ` (${course.letter})` : ""}` : course.status === "PENDING" ? "Chờ điểm" : "Chưa đủ dữ liệu"}</span>{course.excludedFromGpa && <span>Không tính GPA theo nguồn</span>}</div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500"><span className="font-mono">{course.courseCode}</span><span>{course.credits} TC</span><span>Điểm hệ 10: <strong className="text-slate-700">{numeric(course.score10)}</strong></span><span>Điểm hệ 4: <strong className="text-slate-700">{numeric(course.score4)}</strong></span><span className={course.status === "FAILED" ? "font-semibold text-red-700" : course.status === "PASSED" ? "font-semibold text-emerald-700" : "text-slate-500"}>{course.letter === "VT" ? `Vắng thi (VT)${typeof course.isPass === "boolean" ? course.isPass ? " · Đạt" : " · Không đạt" : ""}` : course.status === "PASSED" ? `Đạt${course.letter ? ` (${course.letter})` : ""}` : course.status === "FAILED" ? `Không đạt${course.letter ? ` (${course.letter})` : ""}` : course.status === "PENDING" ? "Chờ điểm" : "Chưa xác định kết quả"}</span>{course.excludedFromGpa && <span>Không tính vào GPA của Trường</span>}</div>
     </li>)}</ul>}
   </div>;
 }
@@ -156,7 +156,7 @@ function ProgressEvidence({ data, listedSemesters = [], hideMandatory = false }:
       <p className="text-slate-600 leading-relaxed">Tốt nghiệp xét toàn bộ CTĐT, gồm cả học phần ở các kỳ chưa đến hạn. Thiếu tiến độ chỉ đối chiếu lộ trình đến hết HK {progress.latestSemester}.</p>
       <CourseList courses={data.graduation.missingRequiredCourses} />
     </div></details>}
-    {!data.graduation && <p className="text-[11px] text-slate-500">Chưa có dữ liệu Dự kiến tốt nghiệp để đối chiếu thêm.</p>}
+    {!data.graduation && <p className="text-[11px] text-slate-500">Chưa có kết quả Dự kiến tốt nghiệp để so sánh thêm. Kết quả tiến độ của kỳ này vẫn được giữ nguyên.</p>}
   </div>;
 }
 
@@ -183,7 +183,7 @@ export function WarningCreditOverview({ debtReasons, progressReasons, onOpenGrad
     </div>
     {missingRequiredCount > 0 && <p className="rounded-lg border border-red-100 bg-red-50/30 p-2.5 text-[11px] font-medium text-red-700">Còn {missingRequiredCount} môn bắt buộc đến hạn chưa hoàn thành ({numeric(missingRequiredCredits)} TC). Tín chỉ tự chọn dư không thay thế các môn này.</p>}
     {debtReason && progressReason && <p className="text-[11px] leading-relaxed text-slate-500">Hai chỉ số được đối chiếu chung danh sách học phần. Nợ phản ánh nghĩa vụ học phần chưa được giải quyết; tiến độ so sánh với lộ trình đến mốc đánh giá. Không cộng hai số này thành tổng nợ.</p>}
-    {changed.map((check) => <p key={check.key} role="alert" className="rounded-lg bg-amber-50 p-2.5 text-amber-900">{check.label}: đã lưu {numeric(check.recorded)}, nguồn cùng mốc {numeric(check.current)}. Cần xác minh số liệu trước khi kết luận.</p>)}
+    {changed.map((check) => <p key={check.key} role="alert" className="rounded-lg bg-amber-50 p-2.5 text-amber-900">{check.label}: kết quả cảnh báo đã lưu {numeric(check.recorded)}, dữ liệu hiện tại của cùng kỳ xét {numeric(check.current)}. Cần kiểm tra thay đổi trước khi kết luận.</p>)}
     <details className="border-t border-slate-100 pt-2.5"><summary className="cursor-pointer font-medium text-[11px] text-slate-500">Căn cứ và ngưỡng đánh giá ({reasons.length} tiêu chí)</summary><ul className="mt-2 space-y-3 text-[11px] text-slate-600">{reasons.map((reason) => <li key={reason.reasonCode}><p className="font-semibold text-slate-700">{reason.ruleTitle}</p><p className="mt-1 leading-relaxed">{reason.ruleSummary}</p><p className="mt-1">Căn cứ: {reason.basis}</p></li>)}</ul></details>
   </section>;
 }
@@ -193,7 +193,7 @@ export function WarningReasonEvidence({ ruleCode }: { ruleCode: string }) {
   if (ruleCode.includes("NO_REGISTRATION") || ruleCode === "EARLY_MISSING_TERM_DATA" || ruleCode.startsWith("ACADEMIC_")) {
     if (!data) return error ? <p className="text-[11px] text-slate-500">Chưa tải được nguồn đối chiếu hồ sơ học vụ.</p> : <LoadingIndicator label="Đang đối chiếu hồ sơ học vụ…" />;
     const check = data.checks.find(item => item.key === "standing");
-    return <div className="space-y-1 border-t border-slate-100 pt-2"><CheckStatus check={check} /><p className="text-[11px] leading-5 text-slate-500">{check?.status === "CHANGED" ? "Đăng ký, dữ liệu của kỳ đã xét hoặc quyết định đã thay đổi so với lần đánh giá. Cần chạy lại sau khi xác minh." : "Đối chiếu dữ liệu đăng ký và quyết định có hiệu lực trong kỳ đã xét. Khớp nguồn không đồng nghĩa đã xác nhận lý do không đăng ký."}</p></div>;
+    return <div className="space-y-1 border-t border-slate-100 pt-2"><CheckStatus check={check} /><p className="text-[11px] leading-5 text-slate-500">{check?.status === "CHANGED" ? "Thông tin đăng ký, kết quả học tập hoặc quyết định của kỳ xét đã thay đổi. Kiểm tra thay đổi rồi thực hiện đánh giá lại cảnh báo." : "Kiểm tra thông tin đăng ký và quyết định có hiệu lực trong kỳ xét. Số liệu trùng khớp chưa xác nhận lý do sinh viên không đăng ký; CVHT cần liên hệ sinh viên để làm rõ."}</p></div>;
   }
   const kind = ruleCode.includes("ACCUMULATED_DEBT") ? "debt" : ruleCode.includes("PROGRESS") ? "progress" : ruleCode.includes("FAILED_CREDIT_RATIO") ? "failedRatio" : ruleCode.includes("CUMULATIVE_GPA") ? "cumulativeGpa" : ruleCode.includes("TERM_GPA") ? "termGpa" : null;
   if (!kind) return null;
@@ -202,8 +202,8 @@ export function WarningReasonEvidence({ ruleCode }: { ruleCode: string }) {
   return <details className="group rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-xs">
     <summary className="flex flex-wrap cursor-pointer list-none items-center gap-2 font-semibold text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600"><ChevronDown size={14} className="shrink-0 transition-transform group-open:rotate-180" /><span>{kind === "debt" ? "Xem học phần và cách tính nợ" : kind === "progress" ? "Kiểm chứng tiến độ và học phần còn thiếu" : `Xem bảng điểm ${period(data.context.academicYear, data.context.termCode)}`}</span><span className="ml-auto"><CheckStatus check={check} /></span></summary>
     <div className="mt-3 space-y-3 border-t border-slate-200 pt-3">
-      {check?.status === "CHANGED" && <p role="alert" className="rounded-lg bg-amber-50 p-2.5 text-amber-900">Kết quả cảnh báo đã lưu: {numeric(check.recorded)}. Nguồn hiện tại cùng mốc: {numeric(check.current)}. {check.recorded === check.current && "Tổng số không đổi nhưng học phần hoặc cách phân bổ đã thay đổi. "}Cần xác minh thay đổi; bằng chứng chi tiết bên dưới không thay thế kết quả đã lưu.</p>}
-      <p className="text-[11px] text-slate-500">{kind === "debt" ? "Cách tính nợ được lưu cùng lần đánh giá cảnh báo. Tên học phần được đối chiếu theo CTĐT." : "Chi tiết nguồn đang lưu được đối chiếu lại tại đúng học kỳ cảnh báo."}</p>
+      {check?.status === "CHANGED" && <p role="alert" className="rounded-lg bg-amber-50 p-2.5 text-amber-900">Kết quả cảnh báo đã lưu: {numeric(check.recorded)}. Dữ liệu hiện tại của cùng kỳ xét: {numeric(check.current)}. {check.recorded === check.current && "Tổng số không đổi nhưng học phần hoặc cách phân bổ đã thay đổi. "}Kiểm tra thay đổi rồi đánh giá lại cảnh báo. Chi tiết bên dưới chưa thay thế kết quả đã lưu.</p>}
+      <p className="text-[11px] text-slate-500">{kind === "debt" ? "Cách tính nợ được lưu cùng lần đánh giá cảnh báo. Tên học phần được đối chiếu theo CTĐT." : "Chi tiết học phần được kiểm tra theo đúng học kỳ của lần cảnh báo này."}</p>
       {kind === "debt" ? <DebtEvidence data={data} /> : kind === "progress" ? <ProgressEvidence data={data} /> : <GradeEvidence data={data} cumulative={kind === "cumulativeGpa"} ratio={kind === "failedRatio"} />}
     </div>
   </details>;

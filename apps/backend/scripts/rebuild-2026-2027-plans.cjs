@@ -199,7 +199,7 @@ async function main() {
       } });
       await tx.trainingProgressPlanCourse.createMany({ data: item.courses.map((entry) => ({
         planId: created.id, courseId: entry.course.id,
-        sCourseCode: entry.code, sCourseName: entry.course.sCourseName,
+        sCourseCode: entry.course.sCourseCode, sCourseName: entry.course.sCourseName,
         sCredits: creditsFor(entry.code),
         requirementType: entry.type, choiceGroupCode: entry.group || null,
         isRegistrationRequired: entry.type === 'mandatory',

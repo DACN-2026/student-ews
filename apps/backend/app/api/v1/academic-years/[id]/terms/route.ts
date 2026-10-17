@@ -1,7 +1,8 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { TrainingProgramsService } from "@/lib/services/training-programs";
 import { jsonResponse, errorResponse } from "@/lib/utils/api-response";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 import { requirePermission } from "@/lib/auth/authorize";
 import { AcademicWarningAutomationService } from "@/lib/services/academic-warning-automation";
 
@@ -10,6 +11,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const access = await requireApiPermission(req);
+    if (!access.authorized) return access.response;
     const { id } = await params;
     const terms = await TrainingProgramsService.listTerms(id);
     return jsonResponse({ items: terms, total: terms.length });
@@ -27,7 +30,7 @@ export async function POST(
     const auth = await requirePermission("academic_term.manage", req);
     if (!auth.authorized) return auth.response;
     const { id } = await params;
-    const body = await readJsonBody<{
+    const body = await readJsonObject<{
       termCode?: string;
       termName?: string;
       termOrder?: number;

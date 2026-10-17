@@ -1,7 +1,8 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { RbacService } from "@/lib/services/rbac";
 import { jsonResponse } from "@/lib/utils/api-response";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 import { recordAudit } from "@/lib/services/audit";
 
 interface Params {
@@ -10,8 +11,10 @@ interface Params {
 
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
+    const access = await requireApiPermission(req);
+    if (!access.authorized) return access.response;
     const { id } = await params;
-    const body = await readJsonBody<{
+    const body = await readJsonObject<{
       fullName?: string;
       email?: string;
       isActive?: boolean;

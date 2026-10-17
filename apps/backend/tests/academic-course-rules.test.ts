@@ -12,14 +12,29 @@ import { assessTeachingSemester, teachingSemesterCredits } from "../lib/semester
 
 const pass = (courseCode: string, credits = 1): CertificateAttempt & { courseCode: string } => ({ courseCode, credits, isPass: true, scoreStatus: "graded", letterCode: "D" });
 
-test("VT credit outcomes require a finalized source marker and do not fabricate numeric grades", () => {
+test("explicit School IsPass with NotScore=false settles the outcome without inventing numeric grades", () => {
+  for (const [IsPass, expected] of [["", "failed"], ["x", "passed"]] as const) {
+    const grade = { sourcePayload: { IsPass, NotScore: "0" }, isPass: false, notScore: false, scoreStatus: "unknown", score10: null, score4: null };
+    const before = JSON.stringify(grade);
+    assert.equal(courseOutcome(grade), expected);
+    assert.equal(courseOutcome({ ...grade, notScore: true, scoreStatus: "pending" }), "pending");
+    assert.equal(courseOutcome({ ...grade, sourcePayload: { IsPass: null, NotScore: "0" } }), "unknown");
+    const ratio = calculateAssessmentTermFailedCredits("t", [{ offeringId: "o", academicTermId: "t", credits: 3,
+      scoreStatus: "unknown", hasFinalGrade: false, isPass: IsPass === "x", notScore: false }]);
+    assert.equal(ratio.dataStatus, "COMPLETE");
+    assert.equal(ratio.failedCredits, IsPass === "x" ? 0 : 3);
+    assert.equal(JSON.stringify(grade), before);
+  }
+});
+
+test("VT credit outcomes use source IsPass and do not fabricate numeric grades", () => {
   for (const [marker, expected] of [["", false], ["x", true], ["0", false], [false, false], [true, true]] as const) assert.equal(sourcePassOutcome({ IsPass: marker }), expected);
   for (const payload of [{}, { IsPass: null }, { IsPass: "unexpected" }, null]) assert.equal(sourcePassOutcome(payload), null);
   const vt = { specialCode: "VT", scoreStatus: "special", notScore: false, isPass: sourcePassOutcome({ IsPass: "" }), score10: null, score4: null };
   const before = JSON.stringify(vt);
   assert.equal(warningCourseOutcome(vt), "failed");
   assert.equal(warningCourseOutcome({ ...vt, isPass: true }), "passed");
-  assert.equal(warningCourseOutcome({ ...vt, notScore: true }), "pending");
+  assert.equal(warningCourseOutcome({ ...vt, notScore: true }), "failed");
   assert.equal(warningCourseOutcome({ ...vt, isPass: null }), "unknown");
   assert.equal(JSON.stringify(vt), before);
   const courses = [{ courseId: "academic", courseCode: "HP1", courseName: "Academic", credits: 4, requirementType: "mandatory", semesterNo: 1 }];
@@ -37,7 +52,7 @@ test("VT credit outcomes require a finalized source marker and do not fabricate 
   assert.equal(ratio.absenceCourseCount, 1);
   assert.equal(ratio.failedCredits, 4);
   assert.equal(calculateAssessmentTermFailedCredits("t", [{ ...ratioAttempt, isPass: true }]).failedCreditRatio, 0);
-  assert.equal(calculateAssessmentTermFailedCredits("t", [{ ...ratioAttempt, notScore: true }]).dataStatus, "PARTIAL");
+  assert.equal(calculateAssessmentTermFailedCredits("t", [{ ...ratioAttempt, notScore: true }]).dataStatus, "COMPLETE");
   assert.equal(calculateAssessmentTermFailedCredits("t", [{ ...ratioAttempt, isPass: null }]).dataStatus, "PARTIAL");
 });
 
@@ -92,7 +107,7 @@ test("a missing specialization pool is not completed at zero credits", () => {
   assert.equal(semester.plannedCredits,null);
   assert.equal(semesterProgressDisplay(semester).isCompleted,false);
   assert.equal(semesterProgressDisplay(semester).plannedCreditsLabel,'—');
-  assert.equal(semesterProgressDisplay(semester).label,'Cần đối soát');
+  assert.equal(semesterProgressDisplay(semester).label,'Chưa thể kết luận');
 });
 
 test("K49 HK2 offers the PDF-confirmed blockchain elective without adding conditional credits", () => {
@@ -204,7 +219,7 @@ test("missing degree-total configuration cannot create a two-credit deficit afte
   assert.equal(result.scheduleProgress.earnedCreditsToDate, 138);
   assert.equal(result.scheduleProgress.expectedElectiveCredits, 46);
   assert.equal(result.scheduleProgress.creditDifference, 4);
-  assert.equal(result.scheduleProgress.creditDifferenceText, "Học vượt +4 TC");
+  assert.equal(result.scheduleProgress.creditDifferenceText, "Cao hơn kế hoạch 4 TC");
   assert.equal(result.scheduleProgress.isAhead, true);
   assert.equal(result.summary.completedCredits, 132);
   assert.equal(result.scheduleProgress.overdueCredits, 0);
@@ -251,11 +266,11 @@ test("GDTC recognizes three one-credit requirements and deduplicates alternative
   assert.equal(assessCertificateRequirements([pass("TC1001D", 0), pass("TC1002C"), pass("TC2003D")]).physical.status, "NOT_PASSED");
 });
 
-test("VT is failed even with a contradictory pending/pass flag; pending certificate requires all missing parts to be registered", () => {
+test("VT respects IsPass despite a pending flag; a pending certificate requires all missing parts to be registered", () => {
   const vt = { courseCode: "QP2104D", isPass: true, notScore: true, scoreStatus: "pending", specialCode: "VT" };
-  assert.equal(courseOutcome(vt), "failed");
+  assert.equal(courseOutcome(vt), "passed");
   const attempts = [pass("QP2101D", 3), pass("QP2102D", 2), pass("QP2103D", 2)];
-  assert.equal(assessCertificateRequirements([...attempts, vt]).defense.status, "NOT_PASSED");
+  assert.equal(assessCertificateRequirements([...attempts, vt]).defense.status, "PASSED");
   assert.equal(assessCertificateRequirements([...attempts, { courseCode: "QP2104D", notScore: true }]).defense.status, "PENDING");
 });
 
@@ -327,7 +342,7 @@ test("debt is computed at the supplied cutoff; pending retake retains F, summer 
   assert.equal(failed.letterCode, "F");
 });
 
-test("unmatched final failures make debt partial; extra credits in one block do not settle another", () => {
+test("failed courses outside the current curriculum create no debt; extra credits in one block do not settle another", () => {
   const courses = [
     { courseId: "a", courseCode: "20CT1103", courseName: "A6 elective", credits: 9, requirementType: "elective", semesterNo: 1 },
     { courseId: "b", courseCode: "20QT0001", courseName: "A7 elective", credits: 3, requirementType: "elective", semesterNo: 1 },
@@ -335,7 +350,9 @@ test("unmatched final failures make debt partial; extra credits in one block do 
   const debt = calculateAcademicDebt([pass("20CT1103", 9) as { courseCode: string; credits: number }, { courseCode: "20QT0001", credits: 3, isPass: false, scoreStatus: "graded", letterCode: "F", score4: 0 }], courses, "CQ22CT-PM");
   assert.equal(debt.accumulatedDebtCredits, 3);
   const unknown = calculateAcademicDebt([{ courseCode: "OTHER", credits: 3, isPass: false, scoreStatus: "graded", letterCode: "F" }], courses, "CQ22CT-PM");
-  assert.equal(unknown.dataStatus, "PARTIAL");
+  assert.equal(unknown.dataStatus, "COMPLETE");
+  assert.equal(unknown.accumulatedDebtCredits, 0);
+  assert.equal(calculateAcademicDebt([{ courseCode: "OTHER", credits: 3, scoreStatus: "unknown" }], courses, "CQ22CT-PM").dataStatus, "PARTIAL");
 });
 
 test("K49 blockchain elective is recognized in A6 without being applied to older programs", () => {

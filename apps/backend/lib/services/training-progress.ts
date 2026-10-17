@@ -2,7 +2,9 @@ import { orderedStudentResultPage } from "../student-list-order";
 import { monitoredStudentResultWhere, studentMonitoringSql } from "../student-monitoring-scope";
 import { loadProgramCurriculum } from "./program-curriculum";
 import { loadEquivalentCourseIds } from "./course-equivalence";
-import { isConditionalCourse, normalizeProgramCourseCode, normalizeCourseName } from "../academic-course-rules";
+import { loadSourceCreditRecognitions } from "./source-credit-recognition";
+import { canonicalPlanCourseSnapshots } from "./plan-course-snapshot";
+import { isConditionalCourse, normalizeProgramCourseCode } from "../academic-course-rules";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import crypto from "crypto";
@@ -66,7 +68,8 @@ interface ProgressEvaluation {
 }
 
 interface PassingEvidence {
-  offeringId: string;
+  offeringId: string | null;
+  recognition?: { sourceRecordId: string; decisionId: string };
   studentId: string;
   courseId: string;
   academicYear: string;
@@ -496,6 +499,7 @@ async function loadPassingEvidence(
   programCode: string,
   assessmentYear: string,
   assessmentOrder: number,
+  includeUndatedConditional = false,
 ): Promise<Map<string, Map<string, PassingEvidence>>> {
   if (studentIds.length === 0) return new Map();
 
@@ -508,7 +512,12 @@ async function loadPassingEvidence(
     JOIN academic_years y ON y.id = t.academic_year_id
     WHERE o.student_id = ANY(${studentIds}::uuid[])
       AND o.s_program_code = ${programCode}
-      AND g.is_pass = true AND g.score_status = 'graded' AND g.not_score = false
+      AND (
+        (UPPER(COALESCE(g.special_code, g.letter_code, '')) = 'VT'
+          AND lower(trim(COALESCE(g.source_payload->>'IsPass', g.source_payload->>'isPass', ''))) IN ('x', 'true', '1', 'yes'))
+        OR (UPPER(COALESCE(g.special_code, g.letter_code, '')) <> 'VT'
+          AND g.is_pass = true AND g.score_status = 'graded' AND g.not_score = false)
+      )
       AND (y.s_year_code < ${assessmentYear} OR (y.s_year_code = ${assessmentYear} AND t.s_term_order <= ${assessmentOrder}))
     ORDER BY o.student_id, o.course_id, y.s_year_code DESC, t.s_term_order DESC, o.id DESC
   `;
@@ -532,6 +541,23 @@ async function loadPassingEvidence(
       termOrder: Number(r.s_term_order),
       scoreStatus: r.score_status,
     });
+    }
+  }
+  const recognition = await loadSourceCreditRecognitions(studentIds, programCode, { academicYear: assessmentYear, termCode: `HK${String(assessmentOrder).padStart(2, "0")}`, termOrder: assessmentOrder }, { includeUndatedConditional });
+  if ([...recognition.values()].some(source => source.attempts.length)) {
+    const catalog = await prisma.course.findMany({ where: { deletedAt: null }, select: { id: true, sCourseCode: true } });
+    for (const [studentId, source] of recognition) {
+      const byCourse = evidence.get(studentId) ?? new Map<string, PassingEvidence>();
+      for (const attempt of source.attempts) {
+        const course = catalog.find(c => normalizeProgramCourseCode(c.sCourseCode, programCode) === normalizeProgramCourseCode(attempt.courseCode, programCode));
+        if (!course) continue;
+        for (const courseId of equivalentCourseIds.get(course.id) ?? [course.id]) {
+          if (!byCourse.has(courseId)) byCourse.set(courseId, { offeringId: null, studentId, courseId: course.id,
+            academicYear: attempt.academicYear, termCode: attempt.termCode,
+            termOrder: Number(attempt.termCode.replace(/\D/g, "")), scoreStatus: "recognized", recognition: attempt.recognition });
+        }
+      }
+      evidence.set(studentId, byCourse);
     }
   }
   return evidence;
@@ -668,9 +694,7 @@ async function validateCompletionCoverage(programId: string, plans: CompletionPl
     for (const course of plan.courses) {
       // Certificate alternatives are independent of academic plan coverage.
       if (isConditionalCourse(course.courseCode, course.courseName)) continue;
-      const candidates = requirements.filter((item) =>
-        normalizeCourseName(item.courseName) === normalizeCourseName(course.courseName) && item.credits === course.credits);
-      const expected = requirementByCourse.get(key(course.courseCode)) ?? (candidates.length === 1 ? candidates[0] : null);
+      const expected = requirementByCourse.get(key(course.courseCode));
       if (!expected) {
         issues.push(`Học phần không thuộc CTĐT nhưng có trong kế hoạch: ${course.courseCode}`);
         continue;
@@ -728,6 +752,10 @@ async function validatePlanForLock(planId: string) {
     const expectedType = normalized.includes("bắt") || normalized === "mandatory" ? "mandatory" : "elective";
     if (course.requirementType !== expectedType) issues.push(`Loại yêu cầu của ${course.sCourseCode} không khớp CTĐT.`);
     if (course.sCredits !== requirement.sCredits) issues.push(`Số tín chỉ của ${course.sCourseCode} không khớp CTĐT.`);
+    const sourceCourse = catalogById.get(course.courseId);
+    if (sourceCourse && (course.sCourseCode !== sourceCourse.sCourseCode || course.sCourseName !== sourceCourse.sCourseName)) {
+      issues.push(`Mã/tên lưu kèm ID học phần ${course.courseId} chưa khớp danh mục ${sourceCourse.sCourseCode}.`);
+    }
     if (course.requirementType === "mandatory" && course.choiceGroupCode) {
       issues.push(`Học phần bắt buộc ${course.sCourseCode} không được gắn nhóm lựa chọn.`);
     }
@@ -804,8 +832,9 @@ export class TrainingProgressService {
     page = 1,
     pageSize = 20,
     scope: Prisma.TrainingProgressPlanWhereInput = {},
+    includeArchived = false,
   ) {
-    const where: Prisma.TrainingProgressPlanWhereInput = { AND: [scope], status: { not: "archived" } };
+    const where: Prisma.TrainingProgressPlanWhereInput = { AND: [scope], ...(includeArchived ? {} : { status: { not: "archived" } }) };
     if (cohortId) where.cohortId = cohortId;
     if (trainingProgramId) where.trainingProgramId = trainingProgramId;
     if (termId) where.academicTermId = termId;
@@ -997,8 +1026,10 @@ export class TrainingProgressService {
         },
       });
       if (data.courseIds?.length) {
+        const catalog = await tx.course.findMany({ where: { id: { in: data.courseIds.map(course => course.courseId) }, deletedAt: null }, select: { id: true, sCourseCode: true, sCourseName: true } });
+        const snapshots = canonicalPlanCourseSnapshots(data.courseIds, catalog);
         await tx.trainingProgressPlanCourse.createMany({
-          data: data.courseIds.map((course) => ({
+          data: snapshots.map((course) => ({
             planId: created.id,
             courseId: course.courseId,
             sCourseCode: course.courseCode || "",
@@ -1210,9 +1241,11 @@ export class TrainingProgressService {
       });
       if (!updated.count) throw new ApiError("Draft plan not found", "NOT_FOUND", 404);
       if (data.courseIds) {
+        const catalog = data.courseIds.length ? await tx.course.findMany({ where: { id: { in: data.courseIds.map(course => course.courseId) }, deletedAt: null }, select: { id: true, sCourseCode: true, sCourseName: true } }) : [];
+        const snapshots = canonicalPlanCourseSnapshots(data.courseIds, catalog);
         await tx.trainingProgressPlanCourse.deleteMany({ where: { planId: id } });
         if (data.courseIds.length > 0) await tx.trainingProgressPlanCourse.createMany({
-          data: data.courseIds.map((c) => ({
+          data: snapshots.map((c) => ({
             planId: id,
             courseId: c.courseId,
             sCourseCode: c.courseCode || "",
@@ -2151,10 +2184,14 @@ export class TrainingProgressService {
     trainingProgramId: string;
     assessmentAcademicTermId: string;
     evaluationMode?: string;
+    /** Internal maintenance: persist an explicit review result, never a pass,
+     * for a previously published scope with unresolved plan-code mappings. */
+    recordConfigurationReview?: boolean;
   }) {
     const mode = data.evaluationMode === "graduation_forecast" ? "graduation_forecast" : "standard";
     const preview = await this.previewCompletionRun({ ...data, evaluationMode: mode });
-    if (!preview.canRun) {
+    const canRecordReview = data.recordConfigurationReview === true && preview.blockers.length > 0 && preview.blockers.every(blocker => blocker.code === "PROGRAM_COVERAGE_INVALID");
+    if (!preview.canRun && !canRecordReview) {
       throw new ApiError(preview.blockers[0]?.message || "Dữ liệu chưa đủ để chạy đánh giá tiến độ.", "COMPLETION_PREVIEW_BLOCKED", 422);
     }
 
@@ -2190,23 +2227,24 @@ export class TrainingProgressService {
     const students = await loadCalcStudents(program.sProgramCode, data.cohortId, data.assessmentAcademicTermId);
     const studentIds = students.map((s) => s.id);
 
-    // Load passing evidence
-    const evidence = await loadPassingEvidence(studentIds, program.sProgramCode, assessmentYear, assessmentOrder);
+    const currentTerm = await prisma.academicTerm.findFirst({
+      where: { id: data.assessmentAcademicTermId, deletedAt: null },
+      orderBy: { updatedAt: "desc" },
+    });
+    // Undated M certificates belong to a current source view, never the past.
+    const evidence = await loadPassingEvidence(studentIds, program.sProgramCode, assessmentYear, assessmentOrder, currentTerm?.isCurrent === true);
 
     // Load cumulative GPAs
     const gpas = await loadCumulativeGPAs(studentIds, program.sProgramCode, assessmentYear, assessmentOrder);
 
-    const currentTerm = await prisma.academicTerm.findFirst({
-      where: { isCurrent: true, deletedAt: null },
-      orderBy: { updatedAt: "desc" },
-    });
     const currentRegistrations = currentTerm
       ? await loadCurrentTermRegistrations(studentIds, currentTerm.id, program.sProgramCode)
       : new Map<string, Set<string>>();
 
     // Create snapshot hash
     const capturedAt = new Date();
-    const snapshotData = { capturedAt, plans: duePlans.map((p) => p.id), studentCount: students.length, coverage };
+    const snapshotData = { calculationVersion: "completion-source-v2", capturedAt, plans: duePlans.map((p) => p.id), studentCount: students.length, coverage,
+      recognizedCredits: [...evidence].flatMap(([studentId, courses]) => [...courses].filter(([, value]) => value.recognition).map(([courseId, value]) => ({ studentId, courseId, ...value.recognition }))) };
     const snapshotJSON = JSON.stringify(snapshotData);
     const snapshotHash = crypto.createHash("sha256").update(snapshotJSON).digest("hex");
 
@@ -2312,7 +2350,13 @@ export class TrainingProgressService {
       let programCompletionStatus: string;
       let dataErrorReason: string | null = null;
 
-      if (student.dataError) {
+      if (!coverage.valid) {
+        scheduleStatus = "data_error";
+        programCompletionStatus = "cannot_determine";
+        dataErrorReason = "program_coverage_mapping_review";
+        dataErrors++;
+        cannotDetermine++;
+      } else if (student.dataError) {
         scheduleStatus = "data_error";
         programCompletionStatus = "cannot_determine";
         dataErrorReason = "student_class_or_cohort_missing";

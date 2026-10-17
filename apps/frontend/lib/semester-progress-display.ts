@@ -11,11 +11,11 @@ export function semesterProgressDisplay(semester: StudentProgressSemesterItem) {
     .reduce((sum, course) => sum + course.credits, 0);
   const remainingCredits = Math.max(0, semester.remainingCredits ?? 0, plannedCredits - semester.completedCredits, missingMandatoryCredits);
   const isCompleted = semester.plannedCredits !== null && semester.status !== "UNKNOWN" && semester.status !== "INCOMPLETE" && semester.courses.length > 0 && remainingCredits === 0;
-  const label = semester.status === "UNKNOWN" ? "Cần đối soát"
+  const label = semester.status === "UNKNOWN" ? "Chưa thể kết luận"
     : isCompleted ? (semester.statusLabel || "Đạt kỳ")
     : missingMandatoryCredits > 0 ? "Nợ môn bắt buộc"
     : remainingCredits > 0 ? `Thiếu ${remainingCredits} TC tự chọn`
-    : "Cần đối soát";
+    : "Chưa thể kết luận";
   return { plannedCredits, plannedCreditsLabel, remainingCredits, isCompleted, label };
 }
 

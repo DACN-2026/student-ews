@@ -316,7 +316,7 @@ export default function Sidebar({ collapsed, onToggle, onCloseMobile }: SidebarP
               <span className="font-medium text-[11px]">Dữ liệu theo quyền được cấp</span>
             </div>
             <TextLabel className="text-[10px] font-mono">
-              RBAC
+              Phân quyền
             </TextLabel>
           </div>
         ) : (

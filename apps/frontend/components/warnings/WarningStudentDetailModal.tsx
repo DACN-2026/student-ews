@@ -11,7 +11,7 @@ import type { AdditionalRequirement, Forecast, StudentGrade, StudentInfo } from 
 const ForecastDetail = dynamic(() => import("@/components/graduation/ForecastDetail"), { loading: () => <LoadingState variant="detail" /> });
 const StudentProgressDetail = dynamic(() => import("@/components/training-progress/StudentProgressDetail"), { loading: () => <LoadingState variant="detail" /> });
 type GraduationDetail = { student: StudentInfo & { reasons?: { code: string; result: string; message: string }[] }; forecast: Forecast; grades?: StudentGrade[]; requirements?: AdditionalRequirement[] };
-export type WarningStudentDetailTarget = { kind: "graduation" | "progress"; evaluationId?: string };
+export type WarningStudentDetailTarget = { kind: "graduation" | "progress"; evaluationId?: string; warningResultId?: string; periodLabel?: string };
 
 export default function WarningStudentDetailModal({ target, student, onClose }: {
   target: WarningStudentDetailTarget;
@@ -21,6 +21,7 @@ export default function WarningStudentDetailModal({ target, student, onClose }: 
   const [detail, setDetail] = useState<GraduationDetail | null>(null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
+  const [progressView, setProgressView] = useState<"assessment" | "current">("assessment");
   useEffect(() => {
     if (target.kind !== "graduation" || !target.evaluationId) return;
     const controller = new AbortController();
@@ -42,7 +43,10 @@ export default function WarningStudentDetailModal({ target, student, onClose }: 
     description={<div className="flex flex-wrap gap-x-2 gap-y-1"><strong className="font-mono">{student.studentCode}</strong><span>• Lớp: {student.classCode || "—"}</span><span>• CTĐT: {student.programCode || "—"}</span>{detail?.student.assessmentAcademicYear && <span>• Mốc xét tốt nghiệp: {detail.student.assessmentTermCode} · {detail.student.assessmentAcademicYear}</span>}</div>}
     footer={<button type="button" onClick={onClose} className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-600">Đóng</button>}
   >
-    {target.kind === "progress" ? <StudentProgressDetail studentId={student.id} showStudentHeader={false} />
+    {target.kind === "progress" ? <div className="space-y-4">
+      {target.warningResultId && <div className="flex flex-wrap items-center gap-2 text-xs" aria-label="Mốc đối chiếu tiến độ"><button type="button" aria-pressed={progressView === "assessment"} onClick={() => setProgressView("assessment")} className="rounded-lg border border-slate-300 px-3 py-2 font-semibold aria-pressed:bg-slate-900 aria-pressed:text-white focus-visible:outline-2 focus-visible:outline-lime-600">Kỳ cảnh báo{target.periodLabel ? `: ${target.periodLabel}` : ""}</button><button type="button" aria-pressed={progressView === "current"} onClick={() => setProgressView("current")} className="rounded-lg border border-slate-300 px-3 py-2 font-semibold aria-pressed:bg-slate-900 aria-pressed:text-white focus-visible:outline-2 focus-visible:outline-lime-600">Tiến độ hiện tại</button></div>}
+      <StudentProgressDetail key={`${student.id}:${progressView}:${target.warningResultId || ""}`} studentId={student.id} warningResultId={progressView === "assessment" ? target.warningResultId : undefined} showStudentHeader={false} />
+    </div>
       : !target.evaluationId ? <p className="text-sm text-slate-600">Sinh viên chưa có kết quả Dự kiến tốt nghiệp để xem chi tiết.</p>
       : error ? <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><p>{error}</p><button type="button" onClick={() => { setError(""); setAttempt((value) => value + 1); }} className="mt-2 font-semibold underline cursor-pointer">Thử lại</button></div>
       : !detail ? <LoadingState variant="detail" label="Đang tải chi tiết Dự kiến tốt nghiệp…" />

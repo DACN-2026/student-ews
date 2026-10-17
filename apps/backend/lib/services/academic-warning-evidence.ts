@@ -54,12 +54,12 @@ export class AcademicWarningEvidenceService {
     const recordedProgress = object(capability.trainingProgress);
     const recordedDebt = object(capability.accumulatedDebtCreditCalculation);
     const recordedFailed = object(capability.failedCreditCalculation);
-    const context = { academicYear: year.sYearCode, termCode: term.sTermCode, termOrder: term.sTermOrder };
+    const context = { academicYear: year.sYearCode, termCode: term.sTermCode, termOrder: term.sTermOrder, programCode: result.sProgramCode || undefined, cohortId: run.cohortId };
     const reads = await Promise.allSettled([
       StudentTrainingProgressService.getStudentTrainingProgress(result.studentId, null, context),
       loadAcademicDebt([result.studentId], run.trainingProgramId, term.id),
       prisma.studentTermSummary.findFirst({ where: { studentId: result.studentId, academicTermId: term.id, sProgramCode: result.sProgramCode || "" } }),
-      prisma.studentCourseOffering.findMany({ where: { studentId: result.studentId, academicTermId: term.id }, orderBy: { sCurriculumId: "asc" } }),
+      prisma.studentCourseOffering.findMany({ where: { studentId: result.studentId, academicTermId: term.id, sProgramCode: result.sProgramCode || "" }, orderBy: { sCurriculumId: "asc" } }),
       prisma.graduationEvaluationStudent.findFirst({ where: { studentId: result.studentId, sProgramCode: result.sProgramCode }, orderBy: { evaluatedAt: "desc" } }),
     ] as const);
     const progress = reads[0].status === "fulfilled" ? reads[0].value : null;
@@ -134,6 +134,7 @@ export class AcademicWarningEvidenceService {
           const grade = gradesById.get(offering.id);
           const outcome = grade ? courseOutcome({ ...grade, score10: evidenceNumber(grade.score10), score4: evidenceNumber(grade.score4) }) : "unknown";
           return { id: offering.id, courseCode: offering.sCurriculumId, courseName: offering.sCourseName, credits: offering.sCredits, score4: evidenceNumber(grade?.score4), score10: evidenceNumber(grade?.score10), letter: grade?.specialCode || grade?.letterCode || null,
+            isPass: outcome === "passed" ? true : outcome === "failed" ? false : null,
             status: grade?.specialCode?.trim().toUpperCase() === "VT" ? "ABSENT" : outcome === "passed" ? "PASSED" : outcome === "failed" ? "FAILED" : outcome === "pending" ? "PENDING" : "UNKNOWN", excludedFromGpa: grade?.notComputeAverageScore ?? false };
         }) },
       progress: progress && sameProgram ? { latestSemester: progress.scheduleProgress.latestCompletedSemester, expectedCredits: progress.scheduleProgress.expectedCreditsToDate, earnedCredits: progress.scheduleProgress.earnedCreditsToDate,

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { buildAcademicTermLinks, compareAcademicTerms } from "../academic-terms";
-import { courseOutcome, isConditionalCourse, normalizeProgramCourseCode } from "../academic-course-rules";
+import { courseOutcome, sourcePassOutcome, isConditionalCourse, normalizeProgramCourseCode } from "../academic-course-rules";
 import { EMPTY_EARLY_WARNING_SOURCES, type EarlyWarningSources } from "./early-warning-signals";
 import type { AcademicDebtCalculation } from "./academic-debt";
 import type { AssessmentTermCourseAttempt } from "./academic-warning-capabilities";
@@ -9,7 +9,7 @@ export function assessmentTermExamAbsences(attempts: AssessmentTermCourseAttempt
   const byOffering = new Map(attempts.map(attempt => [attempt.offeringId, attempt]));
   return [...byOffering.values()].filter(attempt => attempt.specialCode?.trim().toUpperCase() === "VT" && Number.isFinite(attempt.credits) && attempt.credits >= 0)
     .map(attempt => ({ offeringId: attempt.offeringId, courseCode: attempt.courseCode || "", courseName: attempt.courseName || "", credits: attempt.credits,
-      conditional: isConditionalCourse(attempt.courseCode, attempt.courseName) }));
+      conditional: isConditionalCourse(attempt.courseCode, attempt.courseName), isPass: attempt.isPass }));
 }
 
 export function verifiedRepeatedFailureSource(source: EarlyWarningSources | undefined, debt: AcademicDebtCalculation | undefined): EarlyWarningSources | undefined {
@@ -60,10 +60,9 @@ export async function loadEarlyWarningSources(studentIds: string[], programCode:
       if (offering.academicTermId === assessmentTermId) {
         const absences = absencesByStudent.get(offering.studentId) || [];
         absences.push({ offeringId: offering.id, courseCode: offering.sCurriculumId, courseName: offering.sCourseName, credits: offering.sCredits,
-          conditional: isConditionalCourse(offering.sCurriculumId, offering.sCourseName) });
+          conditional: isConditionalCourse(offering.sCurriculumId, offering.sCourseName), isPass: sourcePassOutcome(grade.sourcePayload) });
         absencesByStudent.set(offering.studentId, absences);
       }
-      continue;
     }
     if (isConditionalCourse(offering.sCurriculumId, offering.sCourseName)) continue;
     const outcome = courseOutcome({ ...grade, score10: numeric(grade.score10), score4: numeric(grade.score4) });

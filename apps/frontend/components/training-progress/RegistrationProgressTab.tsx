@@ -35,6 +35,7 @@ export default function RegistrationProgressTab() {
   const [runs, setRuns] = useState<RegistrationRun[]>([]);
   const [programs, setPrograms] = useState<ProgramOption[]>([]);
   const [years, setYears] = useState<AcademicYearOption[]>([]);
+  const [catalogsReady, setCatalogsReady] = useState(false);
 
   // Filters
   const [selectedTermId, setSelectedTermId] = useState<string>("");
@@ -124,15 +125,16 @@ export default function RegistrationProgressTab() {
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      void loadCatalogs().catch(() => setError("Không thể tải danh mục đào tạo."));
+      void loadCatalogs().catch(() => setError("Không thể tải danh mục đào tạo.")).finally(() => setCatalogsReady(true));
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [loadCatalogs]);
 
   useEffect(() => {
+    if (!catalogsReady) return;
     const timeout = window.setTimeout(() => void loadData(), 0);
     return () => window.clearTimeout(timeout);
-  }, [loadData]);
+  }, [loadData, catalogsReady]);
 
   // Available Terms flatten list
   const availableTerms = useMemo(() => {
@@ -394,7 +396,7 @@ export default function RegistrationProgressTab() {
           <Inbox size={40} className="mx-auto text-slate-300" />
           <h3 className="mt-3 text-sm font-bold text-slate-700">Chưa có kế hoạch đang áp dụng cho học kỳ này</h3>
           <p className="mt-1 text-xs text-slate-400">
-            Hãy chọn học kỳ khác hoặc khóa và đưa một phiên bản kế hoạch vào áp dụng tại phân hệ Đào tạo.
+            Chọn học kỳ khác. Nếu cần lập kế hoạch cho kỳ này, vào mục Đào tạo để tạo và áp dụng kế hoạch cho khóa tương ứng.
           </p>
         </div>
       ) : (

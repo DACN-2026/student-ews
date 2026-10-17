@@ -330,6 +330,9 @@ export interface StudentProgressSemesterItem {
 }
 
 export interface StudentTrainingProgressData {
+  assessmentContext?: { academicYear: string; termCode: string; termOrder: number; boundary: "END_OF_TERM" | "BEFORE_TERM"; programCode: string };
+  reconciliation?: { status: "READY" | "REVIEW_REQUIRED"; issues: Array<{ code: string; message: string; courseCodes: string[] }>;
+    recognizedCourses: Array<{ courseCode: string; credits: number; academicYear: string; termCode: string; kind?: "UNDATED_CERTIFICATE" }> };
   student: {
     id: string;
     studentCode: string;
@@ -342,6 +345,7 @@ export interface StudentTrainingProgressData {
     programCode?: string | null;
     isSuspended?: boolean;
     historicalOnly?: boolean;
+    isInClass?: boolean;
     historicalReason?: "STUDY_SUSPENSION" | "LEFT_CLASS";
     historyCutoff?: string;
     suspension?: { decisionNumber: string; fromYear: string; fromTerm: number } | null;
@@ -410,6 +414,7 @@ export interface StudentTrainingProgressData {
   };
   semesters: StudentProgressSemesterItem[];
   courseStatus?: {
+    pendingRegistrations?: Array<{ courseCode: string; courseName?: string | null; credits?: number | null; academicYear?: string | null; termCode?: string | null }>;
     passed: StudentProgressCourseItem[];
     failed: StudentProgressCourseItem[];
     noScore: StudentProgressCourseItem[];

@@ -14,7 +14,11 @@ async function main() {
   assert.equal((await request(frontend, "/login")).status, 200, "login page");
   const dashboard = await request(frontend, "/dashboard");
   assert.equal(dashboard.status, 307, "anonymous dashboard redirects");
-  assert.equal(new URL(dashboard.headers.get("location"), frontend).pathname, "/login");
+  const renewal = new URL(dashboard.headers.get("location"), frontend);
+  assert.equal(renewal.pathname, "/renew");
+  assert.equal(renewal.searchParams.get("next"), "/dashboard");
+  assert.equal((await request(frontend, `${renewal.pathname}${renewal.search}`)).status, 200, "renewal page can recover a refresh-cookie session");
+  assert.equal((await request(frontend, "/api/v1/auth/refresh", { method: "POST", headers: { origin, "content-type": "application/json" }, body: "{}" })).status, 400, "missing refresh token is rejected");
 
   for (const base of [backend, frontend]) {
     const health = await request(base, "/api/v1/healthz", {
@@ -39,8 +43,17 @@ async function main() {
   const invalidSession = await request(frontend, "/dashboard", {
     headers: { cookie: "sms_access_token=invalid" },
   });
-  assert.equal(invalidSession.status, 307, "forged cookie cannot open the dashboard");
-  assert.equal(new URL(invalidSession.headers.get("location"), frontend).pathname, "/login");
+  if (invalidSession.status === 307) {
+    assert.equal(new URL(invalidSession.headers.get("location"), frontend).pathname, "/renew");
+  } else {
+    // An async layout can start streaming before auth finishes. Next.js then
+    // sends the redirect as a refresh meta tag with HTTP 200.
+    assert.equal(invalidSession.status, 200);
+    const html = await invalidSession.text();
+    const target = html.match(/<meta[^>]+id="__next-page-redirect"[^>]+content="\d+;url=([^"]+)"/)?.[1];
+    assert.ok(target, "forged cookie must produce a streamed redirect");
+    assert.equal(new URL(target.replaceAll("&amp;", "&"), frontend).pathname, "/renew");
+  }
 
   // No refresh cookie is sent: this checks cookie forwarding without revoking a session.
   const logout = await request(frontend, "/api/v1/auth/logout", { method: "POST", headers: { origin } });

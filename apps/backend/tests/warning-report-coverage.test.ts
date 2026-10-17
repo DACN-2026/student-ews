@@ -118,6 +118,9 @@ test("unassessed list includes both missing results and saved insufficient resul
       assessmentStatus: "unassessed", academicTermId: "term", search: "SV4",
     }, scope);
     assert.equal(frozen.items[0].assessmentCategory, "APPROVED_LEAVE");
+    assert.equal(frozen.items[0].presentationState, "NOT_APPLICABLE");
+    assert.equal(frozen.items[0].dataStatus, "NOT_APPLICABLE");
+    assert.equal(frozen.items[0].assessed, false);
     assert.equal(frozen.items[0].hasPersistedResult, false);
     assert.equal(frozen.counts.evaluated, 0);
     assert.equal(frozen.evaluationState.excludedStandingCount, 1);

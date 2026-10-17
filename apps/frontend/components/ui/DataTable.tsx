@@ -93,8 +93,13 @@ export default function DataTable<T extends Record<string, ApiData>>({
                   <tr
                     key={key}
                     onClick={() => { if (!loading) onRowClick?.(record); }}
+                    tabIndex={onRowClick && !loading ? 0 : undefined}
+                    onKeyDown={onRowClick ? (event) => {
+                      if (event.target !== event.currentTarget || loading) return;
+                      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onRowClick(record); }
+                    } : undefined}
                     className={`hover:bg-slate-50/80 transition-colors ${
-                      onRowClick ? "cursor-pointer" : ""
+                      onRowClick ? "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-lime-700" : ""
                     } ${extraClass}`}
                   >
                     {columns.map((col) => {

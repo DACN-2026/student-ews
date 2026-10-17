@@ -1,0 +1,974 @@
+{
+  "checkedAt": "2026-10-17T02:19:02.428Z",
+  "applied": true,
+  "engineVersion": "academic-warning-qd600-article18-and-progress-v22",
+  "sourceRecordsModified": false,
+  "preservedOriginalPolicies": true,
+  "plan": [
+    {
+      "id": "0e2e09c9-8a52-4ef6-850f-d6ed83820e7a",
+      "cohort_id": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "training_program_id": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "assessment_academic_term_id": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "a6ab8b3a-9378-4a4f-bbac-8c7e4c8b5026",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+      "assessment_academic_term_id": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "e08174ec-a3e1-4742-b4d3-caa8a739c9c0",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "assessment_academic_term_id": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "9c3e26d5-8028-409b-a6cd-319d87818ddf",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "assessment_academic_term_id": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "88cb3ef3-4bf7-4b76-b704-ef2440bbe9b2",
+      "cohort_id": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+      "training_program_id": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+      "assessment_academic_term_id": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "5fab80a3-e544-4c5b-8b9d-4880815231f5",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "assessment_academic_term_id": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "f06dd514-d28b-4bfa-b13f-56a7812a3c69",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "assessment_academic_term_id": "36a40276-6f7e-4cef-9578-3a50208ac8d2",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "e8648ba5-f0c9-4f89-bdf7-28615a0f44f0",
+      "cohort_id": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "training_program_id": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "assessment_academic_term_id": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "a1c74b79-370c-45cf-86b6-074a3d4b0c70",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+      "assessment_academic_term_id": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "0b880671-09ca-486d-b5de-d6bf27d77e79",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "assessment_academic_term_id": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "8c4cf8c0-a4b9-40b8-be62-8752cb1cb9fe",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "assessment_academic_term_id": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "ee83c563-373b-42dd-aa54-373b41080b56",
+      "cohort_id": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+      "training_program_id": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+      "assessment_academic_term_id": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "a7a01e5a-04f4-4b2d-882d-ffa74dbfd3a8",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "assessment_academic_term_id": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "8b525eb9-4685-412f-abbe-577831058081",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "assessment_academic_term_id": "6969e02c-d849-4542-adb2-0ea51e13d98d",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "b8035d26-6e63-4eaf-8f28-47bc2fdc88cb",
+      "cohort_id": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "training_program_id": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "assessment_academic_term_id": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "fd82ca40-57a3-45c4-96ef-816c700291b5",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+      "assessment_academic_term_id": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "d1548a69-6747-4d78-a89c-4822df98895a",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "assessment_academic_term_id": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "91136672-cf4f-4d80-b007-4a910df4897b",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "assessment_academic_term_id": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "7493dca7-8889-4028-8fe3-7351480b2950",
+      "cohort_id": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+      "training_program_id": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+      "assessment_academic_term_id": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "7c7846a2-0a33-4bd6-b79e-f6750769e800",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "assessment_academic_term_id": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "7fc126f4-38ae-4c54-911e-4dbe4a1b757a",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "assessment_academic_term_id": "a3529476-afb8-44d0-980b-40c5b5cbb74a",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2023-2024",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "e4e898a0-c45f-40f7-86be-eca6724710ae",
+      "cohort_id": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "training_program_id": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "assessment_academic_term_id": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "8b188359-b7fd-42fe-b4c2-b3eda3db915b",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+      "assessment_academic_term_id": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "c6db061a-d78b-4c2f-b5a1-f5e31f51fd20",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "assessment_academic_term_id": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "a2346d57-3519-4d6e-a05e-c4c8cda7806c",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "assessment_academic_term_id": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "a783a2b4-9b37-425d-991e-f8a5edd1c781",
+      "cohort_id": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+      "training_program_id": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+      "assessment_academic_term_id": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "d565a3a9-471e-44fe-a88d-22a0a1fc7a96",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "assessment_academic_term_id": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "99a59550-d346-44e2-ac40-0acafbd22af1",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "assessment_academic_term_id": "aefffeb9-82da-49c6-b5f2-5bb5ec3e8e41",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "ab09fbe9-871c-43cf-9f95-ebf91d4f8042",
+      "cohort_id": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "training_program_id": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "assessment_academic_term_id": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "8d67e57b-16e9-4eb5-8a1e-c2faf9283962",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+      "assessment_academic_term_id": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "7426630d-bac9-43dc-b9b1-a776c9772c38",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "assessment_academic_term_id": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "11418e86-4732-4eef-bc98-b4f1d6c03cbe",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "assessment_academic_term_id": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "c7d9b2c2-6a97-4302-ac7f-e80740a205bd",
+      "cohort_id": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+      "training_program_id": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+      "assessment_academic_term_id": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "f262e8fb-2a59-450f-98d4-5ef0cc48fcba",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "assessment_academic_term_id": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "ce98043c-4ee8-496c-bdf7-00d90e4c1730",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "assessment_academic_term_id": "afeb951c-2e8d-4966-932d-6f304fbf7ea3",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "3f1bca56-ce9a-42aa-a553-a68398532c19",
+      "cohort_id": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "training_program_id": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "assessment_academic_term_id": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "06aa8382-cfda-4588-89f4-8a44f5230288",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+      "assessment_academic_term_id": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "4cef460e-196f-4f7d-8847-02497112f972",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "assessment_academic_term_id": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "7fdd887d-08c7-44bb-b6bf-1edfd0a8d2cc",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "assessment_academic_term_id": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "c4fc3d31-7f28-4b1c-b706-3d261d07dc88",
+      "cohort_id": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+      "training_program_id": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+      "assessment_academic_term_id": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "10899f92-6d54-486d-9532-d487ef8e325a",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "assessment_academic_term_id": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "24b2e2f1-b994-4ae9-8dd8-0e0bb316147f",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "assessment_academic_term_id": "b2407fa2-60e5-45c4-844c-15d433799e9b",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2022-2023",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "bff658df-b0d3-4520-985e-0b3627c0b0ec",
+      "cohort_id": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "training_program_id": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "assessment_academic_term_id": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "9eb3bfaa-7d75-41da-9a33-ae215b74de19",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+      "assessment_academic_term_id": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "9b9c091f-99d2-4026-95ad-d48f21c06e66",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "assessment_academic_term_id": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "bf169b95-c1b5-4b2e-9ce2-750f317d832f",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "assessment_academic_term_id": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "78ac8deb-0256-42e9-90d5-95e7498ffcc6",
+      "cohort_id": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+      "training_program_id": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+      "assessment_academic_term_id": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "b09e0d12-3f98-4842-b920-2442be073181",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "assessment_academic_term_id": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "076809fe-f4a6-4c98-9ad3-1a4ea15ddead",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "assessment_academic_term_id": "c598c849-7c38-42e3-a75a-56e8baa85e6c",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2024-2025",
+      "term": "HK01",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "01636a06-267b-40b6-b7c0-46c7cc77544a",
+      "cohort_id": "670f4ae0-3e49-4cc8-9832-f09cf2b35cd1",
+      "training_program_id": "1fb2a845-014b-43a1-8361-2c76333bd3d7",
+      "assessment_academic_term_id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "c151ddd4-0b79-44b6-b456-6f58e4307136",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "3c6368b5-e0b0-4352-a10c-e14d6da9a9e8",
+      "assessment_academic_term_id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "2081d87d-765a-4172-b83a-9bb55497394b",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "6fa3b8a3-6d3e-4827-be6d-de0d4a67e66c",
+      "assessment_academic_term_id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "856622e7-7323-4605-b25a-4f5f21bc5a7d",
+      "cohort_id": "ad30797e-cd42-4409-ba14-0b4577eca21d",
+      "training_program_id": "bf6cd5e1-eac7-4202-bb8e-cad0ea9ac564",
+      "assessment_academic_term_id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "aae3a202-190b-40cd-9d33-864812f949e6",
+      "cohort_id": "f372477f-78e4-40e6-a5a9-0da3ce1b009c",
+      "training_program_id": "dbbaaca7-073c-48f0-8aba-44d97452c3a0",
+      "assessment_academic_term_id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "1300c189-ace6-4358-b9f4-81dad0215a09",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "4416e88e-15f9-4c5c-a779-f3cc58c3c80a",
+      "assessment_academic_term_id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "e499c1a9-1cd2-4368-8975-8a9a18fb4e59",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "ee649cf5-622e-4e27-b1e3-aee3c451a8a0",
+      "assessment_academic_term_id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "policy_id": "f7643f7f-b525-4c21-88ce-69d4b0fce46a",
+      "year": "2025-2026",
+      "term": "HK02",
+      "eligible": true,
+      "action": "CREATE_VERSIONED_DERIVED_RESULT_WITH_ORIGINAL_POLICY"
+    },
+    {
+      "id": "5c8c41c8-8a8a-493a-8800-68eb70a23854",
+      "cohort_id": "ff5fd648-e1d0-432c-aa82-dbea3f074151",
+      "training_program_id": "f5e7445f-4113-4d8c-97a3-02d0be3ab40c",
+      "assessment_academic_term_id": "ecb87349-78c9-4605-95f6-5a9d7ba1785f",
+      "policy_id": "4c7432f3-d208-4c12-b511-8b8c7c9b0ddc",
+      "year": "2025-2026",
+      "term": "HK02",
+      "eligible": false,
+      "action": "KEEP_HISTORY_SCOPE_NO_LONGER_CONFIGURED"
+    }
+  ],
+  "results": [
+    {
+      "oldRunId": "0e2e09c9-8a52-4ef6-850f-d6ed83820e7a",
+      "runId": "57773255-ff14-4d3f-8db2-9dd5ecbeef19",
+      "period": "HK01 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "a6ab8b3a-9378-4a4f-bbac-8c7e4c8b5026",
+      "runId": "b6b7c63a-1edc-44fb-9cde-4fb3078a4bfd",
+      "period": "HK01 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "e08174ec-a3e1-4742-b4d3-caa8a739c9c0",
+      "runId": "d5fb5faf-fde9-4197-8175-bcd41bc8546b",
+      "period": "HK01 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "9c3e26d5-8028-409b-a6cd-319d87818ddf",
+      "runId": "e65dd175-ff28-4beb-a9b9-85294579103d",
+      "period": "HK01 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "88cb3ef3-4bf7-4b76-b704-ef2440bbe9b2",
+      "runId": "de8fcfef-fd66-4ea0-8fbd-e316140bdc4b",
+      "period": "HK01 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "5fab80a3-e544-4c5b-8b9d-4880815231f5",
+      "runId": "18d697c7-3a64-49ae-98c3-96060828fbf4",
+      "period": "HK01 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "f06dd514-d28b-4bfa-b13f-56a7812a3c69",
+      "runId": "e991e4c5-3684-4553-a476-eeeca5eee277",
+      "period": "HK01 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "e8648ba5-f0c9-4f89-bdf7-28615a0f44f0",
+      "runId": "e8648ba5-f0c9-4f89-bdf7-28615a0f44f0",
+      "period": "HK02 (2023-2024)",
+      "reused": true
+    },
+    {
+      "oldRunId": "a1c74b79-370c-45cf-86b6-074a3d4b0c70",
+      "runId": "d2d7593e-72e7-4ec4-920e-7e5fc5eca818",
+      "period": "HK02 (2023-2024)",
+      "reused": false
+    },
+    {
+      "oldRunId": "0b880671-09ca-486d-b5de-d6bf27d77e79",
+      "runId": "d05ca91b-628a-4c91-a277-a75511eb0128",
+      "period": "HK02 (2023-2024)",
+      "reused": false
+    },
+    {
+      "oldRunId": "8c4cf8c0-a4b9-40b8-be62-8752cb1cb9fe",
+      "runId": "28aea45f-123a-4d71-bf11-929f48e75af8",
+      "period": "HK02 (2023-2024)",
+      "reused": false
+    },
+    {
+      "oldRunId": "ee83c563-373b-42dd-aa54-373b41080b56",
+      "runId": "ee83c563-373b-42dd-aa54-373b41080b56",
+      "period": "HK02 (2023-2024)",
+      "reused": true
+    },
+    {
+      "oldRunId": "a7a01e5a-04f4-4b2d-882d-ffa74dbfd3a8",
+      "runId": "87bad0aa-db39-494e-b22a-c3184164eb6b",
+      "period": "HK02 (2023-2024)",
+      "reused": false
+    },
+    {
+      "oldRunId": "8b525eb9-4685-412f-abbe-577831058081",
+      "runId": "f3ddbad2-6fe7-46fc-9718-26a0c069f021",
+      "period": "HK02 (2023-2024)",
+      "reused": false
+    },
+    {
+      "oldRunId": "b8035d26-6e63-4eaf-8f28-47bc2fdc88cb",
+      "runId": "b8035d26-6e63-4eaf-8f28-47bc2fdc88cb",
+      "period": "HK01 (2023-2024)",
+      "reused": true
+    },
+    {
+      "oldRunId": "fd82ca40-57a3-45c4-96ef-816c700291b5",
+      "runId": "8ef48814-87b5-48b0-ab60-1eef2b8ede1d",
+      "period": "HK01 (2023-2024)",
+      "reused": false
+    },
+    {
+      "oldRunId": "d1548a69-6747-4d78-a89c-4822df98895a",
+      "runId": "e3816d4f-23ac-443c-bccb-8e453bf7f7c2",
+      "period": "HK01 (2023-2024)",
+      "reused": false
+    },
+    {
+      "oldRunId": "91136672-cf4f-4d80-b007-4a910df4897b",
+      "runId": "8a2b80d9-b1b2-45f7-87ce-bc4f60701a87",
+      "period": "HK01 (2023-2024)",
+      "reused": false
+    },
+    {
+      "oldRunId": "7493dca7-8889-4028-8fe3-7351480b2950",
+      "runId": "7493dca7-8889-4028-8fe3-7351480b2950",
+      "period": "HK01 (2023-2024)",
+      "reused": true
+    },
+    {
+      "oldRunId": "7c7846a2-0a33-4bd6-b79e-f6750769e800",
+      "runId": "0c5a95af-501d-4e12-939e-8f5911bea21b",
+      "period": "HK01 (2023-2024)",
+      "reused": false
+    },
+    {
+      "oldRunId": "7fc126f4-38ae-4c54-911e-4dbe4a1b757a",
+      "runId": "cd5fe1f8-3d8b-4719-9d31-b6a0cdccc4cd",
+      "period": "HK01 (2023-2024)",
+      "reused": false
+    },
+    {
+      "oldRunId": "e4e898a0-c45f-40f7-86be-eca6724710ae",
+      "runId": "238a8cc7-605d-432d-9653-dcd3ffe9e9ff",
+      "period": "HK02 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "8b188359-b7fd-42fe-b4c2-b3eda3db915b",
+      "runId": "b4c4e56b-2ec3-41e0-8e77-7d1777d52221",
+      "period": "HK02 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "c6db061a-d78b-4c2f-b5a1-f5e31f51fd20",
+      "runId": "e02ea6c7-34d9-4e47-87e8-d90d917dd337",
+      "period": "HK02 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "a2346d57-3519-4d6e-a05e-c4c8cda7806c",
+      "runId": "2c66a17a-d07c-4e24-9d2b-ecf04cfffcc3",
+      "period": "HK02 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "a783a2b4-9b37-425d-991e-f8a5edd1c781",
+      "runId": "a783a2b4-9b37-425d-991e-f8a5edd1c781",
+      "period": "HK02 (2024-2025)",
+      "reused": true
+    },
+    {
+      "oldRunId": "d565a3a9-471e-44fe-a88d-22a0a1fc7a96",
+      "runId": "47d1a2b4-4f53-4a9a-9980-a7269786c0c8",
+      "period": "HK02 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "99a59550-d346-44e2-ac40-0acafbd22af1",
+      "runId": "f0368899-5189-46d8-8155-b64635ecf83c",
+      "period": "HK02 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "ab09fbe9-871c-43cf-9f95-ebf91d4f8042",
+      "runId": "ab09fbe9-871c-43cf-9f95-ebf91d4f8042",
+      "period": "HK01 (2022-2023)",
+      "reused": true
+    },
+    {
+      "oldRunId": "8d67e57b-16e9-4eb5-8a1e-c2faf9283962",
+      "runId": "8d67e57b-16e9-4eb5-8a1e-c2faf9283962",
+      "period": "HK01 (2022-2023)",
+      "reused": true
+    },
+    {
+      "oldRunId": "7426630d-bac9-43dc-b9b1-a776c9772c38",
+      "runId": "7426630d-bac9-43dc-b9b1-a776c9772c38",
+      "period": "HK01 (2022-2023)",
+      "reused": true
+    },
+    {
+      "oldRunId": "11418e86-4732-4eef-bc98-b4f1d6c03cbe",
+      "runId": "11418e86-4732-4eef-bc98-b4f1d6c03cbe",
+      "period": "HK01 (2022-2023)",
+      "reused": true
+    },
+    {
+      "oldRunId": "c7d9b2c2-6a97-4302-ac7f-e80740a205bd",
+      "runId": "c7d9b2c2-6a97-4302-ac7f-e80740a205bd",
+      "period": "HK01 (2022-2023)",
+      "reused": true
+    },
+    {
+      "oldRunId": "f262e8fb-2a59-450f-98d4-5ef0cc48fcba",
+      "runId": "f99c4909-8023-4f3b-8bfe-d3ad2a80f12b",
+      "period": "HK01 (2022-2023)",
+      "reused": false
+    },
+    {
+      "oldRunId": "ce98043c-4ee8-496c-bdf7-00d90e4c1730",
+      "runId": "52927aff-ae3c-49b8-a24f-8407eb912d5f",
+      "period": "HK01 (2022-2023)",
+      "reused": false
+    },
+    {
+      "oldRunId": "3f1bca56-ce9a-42aa-a553-a68398532c19",
+      "runId": "3f1bca56-ce9a-42aa-a553-a68398532c19",
+      "period": "HK02 (2022-2023)",
+      "reused": true
+    },
+    {
+      "oldRunId": "06aa8382-cfda-4588-89f4-8a44f5230288",
+      "runId": "06aa8382-cfda-4588-89f4-8a44f5230288",
+      "period": "HK02 (2022-2023)",
+      "reused": true
+    },
+    {
+      "oldRunId": "4cef460e-196f-4f7d-8847-02497112f972",
+      "runId": "4cef460e-196f-4f7d-8847-02497112f972",
+      "period": "HK02 (2022-2023)",
+      "reused": true
+    },
+    {
+      "oldRunId": "7fdd887d-08c7-44bb-b6bf-1edfd0a8d2cc",
+      "runId": "7fdd887d-08c7-44bb-b6bf-1edfd0a8d2cc",
+      "period": "HK02 (2022-2023)",
+      "reused": true
+    },
+    {
+      "oldRunId": "c4fc3d31-7f28-4b1c-b706-3d261d07dc88",
+      "runId": "c4fc3d31-7f28-4b1c-b706-3d261d07dc88",
+      "period": "HK02 (2022-2023)",
+      "reused": true
+    },
+    {
+      "oldRunId": "10899f92-6d54-486d-9532-d487ef8e325a",
+      "runId": "153dab6f-dfdb-459d-ad26-3828be3795c1",
+      "period": "HK02 (2022-2023)",
+      "reused": false
+    },
+    {
+      "oldRunId": "24b2e2f1-b994-4ae9-8dd8-0e0bb316147f",
+      "runId": "c847e4ac-bd06-4fab-917c-66e0b27a7a8e",
+      "period": "HK02 (2022-2023)",
+      "reused": false
+    },
+    {
+      "oldRunId": "bff658df-b0d3-4520-985e-0b3627c0b0ec",
+      "runId": "2ea77901-9cb3-45f1-8923-93bd0d209727",
+      "period": "HK01 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "9eb3bfaa-7d75-41da-9a33-ae215b74de19",
+      "runId": "ec877a03-d89c-45bc-bb5f-7e028314ab3c",
+      "period": "HK01 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "9b9c091f-99d2-4026-95ad-d48f21c06e66",
+      "runId": "faf29f14-c6fc-450f-bfb2-c192cceb34cf",
+      "period": "HK01 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "bf169b95-c1b5-4b2e-9ce2-750f317d832f",
+      "runId": "8d048f2e-6a85-45f7-9d23-7dc21b17eef6",
+      "period": "HK01 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "78ac8deb-0256-42e9-90d5-95e7498ffcc6",
+      "runId": "78ac8deb-0256-42e9-90d5-95e7498ffcc6",
+      "period": "HK01 (2024-2025)",
+      "reused": true
+    },
+    {
+      "oldRunId": "b09e0d12-3f98-4842-b920-2442be073181",
+      "runId": "6c5750a1-bfd4-414f-86dd-bd8eedf946aa",
+      "period": "HK01 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "076809fe-f4a6-4c98-9ad3-1a4ea15ddead",
+      "runId": "ae939774-3ea0-4cfa-8a9a-cee057515ea2",
+      "period": "HK01 (2024-2025)",
+      "reused": false
+    },
+    {
+      "oldRunId": "01636a06-267b-40b6-b7c0-46c7cc77544a",
+      "runId": "148b8686-71e1-4784-b0bc-3aa6918f914a",
+      "period": "HK02 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "c151ddd4-0b79-44b6-b456-6f58e4307136",
+      "runId": "6bd170e7-2ffe-4567-b152-be166b491bbd",
+      "period": "HK02 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "2081d87d-765a-4172-b83a-9bb55497394b",
+      "runId": "483092ff-b7c2-4d26-afcc-fc3c46cb90e2",
+      "period": "HK02 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "856622e7-7323-4605-b25a-4f5f21bc5a7d",
+      "runId": "43077c82-d586-453b-8138-1a83afdce2b8",
+      "period": "HK02 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "aae3a202-190b-40cd-9d33-864812f949e6",
+      "runId": "86e453b0-5c96-4355-ab7b-051af5470644",
+      "period": "HK02 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "1300c189-ace6-4358-b9f4-81dad0215a09",
+      "runId": "e5723bf7-1574-442f-87a7-0a820baa9071",
+      "period": "HK02 (2025-2026)",
+      "reused": false
+    },
+    {
+      "oldRunId": "e499c1a9-1cd2-4368-8975-8a9a18fb4e59",
+      "runId": "2069b85c-9bb1-4907-b2de-7b2bd059b781",
+      "period": "HK02 (2025-2026)",
+      "reused": false
+    }
+  ]
+}

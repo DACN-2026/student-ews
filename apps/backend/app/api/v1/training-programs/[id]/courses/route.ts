@@ -1,3 +1,4 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { TrainingProgramsService } from "@/lib/services/training-programs";
 import { jsonResponse, errorResponse } from "@/lib/utils/api-response";
@@ -7,6 +8,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const access = await requireApiPermission(req);
+    if (!access.authorized) return access.response;
     const { id } = await params;
     const semesterNo = Number(req.nextUrl.searchParams.get("semesterNo") || 0);
     const courses = (await TrainingProgramsService.getProgramCourses(id))
@@ -23,6 +26,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const access = await requireApiPermission(req);
+    if (!access.authorized) return access.response;
     const { id } = await params;
     const body = await req.json();
     if (!body.semesterNo || !body.credits || !body.requirementType) {

@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { ApiError } from "@/lib/utils/api-error";
 import { buildAcademicTermLinks, isConfiguredSummerTermCode } from "@/lib/academic-terms";
 import { sourceGradeStatus } from "../source-grade-status.cjs";
+import { sourcePassOutcome } from "../academic-course-rules";
 
 // ============================================================================
 // Types — matches SWE model.go SourceYear/SourceTerm/SourceGrade
@@ -155,7 +156,7 @@ export class GradesService {
 
   static async list(
     studentId: string,
-    filters: { academicYear?: string; termCode?: string; courseCode?: string } = {},
+    filters: { academicYear?: string; termCode?: string; courseCode?: string; view?: "best" | "attempts" } = {},
   ) {
     const student = await prisma.student.findFirst({
       where: { ...studentIdWhere(studentId), deletedAt: null },
@@ -188,22 +189,7 @@ export class GradesService {
       endDate: term.endDate,
     })));
 
-    const courseCodes = [...new Set(offerings.map((o) => o.sCurriculumId))];
-    let gradedCourseCodes = new Set<string>();
-
-    if (courseCodes.length > 0) {
-      const gradedResult: Array<{ s_curriculum_id: string }> = await prisma.$queryRaw`
-        SELECT DISTINCT o.s_curriculum_id
-        FROM student_course_offerings o
-        JOIN student_course_grades g ON g.offering_id = o.id
-        WHERE o.s_curriculum_id IN (${Prisma.join(courseCodes)})
-          AND (g.score_10 IS NOT NULL OR g.score_4 IS NOT NULL OR g.letter_code IS NOT NULL)
-      `;
-      gradedCourseCodes = new Set(gradedResult.map((r) => r.s_curriculum_id));
-    }
-
     const mapped = offerings
-      .filter((o) => gradedCourseCodes.has(o.sCurriculumId))
       .filter((o) => !o.sCurriculumId.toUpperCase().startsWith("SHCD") && !o.sCourseName.toLowerCase().includes("sinh hoạt công dân"))
       .map((o) => {
         const grade = gradeMap[o.id];
@@ -235,16 +221,23 @@ export class GradesService {
           score4: grade?.score4 != null ? Number(grade.score4) : null,
           letterGrade: grade?.letterCode || null,
           specialCode: grade?.specialCode || null,
-          isPassed: grade?.isPass ?? false,
+          isPassed: grade ? (grade.sourcePayload === undefined ? grade.isPass : sourcePassOutcome(grade.sourcePayload)) : null,
           isGather: grade?.isGather ?? false,
           notScore: grade?.notScore ?? false,
-          scoreStatus: grade?.scoreStatus || "graded",
+          scoreStatus: grade?.scoreStatus || "unknown",
           createdAt: o.createdAt,
         };
       });
 
+    const scoped = mapped.filter(item =>
+      (!filters.academicYear || item.academicYear === filters.academicYear) &&
+      (!filters.termCode || item.termCode === filters.termCode) &&
+      (!filters.courseCode || item.courseCode === filters.courseCode));
+    // A period query is historical evidence. Never replace its F with a pass
+    // from a different term; preserve the offering identity of every attempt.
+    if (filters.view === "attempts" || filters.academicYear || filters.termCode) return scoped;
     const byCode = new Map<string, (typeof mapped)[number]>();
-    for (const item of mapped) {
+    for (const item of scoped) {
       const code = item.courseCode.toUpperCase();
       if (!byCode.has(code)) {
         byCode.set(code, item);
@@ -304,7 +297,7 @@ export class GradesService {
         orderBy: { createdAt: "asc" },
       }),
       prisma.studentCumulativeSummary.findFirst({
-        where: { studentId: student.id },
+        where: { studentId: student.id, sProgramCode: student.sStudyProgramId || "" },
       }),
       prisma.studentConductRecord.findMany({
         where: { studentId: student.id },
@@ -377,11 +370,7 @@ export class GradesService {
         studentScore: record.studentScore != null ? Number(record.studentScore) : null,
         classScore: record.classScore != null ? Number(record.classScore) : null,
         departmentScore: record.departmentScore != null ? Number(record.departmentScore) : null,
-        finalScore: record.lastScore != null
-          ? Number(record.lastScore)
-          : record.studentScore != null
-            ? Number(record.studentScore)
-            : null,
+        finalScore: record.statusId === "1" && !term?.sIsSummer && record.lastScore != null ? Number(record.lastScore) : null,
         statusId: record.statusId,
         updateDay: record.sourceUpdateDay,
         updateStaff: record.sourceUpdateStaff,
@@ -400,6 +389,12 @@ export class GradesService {
         courseCode: grade.sCourseCode,
         courseName: grade.sCourseName,
         credits: grade.sCredits,
+        isPassed: sourcePassOutcome(grade.sourcePayload),
+        recognitionCode: String((grade.sourcePayload as Record<string, unknown>)?.DiemChuyenMien || ""),
+        isRecognized: ["R", "M"].includes(String((grade.sourcePayload as Record<string, unknown>)?.DiemChuyenMien || "").toUpperCase()),
+        scoreStatus: "unknown",
+        academicYear: null,
+        termCode: null,
         reason: grade.reason,
         createdAt: grade.createdAt,
       }));

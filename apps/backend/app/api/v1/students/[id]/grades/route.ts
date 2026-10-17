@@ -15,8 +15,10 @@ export async function GET(
     const academicYear = searchParams.get("academicYear") || undefined;
     const termCode = searchParams.get("termCode") || undefined;
     const courseCode = searchParams.get("courseCode") || undefined;
+    const view = searchParams.get("view") || "best";
+    if (view !== "best" && view !== "attempts") return errorResponse("view must be best or attempts", "INVALID_FILTER", 400);
 
-    const items = await GradesService.list(id, { academicYear, termCode, courseCode });
+    const items = await GradesService.list(id, { academicYear, termCode, courseCode, view });
     return jsonResponse({ items, total: items.length });
   } catch (err) {
     console.error("List grades error:", err);

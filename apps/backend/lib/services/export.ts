@@ -8,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { ReportsService } from "@/lib/services/reports";
 import { classifyConductScore, conductApproval } from "@/lib/services/conduct";
 import { studentIdWhere } from "@/lib/utils/is-uuid";
+import { AcademicWarningsService } from "./academic-warnings";
+import { StudentTrainingProgressService } from "./student-training-progress";
 import type { Prisma } from "@prisma/client";
 
 export const EXPORT_FORMATS = ["xlsx", "pdf"] as const;
@@ -333,25 +335,34 @@ async function progressTable(filters: ReportExportFilters, studentScope: Prisma.
   const periodTermIds = filters.academicYearId
     ? (await prisma.academicTerm.findMany({ where: { academicYearId: filters.academicYearId }, select: { id: true } })).map((item) => item.id)
     : undefined;
-  const periodRunIds = filters.academicTermId || periodTermIds
-    ? (await prisma.trainingProgressCompletionRun.findMany({
+  const runs = await prisma.trainingProgressCompletionRun.findMany({
         where: {
           status: "completed",
-          assessmentAcademicTermId: filters.academicTermId || { in: periodTermIds || [] },
+          evaluationMode: "standard", publicationStatus: "active",
+          ...(filters.academicTermId || periodTermIds ? { assessmentAcademicTermId: filters.academicTermId || { in: periodTermIds || [] } } : {}),
         },
-        select: { id: true },
-      })).map((item) => item.id)
-    : undefined;
+        orderBy: [{ completedAt: "desc" }, { id: "desc" }],
+        select: { id: true, assessmentAcademicTermId: true },
+      });
+  const terms = await prisma.academicTerm.findMany({ where: { id: { in: runs.map(r => r.assessmentAcademicTermId) } } });
+  const years = await prisma.academicYear.findMany({ where: { id: { in: terms.map(t => t.academicYearId) } } });
+  const periods = new Map(terms.map(t => [t.id, { year: years.find(y => y.id === t.academicYearId)?.sYearCode || "", term: t.sTermCode, order: t.sTermOrder }]));
+  runs.sort((a, b) => {
+    const x = periods.get(a.assessmentAcademicTermId), y = periods.get(b.assessmentAcademicTermId);
+    return (y?.year || "").localeCompare(x?.year || "") || (y?.order || 0) - (x?.order || 0);
+  });
+  const rank = new Map(runs.map((r, index) => [r.id, index]));
   const rows = studentIds.length ? await prisma.trainingProgressCompletionStudentResult.findMany({
     where: {
       studentId: { in: studentIds },
       ...(filters.classCode ? { sClassStudentId: filters.classCode } : {}),
       ...(filters.programCode ? { sProgramCode: filters.programCode } : {}),
-      ...(periodRunIds ? { runId: { in: periodRunIds } } : {}),
+      runId: { in: runs.map(r => r.id) },
     },
     orderBy: [{ calculatedAt: "desc" }, { sStudentId: "asc" }],
   }) : [];
   const latest = new Map<string, (typeof rows)[number]>();
+  rows.sort((a, b) => (rank.get(a.runId) ?? Infinity) - (rank.get(b.runId) ?? Infinity));
   for (const row of rows) if (!latest.has(row.studentId)) latest.set(row.studentId, row);
   return {
     title: "BẢNG TỔNG HỢP TIẾN ĐỘ CHƯƠNG TRÌNH ĐÀO TẠO",
@@ -362,6 +373,7 @@ async function progressTable(filters: ReportExportFilters, studentScope: Prisma.
       { header: "Tiến độ", key: "scheduleStatus", width: 20 }, { header: "Hoàn thành CTĐT", key: "completionStatus", width: 20 },
       { header: "Kế hoạch đến hạn", key: "duePlans", width: 18 }, { header: "HP bắt buộc thiếu", key: "missingMandatory", width: 18 },
       { header: "TC tự chọn thiếu", key: "missingElectiveCredits", width: 18 }, { header: "HP chờ điểm", key: "pending", width: 15 },
+      { header: "Kỳ đánh giá", key: "assessmentPeriod", width: 24 },
     ],
     rows: [...latest.values()].sort((a, b) => a.sStudentId.localeCompare(b.sStudentId)).map((row) => ({
       studentCode: row.sStudentId, studentName: row.sStudentName, classCode: row.sClassStudentId || "", programCode: row.sProgramCode || "",
@@ -370,6 +382,7 @@ async function progressTable(filters: ReportExportFilters, studentScope: Prisma.
       missingMandatory: row.missingMandatoryCourses,
       missingElectiveCredits: row.missingElectiveCredits,
       pending: row.pendingResultCourses,
+      assessmentPeriod: (() => { const run = runs.find(r => r.id === row.runId); const period = run ? periods.get(run.assessmentAcademicTermId) : null; return period ? `${period.term} ${period.year}` : "Chưa xác định kỳ"; })(),
     })),
   };
 }
@@ -412,14 +425,15 @@ async function studentProfilePdf(studentId: string, studentScope: Prisma.Student
     where: { AND: [{ ...studentIdWhere(studentId), deletedAt: null }, studentScope] },
   });
   if (!student) return null;
-  const [summaries, conduct, decisions, warnings, actions, progress] = await Promise.all([
+  const [summaries, conduct, decisions, warningOverview, actions, progress] = await Promise.all([
     prisma.studentTermSummary.findMany({ where: { studentId: student.id }, orderBy: { createdAt: "asc" } }),
     prisma.studentConductRecord.findMany({ where: { studentId: student.id }, orderBy: { createdAt: "asc" } }),
     prisma.studentDecision.findMany({ where: { studentId: student.id, deletedAt: null }, orderBy: [{ sSignDate: "desc" }, { createdAt: "desc" }] }),
-    prisma.academicWarningStudentResult.findMany({ where: { studentId: student.id }, orderBy: { createdAt: "desc" }, take: 20 }),
+    AcademicWarningsService.getStudentOverview(student.id),
     prisma.warningAction.findMany({ where: { studentId: student.id }, orderBy: { createdAt: "desc" }, take: 50 }),
-    prisma.trainingProgressCompletionStudentResult.findFirst({ where: { studentId: student.id }, orderBy: { calculatedAt: "desc" } }),
+    StudentTrainingProgressService.getStudentTrainingProgress(student.id),
   ]);
+  const warnings = (warningOverview?.warningHistory || []).filter(item => item.runMode === "OFFICIAL" && !item.isSummer);
   const termIds = [...new Set([...summaries.map((item) => item.academicTermId), ...conduct.map((item) => item.academicTermId), ...decisions.map((item) => item.academicTermId)])];
   const terms = await prisma.$queryRaw<Array<{ id: string; label: string }>>`
     SELECT t.id::text, concat(t.s_term_code, ' ', y.s_year_code) AS label
@@ -444,10 +458,10 @@ async function studentProfilePdf(studentId: string, studentScope: Prisma.Student
     };
     section("1. Kết quả học tập");
     if (!summaries.length) document.font("Noto").fontSize(9).fillColor("#64748b").text("Chưa có dữ liệu học tập.");
-    summaries.forEach((item) => {
+    [...summaries].sort((a,b) => (termMap.get(a.academicTermId) || "").slice(5).localeCompare((termMap.get(b.academicTermId) || "").slice(5)) || (termMap.get(a.academicTermId) || "").localeCompare(termMap.get(b.academicTermId) || "")).forEach((item) => {
       ensurePdfSpace(document);
       document.font("Noto").fontSize(8.5).fillColor("#0f172a").text(
-        `${termMap.get(item.academicTermId) || "Học kỳ chưa xác định"}: GPA 4 = ${numberOrNull(item.gpa4) ?? "—"}; GPA tích lũy = ${numberOrNull(item.cumulativeGpa4) ?? "—"}; TC đạt = ${numberOrNull(item.creditsEarned) ?? "—"}`,
+        `${termMap.get(item.academicTermId) || "Học kỳ chưa xác định"} · ${item.sProgramCode}: GPA 4 = ${numberOrNull(item.gpa4) ?? "—"}; GPA tích lũy = ${numberOrNull(item.cumulativeGpa4) ?? "—"}; TC đạt = ${numberOrNull(item.creditsEarned) ?? "—"}`,
       );
     });
     section("2. Kết quả rèn luyện");
@@ -460,13 +474,13 @@ async function studentProfilePdf(studentId: string, studentScope: Prisma.Student
     });
     section("3. Tiến độ chương trình đào tạo");
     document.font("Noto").fontSize(8.5).fillColor("#0f172a").text(progress
-      ? `Trạng thái tiến độ: ${progress.scheduleStatus}; hoàn thành CTĐT: ${progress.programCompletionStatus}; học phần bắt buộc thiếu: ${progress.missingMandatoryCourses}; tín chỉ tự chọn thiếu: ${progress.missingElectiveCredits}.`
+      ? `Mốc ${progress.assessmentContext?.termCode || ""} ${progress.assessmentContext?.academicYear || ""}; đến học kỳ kế hoạch ${progress.scheduleProgress.latestCompletedSemester}: thiếu học phần bắt buộc ${progress.scheduleProgress.missingRequiredCourses.length}; thiếu ${progress.scheduleProgress.missingRequiredCredits} TC bắt buộc. ${progress.reconciliation?.status === "REVIEW_REQUIRED" ? "Cần đối chiếu ánh xạ học phần; chưa kết luận đầy đủ." : "Theo đối chiếu CTĐT của hệ thống."}`
       : "Chưa có kết quả đánh giá tiến độ CTĐT.");
     section("4. Cảnh báo và quyết định");
     warnings.forEach((item) => {
       ensurePdfSpace(document);
       document.font("Noto").fontSize(8.5).fillColor("#0f172a").text(
-        `${item.createdAt.toLocaleString("vi-VN")}: ${item.maxSeverity} · GPA kỳ ${numberOrNull(item.termGpa4) ?? "—"} · GPA tích lũy ${numberOrNull(item.cumulativeGpa4) ?? "—"} · ${item.reasonCount} nguyên nhân`,
+        `${item.termCode} ${item.academicYear}: ${{ HIGH_RISK: "Nguy cơ cao", VERIFY_REQUIRED: "Cần xác minh", MONITORING: "Cần theo dõi", NORMAL: "Chưa ghi nhận nguy cơ", INSUFFICIENT_DATA: "Chưa đủ dữ liệu" }[item.businessStatus] || "Cần đối chiếu"} · GPA kỳ ${numberOrNull(item.termGpa4) ?? "—"} · GPA tích lũy ${numberOrNull(item.cumulativeGpa4) ?? "—"} · ${item.reasonCount} nguyên nhân`,
       );
     });
     decisions.forEach((item) => {

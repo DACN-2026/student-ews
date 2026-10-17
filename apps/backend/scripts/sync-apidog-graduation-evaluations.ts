@@ -25,16 +25,6 @@ const DEFAULT_GRADUATION_RULES = [
     status: "active",
   },
   {
-    ruleCode: "WHOLE_COURSE_TRAINING",
-    ruleName: "Có kết quả rèn luyện toàn khóa",
-    ruleType: "DATA",
-    operator: "EXISTS",
-    requiredValue: "AVAILABLE",
-    version: "REGULATION-BASE-v1",
-    sourceDocument: "Quy định đánh giá kết quả rèn luyện sinh viên Trường Đại học Đà Lạt",
-    status: "active",
-  },
-  {
     ruleCode: "TOTAL_CREDITS",
     ruleName: "Tổng tín chỉ tích lũy",
     ruleType: "CREDIT",

@@ -16,10 +16,13 @@ import Modal from "@/components/ui/Modal";
 import ForbiddenState from "@/components/ui/ForbiddenState";
 import { useAuthStore } from "@/stores/authStore";
 import { apiFetch } from "@/lib/api-client";
+import { fetchAllApiItems, readApiJson, type ListResponse } from "@/lib/api-data";
+import type { FeePolicyItem, FeePolicyType } from "@/lib/fee-policy-types";
 import dynamic from "next/dynamic";
 const StudentProgressDetail = dynamic(() => import("@/components/training-progress/StudentProgressDetail"), { loading: () => <LoadingState variant="detail" label="Đang tải bảng điểm…" /> });
 const StudentWarningWorkspace = dynamic(() => import("@/components/warnings/StudentWarningWorkspace"), { loading: () => <LoadingState variant="detail" label="Đang tải chi tiết cảnh báo…" /> });
 import { isMainConductTerm, studentWarningEndpoint } from "@/lib/student-warning-view";
+import { latestTermWithGpa } from "@/lib/student-academic-display";
 
 type ActiveTab = "overview" | "conduct" | "grades" | "decisions" | "fee_policies" | "registrations" | "warnings";
 
@@ -110,7 +113,7 @@ export default function StudentDetailPage() {
   const [gradesData, setGradesData] = useState<ApiData[]>([]);
   const [summariesData, setSummariesData] = useState<ApiData>(null);
   const [decisionsData, setDecisionsData] = useState<ApiData[]>([]);
-  const [feePoliciesData, setFeePoliciesData] = useState<ApiData[]>([]);
+  const [feePoliciesData, setFeePoliciesData] = useState<FeePolicyItem[]>([]);
   const [registrationsData, setRegistrationsData] = useState<ApiData[]>([]);
   const [dashboardData, setDashboardData] = useState<ApiData>(null);
   const [conductData, setConductData] = useState<ConductResponse | null>(null);
@@ -122,12 +125,30 @@ export default function StudentDetailPage() {
   const [selectedDecisionDetail, setSelectedDecisionDetail] = useState<ApiData | null>(null);
   const [showAddFeeModal, setShowAddFeeModal] = useState(false);
   const [feeForm, setFeeForm] = useState({
-    feeObjectDicId: "MIEN_GIAM_50",
-    feeObjectName: "Miễn giảm 50% học phí",
+    feeObjectDicId: "",
     coefficient: 0.5,
     decisionNumber: "",
   });
   const [feeSubmitting, setFeeSubmitting] = useState(false);
+  const [feeTypes, setFeeTypes] = useState<FeePolicyType[]>([]);
+  const [feeError, setFeeError] = useState("");
+  const [feeTypesLoading, setFeeTypesLoading] = useState(false);
+  const [profileRetry, setProfileRetry] = useState(0);
+  const canReadGrades = can("grade.read");
+  const canReadDecisions = can("decision.read");
+  const canReadFees = can("fee_policy.read");
+  const canReadProgress = can("progress.read");
+  const tabPermission: Record<ActiveTab, string> = { overview: "student.read", conduct: "student.read", grades: "grade.read", decisions: "decision.read", fee_policies: "fee_policy.read", registrations: "progress.read", warnings: "academic_warning.read" };
+
+  useEffect(() => {
+    if (!showAddFeeModal || !can("fee_policy.create")) return;
+    const controller = new AbortController();
+    setFeeTypesLoading(true); setFeeError("");
+    void apiFetch("/api/v1/fee-policy-types", { signal: controller.signal }).then(readApiJson<ListResponse<{ feeObjectDicId: string; feeObjectDicName: string; isActive: boolean }>>).then(data => {
+      if (!controller.signal.aborted) setFeeTypes(data.items.filter(type => type.isActive));
+    }).catch(error => { if (!controller.signal.aborted) setFeeError(error instanceof Error ? error.message : "Không thể tải đối tượng chính sách."); }).finally(() => { if (!controller.signal.aborted) setFeeTypesLoading(false); });
+    return () => controller.abort();
+  }, [showAddFeeModal, can]);
 
   const canReadWarnings = can("academic_warning.read");
 
@@ -184,29 +205,29 @@ export default function StudentDetailPage() {
     async function loadProfile() {
       try {
         const response = await apiFetch(`/api/v1/students/${studentId}`, { signal: controller.signal });
-        if (response.status === 403) { setLoadError("403"); return; }
-        if (!response.ok) throw new Error("Không thể tải hồ sơ sinh viên");
-        const data = await response.json();
+        if (response.status === 403 || response.status === 404) { setLoadError(String(response.status)); return; }
+        const data = await readApiJson(response);
         if (!controller.signal.aborted) setStudent(data);
       } catch (error) {
-        if (!controller.signal.aborted) setLoadIssues([error instanceof Error ? error.message : "Không thể tải hồ sơ sinh viên"]);
+        if (!controller.signal.aborted) setLoadError(error instanceof Error ? error.message : "Không thể tải hồ sơ sinh viên. Vui lòng thử lại.");
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
     }
     if (studentId) void loadProfile();
     return () => controller.abort();
-  }, [studentId, requestedWarnings]);
+  }, [studentId, requestedWarnings, profileRetry]);
 
   useEffect(() => {
     if (!student || student.id !== studentId && student.studentId !== studentId && student.studentCode !== studentId) return;
     const controller = new AbortController();
     const needed = activeTab === "overview"
       ? ["dashboard", "grades/summary", "decisions", "conduct", ...(canReadWarnings ? ["warnings"] : [])]
-      : activeTab === "grades" ? ["grades", "grades/summary"]
+      : activeTab === "grades" ? ["grades", "grades/summary", "training-progress"]
       : activeTab === "warnings" ? (canReadWarnings ? ["warnings", "decisions", "grades/summary", "conduct"] : [])
       : [activeTab === "fee_policies" ? "fee-policies" : activeTab];
-    const missing = needed.filter((resource) => !loadedResources.current.has(resource));
+    const resourcePermission: Record<string, boolean> = { "grades/summary": canReadGrades, grades: canReadGrades, "training-progress": canReadGrades || canReadProgress, decisions: canReadDecisions, "fee-policies": canReadFees, registrations: canReadProgress, warnings: canReadWarnings };
+    const missing = needed.filter(resource => resourcePermission[resource] !== false && !loadedResources.current.has(resource));
     if (!missing.length) { setTabLoading(false); return; }
     setTabLoading(true);
     setLoadIssues([]);
@@ -214,10 +235,10 @@ export default function StudentDetailPage() {
       try {
         const endpoint = resource === "warnings"
           ? studentWarningEndpoint(studentId)
-          : `/api/v1/students/${studentId}/${resource}${resource === "registrations" ? "?pageSize=100" : ""}`;
-        const response = await apiFetch(endpoint, { signal: controller.signal });
-        if (!response.ok) throw new Error(`Không thể tải ${resource}`);
-        const data = await response.json();
+          : `/api/v1/students/${studentId}/${resource}${resource === "grades" ? "?view=attempts" : resource === "registrations" ? "?pageSize=100" : ""}`;
+        const data = ["decisions", "fee-policies", "registrations"].includes(resource)
+          ? { items: await fetchAllApiItems<ApiData>(`/api/v1/students/${studentId}/${resource}`, { signal: controller.signal }) }
+          : await readApiJson<ApiData>(await apiFetch(endpoint, { signal: controller.signal }));
         if (controller.signal.aborted) return;
         if (resource === "dashboard") setDashboardData(data);
         if (resource === "grades/summary") setSummariesData(data);
@@ -233,35 +254,7 @@ export default function StudentDetailPage() {
             const name = String(g.courseName || g.sCourseName || "").toLowerCase();
             return !code.startsWith("SHCD") && !name.includes("sinh hoạt công dân");
           });
-          const byCode = new Map<string, ApiData>();
-          for (const g of cleanGrades) {
-            const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
-            if (!code) continue;
-            if (!byCode.has(code)) {
-              byCode.set(code, g);
-              continue;
-            }
-            const existing = byCode.get(code)!;
-            const gPass = Boolean(g.isPass || g.isPassed);
-            const exPass = Boolean(existing.isPass || existing.isPassed);
-            if (gPass && !exPass) { byCode.set(code, g); continue; }
-            if (!gPass && exPass) continue;
-            if (gPass && exPass) {
-              const scoreG = Number(g.score10 ?? g.score4 ?? 0);
-              const scoreEx = Number(existing.score10 ?? existing.score4 ?? 0);
-              if (scoreG > scoreEx) { byCode.set(code, g); continue; }
-              if (scoreG === scoreEx && String(g.academicYear || "") > String(existing.academicYear || "")) {
-                byCode.set(code, g); continue;
-              }
-              continue;
-            }
-            const hasScoreG = g.score10 != null || g.score4 != null || Boolean(g.letterGrade || g.letterCode);
-            const hasScoreEx = existing.score10 != null || existing.score4 != null || Boolean(existing.letterGrade || existing.letterCode);
-            if (hasScoreG && !hasScoreEx) { byCode.set(code, g); continue; }
-            if (!hasScoreG && hasScoreEx) continue;
-            if (String(g.academicYear || "") > String(existing.academicYear || "")) { byCode.set(code, g); }
-          }
-          setGradesData(Array.from(byCode.values()));
+          setGradesData(cleanGrades);
           setGradesLoaded(true);
 
         }
@@ -288,7 +281,7 @@ export default function StudentDetailPage() {
       if (!controller.signal.aborted) setTabLoading(false);
     });
     return () => controller.abort();
-  }, [student, studentId, activeTab, canReadWarnings, tabRetry]);
+  }, [student, studentId, activeTab, canReadWarnings, canReadGrades, canReadDecisions, canReadFees, canReadProgress, tabRetry]);
 
   if (status !== "loading" && status !== "idle" && !can("student.read")) {
     return <ForbiddenState requiredPermission="student.read" />;
@@ -301,6 +294,9 @@ export default function StudentDetailPage() {
   if (loading) {
     return <div className="mx-auto max-w-7xl p-4 sm:p-6"><LoadingState variant="page" label={`Đang tải hồ sơ sinh viên ${studentId}…`} /></div>;
   }
+
+  if (loadError && !["403", "404"].includes(loadError)) return <div role="alert" className="mx-auto max-w-3xl space-y-4 p-6"><p className="text-sm text-red-700">{loadError}</p><button type="button" onClick={() => setProfileRetry(value => value + 1)} className="rounded-lg border px-4 py-2 text-sm hover:bg-slate-50">Thử lại</button></div>;
+  if (student && !can(tabPermission[activeTab])) return <ForbiddenState requiredPermission={tabPermission[activeTab]} />;
 
   if (!student) {
     return (
@@ -322,7 +318,7 @@ export default function StudentDetailPage() {
   const sClass = student?.className || student?.classStudentId || dashboardData?.student?.className || "Chưa phân lớp";
   const sProgram = student?.program?.code || student?.studyProgramId || dashboardData?.student?.programCode || "Chưa xác định";
   const cumulative = summariesData?.cumulative || student?.cumulative || dashboardData?.cumulative;
-  const latestTerm = (summariesData?.terms || []).at(-1);
+  const latestTerm = latestTermWithGpa<ApiData>(summariesData?.terms || [], student?.studyProgramId);
   const conductItems = (conductData?.items || []).filter(isMainConductTerm);
   const approvedConductCount = conductItems.filter(record => record.approval.code === "approved").length;
   const pendingConductCount = conductItems.filter(record => ["pending", "pending_evaluation"].includes(record.approval.code)).length;
@@ -358,7 +354,7 @@ export default function StudentDetailPage() {
         ? "Cần theo dõi"
         : warningData?.presentationState === "INSUFFICIENT_DATA"
           ? "Chưa đủ dữ liệu"
-          : "Bình thường";
+          : warningData?.presentationState === "NORMAL" ? "Bình thường" : "Chưa tải được kết quả";
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
@@ -374,7 +370,7 @@ export default function StudentDetailPage() {
           <span>Quay lại Danh sách Sinh viên</span>
         </button>
 
-        {can("report.export") && (
+        {["report.export", "academic_warning.read", "grade.read", "decision.read", "progress.read"].every(permission => can(permission)) && (
           <button type="button" disabled={profileExporting} onClick={() => void exportProfilePdf()} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50">
             {profileExporting ? "Đang tạo PDF..." : "Xuất PDF hồ sơ"}
           </button>
@@ -475,7 +471,7 @@ export default function StudentDetailPage() {
             label: "7. Cảnh báo học vụ",
             badge: ["HIGH_RISK", "VERIFY_REQUIRED", "MONITORING"].includes(warningData?.presentationState) ? "!" : undefined,
           }] : []),
-        ].map((t) => (
+        ].filter(t => can(tabPermission[t.id as ActiveTab])).map((t) => (
           <button
             key={t.id}
             onClick={() => { setActiveTab(t.id as ActiveTab); if (t.id === "warnings") setWarningWorkspaceOpened(true); }}
@@ -563,7 +559,7 @@ export default function StudentDetailPage() {
                 </div>}
                 <div className="flex justify-between py-2 border-b border-slate-100">
                   <span className="text-slate-500">Tiến độ đào tạo:</span>
-                  <span className="font-semibold text-slate-800 text-right">{progressStatus}</span>
+                  <span className="text-right"><span className="block font-semibold text-slate-800">{progressStatus}</span>{dashboardData?.completion?.assessmentTermCode && <span className="block text-[11px] text-slate-500">Đợt tiến độ chuẩn · {dashboardData.completion.assessmentTermCode} {dashboardData.completion.assessmentAcademicYear}</span>}</span>
                 </div>
                 <div className="flex justify-between gap-4 py-2 border-b border-slate-100">
                   <span className="text-slate-500">Rèn luyện gần nhất:</span>
@@ -644,7 +640,7 @@ export default function StudentDetailPage() {
 
                 <dl className="text-xs">
                   <div className="flex justify-between gap-4 py-2.5 border-b border-slate-100">
-                    <dt className="text-slate-500">Kỳ có kết quả gần nhất</dt>
+                    <dt className="text-slate-500">Kỳ gần nhất có GPA</dt>
                     <dd className="font-semibold text-slate-800 text-right">
                       {latestTerm ? `${latestTerm.termCode} · ${latestTerm.academicYear}` : "Chưa có"}
                     </dd>
@@ -666,7 +662,7 @@ export default function StudentDetailPage() {
                     </dd>
                   </div>
                   <div className="flex justify-between gap-4 py-2.5">
-                    <dt className="text-slate-500">Số học phần có dữ liệu</dt>
+                    <dt className="text-slate-500">Số lượt học phần đã tải</dt>
                     <dd className="font-mono font-bold text-slate-900">{gradesLoaded ? gradesData.length : "Chưa tải"}</dd>
                   </div>
                 </dl>
@@ -829,13 +825,13 @@ export default function StudentDetailPage() {
               </h3>
               <p className="text-xs text-slate-500">Các quyết định học vụ, khen thưởng, kỷ luật, cảnh báo học tập</p>
             </div>
-            <a
+            {can("decision.export") && <a
               href={`/api/v1/students/${studentId}/decisions/export`}
               download
               className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors"
             >
               Xuất danh sách →
-            </a>
+            </a>}
           </div>
 
           <div className="overflow-x-auto">
@@ -855,7 +851,7 @@ export default function StudentDetailPage() {
                 {decisionsData.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="py-8 text-center text-slate-400">
-                      Sinh viên chưa có quyết định xử lý hoặc khen thưởng nào.
+                      {loadIssues.length ? "Chưa tải được quyết định. Hãy bấm Thử tải lại dữ liệu." : "Sinh viên chưa có quyết định xử lý hoặc khen thưởng nào."}
                     </td>
                   </tr>
                 ) : (
@@ -905,20 +901,20 @@ export default function StudentDetailPage() {
               <p className="text-xs text-slate-500">Đối tượng chính sách, tỷ lệ miễn giảm và quyết định phê duyệt</p>
             </div>
             <div className="flex items-center gap-2">
-              <button
+              {can("fee_policy.create") && <button
                 type="button"
-                onClick={() => setShowAddFeeModal(true)}
+                onClick={() => { setFeeError(""); setFeeForm({ feeObjectDicId: "", coefficient: 0.5, decisionNumber: "" }); setShowAddFeeModal(true); }}
                 className="px-3.5 py-2 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer shadow-xs"
               >
                 + Gán chính sách mới
-              </button>
-              <a
+              </button>}
+              {can("fee_policy.export") && <a
                 href={`/api/v1/students/${studentId}/fee-policies/export`}
                 download
                 className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors"
               >
                 Xuất danh sách →
-              </a>
+              </a>}
             </div>
           </div>
 
@@ -936,20 +932,20 @@ export default function StudentDetailPage() {
                 {feePoliciesData.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="py-8 text-center text-slate-400">
-                      Sinh viên không thuộc diện miễn giảm học phí trong học kỳ này.
+                      {loadIssues.length ? "Chưa tải được chính sách học phí. Hãy bấm Thử tải lại dữ liệu." : "Chưa có chính sách miễn giảm học phí được ghi nhận."}
                     </td>
                   </tr>
                 ) : (
-                  feePoliciesData.map((f: ApiData) => (
+                  feePoliciesData.map((f) => (
                     <tr key={f.id} className="hover:bg-slate-50">
-                      <td className="py-3 px-3 font-semibold text-slate-900 text-center table-cell-center">{f.feeObjectDicName || f.sFeeObjectDicName}</td>
+                      <td className="py-3 px-3 font-semibold text-slate-900 text-center table-cell-center">{f.policyName || "Chưa cập nhật"}</td>
                       <td className="py-3 px-3 text-center table-cell-center">
                         <TextLabel className="text-emerald-800 font-bold font-mono">
-                          {f.coefficientPercent || f.sCoefficient}%
+                          {f.coefficientPercent ?? "—"}%
                         </TextLabel>
                       </td>
-                      <td className="py-3 px-3 text-slate-500 text-center table-cell-center">{f.termCode || f.sTermId} ({f.academicYear || f.sYearStudy})</td>
-                      <td className="py-3 px-3 font-mono font-medium text-slate-800 text-center table-cell-center">{f.decisionNumber || f.sDecisionNumber || "—"}</td>
+                      <td className="py-3 px-3 text-slate-500 text-center table-cell-center">{f.termId || "Chưa rõ kỳ"} ({f.yearStudy || "Chưa rõ năm"})</td>
+                      <td className="py-3 px-3 font-mono font-medium text-slate-800 text-center table-cell-center">{f.decisionNumber || "—"}</td>
                     </tr>
                   ))
                 )}
@@ -984,7 +980,7 @@ export default function StudentDetailPage() {
                 {registrationsData.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-8 text-center text-slate-400">
-                      Chưa có dữ liệu đăng ký học phần cho sinh viên này.
+                      {loadIssues.length ? "Chưa tải được đăng ký học phần. Hãy bấm Thử tải lại dữ liệu." : "Chưa có dữ liệu đăng ký học phần cho sinh viên này."}
                     </td>
                   </tr>
                 ) : (
@@ -1010,12 +1006,13 @@ export default function StudentDetailPage() {
       {/* Semester transcript tab */}
       {activeTab === "grades" && !tabLoading && (
         <div className="space-y-5">
-          <StudentProgressDetail
+          {loadedResources.current.has("grades") && loadedResources.current.has("grades/summary") && <StudentProgressDetail
+            key={studentId}
             studentId={studentId}
             showStudentHeader={false}
             view="transcript"
             termGradeSummaries={summariesData?.terms || []}
-          />
+          />}
         </div>
       )}
 
@@ -1088,34 +1085,34 @@ export default function StudentDetailPage() {
       {/* Modal: Gán Chính sách Miễn giảm Học phí */}
       <Modal
         isOpen={showAddFeeModal}
+        busy={feeSubmitting}
         onClose={() => setShowAddFeeModal(false)}
         title="Gán Chính sách Miễn giảm Học phí"
         maxWidth="md"
       >
+        {feeError && <p role="alert" className="mb-3 text-xs text-red-700">{feeError}</p>}
         <form
           onSubmit={async (e) => {
             e.preventDefault();
+            if (feeSubmitting || !can("fee_policy.create")) return;
             try {
-              setFeeSubmitting(true);
+              setFeeError(""); setFeeSubmitting(true);
               const res = await apiFetch(`/api/v1/students/${studentId}/fee-policies`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(feeForm),
               });
+              await readApiJson(res);
               if (res.ok) {
                 setShowAddFeeModal(false);
                 alert("Đã gán chính sách thành công!");
                 // Reload fee policies
-                const fRes = await apiFetch(`/api/v1/students/${studentId}/fee-policies`);
-                if (fRes.ok) {
-                  const json = await fRes.json();
-                  setFeePoliciesData(json.items || json || []);
-                }
+                setFeePoliciesData(await fetchAllApiItems<ApiData>(`/api/v1/students/${studentId}/fee-policies`));
               } else {
                 alert("Lỗi khi lưu chính sách học phí");
               }
             } catch (err) {
-              console.error(err);
+              setFeeError(err instanceof Error ? err.message : "Không thể lưu chính sách. Vui lòng thử lại.");
             } finally {
               setFeeSubmitting(false);
             }
@@ -1126,17 +1123,13 @@ export default function StudentDetailPage() {
             <label className="block text-xs font-semibold text-slate-700 mb-1">Đối tượng chính sách</label>
             <select
               value={feeForm.feeObjectDicId}
-              onChange={(e) => {
-                const val = e.target.value;
-                const name = e.target.options[e.target.selectedIndex].text;
-                const coef = val === "MIEN_100" ? 1.0 : val === "GIAM_70" ? 0.7 : 0.5;
-                setFeeForm({ ...feeForm, feeObjectDicId: val, feeObjectName: name, coefficient: coef });
-              }}
+              required
+              disabled={feeTypesLoading}
+              onChange={e => setFeeForm({ ...feeForm, feeObjectDicId: e.target.value })}
               className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800"
             >
-              <option value="MIEN_100">Miễn 100% học phí (Đối tượng ưu tiên 1)</option>
-              <option value="GIAM_70">Giảm 70% học phí (Con hộ nghèo, cận nghèo)</option>
-              <option value="MIEN_GIAM_50">Giảm 50% học phí (Con cán bộ, diện khó khăn)</option>
+              <option value="">{feeTypesLoading ? "Đang tải danh mục…" : "Chọn đối tượng chính sách"}</option>
+              {feeTypes.map(type => <option key={type.feeObjectDicId} value={type.feeObjectDicId}>{type.feeObjectDicName}</option>)}
             </select>
           </div>
 
@@ -1180,7 +1173,7 @@ export default function StudentDetailPage() {
             </button>
             <button
               type="submit"
-              disabled={feeSubmitting}
+              disabled={feeSubmitting || feeTypesLoading || !feeForm.feeObjectDicId}
               className="px-5 py-2 bg-[var(--color-primary)] hover:opacity-90 text-white text-xs font-semibold rounded-xl disabled:opacity-50"
             >
               {feeSubmitting ? "Đang lưu..." : "Lưu chính sách"}

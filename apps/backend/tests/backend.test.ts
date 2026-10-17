@@ -24,6 +24,7 @@ import { selectLatestReportingPeriod, summarizePersistedWarningResults } from ".
 import { POST as loginRoute } from "../app/api/v1/auth/login/route";
 import { POST as refreshRoute } from "../app/api/v1/auth/refresh/route";
 import { signAccessToken } from "../lib/auth/jwt";
+import { requireApiPermission } from "../lib/auth/authorize";
 import { assertWarningActionTransition, parseWarningActionStatus } from "../lib/services/warning-actions";
 import { ApiError } from "../lib/utils/api-error";
 import { classifyConductScore, conductApproval, isSummerConductTerm } from "../lib/services/conduct";
@@ -100,6 +101,18 @@ const IDS = {
   plan: "44444444-4444-4444-8444-444444444444",
   term: "55555555-5555-4555-8555-555555555555",
 };
+
+async function proxyAndCurrentAuthorization(request: NextRequest) {
+  const response = await proxy(request);
+  if (response.headers.get("x-middleware-next") !== "1") return response;
+  const auth = await requireApiPermission(request);
+  return auth.authorized ? response : auth.response;
+}
+
+function actorRows(actor: Actor) {
+  return actor.grants.map(grant => ({ id: actor.userId, username: actor.username, full_name: actor.fullName,
+    role_code: grant.role, data_scope: grant.scope, permission_code: grant.permission }));
+}
 
 function qd600Rule(result: Qd600EvaluationResult, ruleCode: Qd600RuleCode) {
   const rule = result.rules.find((item) => item.ruleCode === ruleCode);
@@ -827,7 +840,7 @@ test("QD600 capability does not divide by zero or count duplicate offering rows 
   });
 });
 
-test("QD600 failed-credit ratio keeps VT separate from confirmed failures", () => {
+test("QD600 failed-credit ratio uses VT source IsPass while retaining absence counts", () => {
   const result = calculateAssessmentTermFailedCredits(IDS.term, [
     {
       offeringId: "absent-exam",
@@ -848,12 +861,12 @@ test("QD600 failed-credit ratio keeps VT separate from confirmed failures", () =
     },
   ]);
   assert.equal(result.registeredCredits, 7);
-  assert.equal(result.failedCredits, 0);
-  assert.equal(result.failedCreditRatio, null);
-  assert.equal(result.dataStatus, "PARTIAL");
+  assert.equal(result.failedCredits, 4);
+  assert.equal(result.failedCreditRatio, 4 / 7);
+  assert.equal(result.dataStatus, "COMPLETE");
   assert.equal(result.absenceCourseCount, 1);
   assert.equal(result.absenceCredits, 4);
-  assert.ok(result.reasonCodes.includes("EXAM_ABSENCE_REQUIRES_VERIFICATION"));
+  assert.deepEqual(result.reasonCodes, []);
 });
 
 test("QD600 capability keeps debt unverified and serializes fixed run capability states", () => {
@@ -1151,7 +1164,7 @@ test("graduation forecast caps elective credits and uses configured minimum", ()
   assert.equal(unspecified.summary.remainingCredits, null);
 });
 
-test("course matching uses exact normalized code, then unique normalized name without guessing suffixes", () => {
+test("course matching requires a confirmed code alias even when names and suffixes look equivalent", () => {
   const courses = [{ courseId: "one", courseCode: "20CT4105D", courseName: "Cơ sở dữ liệu", credits: 3, requirementType: "mandatory", semesterNo: 5 }];
   assert.notEqual(normalizeCourseCode("20CT4105D"), normalizeCourseCode("20CT4105"));
   const forecast = buildGraduationForecast({
@@ -1161,8 +1174,11 @@ test("course matching uses exact normalized code, then unique normalized name wi
     requiredElectiveCredits: 0,
     requiredTotalCredits: 3,
   });
-  assert.equal(forecast.summary.completedCredits, 3);
-  assert.equal(forecast.unmatchedGrades.length, 0);
+  assert.equal(forecast.summary.completedCredits, 0);
+  assert.equal(forecast.unmatchedGrades.length, 1);
+  assert.equal(forecast.reconciliation.status, "REVIEW_REQUIRED");
+  assert.equal(forecast.curriculumComplete, null);
+  assert.equal(forecast.missingRequiredCourses[0].schedule, null);
 });
 
 test("different curriculum codes with the same name are not silently treated as equivalent", () => {
@@ -1342,6 +1358,7 @@ test("login and refresh preserve HttpOnly cookies and API authorization after th
       userId: IDS.student, username: "migration-test", fullName: "Migration Test",
       grants: [{ role: "staff", scope: "system", permission: "student.read" }],
     };
+    context.after(mockDelegateMethod(prisma, "$queryRaw", async () => actorRows(actor)));
     const signed = await signAccessToken(actor.userId, actor.username, actor);
     const tokens = {
       accessToken: signed.token, refreshToken: "test-refresh-before",
@@ -1372,7 +1389,7 @@ test("login and refresh preserve HttpOnly cookies and API authorization after th
       headers: { cookie: cookieHeader },
     }));
     assert.equal(authorized.headers.get("x-middleware-next"), "1");
-    const forbidden = await proxy(new NextRequest(`http://backend:3001/api/v1/students/${IDS.student}`, {
+    const forbidden = await proxyAndCurrentAuthorization(new NextRequest(`http://backend:3001/api/v1/students/${IDS.student}`, {
       method: "DELETE", headers: { cookie: cookieHeader },
     }));
     assert.equal(forbidden.status, 403);
@@ -2270,7 +2287,7 @@ test("Training Progress Ví dụ B: Kế hoạch 65 TC, đạt 59 TC -> Chậm t
   assert.equal(result.scheduleProgress.expectedCreditsToDate, 65);
   assert.equal(result.scheduleProgress.earnedCreditsToDate, 59);
   assert.equal(result.scheduleProgress.creditDifference, -6);
-  assert.equal(result.scheduleProgress.creditDifferenceText, "Chậm 6 TC");
+  assert.equal(result.scheduleProgress.creditDifferenceText, "Thấp hơn kế hoạch 6 TC");
   assert.equal(result.scheduleProgress.progressStatus, "BEHIND");
   assert.equal(result.scheduleProgress.isOnTrack, false);
   assert.equal(result.scheduleProgress.isBehind, true);
@@ -2474,7 +2491,7 @@ test("Proxy catalog permission policy splits GET vs mutating methods", () => {
   assert.equal(requiredPermission("/api/v1/training-programs", "POST"), "academic_term.manage");
 });
 
-test("Proxy RBAC: class_advisor has GET catalog access but cannot mutate catalogs or perform faculty evaluations", async () => {
+test("Current handler RBAC: class_advisor has GET catalog access but cannot mutate catalogs or perform faculty evaluations", async (context) => {
   const previousSecret = process.env.JWT_SECRET;
   process.env.JWT_SECRET = "test-only-secret-for-monorepo-cookie-regression";
   try {
@@ -2496,12 +2513,13 @@ test("Proxy RBAC: class_advisor has GET catalog access but cannot mutate catalog
         { role: "class_advisor", scope: "assigned_classes", permission: "report.export" },
       ],
     };
+    context.after(mockDelegateMethod(prisma, "$queryRaw", async () => actorRows(advisorActor)));
     const signed = await signAccessToken(advisorActor.userId, advisorActor.username, advisorActor);
     const cookieHeader = `sms_access_token=${signed.token}`;
 
     // 1. GET catalog routes succeed for GVCN
     for (const routePath of ["/classes", "/cohorts", "/academic-years", "/courses", "/training-programs"]) {
-      const res = await proxy(new NextRequest(`http://backend:3001/api/v1${routePath}`, {
+      const res = await proxyAndCurrentAuthorization(new NextRequest(`http://backend:3001/api/v1${routePath}`, {
         method: "GET",
         headers: { cookie: cookieHeader },
       }));
@@ -2510,7 +2528,7 @@ test("Proxy RBAC: class_advisor has GET catalog access but cannot mutate catalog
 
     // 2. Mutating catalog routes are FORBIDDEN (403) for GVCN
     for (const routePath of ["/classes", "/academic-years", "/courses", "/training-programs"]) {
-      const res = await proxy(new NextRequest(`http://backend:3001/api/v1${routePath}`, {
+      const res = await proxyAndCurrentAuthorization(new NextRequest(`http://backend:3001/api/v1${routePath}`, {
         method: "POST",
         headers: { cookie: cookieHeader, "content-type": "application/json" },
         body: JSON.stringify({ name: "forbidden" }),
@@ -2529,7 +2547,7 @@ test("Proxy RBAC: class_advisor has GET catalog access but cannot mutate catalog
       { path: `/academic-warnings/interventions/${IDS.plan}/assignment`, method: "PATCH" },
     ];
     for (const ep of forbiddenEndpoints) {
-      const res = await proxy(new NextRequest(`http://backend:3001/api/v1${ep.path}`, {
+      const res = await proxyAndCurrentAuthorization(new NextRequest(`http://backend:3001/api/v1${ep.path}`, {
         method: ep.method,
         headers: { cookie: cookieHeader },
       }));
@@ -2541,7 +2559,7 @@ test("Proxy RBAC: class_advisor has GET catalog access but cannot mutate catalog
   }
 });
 
-test("Proxy RBAC: faculty_manager can evaluate/calculate but lacks user/role/assignment manage; admin has full access", async () => {
+test("Current handler RBAC: faculty_manager can evaluate/calculate but lacks user/role/assignment manage; admin has full access", async (context) => {
   const previousSecret = process.env.JWT_SECRET;
   process.env.JWT_SECRET = "test-only-secret-for-monorepo-cookie-regression";
   try {
@@ -2577,6 +2595,7 @@ test("Proxy RBAC: faculty_manager can evaluate/calculate but lacks user/role/ass
       ],
     };
 
+    context.after(mockDelegateMethod(prisma, "$queryRaw", async (_query: unknown, userId: string) => actorRows(userId === deanActor.userId ? deanActor : adminActor)));
     const deanSigned = await signAccessToken(deanActor.userId, deanActor.username, deanActor);
     const deanCookie = `sms_access_token=${deanSigned.token}`;
 
@@ -2584,19 +2603,19 @@ test("Proxy RBAC: faculty_manager can evaluate/calculate but lacks user/role/ass
     const adminCookie = `sms_access_token=${adminSigned.token}`;
 
     // 1. faculty_manager can run evaluations / calculations
-    const evalRes = await proxy(new NextRequest("http://backend:3001/api/v1/graduation-evaluations", {
+    const evalRes = await proxyAndCurrentAuthorization(new NextRequest("http://backend:3001/api/v1/graduation-evaluations", {
       method: "POST",
       headers: { cookie: deanCookie },
     }));
     assert.equal(evalRes.headers.get("x-middleware-next"), "1", "Dean can evaluate graduation");
 
-    const calcRes = await proxy(new NextRequest(`http://backend:3001/api/v1/training-progress/plans/${IDS.plan}/calculate`, {
+    const calcRes = await proxyAndCurrentAuthorization(new NextRequest(`http://backend:3001/api/v1/training-progress/plans/${IDS.plan}/calculate`, {
       method: "POST",
       headers: { cookie: deanCookie },
     }));
     assert.equal(calcRes.headers.get("x-middleware-next"), "1", "Dean can calculate progress");
 
-    const interventionAssignRes = await proxy(new NextRequest(`http://backend:3001/api/v1/academic-warnings/interventions/${IDS.plan}/assignment`, {
+    const interventionAssignRes = await proxyAndCurrentAuthorization(new NextRequest(`http://backend:3001/api/v1/academic-warnings/interventions/${IDS.plan}/assignment`, {
       method: "PATCH",
       headers: { cookie: deanCookie },
     }));
@@ -2604,19 +2623,19 @@ test("Proxy RBAC: faculty_manager can evaluate/calculate but lacks user/role/ass
 
     // 2. faculty_manager CANNOT manage system configuration / users / roles / advisor assignments
     for (const route of ["/rbac/users", "/rbac/roles"]) {
-      const res = await proxy(new NextRequest(`http://backend:3001/api/v1${route}`, {
+      const res = await proxyAndCurrentAuthorization(new NextRequest(`http://backend:3001/api/v1${route}`, {
         method: "GET",
         headers: { cookie: deanCookie },
       }));
       assert.equal(res.status, 403, `Dean must not access ${route}`);
     }
-    const rolePutRes = await proxy(new NextRequest(`http://backend:3001/api/v1/rbac/roles/${IDS.plan}/permissions`, {
+    const rolePutRes = await proxyAndCurrentAuthorization(new NextRequest(`http://backend:3001/api/v1/rbac/roles/${IDS.plan}/permissions`, {
       method: "PUT",
       headers: { cookie: deanCookie },
     }));
     assert.equal(rolePutRes.status, 403, "Dean must not edit permissions");
 
-    const assignRes = await proxy(new NextRequest("http://backend:3001/api/v1/rbac/advisor-assignments", {
+    const assignRes = await proxyAndCurrentAuthorization(new NextRequest("http://backend:3001/api/v1/rbac/advisor-assignments", {
       method: "POST",
       headers: { cookie: deanCookie },
     }));
@@ -2631,7 +2650,7 @@ test("Proxy RBAC: faculty_manager can evaluate/calculate but lacks user/role/ass
       { path: "/graduation-evaluations", method: "POST" },
       { path: `/academic-warnings/interventions/${IDS.plan}/assignment`, method: "PATCH" },
     ]) {
-      const res = await proxy(new NextRequest(`http://backend:3001/api/v1${ep.path}`, {
+      const res = await proxyAndCurrentAuthorization(new NextRequest(`http://backend:3001/api/v1${ep.path}`, {
         method: ep.method,
         headers: { cookie: adminCookie },
       }));

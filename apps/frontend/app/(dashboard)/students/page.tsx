@@ -5,6 +5,7 @@ import { UserRound, Pencil, Trash2 } from "lucide-react";
 import TextLabel from "@/components/ui/TextLabel";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { apiFetch } from "@/lib/api-client";
+import { fetchAllApiItems, readApiJson } from "@/lib/api-data";
 import { useRouter } from "next/navigation";
 import FilterBar from "@/components/ui/FilterBar";
 import DataTable, { Column } from "@/components/ui/DataTable";
@@ -93,7 +94,7 @@ export default function StudentsPage() {
     studentId: "",
     firstName: "",
     lastName: "",
-    birthDate: "2003-01-01",
+    birthDate: "",
     gender: "Nam",
     classStudentId: "",
     studyProgramId: "",
@@ -108,24 +109,19 @@ export default function StudentsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importJson, setImportJson] = useState("");
   const [importLoading, setImportLoading] = useState(false);
-  const [importResult, setImportResult] = useState<{ total: number; imported: number; errors?: string[] } | null>(null);
+  type ImportResult = { total: number; imported: number; eligible: number; created: number; updated: number; errors: { studentId: string; message: string }[] };
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importPreview, setImportPreview] = useState<ImportResult | null>(null);
 
   // Load options
   useEffect(() => {
     async function loadOptions() {
       try {
-        const [cRes, pRes] = await Promise.all([
-          apiFetch("/api/v1/classes"),
-          apiFetch("/api/v1/training-programs"),
+        const [classes, programs] = await Promise.all([
+          fetchAllApiItems<ApiData>("/api/v1/classes"),
+          fetchAllApiItems<ApiData>("/api/v1/training-programs"),
         ]);
-        if (cRes.ok) {
-          const cJson = await cRes.json();
-          setClassList(Array.isArray(cJson.items) ? cJson.items : Array.isArray(cJson) ? cJson : []);
-        }
-        if (pRes.ok) {
-          const pJson = await pRes.json();
-          setProgramList(Array.isArray(pJson.items) ? pJson.items : Array.isArray(pJson) ? pJson : []);
-        }
+        setClassList(classes); setProgramList(programs);
       } catch (err) {
         console.error("Error loading options:", err);
       }
@@ -152,7 +148,7 @@ export default function StudentsPage() {
 
       const res = await apiFetch(`/api/v1/students?${params.toString()}`, { signal });
       if (!res.ok) {
-        throw new Error(`Không tải được danh sách sinh viên (HTTP ${res.status}). Vui lòng thử lại.`);
+        throw new Error("Không tải được danh sách sinh viên. Vui lòng thử lại.");
       }
       if (res.ok) {
         const json = await res.json();
@@ -164,7 +160,7 @@ export default function StudentsPage() {
           fullName: s.sFullName || s.fullName || `${s.sFirstName || ""} ${s.sLastName || ""}`.trim() || "Sinh viên",
           firstName: s.sFirstName || s.firstName || "",
           lastName: s.sLastName || s.lastName || "",
-          birthDate: s.dBirthDate ? new Date(s.dBirthDate).toISOString().split("T")[0] : s.birthDate || "2003-01-01",
+          birthDate: s.dBirthDate ? new Date(s.dBirthDate).toISOString().split("T")[0] : s.birthDate || "",
           gender: s.sGender || s.gender || "Nam",
           classId: s.sClassStudentId || s.classId || "",
           className: s.sClassStudentId || s.className || "Chưa xếp lớp",
@@ -223,7 +219,7 @@ export default function StudentsPage() {
           studentId: "",
           firstName: "",
           lastName: "",
-          birthDate: "2003-01-01",
+          birthDate: "",
           gender: "Nam",
           classStudentId: "",
           studyProgramId: "",
@@ -252,7 +248,7 @@ export default function StudentsPage() {
       studentId: st.studentId,
       firstName: st.firstName || st.fullName.split(" ").slice(0, -1).join(" ") || "",
       lastName: st.lastName || st.fullName.split(" ").slice(-1)[0] || "",
-      birthDate: st.birthDate || "2003-01-01",
+      birthDate: st.birthDate || "",
       gender: st.gender || "Nam",
       classStudentId: st.classId || "",
       studyProgramId: st.studyProgramId || "",
@@ -317,7 +313,14 @@ export default function StudentsPage() {
   // Handle Export
   const handleExport = async () => {
     try {
-      const res = await apiFetch("/api/v1/students/export");
+      const params = new URLSearchParams();
+      if (search.trim()) params.set("search", search.trim());
+      if (filterClass !== "all") params.set("classStudentId", filterClass);
+      if (filterGender !== "all") params.set("gender", filterGender);
+      if (filterInClass !== "all") params.set("isInClass", filterInClass);
+      if (canReadWarnings && filterWarning !== "all") params.set("warningLevel", filterWarning);
+      const res = await apiFetch(`/api/v1/students/export?${params}`);
+      if (!res.ok) await readApiJson(res);
       if (res.ok) {
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
@@ -327,9 +330,10 @@ export default function StudentsPage() {
         document.body.appendChild(a);
         a.click();
         a.remove();
+        window.URL.revokeObjectURL(url);
       }
-    } catch {
-      alert("Lỗi khi xuất danh sách sinh viên");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Lỗi khi xuất danh sách sinh viên");
     }
   };
 
@@ -345,18 +349,19 @@ export default function StudentsPage() {
         return;
       }
 
-      const res = await apiFetch("/api/v1/students/import", {
+      const res = await apiFetch(`/api/v1/students/import${importPreview ? "" : "?preview=true"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(parsed),
       });
 
-      const json = await res.json();
-      if (res.ok) {
-        setImportResult(json);
-        fetchStudents();
+      const json = await readApiJson<ImportResult>(res);
+      if (!importPreview) {
+        setImportPreview(json);
       } else {
-        alert(json.error?.message || "Lỗi khi import");
+        setImportResult(json);
+        setImportPreview(null);
+        await fetchStudents();
       }
     } catch (err: ApiData) {
       alert(err.message || "Lỗi xử lý import");
@@ -433,7 +438,7 @@ export default function StudentsPage() {
       key: "warningLevel",
       title: "Mức cảnh báo",
       width: 140,
-      render: (v: WarningLevel, row: StudentItem) => row.isSuspended ? <span className="text-xs text-slate-500">Tạm dừng đánh giá</span> : <WarningBadge level={v || "insufficient"} />,
+      render: (v: WarningLevel, row: StudentItem) => row.isInClass === false ? <span className="text-xs text-slate-500">Đã ngừng theo dõi</span> : row.isSuspended ? <span className="text-xs text-slate-500">Tạm dừng đánh giá</span> : <WarningBadge level={v || "insufficient"} />,
     } as Column<StudentItem>] : []),
     {
       key: "actions",
@@ -522,7 +527,7 @@ export default function StudentsPage() {
                 <polyline points="7 10 12 15 17 10" />
                 <line x1="12" y1="15" x2="12" y2="3" />
               </svg>
-              <span>Xuất JSON</span>
+              <span>Xuất kết quả lọc (JSON)</span>
             </button>
           )}
 
@@ -534,7 +539,7 @@ export default function StudentsPage() {
                   studentId: "",
                   firstName: "",
                   lastName: "",
-                  birthDate: "2003-01-01",
+                  birthDate: "",
                   gender: "Nam",
                   classStudentId: classList[0]?.classId || "",
                   studyProgramId: programList[0]?.programCode || "",
@@ -693,6 +698,7 @@ export default function StudentsPage() {
       {/* Modal: Thêm sinh viên mới */}
       <Modal
         isOpen={showAddModal}
+        busy={formSubmitting}
         onClose={() => setShowAddModal(false)}
         title="Thêm Sinh viên Mới"
         description="Nhập thông tin hồ sơ sinh viên vào hệ thống quản lý đào tạo"
@@ -881,6 +887,7 @@ export default function StudentsPage() {
       {/* Modal: Sửa sinh viên */}
       <Modal
         isOpen={showEditModal}
+        busy={formSubmitting}
         onClose={() => setShowEditModal(false)}
         title={`Chỉnh sửa Sinh viên: ${formData.studentId}`}
         description="Cập nhật thông tin nhân thân và học vụ của sinh viên"
@@ -1052,6 +1059,8 @@ export default function StudentsPage() {
       {/* Modal: Import JSON */}
       <Modal
         isOpen={showImportModal}
+        busy={importLoading}
+        hasUnsavedChanges={Boolean(importJson.trim() && !importResult)}
         onClose={() => {
           setShowImportModal(false);
           setImportResult(null);
@@ -1075,7 +1084,7 @@ export default function StudentsPage() {
   }
 ]`}
             value={importJson}
-            onChange={(e) => setImportJson(e.target.value)}
+            onChange={(e) => { setImportJson(e.target.value); setImportPreview(null); setImportResult(null); }}
             className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
           />
 
@@ -1085,6 +1094,9 @@ export default function StudentsPage() {
               <strong>{importResult.imported}</strong> / {importResult.total} bản ghi.
             </div>
           )}
+
+          {importPreview && <div role="status" className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs leading-6 text-blue-900">Dự kiến thêm {importPreview.created} hồ sơ, cập nhật {importPreview.updated} hồ sơ; bỏ qua {importPreview.errors.length} dòng lỗi. Các trường không có trong JSON sẽ được giữ nguyên. Hồ sơ đã xóa không tự khôi phục.</div>}
+          {(importPreview || importResult)?.errors.length ? <div role="alert" className="max-h-48 overflow-y-auto rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800"><ul className="space-y-2">{(importPreview || importResult)!.errors.map((error, index) => <li key={index}>{error.studentId || `Dòng lỗi ${index + 1}`}: {error.message}</li>)}</ul></div> : null}
 
           <div className="flex items-center justify-end gap-2">
             <button
@@ -1096,11 +1108,11 @@ export default function StudentsPage() {
             </button>
             <button
               type="button"
-              disabled={importLoading || !importJson.trim()}
+              disabled={importLoading || !importJson.trim() || Boolean(importPreview && !importPreview.eligible)}
               onClick={handleImport}
               className="px-4 py-2 text-xs font-semibold text-white bg-[var(--color-primary)] hover:opacity-90 rounded-xl transition-opacity flex items-center gap-1.5 cursor-pointer"
             >
-              {importLoading ? "Đang import..." : "Bắt đầu Import"}
+              {importLoading ? "Đang xử lý…" : importPreview ? "Xác nhận nhập dữ liệu" : "Kiểm tra trước khi nhập"}
             </button>
           </div>
         </div>

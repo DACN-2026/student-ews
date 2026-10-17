@@ -1,6 +1,7 @@
+import { requireApiPermission } from "@/lib/auth/authorize";
 import { NextRequest } from "next/server";
 import { TrainingProgramsService } from "@/lib/services/training-programs";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 import { errorResponse, jsonResponse } from "@/lib/utils/api-response";
 import { recordAudit } from "@/lib/services/audit";
 import { requirePermission } from "@/lib/auth/authorize";
@@ -10,6 +11,8 @@ interface Params { params: Promise<{ id: string; termId: string }> }
 
 export async function GET(_request: NextRequest, { params }: Params) {
   try {
+    const access = await requireApiPermission(_request);
+    if (!access.authorized) return access.response;
     const { id, termId } = await params;
     const term = await TrainingProgramsService.getTermById(id, termId);
     if (!term) return errorResponse("Academic term not found", "NOT_FOUND", 404);
@@ -24,7 +27,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const auth = await requirePermission("academic_term.manage", request);
     if (!auth.authorized) return auth.response;
     const { id, termId } = await params;
-    const body = await readJsonBody<{
+    const body = await readJsonObject<{
       termCode?: string;
       termName?: string;
       termOrder?: number;
@@ -62,6 +65,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
+    const access = await requireApiPermission(request);
+    if (!access.authorized) return access.response;
     const { id, termId } = await params;
     await TrainingProgramsService.removeTerm(id, termId);
     await recordAudit(request, { action: "academic_term.delete", resourceType: "AcademicTerm", resourceId: termId, details: { academicYearId: id } });

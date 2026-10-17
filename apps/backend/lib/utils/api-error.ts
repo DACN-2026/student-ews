@@ -18,11 +18,19 @@ export async function readJsonBody<T>(request: Request, maxBytes = 1024 * 1024):
   if (new TextEncoder().encode(text).byteLength > maxBytes) {
     throw new ApiError("Request body is too large", "PAYLOAD_TOO_LARGE", 413);
   }
+  let parsed: unknown;
   try {
-    return JSON.parse(text) as T;
+    parsed = JSON.parse(text);
   } catch {
     throw new ApiError("Request body must be valid JSON", "INVALID_JSON", 400);
   }
+  return parsed as T;
+}
+
+export async function readJsonObject<T>(request: Request, maxBytes = 1024 * 1024): Promise<T> {
+  const parsed = await readJsonBody<unknown>(request, maxBytes);
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) throw new ApiError("Request body must be an object", "INVALID_REQUEST", 400);
+  return parsed as T;
 }
 
 export function apiErrorResponse(error: unknown, fallbackMessage = "Internal server error") {

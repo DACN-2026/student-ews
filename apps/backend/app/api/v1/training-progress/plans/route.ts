@@ -3,7 +3,7 @@ import { TrainingProgressService } from "@/lib/services/training-progress";
 import { jsonResponse, errorResponse, parsePagination } from "@/lib/utils/api-response";
 import { progressPlanScopeWhere, requireProgressScopePermission } from "@/lib/auth/data-scope";
 import { requirePermission } from "@/lib/auth/authorize";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
       page,
       pageSize,
       await progressPlanScopeWhere(auth.actor),
+      searchParams.get("includeArchived") === "true",
     );
     return jsonResponse(result);
   } catch (err) {
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await readJsonBody<Record<string, any>>(req, 2 * 1024 * 1024);
+    const body = await readJsonObject<Record<string, any>>(req, 2 * 1024 * 1024);
     if (
       typeof body.cohortId !== "string" ||
       typeof body.academicTermId !== "string" ||

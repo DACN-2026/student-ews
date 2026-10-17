@@ -11,6 +11,10 @@ function replace(target: object, method: string, implementation: unknown) {
   return () => { record[method] = original; };
 }
 
+let restoreProgressBatch: () => void;
+test.beforeEach(() => { restoreProgressBatch = replace(StudentTrainingProgressService, "loadProgressBatch", async () => undefined); });
+test.afterEach(() => restoreProgressBatch());
+
 function progress(id: string) {
   return {
     student: { id, studentCode: id, fullName: id, classCode: "C1" },
@@ -33,7 +37,8 @@ test("lazy overview evaluates only the requested database page, preserving scope
       scope = where;
       return 1000;
     }),
-    replace(prisma.student, "findMany", async (query: { where: unknown; select: { sLastName?: boolean; sStudyProgramId?: boolean } }) => {
+    replace(prisma.student, "findMany", async (query: { where: { OR?: unknown; AND?: unknown }; select: { sLastName?: boolean; sStudyProgramId?: boolean } }) => {
+      if (query.where.OR && !query.where.AND) return [];
       if (query.select.sLastName) {
         assert.deepEqual(query.where, scope);
         assert.equal(query.select.sStudyProgramId, undefined);
@@ -64,7 +69,8 @@ test("lazy overview clamps an out-of-range page and does no evaluations for an e
   let keyReads = 0;
   const cleanup = [
     replace(prisma.student, "count", async () => 0),
-    replace(prisma.student, "findMany", async (query: { select: { sLastName?: boolean; sStudyProgramId?: boolean } }) => {
+    replace(prisma.student, "findMany", async (query: { where: { OR?: unknown; AND?: unknown }; select: { sLastName?: boolean; sStudyProgramId?: boolean } }) => {
+      if (query.where.OR && !query.where.AND) return [];
       keyReads++;
       assert.equal(query.select.sLastName, true);
       assert.equal(query.select.sStudyProgramId, undefined);
@@ -102,8 +108,29 @@ test("status filtering remains scope-wide and uses exact totals before paginatio
   } finally { cleanup.reverse().forEach((restore) => restore()); }
 });
 
+test("a warm scope summary serves subsequent pages without evaluating students again", async () => {
+  let evaluations = 0;
+  const cleanup = [
+    replace(prisma.student, "findMany", async ({ where }: { where: { OR?: unknown; AND?: unknown } }) => where.OR && !where.AND ? [] : [{ id: "S1" }, { id: "S2" }, { id: "S3" }]),
+    replace(StudentTrainingProgressService, "getStudentTrainingProgress", async (id: string) => { evaluations++; return progress(id); }),
+  ];
+  try {
+    const scope = { search: "warm-page-regression", scopeWhere: { sClassStudentId: "C1" } };
+    const summary = await StudentTrainingProgressService.getDepartmentProgressOverview(scope);
+    assert.equal(evaluations, 3);
+    const page = await StudentTrainingProgressService.getDepartmentProgressOverview({ ...scope, lazy: true, page: 2, pageSize: 1 });
+    assert.equal(evaluations, 3);
+    assert.equal(page.kpiComplete, true);
+    assert.deepEqual(page.kpi, summary.kpi);
+    assert.deepEqual(page.items.map(item => item.id), ["S2"]);
+    assert.deepEqual(page.pagination, { page: 2, pageSize: 1, total: 3, totalPages: 3 });
+  } finally { cleanup.reverse().forEach(restore => restore()); }
+});
+
 test("graduation pagination aggregates full scoped counts while keeping class choices outside the active filter", async () => {
   const cleanup = [
+    replace(GraduationEvaluationsService, "getStatusOverrides", async () => []),
+    replace(prisma.graduationEvaluationDetail, "findMany", async () => { throw new Error("List must not read conduct"); }),
     replace(prisma.graduationEvaluationStudent, "count", async (query: { where: Record<string, unknown> }) => {
       assert.equal(query.where.classId, "C1");
       assert.equal(query.where.finalStatus, "NOT_ELIGIBLE");
@@ -147,6 +174,7 @@ test("graduation pagination aggregates full scoped counts while keeping class ch
 
 test("graduation counts cannot expose a class outside the actor scope", async () => {
   const cleanup = [
+    replace(GraduationEvaluationsService, "getStatusOverrides", async () => []),
     replace(prisma.graduationEvaluationStudent, "count", async ({ where }: { where: Record<string, unknown> }) => { assert.deepEqual(where.classId, { in: [] }); return 0; }),
     replace(prisma.graduationEvaluationStudent, "findMany", async () => []),
     replace(prisma.graduationEvaluationStudent, "groupBy", async ({ by, where }: { by: string[]; where: Record<string, unknown> }) => {

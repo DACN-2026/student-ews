@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { warningRegulatoryAssessment, warningSupportSuggestions } from "../lib/student-warning-view";
+import { visibleWarningReasons, warningRegulatoryAssessment, warningSupportSuggestions } from "../lib/student-warning-view";
 import { isMainConductTerm, numericWarningValue, warningReasonSummary, warningRuleResults, warningSemesterHistory, warningThresholdLabel, type ProfileWarningReason, type ProfileWarningScan } from "../lib/student-warning-view";
 import { getHumanUnEvaluatedExplanation, getLegalInfo } from "../lib/warning-rule-details";
 import { warningPendingDebtCourses, warningCurriculumReviewCourses } from "../lib/student-warning-view";
@@ -9,6 +9,52 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import WarningTermGpaCard from "../components/warnings/WarningTermGpaCard";
 import { warningPendingProgressCourses } from "../lib/student-warning-view";
+import { academicExplanation } from "../lib/academic-explanation";
+
+test("saved academic explanations use familiar terms while preserving measurements and course names", () => {
+  const reason: ProfileWarningReason = { reasonCode: "EXAM_ABSENCE_RECORDED", severity: "medium", title: null, details: { ruleCode: "EARLY_EXAM_ABSENCE", observedValue: 5, absenceCredits: 16, explanation: "Kết quả đạt/không đạt dùng isPass của API Trường; VT không phải F/0." } };
+  const before = JSON.stringify(reason);
+  const summary = warningReasonSummary(reason);
+  assert.match(summary, /5 lượt vắng thi \(VT\), tổng cộng 16 tín chỉ/);
+  assert.match(summary, /thi bổ sung hoặc học lại theo quy định/);
+  assert.doesNotMatch(summary, /API|isPass|F\/0/);
+  assert.equal(JSON.stringify(reason), before);
+  const saved = "Đang chờ kết quả học phần theo API Trường: Xây dựng Web API (3 TC).";
+  const readable = academicExplanation(saved);
+  assert.match(readable, /theo kết quả do Trường ghi nhận/);
+  assert.match(readable, /Xây dựng Web API \(3 TC\)/);
+  assert.equal(getHumanUnEvaluatedExplanation({ ruleCode: "OTHER", explanation: saved }), readable);
+});
+
+test("a breached failed-credit ratio replaces its duplicate early signal while VT stays visible", () => {
+  const regulatory: ProfileWarningReason = { reasonCode: "FAILED_CREDIT_RATIO_THRESHOLD_BREACHED", severity: "high", title: null, details: { ruleCode: "QD600_FAILED_CREDIT_RATIO", sourceType: "REGULATORY", evaluationStatus: "EVALUATED", observedValue: 1, thresholdValue: 0.5, isThresholdBreached: true } };
+  const early: ProfileWarningReason = { reasonCode: "EARLY_FAILED_CREDIT_RATIO", severity: "medium", title: null, details: { observedValue: 1, thresholdValue: 0.3 } };
+  const vt: ProfileWarningReason = { reasonCode: "EXAM_ABSENCE_RECORDED", severity: "medium", title: null, details: { ruleCode: "EARLY_EXAM_ABSENCE", observedValue: 5 } };
+  const reasons = [early, vt, regulatory];
+  const before = JSON.stringify(reasons);
+  assert.deepEqual(visibleWarningReasons(reasons), [vt, regulatory]);
+  assert.equal(JSON.stringify(reasons), before);
+
+  // Below or exactly at the regulatory boundary, the early signal still matters.
+  for (const observedValue of [0.3, 0.5]) {
+    const academic = { ...regulatory, details: { ...regulatory.details, observedValue, isThresholdBreached: false } };
+    const advisory = { ...early, details: { ...early.details, observedValue } };
+    assert.deepEqual(visibleWarningReasons([academic, advisory]), [academic, advisory]);
+  }
+  assert.deepEqual(visibleWarningReasons([early, vt]), [early, vt]);
+});
+
+test("unevaluated or conflicting ratio evidence does not hide the early signal", () => {
+  const early: ProfileWarningReason = { reasonCode: "EARLY_FAILED_CREDIT_RATIO", severity: "medium", title: null, details: { observedValue: 1 } };
+  for (const details of [
+    { observedValue: 1, evaluationStatus: "NOT_EVALUATED" },
+    { observedValue: null, evaluationStatus: "EVALUATED" },
+    { observedValue: 0.6, evaluationStatus: "EVALUATED" },
+  ]) {
+    const regulatory: ProfileWarningReason = { reasonCode: "QD600_FAILED_CREDIT_RATIO", severity: "high", title: null, details: { sourceType: "REGULATORY", isThresholdBreached: true, ...details } };
+    assert.deepEqual(visibleWarningReasons([regulatory, early]), [regulatory, early]);
+  }
+});
 
 test("progress pending context preserves improvement, retake and unconfirmed results in stored formats", () => {
   const courses = [
@@ -84,8 +130,8 @@ test("known base-catalog courses have a distinct curriculum review with validate
   assert.equal(getHumanUnEvaluatedExplanation(rule),rule.explanation);
 });
 test("VT guidance and pending debt data distinguish verification from confirmed F debt", () => {
-  assert.equal(warningThresholdLabel({ reasonCode: "EARLY_EXAM_ABSENCE", severity: "medium", title: null, details: {thresholdValue:1} }), "Có học phần VT cần xác minh");
-  assert.ok(warningSupportSuggestions(["EARLY_EXAM_ABSENCE"]).some(text => text.includes("hoãn thi")));
+  assert.equal(warningThresholdLabel({ reasonCode: "EARLY_EXAM_ABSENCE", severity: "medium", title: null, details: {thresholdValue:1} }), "Có lượt vắng thi trong kỳ");
+  assert.ok(warningSupportSuggestions(["EARLY_EXAM_ABSENCE"]).some(text => text.includes("kết quả đạt hoặc không đạt do Trường ghi nhận")));
   assert.equal(getHumanUnEvaluatedExplanation({ruleCode:"QD600_ACCUMULATED_DEBT_CREDITS",reasonCode:"EXAM_ABSENCE_REQUIRES_VERIFICATION",explanation:"VT cần xác minh"}), "VT cần xác minh");
   assert.deepEqual(warningPendingDebtCourses([{ruleCode:"QD600_ACCUMULATED_DEBT_CREDITS",pendingDebtCourses:[
     {courseCode:"A",courseName:"Môn A",credits:3,previousOutcome:"FAILED"}, {courseCode:"B",courseName:"Môn B",credits:null,previousOutcome:"NONE"},
@@ -175,7 +221,7 @@ test("an internal debt risk does not imply an official academic threshold breach
   const rules = ["ratio", "term", "cumulative", "debt"].map(ruleCode => ({ ruleCode, sourceType: "REGULATORY", evaluationStatus: "EVALUATED", isThresholdBreached: false }));
   assert.equal(warningRegulatoryAssessment(rules), "Chưa chạm ngưỡng QĐ600");
   rules[0].evaluationStatus = "NOT_EVALUATED";
-  assert.equal(warningRegulatoryAssessment(rules), "Chưa đủ dữ liệu đối chiếu QĐ600");
+  assert.equal(warningRegulatoryAssessment(rules), "Chưa đánh giá đủ các tiêu chí QĐ600");
   rules[3].isThresholdBreached = true;
   assert.equal(warningRegulatoryAssessment(rules), "Chạm ngưỡng QĐ600");
 });

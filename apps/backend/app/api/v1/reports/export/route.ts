@@ -4,6 +4,7 @@ import { studentScopeWhere } from "@/lib/auth/data-scope";
 import { ExportService, EXPORT_FORMATS, EXPORT_TYPES, parseExportParameter, type ExportFormat, type ExportType } from "@/lib/services/export";
 import { prisma } from "@/lib/prisma";
 import { apiErrorResponse, ApiError } from "@/lib/utils/api-error";
+import { hasPermission } from "@/lib/auth/types";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,9 @@ export async function GET(req: NextRequest) {
     if (["warnings", "support", "student-profile"].includes(type)) {
       const warningAuth = await requirePermission("academic_warning.read", req);
       if (!warningAuth.authorized) return warningAuth.response;
+    }
+    if (type === "student-profile" && !["student.read", "grade.read", "decision.read", "progress.read"].every(permission => hasPermission(auth.actor, permission))) {
+      throw new ApiError("Xuất hồ sơ đầy đủ cần quyền đọc hồ sơ, điểm, quyết định và tiến độ.", "FORBIDDEN", 403);
     }
     if (format === "pdf" && !["warnings", "student-profile"].includes(type)) {
       throw new ApiError("PDF is supported for warnings and student-profile", "UNSUPPORTED_EXPORT_COMBINATION", 400);

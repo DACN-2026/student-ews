@@ -1,8 +1,10 @@
+import { academicExplanation } from "./academic-explanation";
+
 const LEGAL_BASIS_INFO: Record<string, { title: string; summary: string }> = {
   QD600_FAILED_CREDIT_RATIO: {
     title: "Điều 18 – Quyết định 600/QĐ-ĐHĐL (Cảnh báo học tập)",
     summary:
-      "Điều 18 quy định đối chiếu cuối học kỳ chính khi tín chỉ không đạt vượt quá 50% tín chỉ đã đăng ký trong kỳ. Hệ thống loại SHCD và học phần điều kiện khỏi tỷ lệ học thuật. VT đã có kết quả dùng IsPass để xác định đạt/không đạt; giữ nguyên mã VT và theo dõi riêng lý do vắng thi.",
+      "Điều 18 quy định đối chiếu cuối học kỳ chính khi tín chỉ không đạt vượt quá 50% tín chỉ đã đăng ký trong kỳ. Sinh hoạt công dân (SHCD) và học phần điều kiện không tính vào tỷ lệ này. Với học phần vắng thi (VT), kết quả đạt hoặc không đạt được giữ theo ghi nhận của Trường; lý do vắng thi được theo dõi riêng.",
   },
   QD600_TERM_GPA: {
     title: "Điều 18 – Quyết định 600/QĐ-ĐHĐL (Điểm trung bình học kỳ)",
@@ -47,7 +49,7 @@ const LEGAL_BASIS_INFO: Record<string, { title: string; summary: string }> = {
 
 export function humanRuleName(code?: unknown) {
   const early: Record<string, string> = {
-    EARLY_EXAM_ABSENCE: "Học phần vắng thi (VT) cần xác minh",
+    EARLY_EXAM_ABSENCE: "Vắng thi trong kỳ (VT)",
     EARLY_MISSING_TERM_DATA: "Thiếu dữ liệu kỳ xét cần ưu tiên xác minh", EARLY_NO_REGISTRATION: "Chưa ghi nhận đăng ký học phần",
     EARLY_NO_REGISTRATION_CONSECUTIVE: "Chưa ghi nhận đăng ký hai kỳ chính liên tiếp",
     ACADEMIC_WARNING_SEQUENCE_REVIEW: "Lịch sử quyết định cảnh báo liên tiếp", ACADEMIC_REPRIEVE_FOLLOWUP: "Theo dõi sau cứu xét",
@@ -95,7 +97,7 @@ export function getLegalInfo(reason: { reasonCode?: string; ruleCode?: string; d
 }
 
 export function getHumanUnEvaluatedExplanation(rule: Record<string, unknown>): string {
-  const explanation = String(rule.explanation || "");
+  const explanation = academicExplanation(String(rule.explanation || ""));
   const code = String(rule.ruleCode || "");
   if (rule.reasonCode === "TERM_GPA_MISSING") return explanation;
   if (rule.reasonCode === "EXAM_ABSENCE_REQUIRES_VERIFICATION") return explanation;
@@ -106,5 +108,5 @@ export function getHumanUnEvaluatedExplanation(rule: Record<string, unknown>): s
   if (code.includes("TERM_GPA") && (explanation.includes("hệ 4") || explanation.includes("không có GPA") || explanation.includes("vắng thi"))) {
     return "Học kỳ đánh giá chỉ có học phần ghi nhận vắng thi (VT) hoặc chưa có điểm số hợp lệ để tính GPA học kỳ chính thức.";
   }
-  return explanation || "Chưa đủ dữ liệu nguồn để đối chiếu tự động tiêu chí này.";
+  return explanation || "Hệ thống chưa hoàn tất đối chiếu tự động tiêu chí này.";
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Check, Info, Save } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 import { useAuthStore } from "@/stores/authStore";
+import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import ForbiddenState from "@/components/ui/ForbiddenState";
 import LoadingState from "@/components/ui/LoadingState";
 import WarningPolicyReference, { WarningRegulationDocument } from "./WarningPolicyReference";
@@ -57,6 +58,7 @@ export default function EarlyWarningSettingsPage() {
   const dirty = Boolean(configuration && savedConfiguration && (
     warningConfigurationKey(configuration) !== warningConfigurationKey(savedConfiguration)
   ));
+  useUnsavedChanges(dirty);
   function edited() { setSuccess(""); setError(""); }
   function setting(key: keyof WarningSettings, value: WarningSettings[keyof WarningSettings]) {
     if ((key === "conductScoreBelow" || key === "conductScoreDrop") && value !== null

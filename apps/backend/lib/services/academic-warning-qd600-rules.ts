@@ -14,7 +14,7 @@ import { assessAcademicStanding, type StandingSources } from "./academic-standin
 import type { CurriculumReviewCourse } from "./academic-debt";
 
 export const QD600_EXECUTION_PROFILE = "QD600_PARTIAL_REGULATORY" as const;
-export const QD600_RULE_ENGINE_VERSION = "academic-warning-qd600-article18-and-progress-v21" as const;
+export const QD600_RULE_ENGINE_VERSION = "academic-warning-qd600-article18-and-progress-v24" as const;
 
 export type Qd600RuleCode =
   | "EARLY_EXAM_ABSENCE"
@@ -263,7 +263,9 @@ export function evaluateTrainingProgressCreditDeficit(input: Qd600EvaluationInpu
       sourceType: "OPERATIONAL",
       dataStatus: progress.dataStatus,
       reasonCode: progress.reasonCode || "TRAINING_PROGRESS_DATA_INCOMPLETE",
-      explanation: "Không phân loại tiến độ khi kết quả CTĐT còn lỗi hoặc còn học phần chưa có kết quả chính thức.",
+      explanation: progress.reasonCode === "TRAINING_PROGRESS_MAPPING_REVIEW"
+        ? "Hệ thống chưa hoàn tất ánh xạ học phần hoặc mốc công nhận chuyển miễn. Giữ nguyên dữ liệu Trường; không quy phần chưa ánh xạ thành thiếu tín chỉ hoặc kết luận chậm tiến độ."
+        : "Chưa hoàn tất đối chiếu tiến độ trong hệ thống tại mốc xét; các kết quả đã được Trường công nhận được giữ nguyên.",
       thresholdValue: settings.progressMonitoringFrom,
       margin: settings.progressHighRiskFrom,
       policy: input.policyDefinition,
@@ -581,7 +583,8 @@ function evaluateAccumulatedDebt(input: Qd600EvaluationInput): Qd600RuleEvaluati
       reasonCode: data.dataStatus === "UNVERIFIED" ? "ACCUMULATED_DEBT_SEMANTICS_UNVERIFIED" : data.reasonCode ?? "ACCUMULATED_DEBT_SEMANTICS_UNVERIFIED",
       explanation: data.reasonCode === "CURRICULUM_SCOPE_REQUIRES_VERIFICATION" ? "Có học phần trong danh mục CTĐT chung nhưng chưa được xác nhận thuộc nghĩa vụ của chuyên ngành hiện tại. Đối chiếu môn được phép học, thay thế hoặc CTĐT cá nhân; môn chờ điểm không được tự cộng thành nợ F."
         : data.reasonCode === "EXAM_ABSENCE_REQUIRES_VERIFICATION" ? "Lịch sử còn học phần VT chưa được xác minh kết quả cuối cùng; theo dõi riêng, không tự cộng thành tín chỉ F còn nợ."
-        : "Cần đối chiếu lịch sử học lại môn rớt và môn tự chọn thay thế để xác định chính xác số tín chỉ F còn nợ đọng theo Điều 18.",
+        : data.reasonCode === "SOURCE_RECORD_MAPPING_REVIEW" ? "Hệ thống chưa hoàn tất ánh xạ mốc công nhận hoặc phạm vi CTĐT của các bản ghi nguồn. Không tự gán kỳ hoặc coi bản ghi này là tín chỉ nợ."
+        : "Cần hoàn tất đối chiếu học phần, lịch sử học lại và môn thay thế trong hệ thống để xác định tín chỉ chưa đạt còn nợ theo Điều 18.",
       thresholdValue: input.policyDefinition.thresholds.accumulatedDebtCredits.value,
       policy: input.policyDefinition,
     }), pendingDebtCourses: data.pendingCourses,

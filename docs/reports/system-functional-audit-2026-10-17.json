@@ -1,0 +1,500 @@
+{
+  "auditedOn": "2026-10-17",
+  "mode": "read-only",
+  "requests": [
+    {
+      "path": "healthz",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 23,
+      "shape": "object"
+    },
+    {
+      "path": "auth/me",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 16,
+      "shape": "object"
+    },
+    {
+      "path": "academic-years",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 14,
+      "shape": "object",
+      "itemCount": 5,
+      "total": 5,
+      "pageSize": 20
+    },
+    {
+      "path": "courses",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 11,
+      "shape": "object",
+      "itemCount": 20,
+      "total": 144,
+      "pageSize": 20
+    },
+    {
+      "path": "courses?page=2&pageSize=20",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 12,
+      "shape": "object",
+      "itemCount": 20,
+      "total": 144,
+      "pageSize": 20
+    },
+    {
+      "path": "classes",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 16,
+      "shape": "object",
+      "itemCount": 10,
+      "total": 10,
+      "pageSize": 20
+    },
+    {
+      "path": "cohorts",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 12,
+      "shape": "object",
+      "itemCount": 4,
+      "total": 4,
+      "pageSize": 20
+    },
+    {
+      "path": "training-programs",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 12,
+      "shape": "object",
+      "itemCount": 11,
+      "total": 11,
+      "pageSize": 20
+    },
+    {
+      "path": "training-progress/plans",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 17,
+      "shape": "object",
+      "itemCount": 12,
+      "total": 12,
+      "pageSize": 20
+    },
+    {
+      "path": "training-progress/plans?page=2&pageSize=20",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 13,
+      "shape": "object",
+      "itemCount": 0,
+      "total": 12,
+      "pageSize": 20
+    },
+    {
+      "path": "academic-context",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 11,
+      "shape": "object"
+    },
+    {
+      "path": "students?pageSize=1",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 47,
+      "shape": "object",
+      "itemCount": 1,
+      "total": 625,
+      "pageSize": 1
+    },
+    {
+      "path": "academic-warnings/assessment-term",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 12,
+      "shape": "object"
+    },
+    {
+      "path": "academic-warnings/policies",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 11,
+      "shape": "object",
+      "itemCount": 5,
+      "total": 5
+    },
+    {
+      "path": "academic-warnings/policies/early-warning",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 12,
+      "shape": "object"
+    },
+    {
+      "path": "academic-warnings/runs?pageSize=1",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 18,
+      "shape": "object",
+      "itemCount": 1,
+      "total": 888,
+      "pageSize": 1
+    },
+    {
+      "path": "academic-warnings/interventions/summary",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 147,
+      "shape": "object",
+      "total": 324
+    },
+    {
+      "path": "academic-warnings/interventions?pageSize=1",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 117,
+      "shape": "object",
+      "itemCount": 1,
+      "total": 324,
+      "pageSize": 1
+    },
+    {
+      "path": "graduation-evaluations?pageSize=100&status=completed&latestPerScope=true",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 27,
+      "shape": "object",
+      "itemCount": 7,
+      "total": 7,
+      "pageSize": 100
+    },
+    {
+      "path": "training-progress/overview?pageSize=1",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 47,
+      "shape": "object",
+      "itemCount": 1,
+      "total": 622,
+      "pageSize": 1
+    },
+    {
+      "path": "reports/academic-warnings?pageSize=1",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 214,
+      "shape": "object",
+      "itemCount": 1,
+      "total": 324,
+      "pageSize": 1,
+      "counts": {
+        "students": 623,
+        "evaluated": 622,
+        "available": 622,
+        "termGpaAvailable": 576,
+        "cumulativeGpaAvailable": 589,
+        "unassessed": 1,
+        "high": 179,
+        "medium": 145,
+        "safe": 298,
+        "businessStatus": {
+          "NORMAL": 298,
+          "PARTIAL_NO_RISK": 0,
+          "MONITORING": 145,
+          "HIGH_RISK": 179,
+          "VERIFY_REQUIRED": 0,
+          "INSUFFICIENT_DATA": 0
+        }
+      },
+      "evaluationState": {
+        "hasCompletedOfficialRun": true,
+        "persistedResultCount": 622,
+        "persistedInsufficientDataCount": 0,
+        "noPersistedResultCount": 1,
+        "excludedStandingCount": 1
+      }
+    },
+    {
+      "path": "dashboard/summary",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 2224,
+      "shape": "object",
+      "totalStudents": 622,
+      "counts": {
+        "red": 179,
+        "yellow": 145,
+        "green": 298,
+        "evaluated": 622,
+        "unassessed": 0,
+        "conductApproved": 610,
+        "conductPending": 12,
+        "conductMissing": 0
+      },
+      "metricKeys": [
+        "studentCount",
+        "classCount",
+        "averageGpa",
+        "completionRate",
+        "registrationRate",
+        "warningStudents",
+        "graduationForecastRate",
+        "averageConductScore"
+      ]
+    },
+    {
+      "path": "students/<sample>",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 32,
+      "shape": "object"
+    },
+    {
+      "path": "students/<sample>/dashboard",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 68,
+      "shape": "object"
+    },
+    {
+      "path": "students/<sample>/grades",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 89,
+      "shape": "object",
+      "itemCount": 54,
+      "total": 54
+    },
+    {
+      "path": "students/<sample>/grades/summary",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 26,
+      "shape": "object"
+    },
+    {
+      "path": "students/<sample>/registrations?pageSize=100",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 35,
+      "shape": "object",
+      "itemCount": 77,
+      "total": 77,
+      "pageSize": 100
+    },
+    {
+      "path": "students/<sample>/conduct",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 34,
+      "shape": "object",
+      "itemCount": 15,
+      "total": 15
+    },
+    {
+      "path": "students/<sample>/decisions",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 36,
+      "shape": "object",
+      "itemCount": 8,
+      "total": 8,
+      "pageSize": 20
+    },
+    {
+      "path": "students/<sample>/fee-policies",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 33,
+      "shape": "object",
+      "itemCount": 0,
+      "total": 0,
+      "pageSize": 20
+    },
+    {
+      "path": "students/<sample>/training-progress",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 41,
+      "shape": "object"
+    },
+    {
+      "path": "healthz",
+      "base": "http://localhost:3000",
+      "status": 200,
+      "elapsedMs": 67,
+      "shape": "object"
+    },
+    {
+      "path": "students?pageSize=1",
+      "base": "http://localhost:3000",
+      "status": 200,
+      "elapsedMs": 81,
+      "shape": "object",
+      "itemCount": 1,
+      "total": 625,
+      "pageSize": 1
+    },
+    {
+      "path": "courses?pageSize=200",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 14,
+      "shape": "object",
+      "itemCount": 100,
+      "total": 144,
+      "pageSize": 100
+    },
+    {
+      "path": "students/<repeat-sample>/grades?<earlier-failed-attempt>",
+      "base": "http://127.0.0.1:3001",
+      "status": 200,
+      "elapsedMs": 62,
+      "shape": "object",
+      "itemCount": 0,
+      "total": 0
+    }
+  ],
+  "databaseCounts": {
+    "student": 625,
+    "class": 10,
+    "course": 144,
+    "trainingProgram": 11,
+    "trainingProgressPlan": 47,
+    "studentCourseOffering": 31141,
+    "studentCourseGrade": 31141,
+    "studentCumulativeSummary": 624,
+    "studentTermSummary": 3456,
+    "studentConductRecord": 9375,
+    "studentDecision": 912,
+    "studentFeePolicy": 41,
+    "academicWarningRun": 888,
+    "graduationEvaluation": 13
+  },
+  "offeringCoverage": [
+    {
+      "students": 624,
+      "minimum": 10,
+      "maximum": 94,
+      "above_100": 0
+    }
+  ],
+  "nullProfileFields": [
+    {
+      "missing_birth_date": 0,
+      "missing_gender": 0,
+      "missing_class": 0
+    }
+  ],
+  "sourceFreshness": [
+    {
+      "dataset": "offerings",
+      "last_database_update": "2026-10-06 23:54:49.319783+07"
+    },
+    {
+      "dataset": "conduct",
+      "last_database_update": "2026-09-21 06:00:06.516+07"
+    },
+    {
+      "dataset": "decisions",
+      "last_database_update": "2026-09-21 06:00:07.095+07"
+    }
+  ],
+  "planStatuses": [
+    {
+      "_count": {
+        "_all": 11
+      },
+      "status": "locked"
+    },
+    {
+      "_count": {
+        "_all": 1
+      },
+      "status": "draft"
+    },
+    {
+      "_count": {
+        "_all": 35
+      },
+      "status": "archived"
+    }
+  ],
+  "graduationStatuses": [
+    {
+      "_count": {
+        "_all": 1
+      },
+      "finalStatus": "MANUAL_REVIEW"
+    },
+    {
+      "_count": {
+        "_all": 146
+      },
+      "finalStatus": "PENDING_GRADE"
+    },
+    {
+      "_count": {
+        "_all": 1095
+      },
+      "finalStatus": "NOT_ELIGIBLE"
+    }
+  ],
+  "feePolicyForm": {
+    "databaseTypeCodes": [
+      "TN",
+      "CMC",
+      "DT-CN",
+      "CS",
+      "TT"
+    ],
+    "formTypeCodes": [
+      "MIEN_100",
+      "GIAM_70",
+      "MIEN_GIAM_50"
+    ],
+    "matchingTypeCount": 0
+  },
+  "sampleGradeAttempts": {
+    "rows": 54,
+    "distinctCourses": 54,
+    "repeatedCourses": 0
+  },
+  "historicalGradeFilter": {
+    "failedAttemptExistsInDatabase": true,
+    "selectedPeriod": "HK01 2022-2023",
+    "returnedItems": 0
+  },
+  "absentIdentityCheck": [
+    {
+      "path": "auth/me",
+      "status": 401
+    },
+    {
+      "path": "courses",
+      "status": 200
+    }
+  ],
+  "advisorGraduationCounts": [
+    {
+      "listedTotal": 20,
+      "accessibleStudentTotal": 7,
+      "studentEndpointStatus": 200
+    },
+    {
+      "listedTotal": 84,
+      "accessibleStudentTotal": 50,
+      "studentEndpointStatus": 200
+    }
+  ],
+  "anonymousNavigation": {
+    "status": 307,
+    "locationPath": "/renew"
+  }
+}

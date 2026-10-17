@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { GraduationEvaluationsService } from "@/lib/services/graduation-evaluations";
 import { graduationEvaluationScopeWhere, requireProgressScopePermission } from "@/lib/auth/data-scope";
 import { requirePermission } from "@/lib/auth/authorize";
-import { apiErrorResponse, readJsonBody } from "@/lib/utils/api-error";
+import { apiErrorResponse, readJsonObject } from "@/lib/utils/api-error";
 import { errorResponse, jsonResponse, parsePagination } from "@/lib/utils/api-response";
 import { recordAudit } from "@/lib/services/audit";
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       termId: searchParams.get("assessmentAcademicTermId") || searchParams.get("termId") || undefined,
       status: searchParams.get("status") || undefined,
       latestPerScope: searchParams.get("latestPerScope") === "true",
-    }, page, pageSize, await graduationEvaluationScopeWhere(auth.actor)));
+    }, page, pageSize, await graduationEvaluationScopeWhere(auth.actor), auth.actor));
   } catch (error) {
     return apiErrorResponse(error, "Failed to list graduation evaluations");
   }
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await readJsonBody<{
+    const body = await readJsonObject<{
       cohortId?: unknown;
       trainingProgramId?: unknown;
       assessmentAcademicTermId?: unknown;

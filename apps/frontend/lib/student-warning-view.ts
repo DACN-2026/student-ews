@@ -1,3 +1,5 @@
+import { academicExplanation } from "./academic-explanation";
+
 export type ProfileWarningReason = {
   id?: string; reasonCode: string; severity: string; title: string | null;
   sourceType?: string | null; details: Record<string, unknown>;
@@ -10,6 +12,7 @@ export type ProfileWarningScan = {
 export const WARNING_STATE_LABELS: Record<string, string> = {
   HIGH_RISK: "Nguy cơ cao", VERIFY_REQUIRED: "Cần xác minh", MONITORING: "Cần theo dõi",
   INSUFFICIENT_DATA: "Chưa đủ dữ liệu", NORMAL: "Chưa ghi nhận nguy cơ", PARTIAL_NO_RISK: "Chưa ghi nhận nguy cơ",
+  NOT_APPLICABLE: "Không thuộc phạm vi đánh giá kỳ này",
 };
 export const studentWarningEndpoint = (studentId: string) => `/api/v1/academic-warnings/students/${encodeURIComponent(studentId)}`;
 export function warningRuleResults(value: unknown): Array<Record<string, unknown>> {
@@ -59,19 +62,39 @@ export function numericWarningValue(value: unknown): number | null {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
+export function visibleWarningReasons(reasons: ProfileWarningReason[]) {
+  const breachedRatios = new Set(reasons
+    .filter(reason => warningRuleCode(reason) === "QD600_FAILED_CREDIT_RATIO"
+      && (reason.details.sourceType || reason.sourceType) === "REGULATORY"
+      && reason.details.evaluationStatus === "EVALUATED"
+      && reason.details.isThresholdBreached === true)
+    .map(reason => numericWarningValue(reason.details.observedValue))
+    .filter(value => value !== null));
+  // Show the stronger threshold once for the same measurement; retain independent signals such as VT.
+  return reasons.filter(reason => {
+    const code = warningRuleCode(reason);
+    if (code === "ACADEMIC_STUDY_DURATION_REVIEW") return false;
+    const observed = numericWarningValue(reason.details.observedValue);
+    return code !== "EARLY_FAILED_CREDIT_RATIO" || observed === null || !breachedRatios.has(observed);
+  });
+}
 export function warningReasonSummary(reason: ProfileWarningReason) {
   const details = reason.details;
   const code = warningRuleCode(reason);
   const observed = numericWarningValue(details.observedValue);
   const missing = Array.isArray(details.missingRequiredCourses) ? details.missingRequiredCourses.length : 0;
+  if (code === "EARLY_EXAM_ABSENCE" && observed !== null) {
+    const credits = numericWarningValue(details.absenceCredits);
+    return `Học kỳ này ghi nhận ${observed} lượt vắng thi (VT)${credits === null ? "" : `, tổng cộng ${credits} tín chỉ`}. Kết quả đạt hoặc không đạt được giữ theo ghi nhận của Trường. Cần kiểm tra từng học phần để hướng dẫn thi bổ sung hoặc học lại theo quy định.`;
+  }
   if (code.includes("PROGRESS") && observed === 0 && missing > 0) {
     return `Đã đủ tổng tín chỉ theo lộ trình, nhưng còn ${missing} học phần bắt buộc đến hạn chưa hoàn thành (${numericWarningValue(details.missingRequiredCredits) ?? "—"} TC).`;
   }
-  return typeof details.explanation === "string" ? details.explanation : "Xem số liệu và bằng chứng của tiêu chí này để xác nhận nguyên nhân.";
+  return typeof details.explanation === "string" ? academicExplanation(details.explanation) : "Xem số liệu và bảng điểm của tiêu chí này để xác nhận nguyên nhân.";
 }
 export function warningThresholdLabel(reason: ProfileWarningReason) {
   const code = warningRuleCode(reason);
-  if (code === "EARLY_EXAM_ABSENCE") return "Có học phần VT cần xác minh";
+  if (code === "EARLY_EXAM_ABSENCE") return "Có lượt vắng thi trong kỳ";
   if (code === "EARLY_MISSING_TERM_DATA" || code === "ACADEMIC_REPRIEVE_FOLLOWUP") return "Cần đối chiếu hồ sơ";
   const value = numericWarningValue(reason.details.thresholdValue);
   if (value == null) return "Chưa có ngưỡng";
@@ -125,12 +148,12 @@ export function termGpaWarningGroup(reasons: ProfileWarningReason[], storedRules
 export function warningRegulatoryAssessment(value: unknown) {
   const rules = warningRuleResults(value).filter(rule => rule.sourceType === "REGULATORY");
   if (rules.some(rule => rule.evaluationStatus === "EVALUATED" && rule.isThresholdBreached === true)) return "Chạm ngưỡng QĐ600";
-  return rules.length === 4 && rules.every(rule => rule.evaluationStatus === "EVALUATED") ? "Chưa chạm ngưỡng QĐ600" : "Chưa đủ dữ liệu đối chiếu QĐ600";
+  return rules.length === 4 && rules.every(rule => rule.evaluationStatus === "EVALUATED") ? "Chưa chạm ngưỡng QĐ600" : "Chưa đánh giá đủ các tiêu chí QĐ600";
 }
 export function warningSupportSuggestions(codes: string[]) {
   const suggestions = new Set<string>();
   for (const code of codes) {
-    if (code === "EARLY_EXAM_ABSENCE") suggestions.add("GVCN/CVHT liên hệ sinh viên để xác minh lý do vắng thi, phê duyệt hoãn thi và kết quả thi bổ sung; không tự kết luận cảnh báo học vụ từ mã VT.");
+    if (code === "EARLY_EXAM_ABSENCE") suggestions.add("Rà soát các học phần sinh viên vắng thi (VT), đối chiếu kết quả đạt hoặc không đạt do Trường ghi nhận và hướng dẫn thi bổ sung hoặc học lại theo quy định.");
     if (code.includes("NO_REGISTRATION") || code === "EARLY_MISSING_TERM_DATA") suggestions.add("Liên hệ sinh viên, đối chiếu đăng ký đúng chương trình và dữ liệu nguồn. Nếu cần nghỉ học, phối hợp hoàn tất thủ tục và xác minh quyết định có hiệu lực trong kỳ; không chờ thêm một kỳ mới xử lý.");
     if (code.startsWith("ACADEMIC_") && code !== "ACADEMIC_STUDY_DURATION_REVIEW") suggestions.add("Phối hợp đơn vị phụ trách rà soát quyết định cảnh báo và cứu xét; thống nhất phương án hỗ trợ và lịch theo dõi với sinh viên.");
     if (code.includes("GPA")) suggestions.add("Trao đổi nguyên nhân kết quả học tập thấp hoặc suy giảm; thống nhất kế hoạch học và theo dõi kết quả môn tiếp theo.");

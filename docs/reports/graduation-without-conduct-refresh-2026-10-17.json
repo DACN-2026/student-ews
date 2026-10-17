@@ -1,0 +1,204 @@
+{
+  "checkedAt": "2026-10-17T13:00:22.276Z",
+  "calculationVersion": "curriculum-gap-v5",
+  "sourceAndWarningsAndStandardRunsUnchanged": true,
+  "before": [
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    },
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "catalog",
+      "count": 144,
+      "hash": "0cc2b692235dd18012ffdbc8c0955980"
+    },
+    {
+      "source": "programs",
+      "count": 11,
+      "hash": "77ba90e3cfb1996872d88b6684576cc9"
+    },
+    {
+      "source": "curriculum",
+      "count": 593,
+      "hash": "83d42abafe53ba7407aae8f7b6048e35"
+    },
+    {
+      "source": "conduct",
+      "count": 9375,
+      "hash": "619a1b89a8716198b0ae0f49611b5ba1"
+    },
+    {
+      "source": "cumulative",
+      "count": 624,
+      "hash": "265e61d8536cebb2e37dd4426966e2cb"
+    },
+    {
+      "source": "graduation_source_requirements",
+      "count": 0,
+      "hash": null
+    },
+    {
+      "source": "warnings",
+      "count": 59997,
+      "hash": "119a7fa4960d42bd3053af4d6ee5d9ac"
+    },
+    {
+      "source": "standard_runs",
+      "count": 87,
+      "hash": "d34d3344bfc6b5574d10d2602a1db403"
+    }
+  ],
+  "after": [
+    {
+      "source": "students",
+      "count": 625,
+      "hash": "025a222d70cd0000c41127e064e87ffb"
+    },
+    {
+      "source": "grades",
+      "count": 31141,
+      "hash": "0e99e4e2665f198346c8eeb14da98e94"
+    },
+    {
+      "source": "offerings",
+      "count": 31141,
+      "hash": "9f0471082e43f786b10cc98abba3e284"
+    },
+    {
+      "source": "summaries",
+      "count": 3456,
+      "hash": "2701ed951f3b15cfe9b6b95525507e0f"
+    },
+    {
+      "source": "unscoped",
+      "count": 16,
+      "hash": "9d8cfbab16aacb6e710ba688565744c7"
+    },
+    {
+      "source": "decisions",
+      "count": 912,
+      "hash": "5a56ff8398433fb61526927179d25b7e"
+    },
+    {
+      "source": "catalog",
+      "count": 144,
+      "hash": "0cc2b692235dd18012ffdbc8c0955980"
+    },
+    {
+      "source": "programs",
+      "count": 11,
+      "hash": "77ba90e3cfb1996872d88b6684576cc9"
+    },
+    {
+      "source": "curriculum",
+      "count": 593,
+      "hash": "83d42abafe53ba7407aae8f7b6048e35"
+    },
+    {
+      "source": "conduct",
+      "count": 9375,
+      "hash": "619a1b89a8716198b0ae0f49611b5ba1"
+    },
+    {
+      "source": "cumulative",
+      "count": 624,
+      "hash": "265e61d8536cebb2e37dd4426966e2cb"
+    },
+    {
+      "source": "graduation_source_requirements",
+      "count": 0,
+      "hash": null
+    },
+    {
+      "source": "warnings",
+      "count": 59997,
+      "hash": "119a7fa4960d42bd3053af4d6ee5d9ac"
+    },
+    {
+      "source": "standard_runs",
+      "count": 87,
+      "hash": "d34d3344bfc6b5574d10d2602a1db403"
+    }
+  ],
+  "evaluations": [
+    {
+      "previousId": "b95b1b79-3dce-47c6-a257-d05b1805e942",
+      "id": "9d673c29-b22d-47fb-8919-632293e68222",
+      "totalStudents": 116,
+      "completionRunId": "d4f63c2b-f740-4482-8a3b-dd20029e446f"
+    },
+    {
+      "previousId": "c061004b-8e7e-4d95-ac31-d052d93f2af2",
+      "id": "17570a00-ee4e-4f89-b387-a07c0e564799",
+      "totalStudents": 47,
+      "completionRunId": "53de5487-e4fe-4cf7-8de4-14670c9bef9f"
+    },
+    {
+      "previousId": "0fca4603-61ee-420a-8fd2-622b34a7fcf7",
+      "id": "e25ca632-1eb9-4be9-9a8e-194e7eccdb2a",
+      "totalStudents": 20,
+      "completionRunId": "d7ed53dc-f4da-462f-9b5f-ecf4de3adba7"
+    },
+    {
+      "previousId": "c20f2022-92d7-416d-86c9-8c1a0e72a027",
+      "id": "82691ac7-80d4-48e5-867c-a6d95031cf37",
+      "totalStudents": 84,
+      "completionRunId": "ce269e79-d4cf-4e72-8b8a-c7ba3cb88151"
+    },
+    {
+      "previousId": "343ecab8-72f5-466f-9463-621526ef59f3",
+      "id": "da542069-c290-4203-b3ae-2f5ae407da4e",
+      "totalStudents": 111,
+      "completionRunId": "e7fcc95a-ed09-4d9a-8665-98e3586919a8"
+    },
+    {
+      "previousId": "e2941a54-d984-46c1-a694-8ef32ff7b7c4",
+      "id": "63e0bd9f-8250-4a3c-aeef-bdf7c4020e6a",
+      "totalStudents": 238,
+      "completionRunId": "3588ee5d-9566-4a2f-9f17-4171161b7e59"
+    },
+    {
+      "previousId": "2efe026a-3c65-41b5-a146-fc7bacceb3a4",
+      "id": "cbc2ba31-f248-4476-a370-df0d029a0d80",
+      "totalStudents": 6,
+      "completionRunId": "7abeae28-030b-44a9-8b8f-cfaec5aec19b"
+    }
+  ],
+  "beforeCounts": {
+    "NOT_ELIGIBLE": 545,
+    "MANUAL_REVIEW": 77
+  },
+  "afterCounts": {
+    "NOT_ELIGIBLE": 545,
+    "MANUAL_REVIEW": 1,
+    "PENDING_GRADE": 76
+  },
+  "manualReviewFlagsBefore": 622,
+  "manualReviewFlagsAfter": 1
+}

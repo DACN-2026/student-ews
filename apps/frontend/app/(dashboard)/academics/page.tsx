@@ -7,6 +7,7 @@ import { Trash2, CheckCheck, BookOpen, Eye, LockKeyhole, CircleCheck, Archive } 
 import TextLabel from "@/components/ui/TextLabel";
 import { Fragment, useState, useEffect, useRef } from "react";
 import { apiFetch } from "@/lib/api-client";
+import { fetchAllApiItems, readApiJson } from "@/lib/api-data";
 import { useRouter } from "next/navigation";
 import Tabs, { TabItem } from "@/components/ui/Tabs";
 import FilterBar from "@/components/ui/FilterBar";
@@ -31,6 +32,7 @@ export default function AcademicsPage() {
   const configuredSummerTermOrder = Number(process.env.NEXT_PUBLIC_SUMMER_TERM_ORDER || "");
   const [activeTab, setActiveTab] = useState<AcademicsTab>("years");
   const [loading, setLoading] = useState(true);
+  const [catalogSaving, setCatalogSaving] = useState(false);
 
   // Data collections
   const [years, setYears] = useState<ApiData[]>([]);
@@ -55,7 +57,7 @@ export default function AcademicsPage() {
   const [termForm, setTermForm] = useState({ termCode: "HK01", termName: "Học kỳ 1", termOrder: 1, isSummer: false, status: "open", isCurrent: false });
 
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [courseForm, setCourseForm] = useState({ courseCode: "", courseName: "", credits: 3, theoryHours: 45, practiceHours: 0 });
+  const [courseForm, setCourseForm] = useState({ courseCode: "", courseName: "" });
 
   const [showCohortModal, setShowCohortModal] = useState(false);
   const [cohortForm, setCohortForm] = useState({ cohortCode: "", cohortName: "" });
@@ -104,15 +106,12 @@ export default function AcademicsPage() {
     if (!missing.length) { setLoading(false); return; }
     setLoading(true);
     setCatalogError("");
-    const endpoints: Record<string, string> = { years: "academic-years", programs: "training-programs", courses: "courses", classes: "classes", cohorts: "cohorts", plans: "training-progress/plans" };
+    const endpoints: Record<string, string> = { years: "academic-years", programs: "training-programs", courses: "courses", classes: "classes", cohorts: "cohorts", plans: "training-progress/plans?includeArchived=true" };
     const setters: Record<string, (items: ApiData[]) => void> = { years: setYears, programs: setPrograms, courses: setCourses, classes: setClasses, cohorts: setCohorts, plans: setPlans };
     async function loadCatalog(key: string) {
       try {
-        const response = await apiFetch(`/api/v1/${endpoints[key]}`, { signal: controller.signal });
-        if (!response.ok) throw new Error("Không thể tải danh mục. Vui lòng thử lại.");
-        const data = await response.json();
+        const items = await fetchAllApiItems<ApiData>(`/api/v1/${endpoints[key]}`, { signal: controller.signal });
         if (controller.signal.aborted) return;
-        const items = Array.isArray(data.items) ? data.items : Array.isArray(data) ? data : [];
         setters[key](items);
         if (key === "years" && items.length) setSelectedYearId((current) => current || items[0].id);
         loadedCatalogs.current.add(key);
@@ -161,36 +160,41 @@ export default function AcademicsPage() {
   // Create Year
   const handleCreateYear = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (catalogSaving) return;
     if (!yearForm.yearCode) return;
+    setCatalogSaving(true);
     try {
       const res = await apiFetch("/api/v1/academic-years", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(yearForm),
       });
+      await readApiJson(res);
       if (res.ok) {
         setShowYearModal(false);
         setYearForm({ yearCode: "", startDate: "", endDate: "", status: "open", isCurrent: false });
         // Reload years
-        const yRes = await apiFetch("/api/v1/academic-years");
-        if (yRes.ok) setYears(await yRes.json());
+        setYears(await fetchAllApiItems<ApiData>("/api/v1/academic-years"));
         alert("Đã thêm năm học thành công!");
       }
-    } catch {
-      alert("Lỗi khi thêm năm học");
-    }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Lỗi khi thêm năm học");
+    } finally { setCatalogSaving(false); }
   };
 
   // Create Term
   const handleCreateTerm = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (catalogSaving) return;
     if (!selectedYearId) return;
+    setCatalogSaving(true);
     try {
       const res = await apiFetch(`/api/v1/academic-years/${selectedYearId}/terms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(termForm),
       });
+      await readApiJson(res);
       if (res.ok) {
         setShowTermModal(false);
         const tRes = await apiFetch(`/api/v1/academic-years/${selectedYearId}/terms`);
@@ -200,9 +204,9 @@ export default function AcademicsPage() {
         }
         alert("Đã thêm học kỳ thành công!");
       }
-    } catch {
-      alert("Lỗi khi thêm học kỳ");
-    }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Lỗi khi thêm học kỳ");
+    } finally { setCatalogSaving(false); }
   };
 
   const handleFinalizeTermGrades = async (term: ApiData) => {
@@ -224,7 +228,7 @@ export default function AcademicsPage() {
       const evaluation = data?.evaluation;
       alert(evaluation?.failed
         ? `Đã chốt điểm. Đánh giá tự động còn ${evaluation.failed} phạm vi chưa thành công; có thể chạy lại an toàn tại trang Cảnh báo học tập.`
-        : `Đã chốt điểm và hoàn tất đánh giá tự động cho ${evaluation?.scopeCount || 0} phạm vi nội bộ.`);
+        : `Đã chốt điểm và hoàn tất đánh giá tự động cho ${evaluation?.scopeCount || 0} nhóm sinh viên theo kế hoạch đào tạo.`);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Không thể xác nhận chốt điểm học kỳ");
     } finally {
@@ -235,64 +239,70 @@ export default function AcademicsPage() {
   // Create Course
   const handleCreateCourse = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (catalogSaving) return;
     if (!courseForm.courseCode || !courseForm.courseName) return;
+    setCatalogSaving(true);
     try {
       const res = await apiFetch("/api/v1/courses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(courseForm),
       });
+      await readApiJson(res);
       if (res.ok) {
         setShowCourseModal(false);
-        const cRes = await apiFetch("/api/v1/courses");
-        if (cRes.ok) setCourses(await cRes.json());
+        setCourses(await fetchAllApiItems<ApiData>("/api/v1/courses"));
         alert("Đã thêm học phần thành công!");
       }
-    } catch {
-      alert("Lỗi khi thêm học phần");
-    }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Lỗi khi thêm học phần");
+    } finally { setCatalogSaving(false); }
   };
 
   // Create Cohort
   const handleCreateCohort = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (catalogSaving) return;
     if (!cohortForm.cohortCode) return;
+    setCatalogSaving(true);
     try {
       const res = await apiFetch("/api/v1/cohorts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cohortForm),
       });
+      await readApiJson(res);
       if (res.ok) {
         setShowCohortModal(false);
-        const coRes = await apiFetch("/api/v1/cohorts");
-        if (coRes.ok) setCohorts(await coRes.json());
+        setCohorts(await fetchAllApiItems<ApiData>("/api/v1/cohorts"));
         alert("Đã thêm khóa mới thành công!");
       }
-    } catch {
-      alert("Lỗi khi thêm khóa");
-    }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Lỗi khi thêm khóa");
+    } finally { setCatalogSaving(false); }
   };
 
   // Create Class
   const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (catalogSaving) return;
     if (!classForm.classId || !classForm.className) return;
+    setCatalogSaving(true);
     try {
       const res = await apiFetch("/api/v1/classes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(classForm),
       });
+      await readApiJson(res);
       if (res.ok) {
         setShowClassModal(false);
-        const clRes = await apiFetch("/api/v1/classes");
-        if (clRes.ok) setClasses(await clRes.json());
+        setClasses(await fetchAllApiItems<ApiData>("/api/v1/classes"));
         alert("Đã thêm lớp thành công!");
       }
-    } catch {
-      alert("Lỗi khi thêm lớp");
-    }
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Lỗi khi thêm lớp");
+    } finally { setCatalogSaving(false); }
   };
 
   // Delete Action
@@ -445,7 +455,7 @@ export default function AcademicsPage() {
       if (res.ok) {
         setShowPlanEditorModal(false);
         alert("Đã tạo kế hoạch đào tạo thành công!");
-        const plRes = await apiFetch("/api/v1/training-progress/plans");
+        const plRes = await apiFetch("/api/v1/training-progress/plans?includeArchived=true&pageSize=100");
         if (plRes.ok) {
           const plJson = await plRes.json();
           setPlans(Array.isArray(plJson.items) ? plJson.items : Array.isArray(plJson) ? plJson : []);
@@ -468,7 +478,7 @@ export default function AcademicsPage() {
       const res = await apiFetch(`/api/v1/training-progress/plans/${planId}/lock`, { method: "POST" });
       if (res.ok) {
         alert("Đã khóa kế hoạch đào tạo thành công!");
-        const plRes = await apiFetch("/api/v1/training-progress/plans");
+        const plRes = await apiFetch("/api/v1/training-progress/plans?includeArchived=true&pageSize=100");
         if (plRes.ok) {
           const plJson = await plRes.json();
           setPlans(Array.isArray(plJson.items) ? plJson.items : Array.isArray(plJson) ? plJson : []);
@@ -487,7 +497,7 @@ export default function AcademicsPage() {
       const res = await apiFetch(`/api/v1/training-progress/plans/${planId}/activate`, { method: "POST" });
       if (res.ok) {
         alert("Đã kích hoạt kế hoạch hiện hành!");
-        const plRes = await apiFetch("/api/v1/training-progress/plans");
+        const plRes = await apiFetch("/api/v1/training-progress/plans?includeArchived=true&pageSize=100");
         if (plRes.ok) {
           const plJson = await plRes.json();
           setPlans(Array.isArray(plJson.items) ? plJson.items : Array.isArray(plJson) ? plJson : []);
@@ -504,7 +514,7 @@ export default function AcademicsPage() {
       const res = await apiFetch(`/api/v1/training-progress/plans/${planId}/archive`, { method: "POST" });
       if (res.ok) {
         alert("Đã chuyển kế hoạch vào lưu trữ!");
-        const plRes = await apiFetch("/api/v1/training-progress/plans");
+        const plRes = await apiFetch("/api/v1/training-progress/plans?includeArchived=true&pageSize=100");
         if (plRes.ok) {
           const plJson = await plRes.json();
           setPlans(Array.isArray(plJson.items) ? plJson.items : Array.isArray(plJson) ? plJson : []);
@@ -1142,7 +1152,7 @@ export default function AcademicsPage() {
       )}
 
       {/* Modal: Thêm Năm học */}
-      <Modal isOpen={showYearModal} onClose={() => setShowYearModal(false)} title="Thêm Năm học Mới" maxWidth="md">
+      <Modal busy={catalogSaving} isOpen={showYearModal} onClose={() => setShowYearModal(false)} title="Thêm Năm học Mới" maxWidth="md">
         <form onSubmit={handleCreateYear} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Mã năm học (YYYY-YYYY)</label>
@@ -1200,6 +1210,7 @@ export default function AcademicsPage() {
             </button>
             <button
               type="submit"
+              disabled={catalogSaving}
               className="px-4 py-2 text-xs font-semibold text-white bg-[var(--color-primary)] hover:opacity-90 rounded-xl"
             >
               Lưu năm học
@@ -1209,7 +1220,7 @@ export default function AcademicsPage() {
       </Modal>
 
       {/* Modal: Thêm Học kỳ */}
-      <Modal isOpen={showTermModal} onClose={() => setShowTermModal(false)} title="Thêm Học kỳ" maxWidth="md">
+      <Modal busy={catalogSaving} isOpen={showTermModal} onClose={() => setShowTermModal(false)} title="Thêm Học kỳ" maxWidth="md">
         <form onSubmit={handleCreateTerm} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Mã học kỳ</label>
@@ -1297,6 +1308,7 @@ export default function AcademicsPage() {
             </button>
             <button
               type="submit"
+              disabled={catalogSaving}
               className="px-4 py-2 text-xs font-semibold text-white bg-[var(--color-primary)] hover:opacity-90 rounded-xl"
             >
               Lưu học kỳ
@@ -1306,7 +1318,7 @@ export default function AcademicsPage() {
       </Modal>
 
       {/* Modal: Thêm Học phần */}
-      <Modal isOpen={showCourseModal} onClose={() => setShowCourseModal(false)} title="Thêm Học phần Mới" maxWidth="md">
+      <Modal busy={catalogSaving} isOpen={showCourseModal} onClose={() => setShowCourseModal(false)} title="Thêm Học phần Mới" maxWidth="md">
         <form onSubmit={handleCreateCourse} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Mã học phần</label>
@@ -1332,37 +1344,7 @@ export default function AcademicsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Số tín chỉ</label>
-              <input
-                type="number"
-                min={1}
-                max={10}
-                value={courseForm.credits}
-                onChange={(e) => setCourseForm({ ...courseForm, credits: Number(e.target.value) })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-bold text-slate-800"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Tiết LT</label>
-              <input
-                type="number"
-                value={courseForm.theoryHours}
-                onChange={(e) => setCourseForm({ ...courseForm, theoryHours: Number(e.target.value) })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Tiết TH</label>
-              <input
-                type="number"
-                value={courseForm.practiceHours}
-                onChange={(e) => setCourseForm({ ...courseForm, practiceHours: Number(e.target.value) })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800"
-              />
-            </div>
-          </div>
+          <p className="text-xs leading-5 text-slate-500">Tín chỉ và giờ lý thuyết/thực hành được nhập khi gắn học phần vào từng chương trình đào tạo.</p>
 
           <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
             <button
@@ -1374,6 +1356,7 @@ export default function AcademicsPage() {
             </button>
             <button
               type="submit"
+              disabled={catalogSaving}
               className="px-4 py-2 text-xs font-semibold text-white bg-[var(--color-primary)] hover:opacity-90 rounded-xl"
             >
               Lưu môn học
@@ -1383,7 +1366,7 @@ export default function AcademicsPage() {
       </Modal>
 
       {/* Modal: Thêm Khóa */}
-      <Modal isOpen={showCohortModal} onClose={() => setShowCohortModal(false)} title="Thêm Khóa Sinh viên" maxWidth="md">
+      <Modal busy={catalogSaving} isOpen={showCohortModal} onClose={() => setShowCohortModal(false)} title="Thêm Khóa Sinh viên" maxWidth="md">
         <form onSubmit={handleCreateCohort} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Mã khóa (VD: K49)</label>
@@ -1417,6 +1400,7 @@ export default function AcademicsPage() {
             </button>
             <button
               type="submit"
+              disabled={catalogSaving}
               className="px-4 py-2 text-xs font-semibold text-white bg-[var(--color-primary)] hover:opacity-90 rounded-xl"
             >
               Lưu khóa
@@ -1426,7 +1410,7 @@ export default function AcademicsPage() {
       </Modal>
 
       {/* Modal: Thêm Lớp */}
-      <Modal isOpen={showClassModal} onClose={() => setShowClassModal(false)} title="Thêm Lớp học Mới" maxWidth="md">
+      <Modal busy={catalogSaving} isOpen={showClassModal} onClose={() => setShowClassModal(false)} title="Thêm Lớp học Mới" maxWidth="md">
         <form onSubmit={handleCreateClass} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Mã lớp</label>
@@ -1475,6 +1459,7 @@ export default function AcademicsPage() {
             </button>
             <button
               type="submit"
+              disabled={catalogSaving}
               className="px-4 py-2 text-xs font-semibold text-white bg-[var(--color-primary)] hover:opacity-90 rounded-xl"
             >
               Lưu lớp học
@@ -1607,6 +1592,7 @@ export default function AcademicsPage() {
       {/* Modal: Tạo Kế hoạch Đào tạo mới (PlanEditorModal) */}
       <Modal
         isOpen={showPlanEditorModal}
+        busy={planSubmitting}
         onClose={() => setShowPlanEditorModal(false)}
         title="Tạo Kế hoạch Đào tạo mới (Học kỳ)"
         maxWidth="2xl"

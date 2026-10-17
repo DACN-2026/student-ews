@@ -13,7 +13,7 @@ import { assessmentTermExamAbsences } from "../lib/services/early-warning-source
 test("VT extraction deduplicates offerings and keeps conditional courses while excluding other outcomes", () => {
   const vt={offeringId:"v",academicTermId:"t",credits:1,scoreStatus:"special",hasFinalGrade:false,isPass:false,specialCode:"VT",courseCode:"TC1001",courseName:"GDTC"};
   assert.deepEqual(assessmentTermExamAbsences([vt,vt,{...vt,offeringId:"other",specialCode:"I"}]),[
-    {offeringId:"v",courseCode:"TC1001",courseName:"GDTC",credits:1,conditional:true},
+    {offeringId:"v",courseCode:"TC1001",courseName:"GDTC",credits:1,conditional:true,isPass:false},
   ]);
 });
 

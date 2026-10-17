@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return errorResponse("format must be xlsx or pdf", "INVALID_FILTER", 400);
     }
     const [evaluation, students] = await Promise.all([
-      GraduationEvaluationsService.getEvaluation(evaluationId),
+      GraduationEvaluationsService.getEvaluation(evaluationId, auth.actor),
       GraduationEvaluationsService.listStudents(
         evaluationId,
         {},
@@ -47,7 +47,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         { header: "CTĐT", key: "curriculum", width: 16 },
         { header: "GDTC", key: "physical", width: 16 },
         { header: "GDQP", key: "defense", width: 16 },
-        { header: "Rèn luyện", key: "training", width: 16 },
         { header: "Kết luận", key: "status", width: 24 },
         { header: "Lý do", key: "reasons", width: 54 },
       ],
@@ -60,7 +59,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         curriculum: student.curriculumStatus,
         physical: student.physicalEducationStatus,
         defense: student.nationalDefenseStatus,
-        training: student.wholeCourseTrainingScore ?? student.trainingStatus,
         status: statusLabel[student.finalStatus] || student.finalStatus,
         reasons: Array.isArray(student.reasons)
           ? (student.reasons as Array<{ message?: string }>).map((reason) => reason.message).filter(Boolean).join("; ")

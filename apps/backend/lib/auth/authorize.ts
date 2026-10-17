@@ -1,6 +1,13 @@
 import { getActorFromHeaders } from "./get-actor";
 import { hasPermission, hasScope, type Actor } from "./types";
 import { errorResponse } from "@/lib/utils/api-response";
+import { requiredPermission } from "./api-permissions";
+
+/** Evaluate current grants at the handler, never the stale permission claims in a JWT. */
+export async function requireApiPermission(request: Request): Promise<AuthResult> {
+  const permission = requiredPermission(new URL(request.url).pathname, request.method);
+  return permission ? requirePermission(permission, request) : requireAuth(request);
+}
 
 export type AuthResult = {
   authorized: true;

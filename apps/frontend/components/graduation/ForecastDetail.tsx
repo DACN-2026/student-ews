@@ -1,9 +1,12 @@
 "use client";
 
 import TextLabel from "@/components/ui/TextLabel";
+import PendingRegistrations from "@/components/students/PendingRegistrations";
 import styles from "./ForecastDetail.module.css";
 import ElectiveAlternatives, { type ElectiveReplacementGroup } from "./ElectiveAlternatives";
 import { studyTimeline } from "@/lib/academic-timeline";
+import { displayedCourseOutcome, courseFailureLabel } from "@/lib/student-academic-display";
+import { academicExplanation } from "@/lib/academic-explanation";
 import { Fragment, useId, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Award, BookOpen, CheckCircle2, ChevronDown, ChevronUp, Clock, GraduationCap, Info, Search, Shield, Sparkles, TrendingUp } from "lucide-react";
 
@@ -30,6 +33,7 @@ export type StudentGrade = {
   letterGrade?: string | null;
   isPassed?: boolean;
   isPass?: boolean;
+  isRecognized?: boolean;
   specialCode?: string | null;
   scoreStatus?: string;
   notScore?: boolean;
@@ -38,6 +42,7 @@ export type StudentGrade = {
 };
 
 export type Forecast = {
+  pendingRegistrations?: Array<{ courseCode?: string | null; courseName?: string | null; credits?: number | null; academicYear?: string | null; termCode?: string | null }>;
   curriculumComplete?: boolean | null;
   summary: {
     requiredCredits: number | null;
@@ -116,7 +121,6 @@ export type StudentInfo = {
   assessmentTermCode?: string | null;
   cumulativeGpa4?: number | null;
   totalCredits?: number | null;
-  wholeCourseTrainingScore?: number | null;
   finalStatus?: string | null;
 };
 
@@ -135,12 +139,6 @@ const STANDARD_CERTS: Record<
     icon: Shield,
     desc: "Có chứng chỉ Giáo dục quốc phòng và an ninh",
     advice: "Nộp bản sao chứng chỉ GDQP cho Phòng Đào tạo khi hoàn thành khóa huấn luyện.",
-  },
-  WHOLE_COURSE_TRAINING: {
-    name: "Điểm rèn luyện toàn khóa",
-    icon: Sparkles,
-    desc: "Kết quả rèn luyện từng kỳ (yêu cầu từ 50 điểm trở lên)",
-    advice: "Điểm rèn luyện được cập nhật định kỳ sau mỗi học kỳ chính.",
   },
   CUMULATIVE_GPA: {
     name: "Điểm trung bình tích lũy (GPA)",
@@ -222,7 +220,7 @@ export default function ForecastDetail({
       const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
       if (code) {
         const existing = map.get(code);
-        if (!existing || (!existing.isPassed && !existing.isPass) || (g.isPassed || g.isPass)) map.set(code, g);
+        if (!existing || displayedCourseOutcome(existing) !== "passed" || displayedCourseOutcome(g) === "passed") map.set(code, g);
       }
     }
     return map;
@@ -260,7 +258,6 @@ export default function ForecastDetail({
   const failedElectiveCount = failedElectiveCourses.length;
 
   const gpa = student?.cumulativeGpa4;
-  const conduct = student?.wholeCourseTrainingScore;
 
   // Elective courses processing
   const allElectiveCourses = useMemo(() => {
@@ -270,38 +267,9 @@ export default function ForecastDetail({
     return forecast.electiveOptions || [];
   }, [forecast.electiveCourses, forecast.electiveOptions]);
 
-  const derivedElectivesFromGrades = useMemo(() => {
-    if (allElectiveCourses.length > 0) return [];
-    const mandatoryCodes = new Set(
-      (forecast.missingRequiredCourses || [])
-        .concat(forecast.requiredCoursesBreakdown?.completed || [])
-        .map((c) => c.courseCode.toUpperCase()),
-    );
-    return (grades || [])
-      .filter((g) => {
-        const code = String(g.courseCode || g.sCurriculumId || "").toUpperCase();
-        return code && !mandatoryCodes.has(code);
-      })
-      .map((g) => {
-        const isPass = Boolean(g.isPassed || g.isPass);
-        const isFail = !isPass && g.scoreStatus === "graded" && !g.notScore && (g.score10 != null || g.score4 != null || g.letterGrade);
-        const state = isPass ? ("passed" as const) : isFail ? ("failed" as const) : ("no_score" as const);
-        return {
-          courseId: String(g.id || g.courseCode),
-          courseCode: String(g.courseCode || g.sCurriculumId),
-          courseName: String(g.courseName || g.sCourseName || "Học phần tự chọn"),
-          credits: Number(g.credits || 3),
-          requirementType: "Tự chọn",
-          state,
-          semesterNo: null,
-          schedule: g.academicYear && g.termCode ? { academicYear: String(g.academicYear), termCode: String(g.termCode) } : null,
-        };
-      });
-  }, [allElectiveCourses, forecast.missingRequiredCourses, forecast.requiredCoursesBreakdown, grades]);
-
-  const effectiveElectiveCourses = useMemo(() => {
-    return allElectiveCourses.length > 0 ? allElectiveCourses : derivedElectivesFromGrades;
-  }, [allElectiveCourses, derivedElectivesFromGrades]);
+  // Only the curriculum identifies electives. Unmatched transcript rows do not
+  // become electives or receive invented credit defaults.
+  const effectiveElectiveCourses = allElectiveCourses;
 
   const pendingElectives = useMemo(
     () => effectiveElectiveCourses.filter((c) => c.state === "no_score"),
@@ -314,7 +282,7 @@ export default function ForecastDetail({
 
   // Layer 2 rules mapping
   const EXCLUDED_RULE_CODES = useMemo(
-    () => new Set(["FOREIGN_LANGUAGE", "DISCIPLINE", "LEGAL"]),
+    () => new Set(["FOREIGN_LANGUAGE", "DISCIPLINE", "LEGAL", "WHOLE_COURSE_TRAINING", "WHOLE_COURSE_TRAINING_CONFIG"]),
     []
   );
 
@@ -341,12 +309,12 @@ export default function ForecastDetail({
         courseName: c.courseName,
         credits: c.credits,
         requirementType: "Bắt buộc",
-        letterGrade: g?.letterGrade || "F",
+        letterGrade: g?.specialCode || g?.letterGrade || "—",
         score10: g?.score10,
-        statusLabel: "Chưa đạt (Điểm F)",
+        statusLabel: courseFailureLabel(g),
         statusType: "fail",
         termInfo: g?.academicYear && g?.termCode ? `${g.academicYear} • ${g.termCode}` : undefined,
-        advice: "Cần học lại",
+        advice: g?.specialCode === "VT" || g?.letterGrade === "VT" ? "Liên hệ xác nhận phương án thi lại hoặc thi bù" : "Cần hoàn thành học phần",
       });
     }
 
@@ -359,12 +327,12 @@ export default function ForecastDetail({
         courseName: c.courseName,
         credits: c.credits,
         requirementType: "Tự chọn",
-        letterGrade: g?.letterGrade || "F",
+        letterGrade: g?.specialCode || g?.letterGrade || "—",
         score10: g?.score10,
-        statusLabel: "Chưa đạt (Điểm F)",
+        statusLabel: courseFailureLabel(g),
         statusType: "fail",
         termInfo: g?.academicYear && g?.termCode ? `${g.academicYear} • ${g.termCode}` : undefined,
-        advice: "Cần học lại hoặc học các môn sau:",
+        advice: g?.specialCode === "VT" || g?.letterGrade === "VT" ? "Liên hệ xác nhận phương án thi lại/thi bù hoặc chọn phương án phù hợp trong nhóm" : "Hoàn thành học phần hoặc chọn phương án phù hợp trong nhóm",
       });
     }
 
@@ -435,7 +403,7 @@ export default function ForecastDetail({
   const electiveDisclosureId = useId();
   const renderAdvice = (item: ActionItem) => (
     <span>
-      {item.advice}
+      {academicExplanation(item.advice)}
       {item.requirementType === "Tự chọn" && item.statusType === "fail" && (
         <> <button
           type="button"
@@ -462,13 +430,13 @@ export default function ForecastDetail({
 
     if (failedElectiveCount > 0) {
       recs.push(
-        `Có ${failedElectiveCount} HP tự chọn chưa đạt (điểm F), cần học lại hoặc chọn môn phù hợp khác.`
+        `Trường ghi nhận ${failedElectiveCount} học phần tự chọn chưa đạt. Kiểm tra kết quả từng lần học để hướng dẫn thi bổ sung, học lại hoặc chọn học phần khác trong cùng nhóm theo quy định.`
       );
     }
 
     if (failedMandatoryCount > 0) {
       recs.push(
-        `Có ${failedMandatoryCount} HP bắt buộc bị điểm F, cần đăng ký học lại sớm: ${failedMandatoryCourses.map((c) => c.courseName).join(", ")}.`
+        `Trường ghi nhận ${failedMandatoryCount} học phần bắt buộc chưa đạt: ${failedMandatoryCourses.map((c) => c.courseName).join(", ")}. Kiểm tra kết quả từng lần học và hướng dẫn thi bổ sung hoặc học lại theo quy định.`
       );
     }
 
@@ -662,17 +630,17 @@ export default function ForecastDetail({
   const [transcriptTermFilter, setTranscriptTermFilter] = useState("all");
   const [transcriptStatusFilter, setTranscriptStatusFilter] = useState<"all" | "passed" | "failed" | "pending">("all");
 
-  const passedGrades = useMemo(() => (grades || []).filter((g) => (g.isPassed || g.isPass) && !g.notScore && (g.specialCode || g.letterGrade)?.toUpperCase() !== "VT"), [grades]);
+  const passedGrades = useMemo(() => (grades || []).filter(g => displayedCourseOutcome(g) === "passed"), [grades]);
   const failedGrades = useMemo(
     () =>
       (grades || []).filter(
-        (g) => (g.specialCode || g.letterGrade)?.toUpperCase() === "VT" || (!(g.isPassed || g.isPass) && g.scoreStatus === "graded" && !g.notScore && (g.score10 != null || g.score4 != null || g.letterGrade))
+        (g) => displayedCourseOutcome(g) === "failed"
       ),
     [grades]
   );
   const pendingGrades = useMemo(
-    () => (grades || []).filter((g) => !(g.isPassed || g.isPass) && !failedGrades.includes(g) && (g.notScore || g.scoreStatus === "pending")),
-    [grades, failedGrades]
+    () => (grades || []).filter(g => displayedCourseOutcome(g) === "pending"),
+    [grades]
   );
 
   const uniqueTerms = useMemo(() => {
@@ -687,7 +655,7 @@ export default function ForecastDetail({
         const termKey = `${g.academicYear} • ${g.termCode}`;
         if (termKey !== transcriptTermFilter) return false;
       }
-      if (transcriptStatusFilter === "passed" && !g.isPassed) return false;
+      if (transcriptStatusFilter === "passed" && displayedCourseOutcome(g) !== "passed") return false;
       if (transcriptStatusFilter === "failed" && !failedGrades.includes(g)) return false;
       if (transcriptStatusFilter === "pending" && !pendingGrades.includes(g)) return false;
       if (transcriptSearch.trim()) {
@@ -702,6 +670,7 @@ export default function ForecastDetail({
 
   return (
     <div className={`${styles.detail} min-w-0 space-y-4 text-xs sm:text-sm text-slate-800`}>
+      <PendingRegistrations items={forecast.pendingRegistrations} />
       {/* ============================================================ */}
       {/* 1. SUMMARY ĐẦU MODAL — GỌN GÀNG, KHÔNG CARD MÀU NỔI, KHÔNG GRADIENT */}
       {/* ============================================================ */}
@@ -819,15 +788,6 @@ export default function ForecastDetail({
             </>
           )}
 
-          {conduct != null && (
-            <>
-              <div className="h-4 w-px bg-slate-200 hidden sm:block" />
-              <div className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1 text-slate-700 border border-slate-200">
-                <span className="text-slate-500">Rèn luyện:</span>
-                <strong className="font-mono font-bold text-slate-800">{conduct.toFixed(0)} đ</strong>
-              </div>
-            </>
-          )}
         </div>
       </div>
 
@@ -1007,12 +967,12 @@ export default function ForecastDetail({
                                 : "bg-slate-100 text-slate-700  "
                           }`}
                         >
-                          {isPass ? "Đã đạt" : isFail ? "Chưa đạt" : "Chưa có dữ liệu"}
+                          {isPass ? "Đã đạt" : isFail ? "Chưa đạt" : rule.result === "PENDING" ? "Chờ hoàn thành / xác nhận" : "Chưa thể đánh giá"}
                         </TextLabel>
                       </div>
 
                       <div className="mt-2.5 pt-2 border-t border-slate-100 text-slate-600 text-[11px]">
-                        {isPass ? "Đã xác minh đầy đủ trên hồ sơ sinh viên." : meta.advice}
+                        {isPass ? "Đã đáp ứng điều kiện theo hồ sơ và kết quả học tập hiện có." : rule.reason ? academicExplanation(rule.reason) : meta.advice}
                       </div>
                     </div>
                   );
@@ -1034,7 +994,7 @@ export default function ForecastDetail({
                 Không có yêu cầu cần xử lý từ các học kỳ trước
               </p>
               <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                Sinh viên không nợ học phần bắt buộc nào từ các kỳ đã qua và không có môn học nào bị điểm F chưa trả nợ.
+                Sinh viên không còn học phần bắt buộc tồn đọng từ các kỳ đã qua hoặc kết quả chưa đạt cần xử lý trong phạm vi đối chiếu.
               </p>
             </div>
           ) : actionCount === 1 ? (
@@ -1421,7 +1381,7 @@ export default function ForecastDetail({
                                   </TextLabel>
                                 ) : isFail ? (
                                   <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800">
-                                     Chưa đạt (F)
+                                     {courseFailureLabel(gradeByCourseCode.get(c.courseCode.toUpperCase()))}
                                   </TextLabel>
                                 ) : isNoScore ? (
                                   <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-800">
@@ -1682,7 +1642,7 @@ export default function ForecastDetail({
                                   </TextLabel>
                                 ) : isFail ? (
                                   <TextLabel className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-800">
-                                     Chưa đạt (F)
+                                     {courseFailureLabel(grade)}
                                   </TextLabel>
                                 ) : (
                                   <TextLabel className="text-[11px] font-medium text-slate-600">
@@ -1850,16 +1810,18 @@ export default function ForecastDetail({
                               <td data-label="Trạng thái" className="px-3.5 py-2 text-center whitespace-nowrap table-cell-center">
                                 {isFail ? (
                                   <TextLabel className="inline-flex text-[10px] font-bold text-rose-700">
-                                    Không đạt (F)
+                                    Không đạt
                                   </TextLabel>
                                 ) : isPendingGrade ? (
                                   <TextLabel className="inline-flex text-[10px] font-bold text-amber-800">
                                     Chưa có điểm
                                   </TextLabel>
-                                ) : (
+                                ) : displayedCourseOutcome(g) === "passed" ? (
                                   <TextLabel className="inline-flex text-[10px] font-bold text-emerald-800">
                                     Đạt
                                   </TextLabel>
+                                ) : (
+                                  <TextLabel className="inline-flex text-[10px] font-bold text-slate-600">Chưa xác định kết quả</TextLabel>
                                 )}
                               </td>
                             </tr>
@@ -1884,33 +1846,35 @@ export default function ForecastDetail({
         <button
           type="button"
           onClick={() => setShowTechnicalAudit(!showTechnicalAudit)}
+          aria-expanded={showTechnicalAudit}
+          aria-controls={`${electiveDisclosureId}-evaluation-details`}
           className="flex items-center justify-between w-full rounded-lg bg-slate-50 hover:bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
             <Info size={13} className="text-slate-400" />
-            <span>Đối soát quy tắc CTĐT & log kỹ thuật</span>
+            <span>Chi tiết kiểm tra điều kiện tốt nghiệp</span>
           </span>
           {showTechnicalAudit ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </button>
 
         {showTechnicalAudit && (
-          <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-600 space-y-2">
-            <p className="font-semibold text-slate-800">Các quy tắc hệ thống đã đối chiếu:</p>
-            <ul className="list-disc pl-5 space-y-1 font-mono text-[11px]">
+          <div id={`${electiveDisclosureId}-evaluation-details`} className="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3 text-xs text-slate-600 space-y-2">
+            <p className="font-semibold text-slate-800">Các điều kiện đã được kiểm tra trong lần đánh giá này:</p>
+            <ul className="list-disc pl-5 space-y-1 text-[11px]">
               {reasons
                 .filter((r) => !EXCLUDED_RULE_CODES.has(r.code))
                 .map((r, i) => (
                   <li key={i}>
-                    <span className="font-bold text-slate-900">[{r.code}]</span>: {r.message}
+                    {academicExplanation(r.message)}
                   </li>
                 ))}
             </ul>
             {forecast.warnings.length > 0 && (
               <div className="mt-2 pt-2 border-t border-slate-200">
-                <p className="font-semibold text-amber-900">Cảnh báo dữ liệu CTĐT:</p>
+                <p className="font-semibold text-amber-900">Thông tin chương trình đào tạo cần kiểm tra:</p>
                 <ul className="list-disc pl-5 space-y-1 text-amber-900 text-[11px]">
                   {forecast.warnings.map((w, i) => (
-                    <li key={i}>{w}</li>
+                    <li key={i}>{academicExplanation(w)}</li>
                   ))}
                 </ul>
               </div>
